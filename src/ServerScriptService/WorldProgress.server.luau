@@ -3,6 +3,10 @@ local Players=game:GetService("Players")
 local DS=game:GetService("DataStoreService")
 local RunService=game:GetService("RunService")
 local Config=require(game.ReplicatedStorage:WaitForChild("GameConfig"))
+local ShopConfig=require(game.ReplicatedStorage:WaitForChild("ShopConfig"))
+local PlayerSystems=require(script.Parent:WaitForChild("PlayerSystems"))
+local BADGES={}
+for _,b in ipairs(ShopConfig.Badges) do table.insert(BADGES,b.Id) end
 local world=workspace:WaitForChild("CoinSpeedWorld")
 local persistent=game.GameId>0 and (not RunService:IsStudio() or Config.EnableStudioDataStores)
 local store=persistent and DS:GetDataStore("CoinSprint_Profiles_V3")
@@ -13,6 +17,16 @@ local function snapshot(p)
  local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={}}
  for _,name in ipairs({"MagnetLevel","IncomeLevel","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=p:GetAttribute(name) or 0 end
  for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
+ data.Equipped=p:GetAttribute("Equipped") or ""
+ data.Potions={};data.PotionLeft={}
+ for _,name in ipairs({"Coins","Speed","Luck"}) do
+  data.Potions[name]=p:GetAttribute("Potion"..name) or 0
+  data.PotionLeft[name]=math.max(0,(p:GetAttribute("PotionEnd"..name) or 0)-os.time())
+ end
+ data.Badges={}
+ for _,name in ipairs(BADGES) do data.Badges[name]=p:GetAttribute("Badge"..name)==true end
+ data.MagnetTier=p:GetAttribute("MagnetTier") or 1
+ data.MagnetEquipped=p:GetAttribute("MagnetEquipped") or 1
  data.IndexClaimed={}
  for i=1,#Config.Eggs do data.IndexClaimed[tostring(i)]=p:GetAttribute("IndexClaimed"..i)==true end
  return data
@@ -47,6 +61,19 @@ local function load(p)
   if count>0 and Config.GetPetMultiplier(i)>Config.GetPetMultiplier(best) then best=i end
  end
  p:SetAttribute("PetLevel",best)
+ if type(loaded.Potions)=="table" then
+  for _,name in ipairs({"Coins","Speed","Luck"}) do
+   p:SetAttribute("Potion"..name,math.floor(number(loaded.Potions[name])))
+   p:SetAttribute("PotionEnd"..name,os.time()+math.floor(number(type(loaded.PotionLeft)=="table" and loaded.PotionLeft[name])))
+  end
+ end
+ if type(loaded.Badges)=="table" then for _,name in ipairs(BADGES) do p:SetAttribute("Badge"..name,loaded.Badges[name]==true) end end
+ p:SetAttribute("MagnetTier",math.clamp(math.floor(number(loaded.MagnetTier)),1,#ShopConfig.Magnets))
+ p:SetAttribute("MagnetEquipped",math.clamp(math.floor(number(loaded.MagnetEquipped)),1,p:GetAttribute("MagnetTier")))
+ -- Команда питомцев; у старых профилей её нет — надеваем трёх лучших.
+ local team=ShopConfig.ParseEquipped(type(loaded.Equipped)=="string" and loaded.Equipped or "")
+ if #team>0 then PlayerSystems.SetEquipped(p,team) else PlayerSystems.EquipBest(p) end
+ PlayerSystems.GiveMagnet(p)
  for i=1,#Config.Eggs do p:SetAttribute("IndexClaimed"..i,type(loaded.IndexClaimed)=="table" and loaded.IndexClaimed[tostring(i)]==true) end
  local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
  if h then h.WalkSpeed=Config.GetWalkSpeed(stats.SpeedLevel.Value) end
@@ -131,14 +158,15 @@ local function avatarFor(userId)
  end
  return avatarCache[userId] or nil
 end
-local function updatePodiums(rows)
+-- Под каждой доской свой пьедестал (Podium_BoardCoins и т.д.) с топ-3 именно этой доски.
+local function updatePodiums(def,rows)
  for _,zone in ipairs({world,city}) do
-  local podium=zone:FindFirstChild("Podium")
+  local podium=zone:FindFirstChild("Podium_"..def.Part)
   if podium then
    for place=1,3 do
     local step=podium:FindFirstChild("Place"..place)
     local row=rows[place]
-    local key=zone.Name..place
+    local key=zone.Name..def.Part..place
     local wanted=row and row.UserId or 0
     if step and podiumShown[key]~=wanted then
      podiumShown[key]=wanted
@@ -154,6 +182,7 @@ local function updatePodiums(rows)
       AvatarPose.Prepare(npc)
       npc.Parent=podium
       local top=step.Position+Vector3.new(0,step.Size.Y/2,0)
+      if step:IsA("Part") and step.Shape==Enum.PartType.Cylinder then top=step.Position+Vector3.new(0,step.Size.X/2,0) end
       AvatarPose.Place(npc,top,CFrame.Angles(0,0,0),top.Y,false)
      end
     end
@@ -183,7 +212,7 @@ local function refresh()
    else for _,sub in ipairs(def.subtitles) do sub.Text="THIS SERVER · global service unavailable" end end
   end
   render(def,rows)
-  if def.Stat=="LifetimeEarned" then task.spawn(updatePodiums,rows) end
+  task.spawn(updatePodiums,def,rows)
  end
 end
 task.spawn(function() while true do refresh();task.wait(persistent and 120 or 8) end end)

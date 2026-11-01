@@ -24,7 +24,7 @@ end
 local panelsColumn=player.PlayerGui:WaitForChild("MainHUD"):WaitForChild("Panels")
 local row=Instance.new("Frame");row.Name="MenuButtons";row.BackgroundTransparency=1;row.LayoutOrder=0;row.Size=UDim2.new(1,0,0,72);row.Parent=panelsColumn
 local function iconButton(order,icon,caption,top,bottom)
- local b=Instance.new("TextButton");b.Name=caption;b.Size=UDim2.fromOffset(66,66);b.Position=UDim2.fromOffset((order-1)*78,0);b.Text="";b.BackgroundColor3=Color3.new(1,1,1);b.Parent=row
+ local b=Instance.new("TextButton");b.Name=caption;b.Size=UDim2.fromOffset(54,64);b.Position=UDim2.fromOffset((order-1)*58,0);b.Text="";b.BackgroundColor3=Color3.new(1,1,1);b.Parent=row
  Instance.new("UICorner",b).CornerRadius=UDim.new(0,18)
  local g=Instance.new("UIGradient");g.Color=ColorSequence.new(top,bottom);g.Rotation=90;g.Parent=b
  stroke(b,3)
@@ -32,13 +32,15 @@ local function iconButton(order,icon,caption,top,bottom)
  local pad=Instance.new("UIPadding",i);pad.PaddingTop=UDim.new(0.14,0)
  local c=Instance.new("TextLabel");c.BackgroundTransparency=1;c.Position=UDim2.new(0,0,0.66,0);c.Size=UDim2.new(1,0,0.32,0);c.Text=caption;c.TextScaled=true;c.Font=Enum.Font.FredokaOne;c.TextColor3=Color3.new(1,1,1);c.Parent=b
  stroke(c,1.5)
- b.MouseEnter:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(72,72)}):Play() end)
- b.MouseLeave:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(66,66)}):Play() end)
+ b.MouseEnter:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(58,68)}):Play() end)
+ b.MouseLeave:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(54,64)}):Play() end)
  return b
 end
 local indexButton=iconButton(1,"📖","INDEX",Color3.fromRGB(255,190,90),Color3.fromRGB(220,110,40))
-local statButton=iconButton(2,"📊","STATS",Color3.fromRGB(120,210,255),Color3.fromRGB(50,120,230))
-local settingsButton=iconButton(3,"⚙","SETTINGS",Color3.fromRGB(190,190,205),Color3.fromRGB(110,110,135))
+local inventoryButton=iconButton(2,"🎒","ITEMS",Color3.fromRGB(150,230,120),Color3.fromRGB(60,160,70))
+local statButton=iconButton(3,"📊","STATS",Color3.fromRGB(120,210,255),Color3.fromRGB(50,120,230))
+local settingsButton=iconButton(4,"⚙","SETTINGS",Color3.fromRGB(190,190,205),Color3.fromRGB(110,110,135))
+local openInventory=Instance.new("BindableEvent");openInventory.Name="OpenInventory";openInventory.Parent=player.PlayerGui
 
 local function window(name,titleText,size)
  local panel=Instance.new("Frame");panel.Name=name;panel.AnchorPoint=Vector2.new(0.5,0.5);panel.Position=UDim2.fromScale(0.5,0.5);panel.Size=size;panel.BackgroundColor3=Color3.fromRGB(28,40,52);panel.Visible=false;panel.Parent=gui
@@ -108,6 +110,7 @@ closeStats.Activated:Connect(hideAll);closeSettings.Activated:Connect(hideAll)
 statButton.Activated:Connect(function() toggle("stats") end)
 settingsButton.Activated:Connect(function() toggle("settings") end)
 indexButton.Activated:Connect(function() hideAll();openIndex:Fire() end)
+inventoryButton.Activated:Connect(function() hideAll();openInventory:Fire() end)
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
  local current=player:GetAttribute("UIScreen")
  for name,p in pairs(screens) do if current~=name then p.Visible=false end end

@@ -39,22 +39,25 @@ function AvatarPose.Prepare(model: Model)
 	end
 end
 
-local function bend(model: Model, partName: string, jointName: string, angles: CFrame)
-	local part = model:FindFirstChild(partName, true)
-	local joint = part and part:FindFirstChild(jointName)
-	if joint and joint:IsA("Motor6D") then
-		joint.C0 = joint.C0 * angles
-	end
-end
-
--- Сидячая поза: бёдра вперёд, голени вниз (R15), прямые ноги вперёд (R6).
+-- Сидячая поза: стандартная анимация сидения Roblox (R15 или R6), зациклена.
+-- Анимация двигает суставы через Motor6D.Transform и работает при закреплённом корне.
 function AvatarPose.Sit(model: Model)
-	bend(model, "LeftUpperLeg", "LeftHip", CFrame.Angles(math.rad(90), 0, 0))
-	bend(model, "RightUpperLeg", "RightHip", CFrame.Angles(math.rad(90), 0, 0))
-	bend(model, "LeftLowerLeg", "LeftKnee", CFrame.Angles(math.rad(-90), 0, 0))
-	bend(model, "RightLowerLeg", "RightKnee", CFrame.Angles(math.rad(-90), 0, 0))
-	bend(model, "Torso", "Left Hip", CFrame.Angles(0, 0, math.rad(-90)))
-	bend(model, "Torso", "Right Hip", CFrame.Angles(0, 0, math.rad(90)))
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local animation = Instance.new("Animation")
+	animation.AnimationId = humanoid.RigType == Enum.HumanoidRigType.R15 and "rbxassetid://2506281703" or "rbxassetid://178130996"
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(animation)
+	end)
+	if ok and track then
+		track.Looped = true
+		track.Priority = Enum.AnimationPriority.Action4
+		track:Play(0)
+	end
 end
 
 -- Ставит модель так, чтобы самая низкая точка выбранных частей легла на высоту y.
@@ -62,6 +65,9 @@ end
 function AvatarPose.Place(model: Model, position: Vector3, facing: CFrame, y: number, sitting: boolean?)
 	model:PivotTo(CFrame.new(position + Vector3.new(0, 4, 0)) * facing)
 	RunService.Heartbeat:Wait()
+	if sitting then
+		task.wait(0.4) -- дать анимации сидения согнуть ноги перед замером
+	end
 	local names = sitting and { "LeftUpperLeg", "RightUpperLeg", "Left Leg", "Right Leg" }
 		or { "LeftFoot", "RightFoot", "Left Leg", "Right Leg" }
 	local lowest = math.huge

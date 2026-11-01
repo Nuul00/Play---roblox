@@ -111,6 +111,7 @@ previous.Activated:Connect(function() if mode=="index" then showEgg((eggId-2)%#C
 nextPage.Activated:Connect(function() if mode=="index" then showEgg(eggId%#Config.Eggs+1,true) end end)
 RS:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode,newZone,newEgg)
  if newMode=="egg" then showEgg(newEgg,false);return end
+ do return end -- меню киоска и магазина магнитов рисует ShopPanels.client.luau
  mode="shop";zoneId=newZone
  local world=workspace.CoinSpeedWorld
  local zone=newZone=="neon" and world.NeonCity or world

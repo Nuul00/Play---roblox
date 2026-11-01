@@ -17,7 +17,7 @@ function PetVisuals.Build(id)
    local model=selected:Clone();model.Name=def.Name
    local size=model:GetExtentsSize()
    -- Мифики и секретки крупнее обычных, чтобы редкость было видно сразу.
-   local target=({Mythic=3.6,Secret=4.3})[def.Rarity] or 2.8
+   local target=({Mythic=3.1,Secret=3.5})[def.Rarity] or 2.5
    model:ScaleTo(model:GetScale()*target/math.max(size.X,size.Y,size.Z,0.1))
    model:PivotTo(CFrame.identity)
    local parts={}

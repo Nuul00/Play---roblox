@@ -3,6 +3,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local AvatarPose = require(script.Parent:WaitForChild("AvatarPose"))
+local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
+local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
 world:SetAttribute("ServerRunning", true)
@@ -12,18 +14,27 @@ workspace.Terrain:FillBlock(CFrame.new(250,-15,0),Vector3.new(1000,10,650),Enum.
 workspace.Terrain:FillBlock(CFrame.new(0,-6,0),Vector3.new(300,12,460),Enum.Material.Grass)
 workspace.Terrain:SetMaterialColor(Enum.Material.Grass,Color3.fromRGB(104,196,84))
 workspace.Terrain:SetMaterialColor(Enum.Material.Cobblestone,Color3.fromRGB(198,178,146))
--- Пруд: овальная чаша с песчаным берегом (две пересекающиеся окружности).
-for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
- workspace.Terrain:FillCylinder(CFrame.new(pond[1],-2,pond[2]),4,pond[3]+4,Enum.Material.Sand)
+-- Пруд и ручей: вода стоит ниже травы, вокруг песчаный берег.
+-- Вода не вытесняет грунт, поэтому сначала вырезаем воздухом, затем наливаем.
+local T=workspace.Terrain
+local ponds={{-101,-33,17},{-88,-25,13}}
+for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-2,c[2]),4,c[3]+4,Enum.Material.Sand) end
+for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],1.5,c[2]),3,c[3]+3.5,Enum.Material.Air) end
+for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-4,c[2]),14,c[3],Enum.Material.Air) end
+for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-5.6,c[2]),9.2,c[3],Enum.Material.Water) end
+T:FillBlock(CFrame.new(-95,-13,-29),Vector3.new(80,4,70),Enum.Material.Mud)
+-- Ручей с гор на западе в пруд: точки русла, между ними шаг 2 студа.
+local stream={Vector3.new(-152,0,-120),Vector3.new(-140,0,-104),Vector3.new(-131,0,-84),Vector3.new(-126,0,-66),Vector3.new(-115,0,-50),Vector3.new(-108,0,-42)}
+local bed={}
+for i=1,#stream-1 do
+ local a,b=stream[i],stream[i+1]
+ local n=math.ceil((b-a).Magnitude/2)
+ for k=0,n-1 do table.insert(bed,a:Lerp(b,k/n)) end
 end
--- Вода не вытесняет твёрдый грунт: сначала вырезаем чашу воздухом, потом наливаем воду.
-for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
- workspace.Terrain:FillCylinder(CFrame.new(pond[1],-6,pond[2]),12,pond[3],Enum.Material.Air)
-end
-for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
- workspace.Terrain:FillCylinder(CFrame.new(pond[1],-6,pond[2]),12,pond[3],Enum.Material.Water)
-end
-workspace.Terrain:FillBlock(CFrame.new(-95,-14,-29),Vector3.new(80,4,70),Enum.Material.Mud)
+-- Русло шире вокселя (4 студа), иначе трава закрывает воду целиком.
+for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,-3,p.Z),4,7,Enum.Material.Sand) end
+for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,1,p.Z),8,5.2,Enum.Material.Air) end
+for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,-2.6,p.Z),2.4,5,Enum.Material.Water) end
 -- Глубокая, но не прозрачная вода: иначе сквозь неё видно песчаное дно.
 workspace.Terrain.WaterColor=Color3.fromRGB(46,128,170)
 workspace.Terrain.WaterTransparency=0.35
@@ -96,10 +107,11 @@ local function setup(player)
  level.Name = "SpeedLevel"
  level.Parent = stats
  stats.Parent = player
+ PlayerSystems.Setup(player)
  player.RespawnLocation = world.Start
  local function characterAdded(character)
   local h = character:WaitForChild("Humanoid", 10)
-  if h and player.Character == character then h.WalkSpeed = Config.GetWalkSpeed(level.Value) end
+  if h and player.Character == character then PlayerSystems.ApplySpeed(player) end
   player:SetAttribute("CurrentWorld", "Meadow Isles")
  end
  player.CharacterAdded:Connect(characterAdded)
@@ -110,6 +122,36 @@ Players.PlayerRemoving:Connect(function(p) cooldown[p] = nil; hatchUntil[p] = ni
 for _, p in ipairs(Players:GetPlayers()) do setup(p) end
 
 local function notify(p, text, success) feedback:FireClient(p, text, success or false) end
+PlayerSystems.SetNotifier(notify)
+-- Действия из инвентаря: надеть/снять питомца, лучшие, снять всех, выпить зелье, взять магнит.
+local action = Instance.new("RemoteEvent")
+action.Name = "GameAction"
+action.Parent = ReplicatedStorage
+local actionCooldown = {}
+action.OnServerEvent:Connect(function(p, kind, arg)
+ if type(kind) ~= "string" or not p:GetAttribute("ProfileReady") then return end
+ if os.clock() - (actionCooldown[p] or 0) < 0.15 then return end
+ actionCooldown[p] = os.clock()
+ if kind == "equip" and type(arg) == "number" then
+  local list = PlayerSystems.GetEquipped(p)
+  if #list >= ShopConfig.MaxEquipped then notify(p, "Only 3 pets can follow you. Unequip one first."); return end
+  table.insert(list, arg)
+  PlayerSystems.SetEquipped(p, list)
+ elseif kind == "unequip" and type(arg) == "number" then
+  local list = PlayerSystems.GetEquipped(p)
+  for i, id in ipairs(list) do if id == arg then table.remove(list, i); break end end
+  PlayerSystems.SetEquipped(p, list)
+ elseif kind == "best" then
+  PlayerSystems.EquipBest(p)
+ elseif kind == "none" then
+  PlayerSystems.SetEquipped(p, {})
+ elseif kind == "potion" and type(arg) == "string" then
+  PlayerSystems.UsePotion(p, arg)
+ elseif kind == "magnet" and type(arg) == "number" then
+  PlayerSystems.EquipMagnet(p, arg)
+ end
+end)
+Players.PlayerRemoving:Connect(function(p) actionCooldown[p] = nil end)
 -- Награда за полностью собранную страницу индекса (все питомцы одного яйца). Один раз на яйцо.
 local claimIndex = Instance.new("RemoteEvent")
 claimIndex.Name = "GameIndexClaim"
@@ -168,6 +210,36 @@ end
 -- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
+ if kind == "magnettool" or kind == "potion" then
+  -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
+  local shop = world:FindFirstChild("MagnetShop")
+  local zonePart = shop and shop:FindFirstChild("ShopZone")
+  if not zonePart then return end
+  local stats = interact(p, zonePart, nil, false)
+  if not stats then return end
+  local cost, name
+  if kind == "magnettool" then
+   local def = type(eggId) == "number" and ShopConfig.Magnets[eggId]
+   if not def then return end
+   if eggId <= (p:GetAttribute("MagnetTier") or 1) then PlayerSystems.EquipMagnet(p, eggId); return end
+   if eggId ~= (p:GetAttribute("MagnetTier") or 1) + 1 then notify(p, "Buy the previous magnet first!"); return end
+   cost, name = def.Price, def.Name
+  else
+   local def = type(eggId) == "string" and ShopConfig.Potions[eggId]
+   if not def then return end
+   cost, name = def.Price, def.Name
+  end
+  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
+  stats.Coins.Value = stats.Coins.Value - cost
+  if kind == "magnettool" then
+   p:SetAttribute("MagnetTier", eggId)
+   PlayerSystems.EquipMagnet(p, eggId)
+  else
+   p:SetAttribute("Potion" .. eggId, (p:GetAttribute("Potion" .. eggId) or 0) + 1)
+   notify(p, "Bought " .. name .. "! Use it in your inventory.", true)
+  end
+  return
+ end
  if kind ~= "speed" and kind ~= "magnet" and kind ~= "income" and kind ~= "egg" then return end
  local zone = zones[zoneId]
  if not zone then return end
@@ -197,8 +269,8 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
  stats.Coins.Value = stats.Coins.Value - cost
  if kind == "speed" then
   stats.SpeedLevel.Value = value+1
-  h.WalkSpeed = Config.GetWalkSpeed(value+1)
-  notify(p,"Speed: " .. h.WalkSpeed,true)
+  PlayerSystems.ApplySpeed(p)
+  notify(p,"Speed: " .. Config.GetWalkSpeed(value+1),true)
  elseif kind == "magnet" then
   p:SetAttribute("MagnetLevel",value+1)
   notify(p,string.format("Magnet radius: %.2f",Config.GetMagnetRadius(value+1)),true)
@@ -208,11 +280,16 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
  else
   hatchUntil[p] = os.clock()+3.5
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
+  -- Зелье удачи: два броска, остаётся более редкий питомец.
+  if PlayerSystems.PotionActive(p, "Luck") then
+   local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
+   if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
+  end
   local attribute = "PetOwned" .. result
   local count = (p:GetAttribute(attribute) or 0)+1
   p:SetAttribute(attribute,count)
   -- Автоматически сопровождает самый сильный из открытых питомцев.
-  if Config.GetPetMultiplier(result)>Config.GetPetMultiplier(p:GetAttribute("PetLevel") or 0) then p:SetAttribute("PetLevel",result) end
+  PlayerSystems.OnHatched(p, result)
   p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+1)
   hatched:FireClient(p,result,count,eggId)
  end
@@ -266,6 +343,11 @@ for id, zone in pairs(zones) do
  local zonePart = zone.UpgradeShop:FindFirstChild("ShopZone")
  if zonePart then shopZones[id] = zonePart end
 end
+do
+ local magnetShop = world:FindFirstChild("MagnetShop")
+ local zonePart = magnetShop and magnetShop:FindFirstChild("ShopZone")
+ if zonePart then shopZones.magnets = zonePart end
+end
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- У каждой монеты одно серверное состояние для всех игроков.
@@ -273,7 +355,7 @@ local records = {}
 for _, zone in ipairs({world, city}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
-   local record = {part = coin, available = true, value = zone == city and 25 or 5, required = zone == city and 3 or 0}
+   local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = zone == city and 3 or 0}
    table.insert(records, record)
    coin.CanCollide = false
    coin.CanTouch = false
@@ -295,7 +377,7 @@ local function collect(record, p)
  record.available = false
  record.part:SetAttribute("Available", false)
  setCoinVisible(record.part, false)
- local earned=record.value*Config.GetPetMultiplier(p:GetAttribute("PetLevel") or 0)*Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0)
+ local earned=record.value*PlayerSystems.CoinMultiplier(p)
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
@@ -314,13 +396,15 @@ task.spawn(function()
    local h, root = alive(p)
    local stats = p:FindFirstChild("leaderstats")
    if h and stats and p:GetAttribute("ProfileReady") then
-    table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=Config.GetMagnetRadius(p:GetAttribute("MagnetLevel") or 0)})
+    table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=PlayerSystems.MagnetRadius(p)})
     -- Зелёная метка у киоска: зашёл в круг — меню магазина открылось (один раз на вход).
     for id, zonePart in pairs(shopZones) do
      local offset = root.Position - zonePart.Position
      local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
-     if inside and not insideZone[key] and (id ~= "neon" or stats.SpeedLevel.Value >= 3) then openMenu:FireClient(p, "upgrades", id) end
+     if inside and not insideZone[key] and (id ~= "neon" or stats.SpeedLevel.Value >= 3) then
+      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") else openMenu:FireClient(p, "upgrades", id) end
+     end
      insideZone[key] = inside or nil
     end
     if math.abs(root.Position.Z) <= 230 then
