@@ -218,17 +218,33 @@ local function renderMagnets()
 	if magnetTab == "magnets" then
 		local ownedTier = player:GetAttribute("MagnetTier") or 1
 		local equipped = player:GetAttribute("MagnetEquipped") or 1
+		-- 20 магнитов: прокручиваемая сетка по 5 в ряд.
+		local scroll = Instance.new("ScrollingFrame")
+		scroll.BackgroundTransparency = 1
+		scroll.BorderSizePixel = 0
+		scroll.Size = UDim2.fromScale(1, 1)
+		scroll.ScrollBarThickness = 8
+		scroll.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
+		scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		scroll.CanvasSize = UDim2.new()
+		scroll.Parent = area
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(112, 168)
+		grid.CellPadding = UDim2.fromOffset(8, 8)
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.Parent = scroll
 		for i, def in ipairs(ShopConfig.Magnets) do
 			local card = Instance.new("Frame")
-			card.Position = UDim2.fromOffset((i - 1) * 122, 0)
-			card.Size = UDim2.fromOffset(114, 312)
+			card.LayoutOrder = i
 			card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
-			card.Parent = area
+			card.Parent = scroll
 			corner(card, 14)
 			stroke(card, 3, def.Body)
-			magnetViewport(card, i, UDim2.fromOffset(4, 6), UDim2.fromOffset(106, 110))
-			label(card, def.Name, UDim2.fromOffset(4, 118), UDim2.fromOffset(106, 40), 16)
-			label(card, def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull", UDim2.fromOffset(4, 160), UDim2.fromOffset(106, 22), 14, def.Body)
+			label(card, "#" .. i, UDim2.fromOffset(6, 2), UDim2.fromOffset(30, 16), 12, Color3.fromRGB(200, 205, 220))
+			magnetViewport(card, i, UDim2.fromOffset(6, 6), UDim2.fromOffset(100, 78))
+			label(card, def.Name, UDim2.fromOffset(4, 84), UDim2.fromOffset(104, 30), 14)
+			label(card, def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull", UDim2.fromOffset(4, 112), UDim2.fromOffset(104, 16), 12, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
 			local text, color
 			if i == equipped then
 				text, color = "IN HAND", Color3.fromRGB(110, 110, 120)
@@ -239,14 +255,17 @@ local function renderMagnets()
 			else
 				text, color = "🔒 LOCKED", Color3.fromRGB(80, 80, 90)
 			end
-			local b = button(card, text, UDim2.fromOffset(8, 258), UDim2.fromOffset(98, 42), color)
-			b.TextSize = 15
+			local b = button(card, text, UDim2.fromOffset(8, 132), UDim2.fromOffset(96, 30), color)
+			b.TextSize = 13
 			b.Activated:Connect(function()
 				if i ~= equipped and i <= ownedTier + 1 then
 					buy:FireServer("magnettool", "magnets", i)
 				end
 			end)
 		end
+		-- Сразу показываем ряд со следующим магнитом для покупки.
+		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 5)
+		scroll.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 176)
 	elseif magnetTab == "upgrade" then
 		upgradeCard(area, "magnet", UDim2.fromOffset(0, 0), UDim2.fromOffset(196, 312))
 		local info = label(area, "Your pull radius = magnet upgrade + bonus of the magnet in your hand.\n\nHold the magnet (it is always in your hand) to collect coins from further away.", UDim2.fromOffset(220, 20), UDim2.fromOffset(380, 200), 18, Color3.fromRGB(220, 225, 235), Enum.Font.GothamMedium)
