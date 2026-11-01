@@ -14,31 +14,9 @@ workspace.Terrain:FillBlock(CFrame.new(250,-15,0),Vector3.new(1000,10,650),Enum.
 workspace.Terrain:FillBlock(CFrame.new(0,-6,0),Vector3.new(300,12,460),Enum.Material.Grass)
 workspace.Terrain:SetMaterialColor(Enum.Material.Grass,Color3.fromRGB(104,196,84))
 workspace.Terrain:SetMaterialColor(Enum.Material.Cobblestone,Color3.fromRGB(198,178,146))
--- Пруд и ручей: вода стоит ниже травы, вокруг песчаный берег.
--- Вода не вытесняет грунт, поэтому сначала вырезаем воздухом, затем наливаем.
-local T=workspace.Terrain
-local ponds={{-101,-33,17},{-88,-25,13}}
-for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-2,c[2]),4,c[3]+4,Enum.Material.Sand) end
-for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],1.5,c[2]),3,c[3]+3.5,Enum.Material.Air) end
-for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-4,c[2]),14,c[3],Enum.Material.Air) end
-for _,c in ipairs(ponds) do T:FillCylinder(CFrame.new(c[1],-5.6,c[2]),9.2,c[3],Enum.Material.Water) end
-T:FillBlock(CFrame.new(-95,-13,-29),Vector3.new(80,4,70),Enum.Material.Mud)
--- Ручей с гор на западе в пруд: точки русла, между ними шаг 2 студа.
-local stream={Vector3.new(-152,0,-120),Vector3.new(-140,0,-104),Vector3.new(-131,0,-84),Vector3.new(-126,0,-66),Vector3.new(-115,0,-50),Vector3.new(-108,0,-42)}
-local bed={}
-for i=1,#stream-1 do
- local a,b=stream[i],stream[i+1]
- local n=math.ceil((b-a).Magnitude/2)
- for k=0,n-1 do table.insert(bed,a:Lerp(b,k/n)) end
-end
--- Русло шире вокселя (4 студа), иначе трава закрывает воду целиком.
-for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,-3,p.Z),4,7,Enum.Material.Sand) end
-for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,1,p.Z),8,5.2,Enum.Material.Air) end
-for _,p in ipairs(bed) do T:FillCylinder(CFrame.new(p.X,-2.6,p.Z),2.4,5,Enum.Material.Water) end
--- Глубокая, но не прозрачная вода: иначе сквозь неё видно песчаное дно.
-workspace.Terrain.WaterColor=Color3.fromRGB(46,128,170)
-workspace.Terrain.WaterTransparency=0.35
-workspace.Terrain.WaterReflectance=0.6
+-- Пруд и ручей: рельеф и украшения в модуле Pond (вода ниже травы, песчаный берег).
+local Pond=require(script.Parent:WaitForChild("Pond"))
+Pond.Terrain()
 -- Grass belongs beside the paths, never through the plaza, shop or egg approach.
 for _,path in ipairs(world:GetChildren()) do
  if path:IsA("BasePart") and (string.find(path.Name,"Path",1,true) or path.Name=="ArrivalPlaza") then
@@ -64,6 +42,8 @@ if not world:GetAttribute("GroundAligned") then
  end
  world:SetAttribute("GroundAligned",true)
 end
+-- Камни, камыши, кувшинки, мостик и причал ставим уже на готовый рельеф.
+task.spawn(Pond.Decorate,world)
 local feedback = Instance.new("RemoteEvent")
 feedback.Name = "GameFeedback"
 feedback.Parent = ReplicatedStorage

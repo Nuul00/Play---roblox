@@ -172,8 +172,9 @@ local function updatePodiums(def,rows)
      podiumShown[key]=wanted
      local old=podium:FindFirstChild("Winner"..place)
      if old then old:Destroy() end
-     local tag=step:FindFirstChild("WinnerTag")
-     local tagText=tag and tag:FindFirstChild("PlayerName")
+     -- Имя победителя пишется на табличке спереди ступени (Plate1..3).
+     local plate=podium:FindFirstChild("Plate"..place)
+     local tagText=plate and plate:FindFirstChild("PlayerName",true)
      if tagText then tagText.Text=row and row.Name or "—" end
      local template=row and row.UserId>0 and avatarFor(row.UserId)
      if template then
