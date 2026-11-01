@@ -41,7 +41,7 @@ for i,entry in ipairs({{"speed","SPEED"},{"magnet","MAGNET"},{"income","COIN INC
  local status=text(card,"",10,70,149,130,16)
  cards[entry[1]]={status=status,button=button(card,"",9,235,151,52)}
 end
-local rarityColors={Common=Color3.fromRGB(182,203,190),Uncommon=Color3.fromRGB(128,218,147),Rare=Color3.fromRGB(110,179,255),Epic=Color3.fromRGB(198,135,255),Legendary=Color3.fromRGB(255,206,101),Mythic=Color3.fromRGB(255,126,191)}
+local rarityColors={Common=Color3.fromRGB(182,203,190),Uncommon=Color3.fromRGB(128,218,147),Rare=Color3.fromRGB(110,179,255),Epic=Color3.fromRGB(198,135,255),Legendary=Color3.fromRGB(255,206,101),Mythic=Color3.fromRGB(255,126,191),Secret=Color3.fromRGB(255,255,255)}
 local mode,zoneId,eggId,nearPart,dismissed
 local cells={}
 local busy=0
@@ -114,7 +114,7 @@ RS:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode,newZone,n
  mode="shop";zoneId=newZone
  local world=workspace.CoinSpeedWorld
  local zone=newZone=="neon" and world.NeonCity or world
- nearPart=zone.UpgradeShop.Counter
+ nearPart=zone.UpgradeShop:FindFirstChild("ShopZone") or zone.UpgradeShop.Counter
  title.Text="UPGRADE KIOSK";player:SetAttribute("UIScreen","shop")
  gallery.Visible=false;upgradePanel.Visible=true;action.Visible=false;detail.Visible=false;previous.Visible=false;nextPage.Visible=false;panel.Visible=true;refresh()
 end)
@@ -159,7 +159,15 @@ RunService.RenderStepped:Connect(function(dt)
  if scan>0.15 then
   scan=0
   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-  if mode=="shop" and panel.Visible and (not root or (root.Position-nearPart.Position).Magnitude>Config.ShopDistance+2) then hide() end
+  if mode=="shop" and panel.Visible then
+   -- Меню магазина закрывается, когда игрок вышел из зелёной метки (или отошёл от прилавка).
+   local far=not root
+   if root and nearPart.Name=="ShopZone" then
+    local o=root.Position-nearPart.Position
+    far=Vector2.new(o.X,o.Z).Magnitude>nearPart.Size.Z/2+3
+   elseif root then far=(root.Position-nearPart.Position).Magnitude>Config.ShopDistance+2 end
+   if far then hide() end
+  end
   -- Меню яйца открывается, только когда персонаж касается яйца, и закрывается, когда он отходит.
   local nearest,distance
   if root then

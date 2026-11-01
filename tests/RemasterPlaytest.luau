@@ -2,14 +2,14 @@
 task.spawn(function()
  local Config=require(game.ReplicatedStorage.GameConfig)
  local visuals=require(game.ReplicatedStorage.PetVisuals)
- assert(#Config.Eggs==6 and #Config.Pets==24)
+ assert(#Config.Eggs==6 and #Config.Pets==36)
  for _,egg in ipairs(Config.Eggs) do
   local actual={}
   for roll=1,100000 do local result=Config.RollEgg(egg.Id,roll);actual[result]=(actual[result] or 0)+1 end
   for _,entry in ipairs(egg.Pool) do assert(actual[entry.Pet]==entry.Weight,"Exact odds for "..egg.Name) end
-  assert(#egg.Pool==4)
+  assert(#egg.Pool==6)
  end
- print("[RemasterTest] EXACT ODDS PASS: 600000 rolls, 6 eggs x 4 pets")
+ print("[RemasterTest] EXACT ODDS PASS: 600000 rolls, 6 eggs x 6 pets")
  local seen={}
  for id=1,#Config.Pets do
   local visual=string.lower(Config.Pets[id].Visual)
@@ -19,7 +19,7 @@ task.spawn(function()
   assert(not model:FindFirstChildWhichIsA("LuaSourceContainer",true))
   model:Destroy()
  end
- print("[RemasterTest] PET MESHES PASS: all 24 pets build, every pet has its own model")
+ print("[RemasterTest] PET MESHES PASS: all 36 pets build, every pet has its own model")
  local p=game.Players:GetPlayers()[1]
  repeat task.wait(0.1) until p:GetAttribute("ProfileReady")
  local world=workspace.CoinSpeedWorld

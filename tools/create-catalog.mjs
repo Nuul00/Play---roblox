@@ -1,22 +1,23 @@
 import {writeFileSync,readFileSync} from 'node:fs';
-// Каждое яйцо — свои 4 питомца из разных моделей PetAssets (без повторов между яйцами).
+// Каждое яйцо — 6 своих питомцев из паков (ReplicatedStorage.PetModels, имя модели = Visual).
+// Обычные — простые звери одной серии, мифик — эффектный, секретка — самая редкая и необычная.
 // Чем дороже яйцо, тем сильнее питомцы и тем выше шанс редких.
-const rarities=['Common','Uncommon','Rare','Legendary'];
-const odds=[[60,30,9,1],[56,30,12,2],[52,30,14,4],[48,30,16,6],[44,30,18,8],[40,30,20,10]];
+const rarities=['Common','Uncommon','Rare','Epic','Mythic','Secret'];
+const odds=[[50,30,12,6,1.9,0.1],[46,30,14,7,2.9,0.1],[42,30,16,8,3.9,0.1],[40,30,17,9,3.9,0.1],[38,30,18,9,4.8,0.2],[35,30,19,10,5.7,0.3]];
 const powers=[1,2,4,7,12,20];
-const factors=[1.2,1.5,2,3.5];
+const factors=[1.2,1.5,2,3,6,15];
 const defs=[
- {Name:'Meadow Egg',World:'island',Price:50,Color:[106,205,151],Pets:[['Clover Bunny','Bunny'],['Field Mouse','Mouse'],['Mud Piggy','Piggy'],['Amber Fox','Fox']]},
- {Name:'Blossom Egg',World:'island',Price:250,Color:[255,155,166],Pets:[['Honey Pup','Dog'],['Garden Cat','Cat'],['Bandit Raccoon','Raccoon'],['Blossom Deer','Deer']]},
- {Name:'Ancient Egg',World:'island',Price:1000,Color:[100,205,227],Pets:[['Grizzly Bear','Bear'],['Moon Wolf','Wolf'],['Bamboo Panda','Panda'],['Ancient Unicorn','Unicorn']]},
- {Name:'Frost Egg',World:'neon',Price:2500,Color:[62,213,255],Pets:[['Ice Penguin','Penguin'],['Polar Bear','Polar Bear'],['Neon Reindeer','Reindeer'],['Sky Pegasus','Pegasus']]},
- {Name:'Shadow Egg',World:'neon',Price:10000,Color:[195,105,255],Pets:[['Night Bat','Bat'],['Web Spider','Spider'],['Phantom Spectre','Spectre'],['Volt Dragon','Dragon']]},
- {Name:'Galaxy Egg',World:'neon',Price:50000,Color:[255,116,207],Pets:[['Gummy Bear','Gummy Bear'],['Cosmo Dino','Dinosaur'],['Star Angel','Angel'],['Galaxy Phoenix','phoenix']],Top:'Mythic'},
+ {Name:'Meadow Egg',World:'island',Price:50,Color:[106,205,151],Pets:[['Meadow Bunny','Bunny'],['Meadow Pup','Dog'],['Meadow Kitty','Cat'],['Meadow Fox','Fox'],['Meadow Unicorn','Unicorn'],['Winged Fairy','Winged Fairy']]},
+ {Name:'Jungle Egg',World:'island',Price:250,Color:[120,200,90],Pets:[['Pond Frog','Frog'],['Blue Frog','Blue Frog'],['Red Frog','Red Frog'],['The Monkey','The Monkey'],['Jungle Platinum','Jungle Platinum'],['Jungle Saturn','Jungle Saturn']]},
+ {Name:'Coconut Egg',World:'island',Price:1000,Color:[214,170,110],Pets:[['Coconut Cat','Coconut Cat'],['Coconut Dog','Coconut Dog'],['Coconut Bunny','Coconut Bunny'],['Coconut Jellyfish','Coconut Jellyfish'],['The Big Coconut','The Big Coconut'],['Coconut Winged Lord','Coconut Winged Lord']]},
+ {Name:'Gummy Egg',World:'neon',Price:2500,Color:[255,120,190],Pets:[['Gummy Kitty','Gummy Kitty'],['Gummy Bunny','Gummy Bunny'],['Gummy Fox','Gummy Fox'],['Gummy Doggy','Gummy Doggy'],['Gummylord','Gummylord'],['Gummy Spacial Star','Gummy Spacial Star']]},
+ {Name:'Ice Cream Egg',World:'neon',Price:10000,Color:[150,220,255],Pets:[['Ice Cream Kitty','Ice Cream Kitty'],['Ice Cream Bunny','Ice Cream Bunny'],['Ice Cream Doggy','Ice Cream Doggy'],['Ice Cream Bat','Ice Cream Bat'],['Ice Cream Shock','Ice Cream Shock'],['Ice Cream Doubull','Ice Cream Doubull']]},
+ {Name:'Galactic Egg',World:'neon',Price:50000,Color:[160,110,255],Pets:[['Galactic Plushie','Galactic Plushie'],['Galactic Hedgehog','Galactic Hedgehog'],['Galactic Saturn','Galactic Saturn'],['Galactic Angel','Galactic Angel'],['Galactic Queen','Galactic Queen'],['Galactic Overlord','Galactic Overlord']]},
 ];
 const eggs=defs.map((d,i)=>({Id:i+1,Name:d.Name,World:d.World,Price:d.Price,X:(d.World==='island'?0:500)+40+(i%3)*31,Z:132,Color:d.Color,
- Pets:d.Pets.map(([Name,Visual],j)=>({Id:i*4+j+1,Name,Rarity:j===3&&d.Top?d.Top:rarities[j],Chance:odds[i][j],Visual,Multiplier:Number((powers[i]*factors[j]).toFixed(2)),
+ Pets:d.Pets.map(([Name,Visual],j)=>({Id:i*6+j+1,Name,Rarity:rarities[j],Chance:odds[i][j],Visual,Multiplier:Number((powers[i]*factors[j]).toFixed(2)),
   Color:d.Color.map((v,k)=>Math.min(255,Math.max(35,v+((j*31+k*17)%65)-25)))}))}));
-for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(total!==100) throw new Error(e.Name+' odds total '+total);}
+for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(Math.abs(total-100)>1e-9) throw new Error(e.Name+' odds total '+total);}
 writeFileSync('tools/catalog.json',JSON.stringify(eggs,null,2));
 const luaString=s=>JSON.stringify(s);
 const pets=eggs.flatMap(e=>e.Pets.map(p=>`[${p.Id}]={Name=${luaString(p.Name)},Rarity=${luaString(p.Rarity)},Multiplier=${p.Multiplier},Visual=${luaString(p.Visual)},Color=Color3.fromRGB(${p.Color}),EggId=${e.Id}},`)).join('\n');

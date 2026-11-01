@@ -14,9 +14,9 @@
     "Pets": [
       {
         "Id": 1,
-        "Name": "Clover Bunny",
+        "Name": "Meadow Bunny",
         "Rarity": "Common",
-        "Chance": 60,
+        "Chance": 50,
         "Visual": "Bunny",
         "Multiplier": 1.2,
         "Color": [
@@ -27,10 +27,10 @@
       },
       {
         "Id": 2,
-        "Name": "Field Mouse",
+        "Name": "Meadow Pup",
         "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Mouse",
+        "Visual": "Dog",
         "Multiplier": 1.5,
         "Color": [
           112,
@@ -40,10 +40,10 @@
       },
       {
         "Id": 3,
-        "Name": "Mud Piggy",
+        "Name": "Meadow Kitty",
         "Rarity": "Rare",
-        "Chance": 9,
-        "Visual": "Piggy",
+        "Chance": 12,
+        "Visual": "Cat",
         "Multiplier": 2,
         "Color": [
           143,
@@ -53,282 +53,412 @@
       },
       {
         "Id": 4,
-        "Name": "Amber Fox",
-        "Rarity": "Legendary",
-        "Chance": 1,
+        "Name": "Meadow Fox",
+        "Rarity": "Epic",
+        "Chance": 6,
         "Visual": "Fox",
-        "Multiplier": 3.5,
+        "Multiplier": 3,
         "Color": [
           109,
           225,
           188
+        ]
+      },
+      {
+        "Id": 5,
+        "Name": "Meadow Unicorn",
+        "Rarity": "Mythic",
+        "Chance": 1.9,
+        "Visual": "Unicorn",
+        "Multiplier": 6,
+        "Color": [
+          140,
+          191,
+          154
+        ]
+      },
+      {
+        "Id": 6,
+        "Name": "Winged Fairy",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Visual": "Winged Fairy",
+        "Multiplier": 15,
+        "Color": [
+          106,
+          222,
+          185
         ]
       }
     ]
   },
   {
     "Id": 2,
-    "Name": "Blossom Egg",
+    "Name": "Jungle Egg",
     "World": "island",
     "Price": 250,
     "X": 71,
     "Z": 132,
     "Color": [
-      255,
-      155,
-      166
+      120,
+      200,
+      90
     ],
     "Pets": [
       {
-        "Id": 5,
-        "Name": "Honey Pup",
+        "Id": 7,
+        "Name": "Pond Frog",
         "Rarity": "Common",
-        "Chance": 56,
-        "Visual": "Dog",
+        "Chance": 46,
+        "Visual": "Frog",
         "Multiplier": 2.4,
         "Color": [
-          230,
-          147,
-          175
-        ]
-      },
-      {
-        "Id": 6,
-        "Name": "Garden Cat",
-        "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Cat",
-        "Multiplier": 3,
-        "Color": [
-          255,
-          178,
-          141
-        ]
-      },
-      {
-        "Id": 7,
-        "Name": "Bandit Raccoon",
-        "Rarity": "Rare",
-        "Chance": 12,
-        "Visual": "Raccoon",
-        "Multiplier": 4,
-        "Color": [
-          255,
-          144,
-          172
+          95,
+          192,
+          99
         ]
       },
       {
         "Id": 8,
-        "Name": "Blossom Deer",
-        "Rarity": "Legendary",
-        "Chance": 2,
-        "Visual": "Deer",
-        "Multiplier": 7,
+        "Name": "Blue Frog",
+        "Rarity": "Uncommon",
+        "Chance": 30,
+        "Visual": "Blue Frog",
+        "Multiplier": 3,
         "Color": [
-          255,
-          175,
-          203
+          126,
+          223,
+          65
+        ]
+      },
+      {
+        "Id": 9,
+        "Name": "Red Frog",
+        "Rarity": "Rare",
+        "Chance": 14,
+        "Visual": "Red Frog",
+        "Multiplier": 4,
+        "Color": [
+          157,
+          189,
+          96
+        ]
+      },
+      {
+        "Id": 10,
+        "Name": "The Monkey",
+        "Rarity": "Epic",
+        "Chance": 7,
+        "Visual": "The Monkey",
+        "Multiplier": 6,
+        "Color": [
+          123,
+          220,
+          127
+        ]
+      },
+      {
+        "Id": 11,
+        "Name": "Jungle Platinum",
+        "Rarity": "Mythic",
+        "Chance": 2.9,
+        "Visual": "Jungle Platinum",
+        "Multiplier": 12,
+        "Color": [
+          154,
+          186,
+          93
+        ]
+      },
+      {
+        "Id": 12,
+        "Name": "Jungle Saturn",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Visual": "Jungle Saturn",
+        "Multiplier": 30,
+        "Color": [
+          120,
+          217,
+          124
         ]
       }
     ]
   },
   {
     "Id": 3,
-    "Name": "Ancient Egg",
+    "Name": "Coconut Egg",
     "World": "island",
     "Price": 1000,
     "X": 102,
     "Z": 132,
     "Color": [
-      100,
-      205,
-      227
+      214,
+      170,
+      110
     ],
     "Pets": [
       {
-        "Id": 9,
-        "Name": "Grizzly Bear",
+        "Id": 13,
+        "Name": "Coconut Cat",
         "Rarity": "Common",
-        "Chance": 52,
-        "Visual": "Bear",
+        "Chance": 42,
+        "Visual": "Coconut Cat",
         "Multiplier": 4.8,
         "Color": [
-          75,
-          197,
-          236
+          189,
+          162,
+          119
         ]
       },
       {
-        "Id": 10,
-        "Name": "Moon Wolf",
+        "Id": 14,
+        "Name": "Coconut Dog",
         "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Wolf",
+        "Visual": "Coconut Dog",
         "Multiplier": 6,
         "Color": [
-          106,
-          228,
-          202
+          220,
+          193,
+          85
         ]
       },
       {
-        "Id": 11,
-        "Name": "Bamboo Panda",
+        "Id": 15,
+        "Name": "Coconut Bunny",
         "Rarity": "Rare",
-        "Chance": 14,
-        "Visual": "Panda",
+        "Chance": 16,
+        "Visual": "Coconut Bunny",
         "Multiplier": 8,
         "Color": [
-          137,
-          194,
-          233
+          251,
+          159,
+          116
         ]
       },
       {
-        "Id": 12,
-        "Name": "Ancient Unicorn",
-        "Rarity": "Legendary",
-        "Chance": 4,
-        "Visual": "Unicorn",
-        "Multiplier": 14,
+        "Id": 16,
+        "Name": "Coconut Jellyfish",
+        "Rarity": "Epic",
+        "Chance": 8,
+        "Visual": "Coconut Jellyfish",
+        "Multiplier": 12,
         "Color": [
-          103,
-          225,
-          255
+          217,
+          190,
+          147
+        ]
+      },
+      {
+        "Id": 17,
+        "Name": "The Big Coconut",
+        "Rarity": "Mythic",
+        "Chance": 3.9,
+        "Visual": "The Big Coconut",
+        "Multiplier": 24,
+        "Color": [
+          248,
+          156,
+          113
+        ]
+      },
+      {
+        "Id": 18,
+        "Name": "Coconut Winged Lord",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Visual": "Coconut Winged Lord",
+        "Multiplier": 60,
+        "Color": [
+          214,
+          187,
+          144
         ]
       }
     ]
   },
   {
     "Id": 4,
-    "Name": "Frost Egg",
+    "Name": "Gummy Egg",
     "World": "neon",
     "Price": 2500,
     "X": 540,
     "Z": 132,
     "Color": [
-      62,
-      213,
-      255
+      255,
+      120,
+      190
     ],
     "Pets": [
       {
-        "Id": 13,
-        "Name": "Ice Penguin",
+        "Id": 19,
+        "Name": "Gummy Kitty",
         "Rarity": "Common",
-        "Chance": 48,
-        "Visual": "Penguin",
+        "Chance": 40,
+        "Visual": "Gummy Kitty",
         "Multiplier": 8.4,
         "Color": [
-          37,
-          205,
-          255
+          230,
+          112,
+          199
         ]
       },
       {
-        "Id": 14,
-        "Name": "Polar Bear",
+        "Id": 20,
+        "Name": "Gummy Bunny",
         "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Polar Bear",
+        "Visual": "Gummy Bunny",
         "Multiplier": 10.5,
         "Color": [
-          68,
-          236,
-          230
+          255,
+          143,
+          165
         ]
       },
       {
-        "Id": 15,
-        "Name": "Neon Reindeer",
+        "Id": 21,
+        "Name": "Gummy Fox",
         "Rarity": "Rare",
-        "Chance": 16,
-        "Visual": "Reindeer",
+        "Chance": 17,
+        "Visual": "Gummy Fox",
         "Multiplier": 14,
         "Color": [
-          99,
-          202,
-          255
+          255,
+          109,
+          196
         ]
       },
       {
-        "Id": 16,
-        "Name": "Sky Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 6,
-        "Visual": "Pegasus",
-        "Multiplier": 24.5,
+        "Id": 22,
+        "Name": "Gummy Doggy",
+        "Rarity": "Epic",
+        "Chance": 9,
+        "Visual": "Gummy Doggy",
+        "Multiplier": 21,
         "Color": [
-          65,
-          233,
-          255
+          255,
+          140,
+          227
+        ]
+      },
+      {
+        "Id": 23,
+        "Name": "Gummylord",
+        "Rarity": "Mythic",
+        "Chance": 3.9,
+        "Visual": "Gummylord",
+        "Multiplier": 42,
+        "Color": [
+          255,
+          106,
+          193
+        ]
+      },
+      {
+        "Id": 24,
+        "Name": "Gummy Spacial Star",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Visual": "Gummy Spacial Star",
+        "Multiplier": 105,
+        "Color": [
+          255,
+          137,
+          224
         ]
       }
     ]
   },
   {
     "Id": 5,
-    "Name": "Shadow Egg",
+    "Name": "Ice Cream Egg",
     "World": "neon",
     "Price": 10000,
     "X": 571,
     "Z": 132,
     "Color": [
-      195,
-      105,
+      150,
+      220,
       255
     ],
     "Pets": [
       {
-        "Id": 17,
-        "Name": "Night Bat",
+        "Id": 25,
+        "Name": "Ice Cream Kitty",
         "Rarity": "Common",
-        "Chance": 44,
-        "Visual": "Bat",
+        "Chance": 38,
+        "Visual": "Ice Cream Kitty",
         "Multiplier": 14.4,
         "Color": [
-          170,
-          97,
+          125,
+          212,
           255
         ]
       },
       {
-        "Id": 18,
-        "Name": "Web Spider",
+        "Id": 26,
+        "Name": "Ice Cream Bunny",
         "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Spider",
+        "Visual": "Ice Cream Bunny",
         "Multiplier": 18,
         "Color": [
-          201,
-          128,
+          156,
+          243,
           230
         ]
       },
       {
-        "Id": 19,
-        "Name": "Phantom Spectre",
+        "Id": 27,
+        "Name": "Ice Cream Doggy",
         "Rarity": "Rare",
         "Chance": 18,
-        "Visual": "Spectre",
+        "Visual": "Ice Cream Doggy",
         "Multiplier": 24,
         "Color": [
-          232,
-          94,
+          187,
+          209,
           255
         ]
       },
       {
-        "Id": 20,
-        "Name": "Volt Dragon",
-        "Rarity": "Legendary",
-        "Chance": 8,
-        "Visual": "Dragon",
-        "Multiplier": 42,
+        "Id": 28,
+        "Name": "Ice Cream Bat",
+        "Rarity": "Epic",
+        "Chance": 9,
+        "Visual": "Ice Cream Bat",
+        "Multiplier": 36,
         "Color": [
-          198,
-          125,
+          153,
+          240,
+          255
+        ]
+      },
+      {
+        "Id": 29,
+        "Name": "Ice Cream Shock",
+        "Rarity": "Mythic",
+        "Chance": 4.8,
+        "Visual": "Ice Cream Shock",
+        "Multiplier": 72,
+        "Color": [
+          184,
+          206,
+          255
+        ]
+      },
+      {
+        "Id": 30,
+        "Name": "Ice Cream Doubull",
+        "Rarity": "Secret",
+        "Chance": 0.2,
+        "Visual": "Ice Cream Doubull",
+        "Multiplier": 180,
+        "Color": [
+          150,
+          237,
           255
         ]
       }
@@ -336,67 +466,93 @@
   },
   {
     "Id": 6,
-    "Name": "Galaxy Egg",
+    "Name": "Galactic Egg",
     "World": "neon",
     "Price": 50000,
     "X": 602,
     "Z": 132,
     "Color": [
-      255,
-      116,
-      207
+      160,
+      110,
+      255
     ],
     "Pets": [
       {
-        "Id": 21,
-        "Name": "Gummy Bear",
+        "Id": 31,
+        "Name": "Galactic Plushie",
         "Rarity": "Common",
-        "Chance": 40,
-        "Visual": "Gummy Bear",
+        "Chance": 35,
+        "Visual": "Galactic Plushie",
         "Multiplier": 24,
         "Color": [
-          230,
-          108,
-          216
+          135,
+          102,
+          255
         ]
       },
       {
-        "Id": 22,
-        "Name": "Cosmo Dino",
+        "Id": 32,
+        "Name": "Galactic Hedgehog",
         "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Dinosaur",
+        "Visual": "Galactic Hedgehog",
         "Multiplier": 30,
         "Color": [
-          255,
-          139,
-          182
+          166,
+          133,
+          230
         ]
       },
       {
-        "Id": 23,
-        "Name": "Star Angel",
+        "Id": 33,
+        "Name": "Galactic Saturn",
         "Rarity": "Rare",
-        "Chance": 20,
-        "Visual": "Angel",
+        "Chance": 19,
+        "Visual": "Galactic Saturn",
         "Multiplier": 40,
         "Color": [
-          255,
-          105,
-          213
+          197,
+          99,
+          255
         ]
       },
       {
-        "Id": 24,
-        "Name": "Galaxy Phoenix",
-        "Rarity": "Mythic",
+        "Id": 34,
+        "Name": "Galactic Angel",
+        "Rarity": "Epic",
         "Chance": 10,
-        "Visual": "phoenix",
-        "Multiplier": 70,
+        "Visual": "Galactic Angel",
+        "Multiplier": 60,
         "Color": [
-          255,
-          136,
-          244
+          163,
+          130,
+          255
+        ]
+      },
+      {
+        "Id": 35,
+        "Name": "Galactic Queen",
+        "Rarity": "Mythic",
+        "Chance": 5.7,
+        "Visual": "Galactic Queen",
+        "Multiplier": 120,
+        "Color": [
+          194,
+          96,
+          255
+        ]
+      },
+      {
+        "Id": 36,
+        "Name": "Galactic Overlord",
+        "Rarity": "Secret",
+        "Chance": 0.3,
+        "Visual": "Galactic Overlord",
+        "Multiplier": 300,
+        "Color": [
+          160,
+          127,
+          255
         ]
       }
     ]

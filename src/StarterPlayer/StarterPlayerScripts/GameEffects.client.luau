@@ -295,13 +295,19 @@ for _,zone in ipairs({rootWorld,rootWorld:WaitForChild("NeonCity")}) do
   if coin:IsA("BasePart") and string.match(coin.Name,"^Coin_%d+$") then table.insert(nearbyCoins,coin) end
  end
 end
-task.spawn(function()
- while effectsFolder.Parent do
-  local root=localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-  for _,coin in ipairs(nearbyCoins) do
-   local label=coin:FindFirstChild("GameLabel")
-   if label then label.Enabled=root~=nil and coin:GetAttribute("Available")~=false and (root.Position-coin.Position).Magnitude<12 end
+-- Монеты крутятся и покачиваются только у клиента; сервер считает сбор по исходной позиции.
+local coinBase={}
+for i,coin in ipairs(nearbyCoins) do coinBase[coin]={cf=coin.CFrame,phase=i*0.7} end
+local coinClock=0
+local coinConnection=RunService.RenderStepped:Connect(function(dt)
+ coinClock=coinClock+dt
+ local camera=Workspace.CurrentCamera
+ local eye=camera and camera.CFrame.Position
+ for coin,base in pairs(coinBase) do
+  if coin.Parent and eye and (eye-base.cf.Position).Magnitude<160 then
+   local t=coinClock+base.phase
+   coin.CFrame=CFrame.new(base.cf.Position+Vector3.new(0,math.sin(t*2)*0.35,0))*CFrame.Angles(0,t*1.8,0)*base.cf.Rotation
   end
-  task.wait(0.12)
  end
 end)
+script.Destroying:Connect(function() coinConnection:Disconnect() end)

@@ -9,13 +9,30 @@ local city = world:WaitForChild("NeonCity")
 workspace.GlobalWind=Vector3.new(8,0,3)
 workspace.Terrain:FillBlock(CFrame.new(250,-15,0),Vector3.new(1000,10,650),Enum.Material.Water)
 workspace.Terrain:FillBlock(CFrame.new(0,-6,0),Vector3.new(300,12,460),Enum.Material.Grass)
-workspace.Terrain:SetMaterialColor(Enum.Material.Grass,Color3.fromRGB(86,155,82))
-workspace.Terrain:FillBlock(CFrame.new(-95,-2,-30),Vector3.new(48,4,56),Enum.Material.Water)
+workspace.Terrain:SetMaterialColor(Enum.Material.Grass,Color3.fromRGB(104,196,84))
+workspace.Terrain:SetMaterialColor(Enum.Material.Cobblestone,Color3.fromRGB(198,178,146))
+-- Пруд: овальная чаша с песчаным берегом (две пересекающиеся окружности).
+for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
+ workspace.Terrain:FillCylinder(CFrame.new(pond[1],-2,pond[2]),4,pond[3]+4,Enum.Material.Sand)
+end
+-- Вода не вытесняет твёрдый грунт: сначала вырезаем чашу воздухом, потом наливаем воду.
+for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
+ workspace.Terrain:FillCylinder(CFrame.new(pond[1],-6,pond[2]),12,pond[3],Enum.Material.Air)
+end
+for _,pond in ipairs({{-101,-33,19},{-88,-25,15}}) do
+ workspace.Terrain:FillCylinder(CFrame.new(pond[1],-6,pond[2]),12,pond[3],Enum.Material.Water)
+end
+workspace.Terrain:FillBlock(CFrame.new(-95,-14,-29),Vector3.new(80,4,70),Enum.Material.Mud)
+-- Глубокая, но не прозрачная вода: иначе сквозь неё видно песчаное дно.
+workspace.Terrain.WaterColor=Color3.fromRGB(46,128,170)
+workspace.Terrain.WaterTransparency=0.35
+workspace.Terrain.WaterReflectance=0.6
 -- Grass belongs beside the paths, never through the plaza, shop or egg approach.
 for _,path in ipairs(world:GetChildren()) do
  if path:IsA("BasePart") and (string.find(path.Name,"Path",1,true) or path.Name=="ArrivalPlaza") then
-  -- Песок шире самой дорожки: узкую полосу трава ландшафта закрывает целиком.
-  workspace.Terrain:FillBlock(CFrame.new(path.Position.X,-2,path.Position.Z),Vector3.new(path.Size.X+6,4,path.Size.Z+6),Enum.Material.Sand)
+  -- Дорожка — брусчатка ландшафта шире самой детали: поверхность рельефа выше детали-дорожки,
+  -- поэтому видно именно материал ландшафта, а узкую полосу трава закрыла бы целиком.
+  workspace.Terrain:FillBlock(CFrame.new(path.Position.X,-2,path.Position.Z),Vector3.new(path.Size.X+6,4,path.Size.Z+6),Enum.Material.Cobblestone)
  end
 end
 workspace.Terrain:FillBlock(CFrame.new(-45,-2,140),Vector3.new(31,4,24),Enum.Material.Ground)
@@ -115,13 +132,15 @@ local function shopPart(zone, mode, eggId)
   if not stand then return end
   return stand.Interact,stand.Interact:FindFirstChild("OpenEggMenu")
  end
- return zone.UpgradeShop.Counter, zone.UpgradeShop.Counter.OpenShop
+ local zonePart = zone.UpgradeShop:FindFirstChild("ShopZone")
+ if zonePart then return zonePart, nil end
+ return zone.UpgradeShop.Counter, zone.UpgradeShop.Counter:FindFirstChild("OpenShop")
 end
 for id,zone in pairs(zones) do
  local part,prompt=shopPart(zone,"upgrades")
- prompt.Triggered:Connect(function(p)
+ if prompt then prompt.Triggered:Connect(function(p)
   if interact(p,part,prompt,zone==city) then openMenu:FireClient(p,"upgrades",id) end
- end)
+ end) end
 end
 -- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
@@ -225,6 +244,14 @@ local neonX = city.Floor.Position.X
 portal(world, "PortalToNeon", Vector3.new(neonX, 3, 180), 3, "Neon District")
 portal(city, "PortalToIsland", Vector3.new(0, 3+groundY, 180), 0, "Meadow Isles")
 
+-- Метки магазина: Cylinder-деталь ShopZone внутри UpgradeShop (ось цилиндра — X, диаметр — Size.Z).
+local shopZones, insideZone = {}, {}
+for id, zone in pairs(zones) do
+ local zonePart = zone.UpgradeShop:FindFirstChild("ShopZone")
+ if zonePart then shopZones[id] = zonePart end
+end
+Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
+
 -- У каждой монеты одно серверное состояние для всех игроков.
 local records = {}
 for _, zone in ipairs({world, city}) do
@@ -238,23 +265,27 @@ for _, zone in ipairs({world, city}) do
   end
  end
 end
+-- Монета состоит из детали и её украшений (SurfaceGui, свет): прячем и показываем всё вместе.
+local function setCoinVisible(part, visible)
+ part.Transparency = visible and 0 or 1
+ for _, d in ipairs(part:GetDescendants()) do
+  if d:IsA("LayerCollector") or d:IsA("Light") or d:IsA("ParticleEmitter") then d.Enabled = visible end
+ end
+end
 local function collect(record, p)
  if not record.available then return end
  local stats = p:FindFirstChild("leaderstats")
  if not stats then return end
  record.available = false
  record.part:SetAttribute("Available", false)
- record.part.Transparency = 1
- local label = record.part:FindFirstChild("GameLabel")
- if label then label.Enabled = false end
+ setCoinVisible(record.part, false)
  local earned=record.value*Config.GetPetMultiplier(p:GetAttribute("PetLevel") or 0)*Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0)
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
  task.delay(Config.CoinRespawnSeconds, function()
   if record.part.Parent then
-   record.part.Transparency = 0
-   if label then label.Enabled = true end
+   setCoinVisible(record.part, true)
    record.available = true
    record.part:SetAttribute("Available", true)
   end
@@ -268,6 +299,14 @@ task.spawn(function()
    local stats = p:FindFirstChild("leaderstats")
    if h and stats and p:GetAttribute("ProfileReady") then
     table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=Config.GetMagnetRadius(p:GetAttribute("MagnetLevel") or 0)})
+    -- Зелёная метка у киоска: зашёл в круг — меню магазина открылось (один раз на вход).
+    for id, zonePart in pairs(shopZones) do
+     local offset = root.Position - zonePart.Position
+     local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
+     local key = id .. ":" .. p.UserId
+     if inside and not insideZone[key] and (id ~= "neon" or stats.SpeedLevel.Value >= 3) then openMenu:FireClient(p, "upgrades", id) end
+     insideZone[key] = inside or nil
+    end
     if math.abs(root.Position.Z) <= 230 then
      if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
      elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end

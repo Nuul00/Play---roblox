@@ -3,16 +3,22 @@ local Config=require(script.Parent:WaitForChild("GameConfig"))
 local PetVisuals={}
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
- local library=script.Parent:FindFirstChild("PetAssets")
- if library then
-  -- Visual совпадает с именем модели в PetAssets целиком: у каждого питомца своя модель.
-  -- Если такой модели нет (например, "phoenix"), рисуем запасного питомца из деталей ниже.
-  local selected
-  for _,template in ipairs(library:GetChildren()) do if string.lower(template.Name)==string.lower(def.Visual) then selected=template;break end end
+ -- Visual совпадает с именем модели целиком: сначала паки (PetModels), потом старые PetAssets.
+ -- Если модели нет, рисуем запасного питомца из деталей ниже.
+ local selected
+ for _,folderName in ipairs({"PetModels","PetAssets"}) do
+  local library=script.Parent:FindFirstChild(folderName)
+  if library and not selected then
+   for _,template in ipairs(library:GetChildren()) do if string.lower(template.Name)==string.lower(def.Visual) then selected=template;break end end
+  end
+ end
+ do
   if selected and selected:IsA("Model") and selected:FindFirstChildWhichIsA("BasePart",true) then
    local model=selected:Clone();model.Name=def.Name
    local size=model:GetExtentsSize()
-   model:ScaleTo(model:GetScale()*2.8/math.max(size.X,size.Y,size.Z,0.1))
+   -- Мифики и секретки крупнее обычных, чтобы редкость было видно сразу.
+   local target=({Mythic=3.6,Secret=4.3})[def.Rarity] or 2.8
+   model:ScaleTo(model:GetScale()*target/math.max(size.X,size.Y,size.Z,0.1))
    model:PivotTo(CFrame.identity)
    local parts={}
    for _,p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;table.insert(parts,{part=p,transparency=p.Transparency}) end end
