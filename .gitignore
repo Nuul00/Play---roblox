@@ -1,0 +1,11 @@
+# Временные файлы блокировки открытых проектов Roblox Studio.
+*.rbxl.lock
+*.rbxlx.lock
+
+# Инструменты
+sourcemap.json
+roblox.yml
+
+# ОС
+Thumbs.db
+.DS_Store
