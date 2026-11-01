@@ -1,4 +1,4 @@
--- Proximity egg gallery, searchable-by-egg collection index, and optional upgrade menu.
+-- Touch-to-open egg gallery, searchable-by-egg collection index, and optional upgrade menu.
 local Players=game:GetService("Players")
 local RS=game:GetService("ReplicatedStorage")
 local RunService=game:GetService("RunService")
@@ -137,14 +137,16 @@ local world=workspace:WaitForChild("CoinSpeedWorld")
 for id,egg in ipairs(Config.Eggs) do
  local zone=egg.World=="neon" and world:WaitForChild("NeonCity") or world
  local stand=zone:WaitForChild("EggStand"..id)
- eggDisplays[id]={model=stand.EggDisplay,base=stand.EggDisplay:GetPivot(),part=stand.Interact}
+ local size=stand.EggDisplay:GetExtentsSize()
+ eggDisplays[id]={model=stand.EggDisplay,base=stand.EggDisplay:GetPivot(),part=stand.Interact,radius=math.max(size.X,size.Z)/2}
 end
 RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(id,count,sourceEgg)
  if not Config.Pets[id] then return end
  panel.Visible=false;mode=nil;dismissed=sourceEgg
  player:SetAttribute("UIScreen","hatch")
  if revealModel then revealModel:Destroy() end
- revealModel=eggDisplays[sourceEgg].model:Clone();revealModel.Parent=revealScene;revealModel:PivotTo(CFrame.identity)
+ revealModel=eggDisplays[sourceEgg].model:Clone();revealModel.Parent=revealScene
+ revealModel:ScaleTo(revealModel:GetScale()*3.3/math.max(revealModel:GetExtentsSize().Y,0.1));revealModel:PivotTo(CFrame.identity)
  resultId=id;resultCount=count;hatchStart=os.clock();finished=false
  revealTitle.Text="HATCHING…";resultText.Text="A new companion awaits";reveal.Visible=true;busy=os.clock()+4.2
 end)
@@ -158,8 +160,16 @@ RunService.RenderStepped:Connect(function(dt)
   scan=0
   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
   if mode=="shop" and panel.Visible and (not root or (root.Position-nearPart.Position).Magnitude>Config.ShopDistance+2) then hide() end
+  -- Меню яйца открывается, только когда персонаж касается яйца, и закрывается, когда он отходит.
   local nearest,distance
-  if root then for id,entry in pairs(eggDisplays) do local d=(root.Position-entry.part.Position).Magnitude;if d<11 and (not distance or d<distance) then nearest=id;distance=d end end end
+  if root then
+   for id,entry in pairs(eggDisplays) do
+    local offset=root.Position-entry.base.Position
+    local d=Vector2.new(offset.X,offset.Z).Magnitude-entry.radius
+    local limit=(mode=="egg" and eggId==id) and 5 or 2.2
+    if d<limit and math.abs(offset.Y)<entry.radius*2+4 and (not distance or d<distance) then nearest=id;distance=d end
+   end
+  end
   if not nearest then
    dismissed=nil
    if mode=="egg" then hide();dismissed=nil end

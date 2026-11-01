@@ -5,11 +5,10 @@ function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
  local library=script.Parent:FindFirstChild("PetAssets")
  if library then
-  local templates=library:GetChildren()
-  table.sort(templates,function(a,b) return a.Name<b.Name end)
+  -- Visual совпадает с именем модели в PetAssets целиком: у каждого питомца своя модель.
+  -- Если такой модели нет (например, "phoenix"), рисуем запасного питомца из деталей ниже.
   local selected
-  for _,template in ipairs(templates) do if string.find(string.lower(template.Name),def.Visual,1,true) then selected=template;break end end
-  selected=selected or templates[(id-1)%math.max(#templates,1)+1]
+  for _,template in ipairs(library:GetChildren()) do if string.lower(template.Name)==string.lower(def.Visual) then selected=template;break end end
   if selected and selected:IsA("Model") and selected:FindFirstChildWhichIsA("BasePart",true) then
    local model=selected:Clone();model.Name=def.Name
    local size=model:GetExtentsSize()
@@ -43,7 +42,7 @@ function PetVisuals.Build(id)
   piece("Paw",Vector3.new(0.46,0.36,0.58),Vector3.new(side*0.55,-0.67,-0.31),cream,"ball")
  end
  piece("Nose",Vector3.new(0.15,0.12,0.1),Vector3.new(0,0.02,-0.93),dark,"ball")
- local kind=def.Visual
+ local kind=string.lower(def.Visual)
  if kind=="bunny" then
   for _,side in ipairs({-1,1}) do
    piece("LongEar",Vector3.new(0.46,1.35,0.48),Vector3.new(side*0.43,1.16,0),c,"ball",CFrame.Angles(0,0,-side*0.12))

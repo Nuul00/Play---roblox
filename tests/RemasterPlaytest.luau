@@ -2,21 +2,24 @@
 task.spawn(function()
  local Config=require(game.ReplicatedStorage.GameConfig)
  local visuals=require(game.ReplicatedStorage.PetVisuals)
- assert(#Config.Eggs==6 and #Config.Pets==60)
+ assert(#Config.Eggs==6 and #Config.Pets==24)
  for _,egg in ipairs(Config.Eggs) do
   local actual={}
   for roll=1,100000 do local result=Config.RollEgg(egg.Id,roll);actual[result]=(actual[result] or 0)+1 end
   for _,entry in ipairs(egg.Pool) do assert(actual[entry.Pet]==entry.Weight,"Exact odds for "..egg.Name) end
-  assert(Config.Pets[Config.RollEgg(egg.Id,100000)].Rarity=="Mythic")
+  assert(#egg.Pool==4)
  end
- print("[RemasterTest] EXACT ODDS PASS: 600000 rolls, 6 eggs, mythic 0.001 percent")
+ print("[RemasterTest] EXACT ODDS PASS: 600000 rolls, 6 eggs x 4 pets")
+ local seen={}
  for id=1,#Config.Pets do
+  local visual=string.lower(Config.Pets[id].Visual)
+  assert(not seen[visual],"Each pet needs its own model: "..visual);seen[visual]=true
   local model,parts=visuals.Build(id)
-  assert(#parts>0 and (model:FindFirstChildWhichIsA("MeshPart",true) or model:FindFirstChildWhichIsA("SpecialMesh",true)),"Imported model for "..id)
+  assert(#parts>0,"Model for "..id)
   assert(not model:FindFirstChildWhichIsA("LuaSourceContainer",true))
   model:Destroy()
  end
- print("[RemasterTest] PET MESHES PASS: all 60 catalog entries build from imported geometry")
+ print("[RemasterTest] PET MESHES PASS: all 24 pets build, every pet has its own model")
  local p=game.Players:GetPlayers()[1]
  repeat task.wait(0.1) until p:GetAttribute("ProfileReady")
  local world=workspace.CoinSpeedWorld
@@ -26,16 +29,19 @@ task.spawn(function()
   local zone=egg.World=="neon" and world.NeonCity or world
   local stand=zone["EggStand"..id]
   assert(not stand:FindFirstChild("EggSign") and not stand:FindFirstChild("Pedestal"))
+  assert(not stand.Interact:FindFirstChildWhichIsA("ProximityPrompt"),"Eggs open by touch, no E prompt")
+  assert(stand.EggDisplay:GetExtentsSize().Y>6,"Egg must be large")
+  assert(zone:FindFirstChild("EggSpurPath"..id),"Path to egg")
  end
  print("[RemasterTest] WORLD STRUCTURE PASS: hidden spawn, no plaques or egg platforms")
  p.leaderstats.Coins.Value=5000
- p.Character:PivotTo(CFrame.new(40,3,141))
+ p.Character:PivotTo(CFrame.new(40,3,136.5))
  local before=p:GetAttribute("EggsOpened") or 0
- print("[RemasterTest] BUY EGG 1 NOW: proximity gallery should be visible")
+ print("[RemasterTest] BUY EGG 1 NOW: the gallery opens because the character touches the egg")
  repeat task.wait(0.1) until (p:GetAttribute("EggsOpened") or 0)>before
- assert(p.leaderstats.Coins.Value==4875,"Meadow egg must cost 125")
+ assert(p.leaderstats.Coins.Value==5000-Config.Eggs[1].Cost,"Meadow egg price")
  assert((p:GetAttribute("PetLevel") or 0)>0)
- print("[RemasterTest] HATCH PRICE PASS: 125 coins, owned pet and strongest equipped")
+ print("[RemasterTest] HATCH PRICE PASS: "..Config.Eggs[1].Cost.." coins, owned pet and strongest equipped")
  task.wait(5)
  local value=p.leaderstats.Coins.Value
  local coin=world.Coin_1

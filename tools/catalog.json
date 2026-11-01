@@ -3,7 +3,7 @@
     "Id": 1,
     "Name": "Meadow Egg",
     "World": "island",
-    "Price": 125,
+    "Price": 50,
     "X": 40,
     "Z": 132,
     "Color": [
@@ -16,9 +16,9 @@
         "Id": 1,
         "Name": "Clover Bunny",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 1.15,
+        "Chance": 60,
+        "Visual": "Bunny",
+        "Multiplier": 1.2,
         "Color": [
           81,
           197,
@@ -27,11 +27,11 @@
       },
       {
         "Id": 2,
-        "Name": "Honey Pup",
-        "Rarity": "Common",
+        "Name": "Field Mouse",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 1.25,
+        "Visual": "Mouse",
+        "Multiplier": 1.5,
         "Color": [
           112,
           228,
@@ -40,11 +40,11 @@
       },
       {
         "Id": 3,
-        "Name": "Meadow Cat",
-        "Rarity": "Uncommon",
-        "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 1.5,
+        "Name": "Mud Piggy",
+        "Rarity": "Rare",
+        "Chance": 9,
+        "Visual": "Piggy",
+        "Multiplier": 2,
         "Color": [
           143,
           194,
@@ -53,93 +53,15 @@
       },
       {
         "Id": 4,
-        "Name": "Acorn Fox",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 1.7,
+        "Name": "Amber Fox",
+        "Rarity": "Legendary",
+        "Chance": 1,
+        "Visual": "Fox",
+        "Multiplier": 3.5,
         "Color": [
           109,
           225,
           188
-        ]
-      },
-      {
-        "Id": 5,
-        "Name": "Moss Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 2,
-        "Color": [
-          140,
-          191,
-          154
-        ]
-      },
-      {
-        "Id": 6,
-        "Name": "Bloom Deer",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 2.6,
-        "Color": [
-          106,
-          222,
-          185
-        ]
-      },
-      {
-        "Id": 7,
-        "Name": "Fern Deer",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 3.2,
-        "Color": [
-          137,
-          188,
-          151
-        ]
-      },
-      {
-        "Id": 8,
-        "Name": "Golden Stag",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 5,
-        "Color": [
-          103,
-          219,
-          182
-        ]
-      },
-      {
-        "Id": 9,
-        "Name": "Sun Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 7,
-        "Color": [
-          134,
-          185,
-          148
-        ]
-      },
-      {
-        "Id": 10,
-        "Name": "World Tree Spirit",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 12,
-        "Color": [
-          100,
-          216,
-          179
         ]
       }
     ]
@@ -148,7 +70,7 @@
     "Id": 2,
     "Name": "Blossom Egg",
     "World": "island",
-    "Price": 150,
+    "Price": 250,
     "X": 71,
     "Z": 132,
     "Color": [
@@ -158,12 +80,12 @@
     ],
     "Pets": [
       {
-        "Id": 11,
-        "Name": "Peach Kitten",
+        "Id": 5,
+        "Name": "Honey Pup",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 2.3,
+        "Chance": 56,
+        "Visual": "Dog",
+        "Multiplier": 2.4,
         "Color": [
           230,
           147,
@@ -171,12 +93,12 @@
         ]
       },
       {
-        "Id": 12,
-        "Name": "Berry Bunny",
-        "Rarity": "Common",
+        "Id": 6,
+        "Name": "Garden Cat",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 2.5,
+        "Visual": "Cat",
+        "Multiplier": 3,
         "Color": [
           255,
           178,
@@ -184,12 +106,12 @@
         ]
       },
       {
-        "Id": 13,
-        "Name": "Rose Panda",
-        "Rarity": "Uncommon",
-        "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 3,
+        "Id": 7,
+        "Name": "Bandit Raccoon",
+        "Rarity": "Rare",
+        "Chance": 12,
+        "Visual": "Raccoon",
+        "Multiplier": 4,
         "Color": [
           255,
           144,
@@ -197,94 +119,16 @@
         ]
       },
       {
-        "Id": 14,
-        "Name": "Tulip Fox",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 3.4,
+        "Id": 8,
+        "Name": "Blossom Deer",
+        "Rarity": "Legendary",
+        "Chance": 2,
+        "Visual": "Deer",
+        "Multiplier": 7,
         "Color": [
           255,
           175,
           203
-        ]
-      },
-      {
-        "Id": 15,
-        "Name": "Orchid Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 4,
-        "Color": [
-          255,
-          141,
-          169
-        ]
-      },
-      {
-        "Id": 16,
-        "Name": "Blossom Drake",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 5.2,
-        "Color": [
-          255,
-          172,
-          200
-        ]
-      },
-      {
-        "Id": 17,
-        "Name": "Lotus Kirin",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 6.4,
-        "Color": [
-          255,
-          138,
-          166
-        ]
-      },
-      {
-        "Id": 18,
-        "Name": "Amber Bear",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 10,
-        "Color": [
-          252,
-          169,
-          197
-        ]
-      },
-      {
-        "Id": 19,
-        "Name": "Spring Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 14,
-        "Color": [
-          255,
-          135,
-          163
-        ]
-      },
-      {
-        "Id": 20,
-        "Name": "Celestial Blossom",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 24,
-        "Color": [
-          249,
-          166,
-          194
         ]
       }
     ]
@@ -303,12 +147,12 @@
     ],
     "Pets": [
       {
-        "Id": 21,
-        "Name": "Crystal Cub",
+        "Id": 9,
+        "Name": "Grizzly Bear",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 3.45,
+        "Chance": 52,
+        "Visual": "Bear",
+        "Multiplier": 4.8,
         "Color": [
           75,
           197,
@@ -316,12 +160,12 @@
         ]
       },
       {
-        "Id": 22,
-        "Name": "Jade Bunny",
-        "Rarity": "Common",
+        "Id": 10,
+        "Name": "Moon Wolf",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 3.75,
+        "Visual": "Wolf",
+        "Multiplier": 6,
         "Color": [
           106,
           228,
@@ -329,12 +173,12 @@
         ]
       },
       {
-        "Id": 23,
-        "Name": "Emerald Fox",
-        "Rarity": "Uncommon",
+        "Id": 11,
+        "Name": "Bamboo Panda",
+        "Rarity": "Rare",
         "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 4.5,
+        "Visual": "Panda",
+        "Multiplier": 8,
         "Color": [
           137,
           194,
@@ -342,93 +186,15 @@
         ]
       },
       {
-        "Id": 24,
-        "Name": "Pearl Panda",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 5.1,
+        "Id": 12,
+        "Name": "Ancient Unicorn",
+        "Rarity": "Legendary",
+        "Chance": 4,
+        "Visual": "Unicorn",
+        "Multiplier": 14,
         "Color": [
           103,
           225,
-          255
-        ]
-      },
-      {
-        "Id": 25,
-        "Name": "Sapphire Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 6,
-        "Color": [
-          134,
-          191,
-          230
-        ]
-      },
-      {
-        "Id": 26,
-        "Name": "Prism Dragon",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 7.8,
-        "Color": [
-          100,
-          222,
-          255
-        ]
-      },
-      {
-        "Id": 27,
-        "Name": "Amethyst Kirin",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 9.6,
-        "Color": [
-          131,
-          188,
-          227
-        ]
-      },
-      {
-        "Id": 28,
-        "Name": "Diamond Bear",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 15,
-        "Color": [
-          97,
-          219,
-          255
-        ]
-      },
-      {
-        "Id": 29,
-        "Name": "Aurora Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 21,
-        "Color": [
-          128,
-          185,
-          224
-        ]
-      },
-      {
-        "Id": 30,
-        "Name": "Ancient Forest God",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 36,
-        "Color": [
-          94,
-          216,
           255
         ]
       }
@@ -436,7 +202,7 @@
   },
   {
     "Id": 4,
-    "Name": "Circuit Egg",
+    "Name": "Frost Egg",
     "World": "neon",
     "Price": 2500,
     "X": 540,
@@ -448,12 +214,12 @@
     ],
     "Pets": [
       {
-        "Id": 31,
-        "Name": "Byte Cat",
+        "Id": 13,
+        "Name": "Ice Penguin",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 4.6,
+        "Chance": 48,
+        "Visual": "Penguin",
+        "Multiplier": 8.4,
         "Color": [
           37,
           205,
@@ -461,12 +227,12 @@
         ]
       },
       {
-        "Id": 32,
-        "Name": "Circuit Pup",
-        "Rarity": "Common",
+        "Id": 14,
+        "Name": "Polar Bear",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 5,
+        "Visual": "Polar Bear",
+        "Multiplier": 10.5,
         "Color": [
           68,
           236,
@@ -474,12 +240,12 @@
         ]
       },
       {
-        "Id": 33,
-        "Name": "Pixel Fox",
-        "Rarity": "Uncommon",
-        "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 6,
+        "Id": 15,
+        "Name": "Neon Reindeer",
+        "Rarity": "Rare",
+        "Chance": 16,
+        "Visual": "Reindeer",
+        "Multiplier": 14,
         "Color": [
           99,
           202,
@@ -487,93 +253,15 @@
         ]
       },
       {
-        "Id": 34,
-        "Name": "Laser Bunny",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 6.8,
+        "Id": 16,
+        "Name": "Sky Pegasus",
+        "Rarity": "Legendary",
+        "Chance": 6,
+        "Visual": "Pegasus",
+        "Multiplier": 24.5,
         "Color": [
           65,
           233,
-          255
-        ]
-      },
-      {
-        "Id": 35,
-        "Name": "Holo Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 8,
-        "Color": [
-          96,
-          199,
-          255
-        ]
-      },
-      {
-        "Id": 36,
-        "Name": "Volt Dragon",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 10.4,
-        "Color": [
-          62,
-          230,
-          255
-        ]
-      },
-      {
-        "Id": 37,
-        "Name": "Cyber Deer",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 12.8,
-        "Color": [
-          93,
-          196,
-          255
-        ]
-      },
-      {
-        "Id": 38,
-        "Name": "Solar Bear",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 20,
-        "Color": [
-          59,
-          227,
-          255
-        ]
-      },
-      {
-        "Id": 39,
-        "Name": "Nova Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 28,
-        "Color": [
-          90,
-          193,
-          252
-        ]
-      },
-      {
-        "Id": 40,
-        "Name": "Quantum Spirit",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 48,
-        "Color": [
-          56,
-          224,
           255
         ]
       }
@@ -581,7 +269,7 @@
   },
   {
     "Id": 5,
-    "Name": "Plasma Egg",
+    "Name": "Shadow Egg",
     "World": "neon",
     "Price": 10000,
     "X": 571,
@@ -593,12 +281,12 @@
     ],
     "Pets": [
       {
-        "Id": 41,
-        "Name": "Ion Bunny",
+        "Id": 17,
+        "Name": "Night Bat",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 5.75,
+        "Chance": 44,
+        "Visual": "Bat",
+        "Multiplier": 14.4,
         "Color": [
           170,
           97,
@@ -606,12 +294,12 @@
         ]
       },
       {
-        "Id": 42,
-        "Name": "Plasma Cat",
-        "Rarity": "Common",
+        "Id": 18,
+        "Name": "Web Spider",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 6.25,
+        "Visual": "Spider",
+        "Multiplier": 18,
         "Color": [
           201,
           128,
@@ -619,12 +307,12 @@
         ]
       },
       {
-        "Id": 43,
-        "Name": "Chrome Fox",
-        "Rarity": "Uncommon",
-        "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 7.5,
+        "Id": 19,
+        "Name": "Phantom Spectre",
+        "Rarity": "Rare",
+        "Chance": 18,
+        "Visual": "Spectre",
+        "Multiplier": 24,
         "Color": [
           232,
           94,
@@ -632,93 +320,15 @@
         ]
       },
       {
-        "Id": 44,
-        "Name": "Glitch Panda",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 8.5,
+        "Id": 20,
+        "Name": "Volt Dragon",
+        "Rarity": "Legendary",
+        "Chance": 8,
+        "Visual": "Dragon",
+        "Multiplier": 42,
         "Color": [
           198,
           125,
-          255
-        ]
-      },
-      {
-        "Id": 45,
-        "Name": "Pulse Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 10,
-        "Color": [
-          229,
-          91,
-          255
-        ]
-      },
-      {
-        "Id": 46,
-        "Name": "Vortex Dragon",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 13,
-        "Color": [
-          195,
-          122,
-          255
-        ]
-      },
-      {
-        "Id": 47,
-        "Name": "Neon Kirin",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 16,
-        "Color": [
-          226,
-          88,
-          255
-        ]
-      },
-      {
-        "Id": 48,
-        "Name": "Cosmic Bear",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 25,
-        "Color": [
-          192,
-          119,
-          255
-        ]
-      },
-      {
-        "Id": 49,
-        "Name": "Supernova Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 35,
-        "Color": [
-          223,
-          85,
-          252
-        ]
-      },
-      {
-        "Id": 50,
-        "Name": "Singularity",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 60,
-        "Color": [
-          189,
-          116,
           255
         ]
       }
@@ -738,12 +348,12 @@
     ],
     "Pets": [
       {
-        "Id": 51,
-        "Name": "Star Cub",
+        "Id": 21,
+        "Name": "Gummy Bear",
         "Rarity": "Common",
-        "Chance": 32,
-        "Visual": "bunny",
-        "Multiplier": 6.9,
+        "Chance": 40,
+        "Visual": "Gummy Bear",
+        "Multiplier": 24,
         "Color": [
           230,
           108,
@@ -751,12 +361,12 @@
         ]
       },
       {
-        "Id": 52,
-        "Name": "Void Bunny",
-        "Rarity": "Common",
+        "Id": 22,
+        "Name": "Cosmo Dino",
+        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "dog",
-        "Multiplier": 7.5,
+        "Visual": "Dinosaur",
+        "Multiplier": 30,
         "Color": [
           255,
           139,
@@ -764,12 +374,12 @@
         ]
       },
       {
-        "Id": 53,
-        "Name": "Astro Fox",
-        "Rarity": "Uncommon",
-        "Chance": 14,
-        "Visual": "cat",
-        "Multiplier": 9,
+        "Id": 23,
+        "Name": "Star Angel",
+        "Rarity": "Rare",
+        "Chance": 20,
+        "Visual": "Angel",
+        "Multiplier": 40,
         "Color": [
           255,
           105,
@@ -777,94 +387,16 @@
         ]
       },
       {
-        "Id": 54,
-        "Name": "Lunar Panda",
-        "Rarity": "Uncommon",
-        "Chance": 12,
-        "Visual": "fox",
-        "Multiplier": 10.2,
+        "Id": 24,
+        "Name": "Galaxy Phoenix",
+        "Rarity": "Mythic",
+        "Chance": 10,
+        "Visual": "phoenix",
+        "Multiplier": 70,
         "Color": [
           255,
           136,
           244
-        ]
-      },
-      {
-        "Id": 55,
-        "Name": "Comet Penguin",
-        "Rarity": "Rare",
-        "Chance": 7,
-        "Visual": "penguin",
-        "Multiplier": 12,
-        "Color": [
-          255,
-          102,
-          210
-        ]
-      },
-      {
-        "Id": 56,
-        "Name": "Orbit Dragon",
-        "Rarity": "Epic",
-        "Chance": 2.4,
-        "Visual": "dragon",
-        "Multiplier": 15.6,
-        "Color": [
-          255,
-          133,
-          241
-        ]
-      },
-      {
-        "Id": 57,
-        "Name": "Galaxy Deer",
-        "Rarity": "Epic",
-        "Chance": 1.499,
-        "Visual": "deer",
-        "Multiplier": 19.2,
-        "Color": [
-          255,
-          99,
-          207
-        ]
-      },
-      {
-        "Id": 58,
-        "Name": "Celestial Bear",
-        "Rarity": "Legendary",
-        "Chance": 1,
-        "Visual": "bear",
-        "Multiplier": 30,
-        "Color": [
-          252,
-          130,
-          238
-        ]
-      },
-      {
-        "Id": 59,
-        "Name": "Eternal Pegasus",
-        "Rarity": "Legendary",
-        "Chance": 0.1,
-        "Visual": "pegasus",
-        "Multiplier": 42,
-        "Color": [
-          255,
-          96,
-          204
-        ]
-      },
-      {
-        "Id": 60,
-        "Name": "Astral Sovereign",
-        "Rarity": "Mythic",
-        "Chance": 0.001,
-        "Visual": "spectre",
-        "Multiplier": 72,
-        "Color": [
-          249,
-          127,
-          235
         ]
       }
     ]

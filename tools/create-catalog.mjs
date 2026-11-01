@@ -1,18 +1,22 @@
 import {writeFileSync,readFileSync} from 'node:fs';
-const odds=[32,30,14,12,7,2.4,1.499,1,0.1,0.001];
-const rarities=['Common','Common','Uncommon','Uncommon','Rare','Epic','Epic','Legendary','Legendary','Mythic'];
-const names=[
- ['Clover Bunny','Honey Pup','Meadow Cat','Acorn Fox','Moss Owl','Bloom Deer','Fern Griffin','Golden Stag','Sun Phoenix','World Tree Spirit'],
- ['Peach Kitten','Berry Bunny','Rose Panda','Tulip Fox','Orchid Owl','Blossom Drake','Lotus Kirin','Amber Lion','Spring Phoenix','Celestial Blossom'],
- ['Crystal Cub','Jade Bunny','Emerald Fox','Pearl Panda','Sapphire Owl','Prism Dragon','Amethyst Kirin','Diamond Lion','Aurora Phoenix','Ancient Forest God'],
- ['Byte Cat','Circuit Pup','Pixel Fox','Laser Bunny','Holo Owl','Volt Dragon','Cyber Griffin','Solar Lion','Nova Phoenix','Quantum Spirit'],
- ['Ion Bunny','Plasma Cat','Chrome Fox','Glitch Panda','Pulse Owl','Vortex Dragon','Neon Kirin','Cosmic Lion','Supernova Phoenix','Singularity'],
- ['Star Cub','Void Bunny','Astro Fox','Lunar Panda','Comet Owl','Orbit Dragon','Galaxy Griffin','Celestial Lion','Eternal Phoenix','Astral Sovereign']
+// Каждое яйцо — свои 4 питомца из разных моделей PetAssets (без повторов между яйцами).
+// Чем дороже яйцо, тем сильнее питомцы и тем выше шанс редких.
+const rarities=['Common','Uncommon','Rare','Legendary'];
+const odds=[[60,30,9,1],[56,30,12,2],[52,30,14,4],[48,30,16,6],[44,30,18,8],[40,30,20,10]];
+const powers=[1,2,4,7,12,20];
+const factors=[1.2,1.5,2,3.5];
+const defs=[
+ {Name:'Meadow Egg',World:'island',Price:50,Color:[106,205,151],Pets:[['Clover Bunny','Bunny'],['Field Mouse','Mouse'],['Mud Piggy','Piggy'],['Amber Fox','Fox']]},
+ {Name:'Blossom Egg',World:'island',Price:250,Color:[255,155,166],Pets:[['Honey Pup','Dog'],['Garden Cat','Cat'],['Bandit Raccoon','Raccoon'],['Blossom Deer','Deer']]},
+ {Name:'Ancient Egg',World:'island',Price:1000,Color:[100,205,227],Pets:[['Grizzly Bear','Bear'],['Moon Wolf','Wolf'],['Bamboo Panda','Panda'],['Ancient Unicorn','Unicorn']]},
+ {Name:'Frost Egg',World:'neon',Price:2500,Color:[62,213,255],Pets:[['Ice Penguin','Penguin'],['Polar Bear','Polar Bear'],['Neon Reindeer','Reindeer'],['Sky Pegasus','Pegasus']]},
+ {Name:'Shadow Egg',World:'neon',Price:10000,Color:[195,105,255],Pets:[['Night Bat','Bat'],['Web Spider','Spider'],['Phantom Spectre','Spectre'],['Volt Dragon','Dragon']]},
+ {Name:'Galaxy Egg',World:'neon',Price:50000,Color:[255,116,207],Pets:[['Gummy Bear','Gummy Bear'],['Cosmo Dino','Dinosaur'],['Star Angel','Angel'],['Galaxy Phoenix','phoenix']],Top:'Mythic'},
 ];
-const colors=[[106,205,151],[255,155,166],[100,205,227],[62,213,255],[195,105,255],[255,116,207]];
-const visuals=['bunny','dog','cat','fox','penguin','dragon','deer','bear','pegasus','spectre'];
-const eggs=names.map((list,i)=>({Id:i+1,Name:['Meadow Egg','Blossom Egg','Ancient Egg','Circuit Egg','Plasma Egg','Galaxy Egg'][i],World:i<3?'island':'neon',Price:[125,150,1000,2500,10000,50000][i],X:(i<3?0:500)+40+(i%3)*31,Z:132,Color:colors[i],Pets:list.map((Name,j)=>({Id:i*10+j+1,Name,Rarity:rarities[j],Chance:odds[j],Visual:visuals[j],Multiplier:Number(((i+1)*[1.15,1.25,1.5,1.7,2,2.6,3.2,5,7,12][j]).toFixed(2)),Color:colors[i].map((v,k)=>Math.min(255,Math.max(35,v+((j*31+k*17)%65)-25)))}))}));
-for(const egg of eggs) for(const pet of egg.Pets) pet.Name=pet.Name.replaceAll('Owl','Penguin').replaceAll('Lion','Bear').replaceAll('Phoenix','Pegasus').replaceAll('Griffin','Deer');
+const eggs=defs.map((d,i)=>({Id:i+1,Name:d.Name,World:d.World,Price:d.Price,X:(d.World==='island'?0:500)+40+(i%3)*31,Z:132,Color:d.Color,
+ Pets:d.Pets.map(([Name,Visual],j)=>({Id:i*4+j+1,Name,Rarity:j===3&&d.Top?d.Top:rarities[j],Chance:odds[i][j],Visual,Multiplier:Number((powers[i]*factors[j]).toFixed(2)),
+  Color:d.Color.map((v,k)=>Math.min(255,Math.max(35,v+((j*31+k*17)%65)-25)))}))}));
+for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(total!==100) throw new Error(e.Name+' odds total '+total);}
 writeFileSync('tools/catalog.json',JSON.stringify(eggs,null,2));
 const luaString=s=>JSON.stringify(s);
 const pets=eggs.flatMap(e=>e.Pets.map(p=>`[${p.Id}]={Name=${luaString(p.Name)},Rarity=${luaString(p.Rarity)},Multiplier=${p.Multiplier},Visual=${luaString(p.Visual)},Color=Color3.fromRGB(${p.Color}),EggId=${e.Id}},`)).join('\n');

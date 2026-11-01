@@ -12,14 +12,13 @@ workspace.Terrain:FillBlock(CFrame.new(0,-6,0),Vector3.new(300,12,460),Enum.Mate
 workspace.Terrain:SetMaterialColor(Enum.Material.Grass,Color3.fromRGB(86,155,82))
 workspace.Terrain:FillBlock(CFrame.new(-95,-2,-30),Vector3.new(48,4,56),Enum.Material.Water)
 -- Grass belongs beside the paths, never through the plaza, shop or egg approach.
-for _,name in ipairs({"MainPath","EggPath","ShopPath","ArrivalPlaza"}) do
- local path=world:FindFirstChild(name)
- if path then workspace.Terrain:FillBlock(CFrame.new(path.Position.X,-2,path.Position.Z),Vector3.new(path.Size.X+2,4,path.Size.Z+2),Enum.Material.Sand) end
+for _,path in ipairs(world:GetChildren()) do
+ if path:IsA("BasePart") and (string.find(path.Name,"Path",1,true) or path.Name=="ArrivalPlaza") then
+  -- Песок шире самой дорожки: узкую полосу трава ландшафта закрывает целиком.
+  workspace.Terrain:FillBlock(CFrame.new(path.Position.X,-2,path.Position.Z),Vector3.new(path.Size.X+6,4,path.Size.Z+6),Enum.Material.Sand)
+ end
 end
 workspace.Terrain:FillBlock(CFrame.new(-45,-2,140),Vector3.new(31,4,24),Enum.Material.Ground)
-for _,egg in ipairs(Config.Eggs) do
- if egg.World=="island" then workspace.Terrain:FillBlock(CFrame.new(egg.Position.X,-2,140),Vector3.new(7,4,21),Enum.Material.Sand) end
-end
 -- Smooth terrain is voxel-aligned: place authored props on its actual surface.
 local terrainOnly=RaycastParams.new()
 terrainOnly.FilterType=Enum.RaycastFilterType.Include
@@ -93,7 +92,8 @@ for _, p in ipairs(Players:GetPlayers()) do setup(p) end
 
 local function notify(p, text, success) feedback:FireClient(p, text, success or false) end
 local function interact(p, part, prompt, cityOnly)
- if p.Parent ~= Players or not prompt.Enabled then return end
+ -- У яиц нет подсказки E: меню открывается касанием, поэтому prompt может быть nil.
+ if p.Parent ~= Players or (prompt and not prompt.Enabled) then return end
  if not p:GetAttribute("ProfileReady") then return end
  local h, root = alive(p)
  if not h or (root.Position - part.Position).Magnitude > Config.ShopDistance then return end
@@ -113,7 +113,7 @@ local function shopPart(zone, mode, eggId)
   if not egg or (egg.World=="neon")~=(zone==city) then return end
   local stand=zone:FindFirstChild("EggStand"..eggId)
   if not stand then return end
-  return stand.Interact,stand.Interact.OpenEggMenu
+  return stand.Interact,stand.Interact:FindFirstChild("OpenEggMenu")
  end
  return zone.UpgradeShop.Counter, zone.UpgradeShop.Counter.OpenShop
 end
@@ -122,15 +122,8 @@ for id,zone in pairs(zones) do
  prompt.Triggered:Connect(function(p)
   if interact(p,part,prompt,zone==city) then openMenu:FireClient(p,"upgrades",id) end
  end)
- for eggId,egg in ipairs(Config.Eggs) do
-  if egg.World==id then
-   local eggPart,eggPrompt=shopPart(zone,"egg",eggId)
-   eggPrompt.Triggered:Connect(function(p)
-    if interact(p,eggPart,eggPrompt,zone==city) then openMenu:FireClient(p,"egg",id,eggId) end
-   end)
-  end
- end
 end
+-- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind ~= "speed" and kind ~= "magnet" and kind ~= "income" and kind ~= "egg" then return end
@@ -227,7 +220,9 @@ local function portal(zone, name, target, needsLevel, destination)
   notify(p, "World: " .. destination, true)
  end)
 end
-portal(world, "PortalToNeon", Vector3.new(500, 3, 180), 3, "Neon District")
+-- Неонград можно передвигать в Studio: координаты берём с его пола, а не из кода.
+local neonX = city.Floor.Position.X
+portal(world, "PortalToNeon", Vector3.new(neonX, 3, 180), 3, "Neon District")
 portal(city, "PortalToIsland", Vector3.new(0, 3+groundY, 180), 0, "Meadow Isles")
 
 -- У каждой монеты одно серверное состояние для всех игроков.
@@ -275,7 +270,7 @@ task.spawn(function()
     table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=Config.GetMagnetRadius(p:GetAttribute("MagnetLevel") or 0)})
     if math.abs(root.Position.Z) <= 230 then
      if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
-     elseif math.abs(root.Position.X - 500) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end
+     elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end
     end
    end
   end
@@ -295,4 +290,4 @@ task.spawn(function()
   task.wait(0.1)
  end
 end)
-print("[CoinSprint] Ready: 2 worlds, "..#records.." coins, 6 eggs, 60 pets")
+print("[CoinSprint] Ready: 2 worlds, "..#records.." coins, "..#Config.Eggs.." eggs, "..#Config.Pets.." pets")
