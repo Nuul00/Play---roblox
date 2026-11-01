@@ -118,7 +118,7 @@ RS:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode,newZone,n
  title.Text="UPGRADE KIOSK";player:SetAttribute("UIScreen","shop")
  gallery.Visible=false;upgradePanel.Visible=true;action.Visible=false;detail.Visible=false;previous.Visible=false;nextPage.Visible=false;panel.Visible=true;refresh()
 end)
-player.PlayerGui:WaitForChild("OpenPetIndex").Event:Connect(function() showEgg(eggId or 1,true) end)
+-- Индекс питомцев теперь отдельная книга (PetIndex.client.luau).
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
  local active=player:GetAttribute("UIScreen")
  if active~="shop" and active~="egg" and active~="index" then panel.Visible=false;mode=nil end

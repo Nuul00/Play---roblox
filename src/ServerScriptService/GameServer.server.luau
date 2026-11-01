@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local AvatarPose = require(script.Parent:WaitForChild("AvatarPose"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
 world:SetAttribute("ServerRunning", true)
@@ -84,6 +85,7 @@ local function setup(player)
  player:SetAttribute("CoinsCollected", 0)
  player:SetAttribute("EggsOpened", 0)
  for i=1,#Config.Pets do player:SetAttribute("PetOwned" .. i, 0) end
+ for i=1,#Config.Eggs do player:SetAttribute("IndexClaimed" .. i, false) end
  player:SetAttribute("CurrentWorld", "Meadow Isles")
  local stats = Instance.new("Folder")
  stats.Name = "leaderstats"
@@ -108,6 +110,27 @@ Players.PlayerRemoving:Connect(function(p) cooldown[p] = nil; hatchUntil[p] = ni
 for _, p in ipairs(Players:GetPlayers()) do setup(p) end
 
 local function notify(p, text, success) feedback:FireClient(p, text, success or false) end
+-- Награда за полностью собранную страницу индекса (все питомцы одного яйца). Один раз на яйцо.
+local claimIndex = Instance.new("RemoteEvent")
+claimIndex.Name = "GameIndexClaim"
+claimIndex.Parent = ReplicatedStorage
+local claimCooldown = {}
+claimIndex.OnServerEvent:Connect(function(p, eggId)
+ if type(eggId) ~= "number" or eggId ~= math.floor(eggId) or not Config.Eggs[eggId] then return end
+ if not p:GetAttribute("ProfileReady") or p:GetAttribute("IndexClaimed" .. eggId) then return end
+ if os.clock() - (claimCooldown[p] or 0) < 1 then return end
+ claimCooldown[p] = os.clock()
+ for _, entry in ipairs(Config.Eggs[eggId].Pool) do
+  if (p:GetAttribute("PetOwned" .. entry.Pet) or 0) <= 0 then notify(p, "Collect every pet from this egg first!"); return end
+ end
+ local stats = p:FindFirstChild("leaderstats")
+ if not stats then return end
+ local reward = Config.GetIndexReward(eggId)
+ p:SetAttribute("IndexClaimed" .. eggId, true)
+ stats.Coins.Value = stats.Coins.Value + reward
+ notify(p, "Index reward: +" .. reward .. " coins!", true)
+end)
+Players.PlayerRemoving:Connect(function(p) claimCooldown[p] = nil end)
 local function interact(p, part, prompt, cityOnly)
  -- У яиц нет подсказки E: меню открывается касанием, поэтому prompt может быть nil.
  if p.Parent ~= Players or (prompt and not prompt.Enabled) then return end
@@ -203,24 +226,17 @@ task.spawn(function()
   local shop = zone.UpgradeShop
   local npc = avatar:Clone()
   npc.Name = "Shopkeeper"
-  local root=npc:FindFirstChild("HumanoidRootPart")
-  for _,part in ipairs(npc:GetDescendants()) do
-   if part:IsA("BasePart") then
-    part.Anchored=part==root;part.CanCollide=false;part.CanTouch=false;part.CanQuery=false;part.Massless=true
-   end
-  end
-  local humanoid=npc:FindFirstChildOfClass("Humanoid")
-  if humanoid then humanoid.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None;humanoid.AutoRotate=false end
+  AvatarPose.Prepare(npc)
   npc.Parent=shop
-  local anchor=shop.VendorAnchor.Position
-  npc:PivotTo(CFrame.new(anchor.X,anchor.Y+3,anchor.Z)*CFrame.Angles(0,math.pi,0))
-  game:GetService("RunService").Heartbeat:Wait()
-  local lowest=math.huge
-  for _,name in ipairs({"LeftFoot","RightFoot","Left Leg","Right Leg"}) do
-   local foot=npc:FindFirstChild(name)
-   if foot then lowest=math.min(lowest,foot.Position.Y-foot.Size.Y/2) end
+  -- Если за прилавком есть стул (VendorSeatPoint — точка на сиденье), продавец сидит.
+  local seatPoint=shop:FindFirstChild("VendorSeatPoint")
+  if seatPoint then
+   AvatarPose.Sit(npc)
+   AvatarPose.Place(npc,seatPoint.Position,CFrame.Angles(0,math.pi,0),seatPoint.Position.Y,true)
+  else
+   local anchor=shop.VendorAnchor.Position
+   AvatarPose.Place(npc,anchor,CFrame.Angles(0,math.pi,0),anchor.Y,false)
   end
-  if lowest<math.huge then npc:PivotTo(npc:GetPivot()+Vector3.new(0,anchor.Y-lowest,0)) end
   local placeholder = shop:FindFirstChild("VendorPlaceholder")
   if placeholder then placeholder:Destroy() end
  end

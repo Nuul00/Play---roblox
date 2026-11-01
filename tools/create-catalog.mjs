@@ -52,6 +52,7 @@ function Config.GetMagnetRadius(level) return Config.BaseMagnetRadius*(1+Config.
 function Config.GetMagnetUpgradeCost(level) return 5*(level+1) end
 function Config.GetIncomeMultiplier(level) return 1+0.25*level end
 function Config.GetIncomeUpgradeCost(level) return 15*(level+1) end
+function Config.GetIndexReward(eggId) return Config.Eggs[eggId].Cost*20 end
 function Config.GetPetMultiplier(id) return Config.Pets[id] and Config.Pets[id].Multiplier or 1 end
 function Config.RollEgg(eggId,roll)
  local egg=assert(Config.Eggs[eggId],"Unknown egg")
