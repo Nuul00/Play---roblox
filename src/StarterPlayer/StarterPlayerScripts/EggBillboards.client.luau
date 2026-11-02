@@ -60,7 +60,7 @@ local function buildBoard(id, stand)
 	end
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggBoard"
-	gui.Size = UDim2.fromScale(13, 7.4)
+	gui.Size = UDim2.fromScale(13, #egg.Pool>6 and 11 or 7.4)
 	gui.MaxDistance = 75
 	gui.LightInfluence = 0
 	gui.ResetOnSpawn = false
@@ -96,8 +96,9 @@ local function buildBoard(id, stand)
 	grid.Size = UDim2.fromScale(0.95, 0.62)
 	grid.Parent = panel
 	local layout = Instance.new("UIGridLayout")
-	layout.CellSize = UDim2.fromScale(0.155, 1)
-	layout.CellPadding = UDim2.fromScale(0.014, 0)
+	local many=#egg.Pool>6
+	layout.CellSize = many and UDim2.fromScale(0.32, 0.315) or UDim2.fromScale(0.155, 1)
+	layout.CellPadding = UDim2.fromScale(0.014, 0.02)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = grid
 	for i, entry in ipairs(egg.Pool) do

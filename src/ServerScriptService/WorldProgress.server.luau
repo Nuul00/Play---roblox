@@ -14,7 +14,8 @@ local sessions={}
 local token=game.JobId~="" and game.JobId or game:GetService("HttpService"):GenerateGUID(false)
 local function number(v) return type(v)=="number" and v==v and math.abs(v)<1e15 and math.max(0,v) or 0 end
 local function snapshot(p)
- local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={}}
+ local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
+ for i=1,#Config.Pets do data.AutoDelete[tostring(i)]=p:GetAttribute("AutoDelete"..i)==true end
  for _,name in ipairs({"MagnetLevel","IncomeLevel","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=p:GetAttribute(name) or 0 end
  for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
  data.Equipped=p:GetAttribute("Equipped") or ""
@@ -56,6 +57,7 @@ local function load(p)
  for _,name in ipairs({"LifetimeEarned","CoinsCollected","EggsOpened"}) do p:SetAttribute(name,number(loaded[name])) end
  local best=0
  for i=1,#Config.Pets do
+  p:SetAttribute("AutoDelete"..i,type(loaded.AutoDelete)=="table" and loaded.AutoDelete[tostring(i)]==true)
   local count=math.floor(number(type(loaded.Owned)=="table" and loaded.Owned[tostring(i)]))
   p:SetAttribute("PetOwned"..i,count)
   if count>0 and Config.GetPetMultiplier(i)>Config.GetPetMultiplier(best) then best=i end

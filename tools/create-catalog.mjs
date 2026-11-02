@@ -17,6 +17,19 @@ const defs=[
 const eggs=defs.map((d,i)=>({Id:i+1,Name:d.Name,World:d.World,Price:d.Price,X:(d.World==='island'?0:500)+40+(i%3)*31,Z:132,Color:d.Color,
  Pets:d.Pets.map(([Name,Visual],j)=>({Id:i*6+j+1,Name,Rarity:rarities[j],Chance:odds[i][j],Visual,Multiplier:Number((powers[i]*factors[j]).toFixed(2)),
   Color:d.Color.map((v,k)=>Math.min(255,Math.max(35,v+((j*31+k*17)%65)-25)))}))}));
+// Keep every other egg's IDs stable. Three extra sunset pets use appended IDs.
+eggs[0].Name='Sunset Sky Egg'; eggs[0].Color=[232,137,220];
+eggs[0].Pets=[
+ [1,'Cloud Puff','Cloud','Common',30,1.2],
+ [2,'Sunset Bunny','Bunny','Common',25,1.3],
+ [3,'Dusk Kitty','Cat','Uncommon',18,1.5],
+ [4,'Amber Deer','Deer','Uncommon',12,1.7],
+ [5,'Twilight Unicorn','Unicorn','Rare',7,2.2],
+ [6,'Rosy Sky Whale','Whale','Rare',5,2.6],
+ [37,'Sunset Dragon','Dragon','Epic',2,3.5],
+ [38,'Dawn Phoenix','Phoenix','Legendary',0.5,8],
+ [39,'Celestial Castle','Castle','Legendary',0.5,10],
+].map(([Id,Name,kind,Rarity,Chance,Multiplier])=>({Id,Name,Visual:'Sunset'+kind,Rarity,Chance,Multiplier,Color:[232,137,220]}));
 for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(Math.abs(total-100)>1e-9) throw new Error(e.Name+' odds total '+total);}
 writeFileSync('tools/catalog.json',JSON.stringify(eggs,null,2));
 const luaString=s=>JSON.stringify(s);

@@ -17,12 +17,15 @@ Config.EnableGlobalBoards=true
 Config.EnableStudioDataStores=false
 Config.Worlds={island={Name="Meadow Isles",CenterX=0,Width=300,Depth=460,BaseValue=5},neon={Name="Neon District",CenterX=500,Width=300,Depth=460,BaseValue=25}}
 Config.Pets={
-[1]={Name="Meadow Bunny",Rarity="Common",Multiplier=1.2,Visual="Bunny",Color=Color3.fromRGB(81,197,160),EggId=1},
-[2]={Name="Meadow Pup",Rarity="Uncommon",Multiplier=1.5,Visual="Dog",Color=Color3.fromRGB(112,228,126),EggId=1},
-[3]={Name="Meadow Kitty",Rarity="Rare",Multiplier=2,Visual="Cat",Color=Color3.fromRGB(143,194,157),EggId=1},
-[4]={Name="Meadow Fox",Rarity="Epic",Multiplier=3,Visual="Fox",Color=Color3.fromRGB(109,225,188),EggId=1},
-[5]={Name="Meadow Unicorn",Rarity="Mythic",Multiplier=6,Visual="Unicorn",Color=Color3.fromRGB(140,191,154),EggId=1},
-[6]={Name="Winged Fairy",Rarity="Secret",Multiplier=15,Visual="Winged Fairy",Color=Color3.fromRGB(106,222,185),EggId=1},
+[1]={Name="Cloud Puff",Rarity="Common",Multiplier=1.2,Visual="SunsetCloud",Color=Color3.fromRGB(232,137,220),EggId=1},
+[2]={Name="Sunset Bunny",Rarity="Common",Multiplier=1.3,Visual="SunsetBunny",Color=Color3.fromRGB(232,137,220),EggId=1},
+[3]={Name="Dusk Kitty",Rarity="Uncommon",Multiplier=1.5,Visual="SunsetCat",Color=Color3.fromRGB(232,137,220),EggId=1},
+[4]={Name="Amber Deer",Rarity="Uncommon",Multiplier=1.7,Visual="SunsetDeer",Color=Color3.fromRGB(232,137,220),EggId=1},
+[5]={Name="Twilight Unicorn",Rarity="Rare",Multiplier=2.2,Visual="SunsetUnicorn",Color=Color3.fromRGB(232,137,220),EggId=1},
+[6]={Name="Rosy Sky Whale",Rarity="Rare",Multiplier=2.6,Visual="SunsetWhale",Color=Color3.fromRGB(232,137,220),EggId=1},
+[37]={Name="Sunset Dragon",Rarity="Epic",Multiplier=3.5,Visual="SunsetDragon",Color=Color3.fromRGB(232,137,220),EggId=1},
+[38]={Name="Dawn Phoenix",Rarity="Legendary",Multiplier=8,Visual="SunsetPhoenix",Color=Color3.fromRGB(232,137,220),EggId=1},
+[39]={Name="Celestial Castle",Rarity="Legendary",Multiplier=10,Visual="SunsetCastle",Color=Color3.fromRGB(232,137,220),EggId=1},
 [7]={Name="Pond Frog",Rarity="Common",Multiplier=2.4,Visual="Frog",Color=Color3.fromRGB(95,192,99),EggId=2},
 [8]={Name="Blue Frog",Rarity="Uncommon",Multiplier=3,Visual="Blue Frog",Color=Color3.fromRGB(126,223,65),EggId=2},
 [9]={Name="Red Frog",Rarity="Rare",Multiplier=4,Visual="Red Frog",Color=Color3.fromRGB(157,189,96),EggId=2},
@@ -55,7 +58,7 @@ Config.Pets={
 [36]={Name="Galactic Overlord",Rarity="Secret",Multiplier=300,Visual="Galactic Overlord",Color=Color3.fromRGB(160,127,255),EggId=6},
 }
 Config.Eggs={
-[1]={Id=1,Name="Meadow Egg",World="island",Cost=50,Position=Vector3.new(40,2,132),Color=Color3.fromRGB(106,205,151),Pool={{Pet=1,Chance=50,Weight=50000},{Pet=2,Chance=30,Weight=30000},{Pet=3,Chance=12,Weight=12000},{Pet=4,Chance=6,Weight=6000},{Pet=5,Chance=1.9,Weight=1900},{Pet=6,Chance=0.1,Weight=100}}},
+[1]={Id=1,Name="Sunset Sky Egg",World="island",Cost=50,Position=Vector3.new(40,2,132),Color=Color3.fromRGB(232,137,220),Pool={{Pet=1,Chance=30,Weight=30000},{Pet=2,Chance=25,Weight=25000},{Pet=3,Chance=18,Weight=18000},{Pet=4,Chance=12,Weight=12000},{Pet=5,Chance=7,Weight=7000},{Pet=6,Chance=5,Weight=5000},{Pet=37,Chance=2,Weight=2000},{Pet=38,Chance=0.5,Weight=500},{Pet=39,Chance=0.5,Weight=500}}},
 [2]={Id=2,Name="Jungle Egg",World="island",Cost=250,Position=Vector3.new(71,2,132),Color=Color3.fromRGB(120,200,90),Pool={{Pet=7,Chance=46,Weight=46000},{Pet=8,Chance=30,Weight=30000},{Pet=9,Chance=14,Weight=14000},{Pet=10,Chance=7,Weight=7000},{Pet=11,Chance=2.9,Weight=2900},{Pet=12,Chance=0.1,Weight=100}}},
 [3]={Id=3,Name="Coconut Egg",World="island",Cost=1000,Position=Vector3.new(102,2,132),Color=Color3.fromRGB(214,170,110),Pool={{Pet=13,Chance=42,Weight=42000},{Pet=14,Chance=30,Weight=30000},{Pet=15,Chance=16,Weight=16000},{Pet=16,Chance=8,Weight=8000},{Pet=17,Chance=3.9,Weight=3900},{Pet=18,Chance=0.1,Weight=100}}},
 [4]={Id=4,Name="Gummy Egg",World="neon",Cost=2500,Position=Vector3.new(540,2,132),Color=Color3.fromRGB(255,120,190),Pool={{Pet=19,Chance=40,Weight=40000},{Pet=20,Chance=30,Weight=30000},{Pet=21,Chance=17,Weight=17000},{Pet=22,Chance=9,Weight=9000},{Pet=23,Chance=3.9,Weight=3900},{Pet=24,Chance=0.1,Weight=100}}},

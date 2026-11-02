@@ -1,93 +1,132 @@
 [
   {
     "Id": 1,
-    "Name": "Meadow Egg",
+    "Name": "Sunset Sky Egg",
     "World": "island",
     "Price": 50,
     "X": 40,
     "Z": 132,
     "Color": [
-      106,
-      205,
-      151
+      232,
+      137,
+      220
     ],
     "Pets": [
       {
         "Id": 1,
-        "Name": "Meadow Bunny",
+        "Name": "Cloud Puff",
+        "Visual": "SunsetCloud",
         "Rarity": "Common",
-        "Chance": 50,
-        "Visual": "Bunny",
+        "Chance": 30,
         "Multiplier": 1.2,
         "Color": [
-          81,
-          197,
-          160
+          232,
+          137,
+          220
         ]
       },
       {
         "Id": 2,
-        "Name": "Meadow Pup",
-        "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Dog",
-        "Multiplier": 1.5,
+        "Name": "Sunset Bunny",
+        "Visual": "SunsetBunny",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 1.3,
         "Color": [
-          112,
-          228,
-          126
+          232,
+          137,
+          220
         ]
       },
       {
         "Id": 3,
-        "Name": "Meadow Kitty",
-        "Rarity": "Rare",
-        "Chance": 12,
-        "Visual": "Cat",
-        "Multiplier": 2,
+        "Name": "Dusk Kitty",
+        "Visual": "SunsetCat",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 1.5,
         "Color": [
-          143,
-          194,
-          157
+          232,
+          137,
+          220
         ]
       },
       {
         "Id": 4,
-        "Name": "Meadow Fox",
-        "Rarity": "Epic",
-        "Chance": 6,
-        "Visual": "Fox",
-        "Multiplier": 3,
+        "Name": "Amber Deer",
+        "Visual": "SunsetDeer",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 1.7,
         "Color": [
-          109,
-          225,
-          188
+          232,
+          137,
+          220
         ]
       },
       {
         "Id": 5,
-        "Name": "Meadow Unicorn",
-        "Rarity": "Mythic",
-        "Chance": 1.9,
-        "Visual": "Unicorn",
-        "Multiplier": 6,
+        "Name": "Twilight Unicorn",
+        "Visual": "SunsetUnicorn",
+        "Rarity": "Rare",
+        "Chance": 7,
+        "Multiplier": 2.2,
         "Color": [
-          140,
-          191,
-          154
+          232,
+          137,
+          220
         ]
       },
       {
         "Id": 6,
-        "Name": "Winged Fairy",
-        "Rarity": "Secret",
-        "Chance": 0.1,
-        "Visual": "Winged Fairy",
-        "Multiplier": 15,
+        "Name": "Rosy Sky Whale",
+        "Visual": "SunsetWhale",
+        "Rarity": "Rare",
+        "Chance": 5,
+        "Multiplier": 2.6,
         "Color": [
-          106,
-          222,
-          185
+          232,
+          137,
+          220
+        ]
+      },
+      {
+        "Id": 37,
+        "Name": "Sunset Dragon",
+        "Visual": "SunsetDragon",
+        "Rarity": "Epic",
+        "Chance": 2,
+        "Multiplier": 3.5,
+        "Color": [
+          232,
+          137,
+          220
+        ]
+      },
+      {
+        "Id": 38,
+        "Name": "Dawn Phoenix",
+        "Visual": "SunsetPhoenix",
+        "Rarity": "Legendary",
+        "Chance": 0.5,
+        "Multiplier": 8,
+        "Color": [
+          232,
+          137,
+          220
+        ]
+      },
+      {
+        "Id": 39,
+        "Name": "Celestial Castle",
+        "Visual": "SunsetCastle",
+        "Rarity": "Legendary",
+        "Chance": 0.5,
+        "Multiplier": 10,
+        "Color": [
+          232,
+          137,
+          220
         ]
       }
     ]

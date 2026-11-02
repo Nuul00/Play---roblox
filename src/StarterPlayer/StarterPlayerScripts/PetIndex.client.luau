@@ -189,7 +189,7 @@ local function viewport(parent, petId)
 	local view = Instance.new("ViewportFrame")
 	view.BackgroundTransparency = 1
 	view.Position = UDim2.fromOffset(6, 4)
-	view.Size = UDim2.fromOffset(100, 82)
+	view.Size = UDim2.fromOffset(100, 55)
 	view.Ambient = Color3.fromRGB(200, 200, 210)
 	view.LightDirection = Vector3.new(-1, -1, -2)
 	view.Parent = parent
@@ -216,8 +216,8 @@ local function showPage(eggId)
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local card = Instance.new("Frame")
-		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 160)
-		card.Size = UDim2.fromOffset(112, 152)
+		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 106)
+		card.Size = UDim2.fromOffset(112, 101)
 		card.BackgroundColor3 = Color3.fromRGB(255, 251, 240)
 		card.Parent = grid
 		corner(card, 12)
@@ -230,12 +230,12 @@ local function showPage(eggId)
 			view.Ambient = Color3.new(0, 0, 0)
 			view.LightColor = Color3.new(0, 0, 0)
 		end
-		text(card, found and def.Name or "???", UDim2.fromOffset(4, 86), UDim2.fromOffset(104, 30), found and 14 or 20)
-		local rarity = text(card, def.Rarity, UDim2.fromOffset(4, 114), UDim2.fromOffset(104, 16), 13, rarityColors[def.Rarity] or ink)
+		text(card, found and def.Name or "???", UDim2.fromOffset(4, 58), UDim2.fromOffset(104, 18), found and 14 or 20)
+		local rarity = text(card, def.Rarity, UDim2.fromOffset(4, 76), UDim2.fromOffset(104, 16), 13, rarityColors[def.Rarity] or ink)
 		if def.Rarity == "Secret" then
 			rarity.Text = "SECRET"
 		end
-		text(card, found and string.format("x%g · %g%% · own %d", def.Multiplier, entry.Chance, owned(entry.Pet)) or string.format("%g%%", entry.Chance), UDim2.fromOffset(4, 130), UDim2.fromOffset(104, 16), 11, Color3.fromRGB(120, 95, 70), Enum.Font.GothamMedium)
+		text(card, found and string.format("x%g · %g%% · own %d", def.Multiplier, entry.Chance, owned(entry.Pet)) or string.format("%g%%", entry.Chance), UDim2.fromOffset(4, 89), UDim2.fromOffset(104, 12), 9, Color3.fromRGB(120, 95, 70), Enum.Font.GothamMedium)
 		cards[i] = { model = model, view = view }
 	end
 	local n, max = progress(eggId)

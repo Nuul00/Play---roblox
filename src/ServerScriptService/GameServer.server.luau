@@ -44,6 +44,12 @@ if not world:GetAttribute("GroundAligned") then
 end
 -- Камни, камыши, кувшинки, мостик и причал ставим уже на готовый рельеф.
 task.spawn(Pond.Decorate,world)
+local sunsetStand=world:WaitForChild("EggStand1")
+local oldEgg=sunsetStand:WaitForChild("EggDisplay")
+local sunsetEgg=require(ReplicatedStorage:WaitForChild("SunsetVisuals")).BuildEgg()
+local eggBounds=oldEgg:GetBoundingBox()
+sunsetEgg:PivotTo(CFrame.new(eggBounds.Position));oldEgg:Destroy();sunsetEgg.Parent=sunsetStand
+sunsetStand:SetAttribute("SunsetReady",true)
 local feedback = Instance.new("RemoteEvent")
 feedback.Name = "GameFeedback"
 feedback.Parent = ReplicatedStorage
@@ -125,6 +131,8 @@ action.OnServerEvent:Connect(function(p, kind, arg)
   PlayerSystems.EquipBest(p)
  elseif kind == "none" then
   PlayerSystems.SetEquipped(p, {})
+ elseif kind == "autodelete" and type(arg) == "number" and Config.Pets[arg] then
+  p:SetAttribute("AutoDelete" .. arg, not p:GetAttribute("AutoDelete" .. arg))
  elseif kind == "potion" and type(arg) == "string" then
   PlayerSystems.UsePotion(p, arg)
  elseif kind == "magnet" and type(arg) == "number" then
@@ -188,7 +196,11 @@ for id,zone in pairs(zones) do
  end) end
 end
 -- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
-buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
+buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
+ if kind == "egg" then
+  amount = amount == nil and 1 or amount
+  if amount ~= 1 and amount ~= 3 then return end
+ end
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind == "magnettool" or kind == "potion" then
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
@@ -243,7 +255,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
   cost = Config.GetIncomeUpgradeCost(value)
  else
   if os.clock() < (hatchUntil[p] or 0) then return end
-  cost = Config.Eggs[eggId].Cost
+  cost = Config.Eggs[eggId].Cost * amount
  end
  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
  stats.Coins.Value = stats.Coins.Value - cost
@@ -259,6 +271,8 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
   notify(p,"Income: x" .. Config.GetIncomeMultiplier(value+1),true)
  else
   hatchUntil[p] = os.clock()+3.5
+  local results={}
+  for _=1,amount do
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
   -- Зелье удачи: два броска, остаётся более редкий питомец.
   if PlayerSystems.PotionActive(p, "Luck") then
@@ -266,12 +280,15 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId)
    if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
   end
   local attribute = "PetOwned" .. result
-  local count = (p:GetAttribute(attribute) or 0)+1
-  p:SetAttribute(attribute,count)
+  local deleted=p:GetAttribute("AutoDelete"..result)==true
+  local count = (p:GetAttribute(attribute) or 0)+(deleted and 0 or 1)
+  if not deleted then p:SetAttribute(attribute,count) end
   -- Автоматически сопровождает самый сильный из открытых питомцев.
-  PlayerSystems.OnHatched(p, result)
-  p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+1)
-  hatched:FireClient(p,result,count,eggId)
+  if not deleted then PlayerSystems.OnHatched(p, result) end
+  table.insert(results,{Pet=result,Count=count,Deleted=deleted})
+  end
+  p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+amount)
+  hatched:FireClient(p,results,eggId)
  end
 end)
 
