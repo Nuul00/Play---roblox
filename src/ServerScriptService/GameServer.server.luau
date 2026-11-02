@@ -50,6 +50,16 @@ local sunsetEgg=require(ReplicatedStorage:WaitForChild("SunsetVisuals")).BuildEg
 local eggBounds=oldEgg:GetBoundingBox()
 sunsetEgg:PivotTo(CFrame.new(eggBounds.Position));oldEgg:Destroy();sunsetEgg.Parent=sunsetStand
 sunsetStand:SetAttribute("SunsetReady",true)
+-- Яйца Sakura и Starlight (2 и 3) строятся так же, на месте старых моделей.
+for id,theme in pairs({[2]="Sakura",[3]="Starlight"}) do
+ local stand=world:WaitForChild("EggStand"..id)
+ local old=stand:WaitForChild("EggDisplay")
+ local egg=require(ReplicatedStorage:WaitForChild("ThemedVisuals")).BuildEgg(theme)
+ local bounds=old:GetBoundingBox()
+ egg:PivotTo(CFrame.new(bounds.Position));old:Destroy();egg.Parent=stand
+ stand:SetAttribute("EggReady",true)
+end
+sunsetStand:SetAttribute("EggReady",true)
 local feedback = Instance.new("RemoteEvent")
 feedback.Name = "GameFeedback"
 feedback.Parent = ReplicatedStorage

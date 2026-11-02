@@ -60,8 +60,10 @@ local function buildBoard(id, stand)
 	end
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggBoard"
-	gui.Size = UDim2.fromScale(13, #egg.Pool>6 and 11 or 7.4)
+	gui.Size = UDim2.fromScale(13, #egg.Pool > 6 and 13 or 7.4)
 	gui.MaxDistance = 75
+	-- Высокое табло (9 питомцев) поднимаем, чтобы яйцо его не закрывало.
+	gui.StudsOffsetWorldSpace = Vector3.new(0, #egg.Pool > 6 and 4.5 or 0, 0)
 	gui.LightInfluence = 0
 	gui.ResetOnSpawn = false
 	gui.Adornee = anchor
@@ -77,7 +79,7 @@ local function buildBoard(id, stand)
 
 	-- Шапка: название и цена.
 	local head = Instance.new("Frame")
-	head.Size = UDim2.fromScale(1, 0.24)
+	head.Size = UDim2.fromScale(1, #egg.Pool > 6 and 0.15 or 0.24)
 	head.BackgroundColor3 = egg.Color
 	head.Parent = panel
 	Instance.new("UICorner", head).CornerRadius = UDim.new(0.3, 0)
@@ -92,12 +94,12 @@ local function buildBoard(id, stand)
 	-- Питомцы: 6 ячеек в ряд, под каждой шанс выпадения.
 	local grid = Instance.new("Frame")
 	grid.BackgroundTransparency = 1
-	grid.Position = UDim2.fromScale(0.025, 0.29)
-	grid.Size = UDim2.fromScale(0.95, 0.62)
+	local many = #egg.Pool > 6
+	grid.Position = UDim2.fromScale(0.025, many and 0.18 or 0.29)
+	grid.Size = UDim2.fromScale(0.95, many and 0.75 or 0.62)
 	grid.Parent = panel
 	local layout = Instance.new("UIGridLayout")
-	local many=#egg.Pool>6
-	layout.CellSize = many and UDim2.fromScale(0.32, 0.315) or UDim2.fromScale(0.155, 1)
+	layout.CellSize = many and UDim2.fromScale(0.32, 0.317) or UDim2.fromScale(0.155, 1)
 	layout.CellPadding = UDim2.fromScale(0.014, 0.02)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = grid
@@ -112,7 +114,7 @@ local function buildBoard(id, stand)
 		stroke(cell, 2, color)
 		local view = Instance.new("ViewportFrame")
 		view.BackgroundTransparency = 1
-		view.Size = UDim2.fromScale(1, 0.66)
+		view.Size = UDim2.fromScale(1, many and 0.58 or 0.66)
 		view.Ambient = Color3.fromRGB(200, 200, 215)
 		view.LightColor = Color3.fromRGB(255, 248, 230)
 		view.LightDirection = Vector3.new(-1, -1, -2)
@@ -128,10 +130,21 @@ local function buildBoard(id, stand)
 		if ok and model then
 			model.Parent = scene
 		end
-		label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.64), UDim2.fromScale(0.92, 0.2), color)
-		label(cell, def.Rarity, UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.14), color, Enum.Font.GothamBold)
+		if many then
+			-- 9 питомцев: шанс, имя и редкость под моделькой.
+			local grad = Instance.new("UIGradient")
+			grad.Color = ColorSequence.new(color:Lerp(Color3.fromRGB(40, 44, 66), 0.6), Color3.fromRGB(30, 32, 50))
+			grad.Rotation = 90
+			grad.Parent = cell
+			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.56), UDim2.fromScale(0.92, 0.19), color)
+			label(cell, def.Name, UDim2.fromScale(0.04, 0.75), UDim2.fromScale(0.92, 0.13), Color3.new(1, 1, 1), Enum.Font.GothamBold)
+			label(cell, def.Rarity:upper(), UDim2.fromScale(0.04, 0.88), UDim2.fromScale(0.92, 0.1), color, Enum.Font.GothamBlack)
+		else
+			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.64), UDim2.fromScale(0.92, 0.2), color)
+			label(cell, def.Rarity, UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.14), color, Enum.Font.GothamBold)
+		end
 	end
-	label(panel, "Touch the egg to open", UDim2.fromScale(0.1, 0.915), UDim2.fromScale(0.8, 0.07), Color3.fromRGB(200, 205, 225), Enum.Font.GothamMedium)
+	label(panel, "Touch the egg · OPEN ×1 / ×3 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), Color3.fromRGB(200, 205, 225), Enum.Font.GothamMedium)
 	table.insert(boards, { gui = gui, anchor = anchor })
 end
 
@@ -174,6 +187,10 @@ end
 for id in ipairs(Config.Eggs) do
 	local zone = Config.Eggs[id].World == "neon" and city or world
 	local stand = zone:WaitForChild("EggStand" .. id, 10)
+	-- Яйца острова 1–3 сервер пересобирает при запуске: ждём готовую модель.
+	while stand and id <= 3 and not stand:GetAttribute("EggReady") do
+		stand.AttributeChanged:Wait()
+	end
 	if stand then
 		local ok, err = pcall(buildBoard, id, stand)
 		if not ok then

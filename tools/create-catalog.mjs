@@ -27,9 +27,35 @@ eggs[0].Pets=[
  [5,'Twilight Unicorn','Unicorn','Rare',7,2.2],
  [6,'Rosy Sky Whale','Whale','Rare',5,2.6],
  [37,'Sunset Dragon','Dragon','Epic',2,3.5],
- [38,'Dawn Phoenix','Phoenix','Legendary',0.5,8],
- [39,'Celestial Castle','Castle','Legendary',0.5,10],
+ [38,'Dawn Phoenix','Phoenix','Legendary',0.9,8],
+ [39,'Celestial Castle','Castle','Secret',0.1,15],
 ].map(([Id,Name,kind,Rarity,Chance,Multiplier])=>({Id,Name,Visual:'Sunset'+kind,Rarity,Chance,Multiplier,Color:[232,137,220]}));
+// Второе и третье яйцо острова — серии Sakura и Starlight по 9 питомцев (модели в ThemedVisuals).
+// Первые шесть занимают старые ID яйца, три новых — в конце списка, сохранения не теряются.
+eggs[1].Name='Sakura Egg'; eggs[1].Color=[255,140,200];
+eggs[1].Pets=[
+ [7,'Blossom Bunny','Bunny','Common',32,2.4],
+ [8,'Petal Fox','Fox','Common',24,2.6],
+ [9,'Sakura Cat','Cat','Uncommon',17,3],
+ [10,'Bloom Deer','Deer','Uncommon',12,3.4],
+ [11,'Cherry Sheep','Sheep','Rare',7.5,4.2],
+ [12,'Rose Panda','Panda','Rare',4.5,5],
+ [40,'Flora Butterfly','Butterfly','Epic',2,7],
+ [41,'Sakura Dragon','Dragon','Legendary',0.9,14],
+ [42,'Blossom Spirit','Spirit','Secret',0.1,32],
+].map(([Id,Name,kind,Rarity,Chance,Multiplier])=>({Id,Name,Visual:'Sakura'+kind,Rarity,Chance,Multiplier,Color:[255,140,200]}));
+eggs[2].Name='Starlight Egg'; eggs[2].Color=[150,100,255];
+eggs[2].Pets=[
+ [13,'Starlight Cat','Cat','Common',30,4.8],
+ [14,'Celestial Wolf','Wolf','Common',24,5.2],
+ [15,'Cosmic Owl','Owl','Uncommon',18,6],
+ [16,'Nova Unicorn','Unicorn','Uncommon',12,7],
+ [17,'Galaxy Whale','Whale','Rare',8,8.5],
+ [18,'Solar Lion','Lion','Rare',5,10],
+ [43,'Nebula Dragon','Dragon','Epic',2.3,14],
+ [44,'Star Cloud','Cloud','Legendary',0.6,28],
+ [45,'Astral Spirit','Spirit','Secret',0.1,65],
+].map(([Id,Name,kind,Rarity,Chance,Multiplier])=>({Id,Name,Visual:'Starlight'+kind,Rarity,Chance,Multiplier,Color:[150,100,255]}));
 for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(Math.abs(total-100)>1e-9) throw new Error(e.Name+' odds total '+total);}
 writeFileSync('tools/catalog.json',JSON.stringify(eggs,null,2));
 const luaString=s=>JSON.stringify(s);

@@ -4,6 +4,8 @@ local PetVisuals={}
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
  if string.sub(def.Visual,1,6)=="Sunset" then return require(script.Parent:WaitForChild("SunsetVisuals")).BuildPet(string.sub(def.Visual,7),def.Name) end
+ if string.sub(def.Visual,1,6)=="Sakura" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Sakura",string.sub(def.Visual,7),def.Name) end
+ if string.sub(def.Visual,1,9)=="Starlight" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Starlight",string.sub(def.Visual,10),def.Name) end
  -- Visual совпадает с именем модели целиком: сначала паки (PetModels), потом старые PetAssets.
  -- Если модели нет, рисуем запасного питомца из деталей ниже.
  local selected

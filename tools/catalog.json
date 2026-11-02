@@ -108,7 +108,7 @@
         "Name": "Dawn Phoenix",
         "Visual": "SunsetPhoenix",
         "Rarity": "Legendary",
-        "Chance": 0.5,
+        "Chance": 0.9,
         "Multiplier": 8,
         "Color": [
           232,
@@ -120,9 +120,9 @@
         "Id": 39,
         "Name": "Celestial Castle",
         "Visual": "SunsetCastle",
-        "Rarity": "Legendary",
-        "Chance": 0.5,
-        "Multiplier": 10,
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 15,
         "Color": [
           232,
           137,
@@ -133,186 +133,264 @@
   },
   {
     "Id": 2,
-    "Name": "Jungle Egg",
+    "Name": "Sakura Egg",
     "World": "island",
     "Price": 250,
     "X": 71,
     "Z": 132,
     "Color": [
-      120,
-      200,
-      90
+      255,
+      140,
+      200
     ],
     "Pets": [
       {
         "Id": 7,
-        "Name": "Pond Frog",
+        "Name": "Blossom Bunny",
+        "Visual": "SakuraBunny",
         "Rarity": "Common",
-        "Chance": 46,
-        "Visual": "Frog",
+        "Chance": 32,
         "Multiplier": 2.4,
         "Color": [
-          95,
-          192,
-          99
+          255,
+          140,
+          200
         ]
       },
       {
         "Id": 8,
-        "Name": "Blue Frog",
-        "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Blue Frog",
-        "Multiplier": 3,
+        "Name": "Petal Fox",
+        "Visual": "SakuraFox",
+        "Rarity": "Common",
+        "Chance": 24,
+        "Multiplier": 2.6,
         "Color": [
-          126,
-          223,
-          65
+          255,
+          140,
+          200
         ]
       },
       {
         "Id": 9,
-        "Name": "Red Frog",
-        "Rarity": "Rare",
-        "Chance": 14,
-        "Visual": "Red Frog",
-        "Multiplier": 4,
+        "Name": "Sakura Cat",
+        "Visual": "SakuraCat",
+        "Rarity": "Uncommon",
+        "Chance": 17,
+        "Multiplier": 3,
         "Color": [
-          157,
-          189,
-          96
+          255,
+          140,
+          200
         ]
       },
       {
         "Id": 10,
-        "Name": "The Monkey",
-        "Rarity": "Epic",
-        "Chance": 7,
-        "Visual": "The Monkey",
-        "Multiplier": 6,
+        "Name": "Bloom Deer",
+        "Visual": "SakuraDeer",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 3.4,
         "Color": [
-          123,
-          220,
-          127
+          255,
+          140,
+          200
         ]
       },
       {
         "Id": 11,
-        "Name": "Jungle Platinum",
-        "Rarity": "Mythic",
-        "Chance": 2.9,
-        "Visual": "Jungle Platinum",
-        "Multiplier": 12,
+        "Name": "Cherry Sheep",
+        "Visual": "SakuraSheep",
+        "Rarity": "Rare",
+        "Chance": 7.5,
+        "Multiplier": 4.2,
         "Color": [
-          154,
-          186,
-          93
+          255,
+          140,
+          200
         ]
       },
       {
         "Id": 12,
-        "Name": "Jungle Saturn",
+        "Name": "Rose Panda",
+        "Visual": "SakuraPanda",
+        "Rarity": "Rare",
+        "Chance": 4.5,
+        "Multiplier": 5,
+        "Color": [
+          255,
+          140,
+          200
+        ]
+      },
+      {
+        "Id": 40,
+        "Name": "Flora Butterfly",
+        "Visual": "SakuraButterfly",
+        "Rarity": "Epic",
+        "Chance": 2,
+        "Multiplier": 7,
+        "Color": [
+          255,
+          140,
+          200
+        ]
+      },
+      {
+        "Id": 41,
+        "Name": "Sakura Dragon",
+        "Visual": "SakuraDragon",
+        "Rarity": "Legendary",
+        "Chance": 0.9,
+        "Multiplier": 14,
+        "Color": [
+          255,
+          140,
+          200
+        ]
+      },
+      {
+        "Id": 42,
+        "Name": "Blossom Spirit",
+        "Visual": "SakuraSpirit",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Visual": "Jungle Saturn",
-        "Multiplier": 30,
+        "Multiplier": 32,
         "Color": [
-          120,
-          217,
-          124
+          255,
+          140,
+          200
         ]
       }
     ]
   },
   {
     "Id": 3,
-    "Name": "Coconut Egg",
+    "Name": "Starlight Egg",
     "World": "island",
     "Price": 1000,
     "X": 102,
     "Z": 132,
     "Color": [
-      214,
-      170,
-      110
+      150,
+      100,
+      255
     ],
     "Pets": [
       {
         "Id": 13,
-        "Name": "Coconut Cat",
+        "Name": "Starlight Cat",
+        "Visual": "StarlightCat",
         "Rarity": "Common",
-        "Chance": 42,
-        "Visual": "Coconut Cat",
+        "Chance": 30,
         "Multiplier": 4.8,
         "Color": [
-          189,
-          162,
-          119
+          150,
+          100,
+          255
         ]
       },
       {
         "Id": 14,
-        "Name": "Coconut Dog",
-        "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Coconut Dog",
-        "Multiplier": 6,
+        "Name": "Celestial Wolf",
+        "Visual": "StarlightWolf",
+        "Rarity": "Common",
+        "Chance": 24,
+        "Multiplier": 5.2,
         "Color": [
-          220,
-          193,
-          85
+          150,
+          100,
+          255
         ]
       },
       {
         "Id": 15,
-        "Name": "Coconut Bunny",
-        "Rarity": "Rare",
-        "Chance": 16,
-        "Visual": "Coconut Bunny",
-        "Multiplier": 8,
+        "Name": "Cosmic Owl",
+        "Visual": "StarlightOwl",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 6,
         "Color": [
-          251,
-          159,
-          116
+          150,
+          100,
+          255
         ]
       },
       {
         "Id": 16,
-        "Name": "Coconut Jellyfish",
-        "Rarity": "Epic",
-        "Chance": 8,
-        "Visual": "Coconut Jellyfish",
-        "Multiplier": 12,
+        "Name": "Nova Unicorn",
+        "Visual": "StarlightUnicorn",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 7,
         "Color": [
-          217,
-          190,
-          147
+          150,
+          100,
+          255
         ]
       },
       {
         "Id": 17,
-        "Name": "The Big Coconut",
-        "Rarity": "Mythic",
-        "Chance": 3.9,
-        "Visual": "The Big Coconut",
-        "Multiplier": 24,
+        "Name": "Galaxy Whale",
+        "Visual": "StarlightWhale",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 8.5,
         "Color": [
-          248,
-          156,
-          113
+          150,
+          100,
+          255
         ]
       },
       {
         "Id": 18,
-        "Name": "Coconut Winged Lord",
+        "Name": "Solar Lion",
+        "Visual": "StarlightLion",
+        "Rarity": "Rare",
+        "Chance": 5,
+        "Multiplier": 10,
+        "Color": [
+          150,
+          100,
+          255
+        ]
+      },
+      {
+        "Id": 43,
+        "Name": "Nebula Dragon",
+        "Visual": "StarlightDragon",
+        "Rarity": "Epic",
+        "Chance": 2.3,
+        "Multiplier": 14,
+        "Color": [
+          150,
+          100,
+          255
+        ]
+      },
+      {
+        "Id": 44,
+        "Name": "Star Cloud",
+        "Visual": "StarlightCloud",
+        "Rarity": "Legendary",
+        "Chance": 0.6,
+        "Multiplier": 28,
+        "Color": [
+          150,
+          100,
+          255
+        ]
+      },
+      {
+        "Id": 45,
+        "Name": "Astral Spirit",
+        "Visual": "StarlightSpirit",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Visual": "Coconut Winged Lord",
-        "Multiplier": 60,
+        "Multiplier": 65,
         "Color": [
-          214,
-          187,
-          144
+          150,
+          100,
+          255
         ]
       }
     ]
