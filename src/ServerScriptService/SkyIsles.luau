@@ -537,11 +537,11 @@ local function pond(parent, at)
 		lily(m, Vector3.new(at.X + math.cos(a) * r, surface + 0.35, at.Z + math.sin(a) * r), rng)
 	end
 
-	-- Водопад с дальней от центра острова стороны: скальный уступ в облаках, вода падает отвесно в пруд.
+	-- Водопад с дальней от центра острова стороны: вода падает отвесно в пруд из пышной облачной горки.
+	-- Камни внутри невидимы (держат игроков и форму), снаружи — только облака, плотно внахлёст, без щелей.
 	local cliff = Vector3.new(at.X, surface, at.Z) + back * (R + 3)
-	local stone = { rgb(215, 210, 230), rgb(230, 226, 242), rgb(198, 194, 218) }
 	local function rock(pos, size)
-		part(m, "Cliff", size, CFrame.new(pos) * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6.28), rng:NextNumber(-0.12, 0.12)), stone[rng:NextInteger(1, 3)], M.Slate, { CanCollide = true })
+		part(m, "Cliff", size, CFrame.new(pos) * CFrame.Angles(rng:NextNumber(-0.12, 0.12), rng:NextNumber(0, 6.28), rng:NextNumber(-0.12, 0.12)), rgb(240, 236, 250), M.SmoothPlastic, { CanCollide = true, Transparency = 1 })
 	end
 	for _, k in ipairs({ -1, 1 }) do
 		rock(cliff + side * (k * 6.5) + Vector3.new(0, 4.5, 0), Vector3.new(7, 11, 7))
@@ -550,20 +550,40 @@ local function pond(parent, at)
 	end
 	rock(cliff + back * 2.5 + Vector3.new(0, 5, 0), Vector3.new(7, 12, 6))
 	local lipY = surface + 11
-	-- Уступ выдаётся над прудом, чтобы струя падала в воду, а не в бортик.
+	-- Невидимый уступ выдаётся над прудом, чтобы струя падала в воду, а не в бортик.
 	local lip = Vector3.new(cliff.X, lipY, cliff.Z) - back * 5
-	part(m, "Lip", Vector3.new(6, 0.8, 7), CFrame.lookAt(lip, lip - back), stone[2], M.Slate, { CanCollide = true })
-	-- Облака лежат на скале и вдавлены в неё: сверху шапка, по бокам и у краёв уступа — подушки,
-	-- так что камень проглядывает только местами. Середину перед струёй не закрываем.
-	cloud(m, "FallCloud", 20, cliff + back * 3 + Vector3.new(0, 12.5, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 14, cliff + back * 1 + side * 8.5 + Vector3.new(0, 9.5, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 14, cliff + back * 1 - side * 8.5 + Vector3.new(0, 10, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 12, cliff - back * 1 + side * 8 + Vector3.new(0, 4, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 12, cliff - back * 1 - side * 8 + Vector3.new(0, 4.5, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 11, cliff + side * 12 + Vector3.new(0, 1, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 11, cliff - side * 12 + Vector3.new(0, 1.5, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 7, lip + side * 4.8 + Vector3.new(0, 0.6, 0), rgb(255, 255, 255))
-	cloud(m, "FallCloud", 7, lip - side * 4.8 + Vector3.new(0, 0.6, 0), rgb(255, 255, 255))
+	part(m, "Lip", Vector3.new(6, 0.8, 7), CFrame.lookAt(lip, lip - back), rgb(240, 236, 250), M.SmoothPlastic, { CanCollide = true, Transparency = 1 })
+	-- Облачная горка: слои облаков снизу вверх, внизу шире, кверху уже — как перевёрнутая подушка;
+	-- сверху шапка, над уступом облачный козырёк, из-под которого бьёт струя.
+	-- Облака чуть покачиваются (тег SkyCloud, маленький Sway), щели при этом не открываются.
+	local function fallCloud(size, pos)
+		local c = cloud(m, "FallCloud", size, pos, rgb(255, 255, 255), false, false, true)
+		if c then
+			c:SetAttribute("Sway", 0.4)
+		end
+	end
+	local rows = { { h = 1.5, span = 15, size = 12, depth = -1 }, { h = 5.5, span = 13, size = 12, depth = 0 }, { h = 9.5, span = 11, size = 11, depth = 1 }, { h = 13, span = 8, size = 11, depth = 2 } }
+	for _, row in ipairs(rows) do
+		local n = math.ceil(row.span * 2 / (row.size * 0.55))
+		for k = 0, n do
+			local s = -row.span + k / n * row.span * 2
+			-- По центру нижних рядов облака отодвинуты назад: перед ними падает вода.
+			local d = row.depth + ((math.abs(s) < 3.5 and row.h < 11) and 3 or 0)
+			fallCloud(row.size * (0.9 + (k % 3) * 0.1), cliff + side * s + back * d + Vector3.new(0, row.h, 0))
+		end
+	end
+	fallCloud(20, cliff + back * 3 + Vector3.new(0, 15.5, 0))
+	fallCloud(15, cliff + back * 1 + side * 7 + Vector3.new(0, 14.5, 0))
+	fallCloud(15, cliff + back * 1 - side * 7 + Vector3.new(0, 14.5, 0))
+	-- Козырёк над струёй и подушки по краям уступа.
+	fallCloud(10, lip + back * 1.5 + Vector3.new(0, 2.2, 0))
+	fallCloud(8, lip + side * 4.5 + Vector3.new(0, 0.8, 0))
+	fallCloud(8, lip - side * 4.5 + Vector3.new(0, 0.8, 0))
+	-- У воды по бокам от струи — пушистые «ступни» горки, закрывают стык с бортиком пруда.
+	for _, k in ipairs({ -1, 1 }) do
+		fallCloud(9, cliff - back * 4 + side * (k * 7) + Vector3.new(0, 0.5, 0))
+		fallCloud(10, cliff + side * (k * 16) + Vector3.new(0, 1, 0))
+	end
 	-- Пелена воды: прозрачное стекло от края уступа до поверхности, по нему бегут струи капель.
 	local top = lip - back * 3.6 + Vector3.new(0, 0.5, 0)
 	local bottom = Vector3.new(top.X, surface, top.Z) - back * 0.6
@@ -761,6 +781,531 @@ local function eggBorder(parent, center, halfLen, radius)
 	end
 end
 
+-- ===== Островки-сокровищницы =====
+-- Парящий травяной остров на облачной подушке: руины арки, деревце, водопад и сундук.
+-- Острова висят в небе вокруг главного острова, за облачным бортиком. Добираются по облакам-ступеням
+-- (treasureSteps); между островами облака реже — там помогает двойной прыжок (SkyDoubleJump.client).
+-- Каждый следующий остров выше и щедрее.
+-- Награду и перезарядку сундука выдаёт SkyChests.server (тег "SkyChest", атрибуты ChestId и Reward).
+local TREASURE = {
+	{ Id = 1, At = Vector3.new(195, 32, -91), Size = 30, Reward = 3000, Seed = 31 },
+	{ Id = 2, At = Vector3.new(129, 52, -184), Size = 32, Reward = 8000, Seed = 47 },
+	{ Id = 3, At = Vector3.new(19, 74, -219), Size = 36, Reward = 20000, Seed = 59 },
+}
+-- Откуда начинается подъём к первому острову (на площадке, ближе к краю, по направлению к острову).
+local TREASURE_START = Vector3.new(91, 0, -42)
+-- Ступени: первый подъём идёт круто вначале (Ease > 1), чтобы перешагнуть облачный бортик;
+-- между островами облака реже, прыжки длиннее.
+local FIRST_CLIMB = { Spacing = 15, Rise = 9, Ease = 1.6 }
+local BETWEEN_ISLES = { Spacing = 19, Rise = 7, Ease = 1 }
+local MARBLE = rgb(250, 244, 255)
+local ROCK = rgb(206, 160, 182)
+
+local function comma(n)
+	local s = tostring(math.floor(n))
+	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+end
+
+local function chest(parent, at, face, id, reward)
+	local m = Instance.new("Model")
+	m.Name = "Chest"
+	local cf = CFrame.lookAt(at, at + face)
+	local wood, band = rgb(160, 98, 60), GOLD
+	local base = part(m, "ChestBase", Vector3.new(4.4, 2.6, 3), cf * CFrame.new(0, 1.3, 0), wood, M.Wood)
+	-- Крышка — цилиндр вдоль ширины ящика, нижняя половина утоплена в ящик: торчит только полукруглый верх.
+	local lid = part(m, "ChestLid", Vector3.new(4.4, 3, 3), cf * CFrame.new(0, 2.6, 0), wood:Lerp(rgb(255, 255, 255), 0.08), M.Wood, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+	lid.Size = Vector3.new(4.4, 3, 3)
+	for _, x in ipairs({ -1.6, 0, 1.6 }) do
+		part(m, "Band", Vector3.new(0.35, 2.7, 3.1), cf * CFrame.new(x, 1.3, 0), band, M.Metal, { CanCollide = false })
+		local ring = part(m, "LidBand", Vector3.new(0.36, 3.1, 3.1), cf * CFrame.new(x, 2.6, 0), band, M.Metal, { Shape = Enum.PartType.Cylinder, CanCollide = false })
+		ring.Size = Vector3.new(0.36, 3.1, 3.1)
+	end
+	part(m, "Lock", Vector3.new(0.9, 1.1, 0.3), cf * CFrame.new(0, 2.3, -1.6), rgb(255, 214, 90), M.Neon, { CanCollide = false })
+	local glow = Instance.new("PointLight")
+	glow.Color = rgb(255, 205, 120)
+	glow.Range = 14
+	glow.Brightness = 1.2
+	glow.Shadows = false
+	glow.Parent = base
+	emitter(base, {
+		Name = "Glitter",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(rgb(255, 225, 130)),
+		LightEmission = 1,
+		Rate = 6,
+		Lifetime = NumberRange.new(1, 1.8),
+		Speed = NumberRange.new(1, 2.5),
+		SpreadAngle = Vector2.new(40, 40),
+		EmissionDirection = Enum.NormalId.Top,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) }),
+	})
+	-- Вспышка при открытии (SkyChests.server делает Emit).
+	emitter(base, {
+		Name = "Burst",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(rgb(255, 230, 120), rgb(255, 170, 220)),
+		LightEmission = 1,
+		Rate = 0,
+		Lifetime = NumberRange.new(0.8, 1.4),
+		Speed = NumberRange.new(10, 18),
+		SpreadAngle = Vector2.new(60, 60),
+		EmissionDirection = Enum.NormalId.Top,
+		Acceleration = Vector3.new(0, -14, 0),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0) }),
+	})
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "OpenChest"
+	prompt.ActionText = "Open"
+	prompt.ObjectText = "Treasure Chest"
+	prompt.HoldDuration = 0.6
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = base
+	local board = Instance.new("BillboardGui")
+	board.Name = "ChestLabel"
+	board.Size = UDim2.fromScale(9, 3)
+	board.StudsOffsetWorldSpace = Vector3.new(0, 4.6, 0)
+	board.LightInfluence = 0
+	board.MaxDistance = 140
+	board.Parent = base
+	local title = Instance.new("TextLabel")
+	title.BackgroundTransparency = 1
+	title.Size = UDim2.fromScale(1, 0.55)
+	title.Text = "TREASURE"
+	title.TextScaled = true
+	title.Font = Enum.Font.FredokaOne
+	title.TextColor3 = rgb(255, 226, 120)
+	title.Parent = board
+	local s = Instance.new("UIStroke")
+	s.Thickness = 3
+	s.Color = rgb(150, 90, 40)
+	s.Parent = title
+	local sub = Instance.new("TextLabel")
+	sub.BackgroundTransparency = 1
+	sub.Position = UDim2.fromScale(0, 0.55)
+	sub.Size = UDim2.fromScale(1, 0.4)
+	sub.Text = "+" .. comma(reward) .. " coins"
+	sub.TextScaled = true
+	sub.Font = Enum.Font.FredokaOne
+	sub.TextColor3 = rgb(255, 255, 255)
+	sub.Parent = board
+	local s2 = Instance.new("UIStroke")
+	s2.Thickness = 2.5
+	s2.Color = rgb(150, 110, 220)
+	s2.Parent = sub
+	base:SetAttribute("ChestId", id)
+	base:SetAttribute("Reward", reward)
+	base:AddTag("SkyChest")
+	m.PrimaryPart = base
+	m.Parent = parent
+	return m
+end
+
+-- face — горизонтальное направление, откуда приходит игрок: туда смотрят арка и сундук.
+local LEAF = rgb(124, 206, 112)
+local TURF = rgb(86, 158, 90)
+local BLOSSOM = { rgb(255, 190, 222), rgb(255, 226, 240), rgb(250, 160, 206) }
+-- Тень отбрасывают только крупные формы, мелочь — нет.
+local ISLET_SHADOW = { Column = true, ArchStone = true, Keystone = true, TreeCrown = true, TreeTrunk = true, ChestBase = true }
+
+local function treasureIslet(parent, def, face)
+	local at, size = L(def.At.X, def.At.Y, def.At.Z), def.Size
+	local R = size / 2
+	local rng = Random.new(def.Seed)
+	local m = Instance.new("Model")
+	m.Name = "TreasureIslet" .. def.Id
+	m.Parent = parent
+	local accent = PASTEL[def.Id % #PASTEL + 1]
+	-- Ориентация острова: forward — к игроку, right — вбок. spot(f, r) — точка на траве.
+	local forward = Vector3.new(face.X, 0, face.Z).Unit
+	local right = Vector3.new(-forward.Z, 0, forward.X)
+	local function spot(f, r)
+		return at + forward * f + right * r
+	end
+
+	-- Травяной верх с волнистым краем: основной диск и наплывы по кромке (на всех можно стоять),
+	-- под каждым наплывом свисает дёрн.
+	disc(m, "Grass", size, 3, at - Vector3.new(0, 1.5, 0), LEAF, M.Grass)
+	disc(m, "Turf", size + 0.6, 1.6, at - Vector3.new(0, 3.4, 0), TURF, M.Grass, { CanCollide = false })
+	local lumps = 11
+	for k = 1, lumps do
+		local a = k / lumps * math.pi * 2 + rng:NextNumber(-0.15, 0.15)
+		local d = size * rng:NextNumber(0.26, 0.34)
+		local r = R - d * 0.32
+		local lift = rng:NextNumber(-0.25, 0.2)
+		local c = Vector3.new(at.X + math.cos(a) * r, at.Y, at.Z + math.sin(a) * r)
+		disc(m, "Grass", d, 3, c - Vector3.new(0, 1.5 - lift, 0), LEAF:Lerp(rgb(165, 228, 122), rng:NextNumber(0, 0.35)), M.Grass)
+		disc(m, "Turf", d + 1, 1.6, c - Vector3.new(0, 3.4 - lift, 0), TURF, M.Grass, { CanCollide = false })
+	end
+	-- Светящаяся пастельная кромка под травой (видна снизу и сбоку).
+	trim(disc(m, "RimGlow", size + 3.5, 0.3, at - Vector3.new(0, 4.4, 0), TRIM, M.Neon, { CanCollide = false, CanTouch = false, CanQuery = false }))
+
+	-- Под травой тонкий слой земли с камешками, а держится остров на облачной подушке:
+	-- кольца пушистых облаков, книзу уже (как перевёрнутая подушка), внутри светлая сердцевина без просветов.
+	-- Облака подушки плавно покачиваются (тег SkyCloud, маленький Sway).
+	disc(m, "Soil", size - 1, 2.2, at - Vector3.new(0, 4.6, 0), ROCK, M.Slate, { CanCollide = false })
+	for j = 1, 9 do
+		local a = j / 9 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
+		local s = rng:NextNumber(2, 3.4)
+		local cf = CFrame.new(at.X + math.cos(a) * (R - 2), at.Y - 5 + rng:NextNumber(-0.5, 0.5), at.Z + math.sin(a) * (R - 2)) * CFrame.Angles(rng:NextNumber(-0.4, 0.4), a, rng:NextNumber(-0.4, 0.4))
+		part(m, "Crag", Vector3.new(s, s * 0.8, s), cf, ROCK:Lerp(rgb(238, 196, 210), rng:NextNumber(0, 0.3)), M.Slate, { CanCollide = false })
+	end
+	local depth = size * 0.6
+	local layers = 4
+	local cushionTop = at.Y - 6
+	local function cushionRadius(t)
+		return R * (1 - t * 0.8) ^ 1.2 + 1
+	end
+	local white = rgb(255, 250, 255)
+	for k = 0, layers - 1 do
+		local t = (k + 0.5) / layers
+		local r = cushionRadius(t)
+		local y = cushionTop - t * depth
+		disc(m, "CloudCore", math.max(r * 2 - 6, 4), depth / layers + 4, Vector3.new(at.X, y, at.Z), white, M.SmoothPlastic, { CanCollide = false })
+		local puff = math.clamp(r * 0.55, 8, 16)
+		local count = math.max(4, math.floor(2 * math.pi * r / (puff * 0.55)))
+		for j = 1, count do
+			local a = j / count * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
+			local c = cloud(m, "CushionPuff", puff * rng:NextNumber(0.9, 1.15), Vector3.new(at.X + math.cos(a) * (r - puff * 0.2), y + rng:NextNumber(-1.5, 1.5), at.Z + math.sin(a) * (r - puff * 0.2)), white, false, false, true)
+			if c then
+				c:SetAttribute("Sway", 0.5)
+			end
+		end
+	end
+	local bottomPuff = cloud(m, "CushionPuff", math.max(R * 0.7, 10), Vector3.new(at.X, cushionTop - depth - 1, at.Z), white, false, false, true)
+	if bottomPuff then
+		bottomPuff:SetAttribute("Sway", 0.5)
+	end
+	-- Под подушкой мягкое бело-розовое свечение.
+	local under = part(m, "CushionGlow", Vector3.new(1, 1, 1), Vector3.new(at.X, cushionTop - depth - 6, at.Z), white, M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local underLight = Instance.new("PointLight")
+	underLight.Color = rgb(255, 214, 238)
+	underLight.Range = 26
+	underLight.Brightness = 1.6
+	underLight.Shadows = false
+	underLight.Parent = under
+	-- Пастельные кристаллы выглядывают из облаков, два из них светятся.
+	for j = 1, 7 do
+		local t = rng:NextNumber(0.15, 0.8)
+		local a = rng:NextNumber(0, math.pi * 2)
+		local r = cushionRadius(t) + 2
+		local base = Vector3.new(at.X + math.cos(a) * r, cushionTop - t * depth, at.Z + math.sin(a) * r)
+		local out = Vector3.new(math.cos(a), rng:NextNumber(-0.7, -0.15), math.sin(a)).Unit
+		local len = rng:NextNumber(3, 6.5)
+		local col = PASTEL[(j + def.Id) % #PASTEL + 1]
+		local c = part(m, "Crystal", Vector3.new(1.4, len, 1.4), CFrame.lookAt(base + out * len / 2, base + out * len) * CFrame.Angles(math.pi / 2, 0, 0), col, M.Neon, { CanCollide = false, Transparency = 0.2 })
+		if j <= 2 then
+			local l = Instance.new("PointLight")
+			l.Color = col
+			l.Range = 14
+			l.Brightness = 0.9
+			l.Shadows = false
+			l.Parent = c
+		end
+	end
+	-- Лианы свисают с края травы, на некоторых цветок.
+	for k = 1, 10 do
+		local a = rng:NextNumber(0, math.pi * 2)
+		local len = rng:NextNumber(3, 7.5)
+		local out = Vector3.new(math.cos(a), 0, math.sin(a))
+		local top = Vector3.new(at.X, at.Y - 4, at.Z) + out * (R + 0.8)
+		part(m, "Vine", Vector3.new(0.3, len, 0.3), top - Vector3.new(0, len / 2, 0), rgb(90, 170, 95), M.Grass, { CanCollide = false })
+		for l = 1, math.floor(len / 1.5) do
+			ball(m, "VineLeaf", 0.75, top - Vector3.new(0, l * 1.5, 0) + out * 0.3 + right * ((l % 2) * 0.5 - 0.25), rgb(122, 206, 112))
+		end
+		if k % 3 == 0 then
+			ball(m, "VineBloom", 0.9, top - Vector3.new(0, len, 0), accent)
+		end
+	end
+	-- Пара облачков-«юбок» по бокам.
+	for k = 1, 2 do
+		local a = k * math.pi + rng:NextNumber(-0.6, 0.6)
+		cloud(m, "SideCloud", size * 0.3, at + Vector3.new(math.cos(a) * (R + 2), -5, math.sin(a) * (R + 2)), rgb(255, 248, 255))
+	end
+
+	-- Руины: арка на двух колоннах — полукруг из камней с золотым замковым камнем, плющ на колоннах.
+	local archBack = -R * 0.42
+	local half, colH = 5, 8
+	for _, sx in ipairs({ -1, 1 }) do
+		local foot = spot(archBack, sx * half)
+		disc(m, "ColumnBase", 3.3, 0.8, foot + Vector3.new(0, 0.4, 0), MARBLE)
+		disc(m, "Column", 2.2, colH, foot + Vector3.new(0, 0.8 + colH / 2, 0), MARBLE)
+		disc(m, "ColumnRing", 2.5, 0.35, foot + Vector3.new(0, 0.8 + colH * 0.3, 0), GOLD, M.SmoothPlastic, { CanCollide = false })
+		local cap = foot + Vector3.new(0, 0.8 + colH + 0.4, 0)
+		part(m, "Capital", Vector3.new(3.2, 0.8, 3.2), CFrame.lookAt(cap, cap + forward), MARBLE)
+		for l = 1, 6 do
+			local a = l * 1.25 + sx
+			ball(m, "Ivy", rng:NextNumber(0.8, 1.25), foot + Vector3.new(math.cos(a) * 1.15, 0.8 + l * 1.25, math.sin(a) * 1.15), rgb(100, 186, 106))
+		end
+	end
+	local archCenter = spot(archBack, 0) + Vector3.new(0, 0.8 + colH + 0.8, 0)
+	local segs = 11
+	for k = 0, segs - 1 do
+		local a = (k + 0.5) / segs * math.pi
+		local pos = archCenter + right * (math.cos(a) * half) + Vector3.new(0, math.sin(a) * half, 0)
+		local tangent = (-right * math.sin(a) + Vector3.new(0, math.cos(a), 0)).Unit
+		local chord = 2 * half * math.sin(math.pi / segs / 2) + 0.35
+		part(m, "ArchStone", Vector3.new(chord, 1.5, 2.6), CFrame.fromMatrix(pos, tangent, forward:Cross(tangent)), MARBLE:Lerp(rgb(230, 220, 240), (k % 2) * 0.4))
+	end
+	local keyAt = archCenter + Vector3.new(0, half, 0)
+	part(m, "Keystone", Vector3.new(1.5, 2, 3), CFrame.lookAt(keyAt, keyAt + forward), GOLD, M.SmoothPlastic, { CanCollide = false })
+	star(m, keyAt + Vector3.new(0, 3, 0), 3)
+	-- Обломки: короткий обломок колонны, лежащий барабан колонны, упавший блок.
+	disc(m, "BrokenColumn", 2.2, 3.5, spot(archBack - 2, half + 5) + Vector3.new(0, 1.75, 0), MARBLE)
+	local drum = part(m, "FallenDrum", Vector3.new(3.4, 2.2, 2.2), CFrame.new(spot(archBack + 3, -half - 4) + Vector3.new(0, 1.1, 0)) * CFrame.Angles(0, 0.8, 0), MARBLE, M.SmoothPlastic, { Shape = Enum.PartType.Cylinder })
+	drum.Size = Vector3.new(3.4, 2.2, 2.2)
+	part(m, "FallenBlock", Vector3.new(3, 1.4, 2), CFrame.new(spot(archBack - 1, half + 2) + Vector3.new(0, 0.7, 0)) * CFrame.Angles(0, 0.5, 0.12), MARBLE)
+
+	-- Сундук на круглом постаменте с неоновым кольцом, по бокам два фонарика.
+	local chestAt = spot(archBack + 4.5, 0)
+	disc(m, "ChestPlinth", 7, 0.6, chestAt + Vector3.new(0, 0.3, 0), MARBLE)
+	trim(disc(m, "PlinthGlow", 7.4, 0.25, chestAt + Vector3.new(0, 0.15, 0), TRIM, M.Neon, { CanCollide = false, CanTouch = false, CanQuery = false }))
+	chest(m, chestAt + Vector3.new(0, 0.6, 0), forward, def.Id, def.Reward)
+	for _, sx in ipairs({ -1, 1 }) do
+		local post = spot(archBack + 5.5, sx * 4.6)
+		part(m, "LanternPost", Vector3.new(0.4, 3.2, 0.4), post + Vector3.new(0, 1.6, 0), MARBLE, M.SmoothPlastic, { CanCollide = false })
+		local gem = glowPart(m, "LanternGem", Vector3.new(0.9, 1.3, 0.9), CFrame.new(post + Vector3.new(0, 3.7, 0)) * CFrame.Angles(0, math.pi / 4, 0), accent)
+		local l = Instance.new("PointLight")
+		l.Color = accent
+		l.Range = 10
+		l.Brightness = 0.8
+		l.Shadows = false
+		l.Parent = gem
+	end
+	-- Дорожка из плоских камней от края острова к сундуку.
+	for f = R - 2.5, archBack + 8.5, -2.6 do
+		disc(m, "PathStone", rng:NextNumber(1.8, 2.4), 0.2, spot(f, rng:NextNumber(-0.6, 0.6)) + Vector3.new(0, 0.05, 0), rgb(240, 234, 248), M.SmoothPlastic, { CanCollide = false })
+	end
+
+	-- Цветущее дерево сбоку: наклонный ствол и пышная крона, с неё падают лепестки.
+	local treeAt = spot(-R * 0.05, -R * 0.58)
+	local trunk = part(m, "TreeTrunk", Vector3.new(1.4, 7, 1.4), CFrame.new(treeAt + Vector3.new(0, 3.5, 0)) * CFrame.Angles(0.08, 0, 0.1), rgb(150, 100, 80), M.Wood)
+	part(m, "TreeBranch", Vector3.new(0.6, 3, 0.6), CFrame.new(treeAt + Vector3.new(1.2, 5.6, 0.2)) * CFrame.Angles(0, 0, -0.9), rgb(150, 100, 80), M.Wood, { CanCollide = false })
+	local crowns = { { 0, 8, 0, 6.5 }, { 2.4, 9, 0.8, 4.8 }, { -2.2, 8.6, -1, 5 }, { 0.4, 10.8, -0.4, 4.4 }, { -0.8, 7, 2, 4 }, { 1.4, 7.4, -2.2, 3.8 } }
+	for k, c in ipairs(crowns) do
+		ball(m, "TreeCrown", c[4], treeAt + Vector3.new(c[1], c[2], c[3]), BLOSSOM[(k % #BLOSSOM) + 1])
+	end
+	emitter(trunk, {
+		Name = "Petals",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(BLOSSOM[1], BLOSSOM[2]),
+		LightEmission = 0.4,
+		Rate = 3,
+		Lifetime = NumberRange.new(3, 5),
+		Speed = NumberRange.new(0.5, 1.5),
+		SpreadAngle = Vector2.new(180, 180),
+		Acceleration = Vector3.new(0.6, -1.2, 0),
+		RotSpeed = NumberRange.new(-60, 60),
+		Size = NumberSequence.new(0.35),
+	})
+
+	-- Прудик на траве: вода из него ручьём бежит к краю и падает водопадом.
+	local edgeDir = (forward * -0.15 + right).Unit
+	local poolAt = at + edgeDir * (R * 0.42)
+	disc(m, "PoolRim", 7.4, 0.5, poolAt + Vector3.new(0, 0.25, 0), rgb(232, 226, 246), M.Slate, { CanCollide = false })
+	disc(m, "Pool", 6.2, 0.2, poolAt + Vector3.new(0, 0.52, 0), rgb(130, 205, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 0.15, Reflectance = 0.2 })
+	local edge = at + edgeDir * (R + 1)
+	local streamFrom = poolAt + edgeDir * 3
+	local streamMid = (streamFrom + edge) / 2 + Vector3.new(0, 0.08, 0)
+	part(m, "Stream", Vector3.new(2.4, 0.12, (edge - streamFrom).Magnitude), CFrame.lookAt(streamMid, edge + Vector3.new(0, 0.08, 0)), rgb(150, 215, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 0.2 })
+	for k = 1, 4 do
+		local s = rng:NextNumber(0.9, 1.5)
+		part(m, "PoolStone", Vector3.new(s, s * 0.7, s), CFrame.new(poolAt + Vector3.new(math.cos(k * 1.6) * 3.6, 0.3, math.sin(k * 1.6) * 3.6)) * CFrame.Angles(0, k, 0.2), rgb(220, 214, 236), M.Slate, { CanCollide = false })
+	end
+	local fallHeight = 34
+	local fallTop = edge + edgeDir * 0.6
+	local fallMid = fallTop - Vector3.new(0, fallHeight / 2, 0)
+	local sheet = part(m, "FallSheet", Vector3.new(3, fallHeight, 0.4), CFrame.lookAt(fallMid, fallMid + edgeDir), rgb(185, 230, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false })
+	sheet.Transparency = 0.35
+	local source = part(m, "DropSource", Vector3.new(2.6, 0.2, 0.5), CFrame.lookAt(fallTop, fallTop + edgeDir), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	emitter(source, {
+		Name = "Streaks",
+		Color = ColorSequence.new(rgb(250, 254, 255)),
+		LightEmission = 0.3,
+		Rate = 70,
+		Lifetime = NumberRange.new(fallHeight / 24),
+		Speed = NumberRange.new(22, 26),
+		EmissionDirection = Enum.NormalId.Bottom,
+		SpreadAngle = Vector2.new(3, 3),
+		Squash = NumberSequence.new(-1.5),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 1.6) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+		Shape = Enum.ParticleEmitterShape.Box,
+	})
+	-- Струя растворяется в тумане.
+	local mistAt = part(m, "FallMist", Vector3.new(3, 0.2, 3), fallTop - Vector3.new(0, fallHeight, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	emitter(mistAt, {
+		Name = "Mist",
+		Color = ColorSequence.new(rgb(240, 250, 255)),
+		Rate = 6,
+		Lifetime = NumberRange.new(2, 3),
+		Speed = NumberRange.new(0.5, 1.5),
+		SpreadAngle = Vector2.new(80, 80),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 3), NumberSequenceKeypoint.new(1, 7) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 1) }),
+	})
+
+	-- Кусты, цветы и грибочки там, где ничего не стоит и не ходят игроки.
+	local chestF = archBack + 4.5
+	local function free(f, r)
+		local p = spot(f, r)
+		local function far(q, d)
+			return (Vector3.new(p.X - q.X, 0, p.Z - q.Z)).Magnitude > d
+		end
+		return far(spot(archBack, 0), 8) and far(spot(chestF, 0), 5.5) and far(treeAt, 4.5) and far(poolAt, 5.5) and not (f > archBack and math.abs(r) < 3)
+	end
+	local placed = 0
+	for _ = 1, 60 do
+		if placed >= 14 then
+			break
+		end
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = math.sqrt(rng:NextNumber(0.1, 1)) * R * 0.85
+		local f, r = math.cos(a) * d, math.sin(a) * d
+		if free(f, r) then
+			placed += 1
+			local p = spot(f, r)
+			local kind = placed % 3
+			if kind == 0 then
+				for b = 1, 3 do
+					ball(m, "Bush", rng:NextNumber(1.6, 2.4), p + Vector3.new(math.cos(b * 2.1) * 0.9, 0.8, math.sin(b * 2.1) * 0.9), rgb(96, 182, 100):Lerp(rgb(150, 220, 120), rng:NextNumber(0, 0.4)))
+				end
+			elseif kind == 1 then
+				flowers(m, p, placed + def.Id)
+			else
+				part(m, "MushroomStem", Vector3.new(0.5, 1.2, 0.5), p + Vector3.new(0, 0.6, 0), rgb(250, 244, 236), M.SmoothPlastic, { CanCollide = false })
+				ball(m, "MushroomCap", 1.5, p + Vector3.new(0, 1.3, 0), accent:Lerp(rgb(255, 120, 160), 0.3))
+				ball(m, "MushroomDot", 0.35, p + Vector3.new(0.35, 1.95, 0.1), rgb(255, 255, 255))
+			end
+		end
+	end
+
+	-- Светлячки над травой.
+	local fireflies = part(m, "Fireflies", Vector3.new(size * 0.8, 6, size * 0.8), at + Vector3.new(0, 4, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	emitter(fireflies, {
+		Name = "Glow",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(rgb(255, 240, 150)),
+		LightEmission = 1,
+		Rate = 5,
+		Lifetime = NumberRange.new(3, 5),
+		Speed = NumberRange.new(0.2, 0.6),
+		SpreadAngle = Vector2.new(180, 180),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.4), NumberSequenceKeypoint.new(1, 0) }),
+		Shape = Enum.ParticleEmitterShape.Box,
+	})
+
+	for _, p in ipairs(m:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.CastShadow = ISLET_SHADOW[p.Name] == true
+		end
+	end
+	return m
+end
+
+-- Облако-ступенька: само облако и есть платформа. Под ногами невидимая плоская опора (на круглом облаке
+-- не устоять), верх облака чуть выше неё — ноги утопают в пухе. Снизу облако подсвечено бело-розовым.
+local STEP_GLOW = rgb(255, 214, 238)
+local function cloudStep(parent, top, rng)
+	local m = Instance.new("Model")
+	m.Name = "CloudStep"
+	disc(m, "StepPad", 9, 1, top - Vector3.new(0, 0.5, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CastShadow = false })
+	local c = cloud(m, "StepCloud", rng:NextNumber(10, 11.5), top, rgb(255, 250, 255))
+	local height = 6
+	if c then
+		-- Высота облака по вертикали мира (у меша может быть свой поворот).
+		local cf = c.CFrame
+		height = math.abs(cf.RightVector.Y) * c.Size.X + math.abs(cf.UpVector.Y) * c.Size.Y + math.abs(cf.LookVector.Y) * c.Size.Z
+		c.CFrame = cf + Vector3.new(0, 0.4 - height / 2, 0)
+	end
+	-- Подсветка снизу: мягкий свет и редкие искорки, осыпающиеся вниз.
+	local glow = part(m, "StepGlow", Vector3.new(4, 0.2, 4), top - Vector3.new(0, height + 1, 0), STEP_GLOW, M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false })
+	local light = Instance.new("PointLight")
+	light.Color = STEP_GLOW
+	light.Range = 13
+	light.Brightness = 1.6
+	light.Shadows = false
+	light.Parent = glow
+	emitter(glow, {
+		Name = "Glitter",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(rgb(255, 255, 255), STEP_GLOW),
+		LightEmission = 1,
+		Rate = 2,
+		Lifetime = NumberRange.new(1.5, 2.5),
+		Speed = NumberRange.new(0.5, 1.5),
+		EmissionDirection = Enum.NormalId.Bottom,
+		SpreadAngle = Vector2.new(50, 50),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0) }),
+		Shape = Enum.ParticleEmitterShape.Box,
+	})
+	m.Parent = parent
+	return m
+end
+
+-- Облака-ступени от точки from до точки to (обе — на уровне, где стоит игрок). opts.Spacing — наибольшее
+-- расстояние между центрами, opts.Rise — наибольший подъём за прыжок, opts.Ease > 1 — подъём круче вначале.
+-- Возвращает центры ступеней.
+local function treasureSteps(parent, from, to, seed, opts)
+	local rng = Random.new(seed)
+	local flat = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
+	local rise = to.Y - from.Y
+	local ease = opts.Ease or 1
+	-- Самый крутой прыжок — первый, он в ease раз выше среднего.
+	local n = math.max(math.ceil(rise * ease / opts.Rise), math.ceil(flat.Magnitude / opts.Spacing)) + 1
+	local spots = {}
+	for k = 1, n - 1 do
+		local t = k / n
+		-- Лёгкий изгиб в сторону, чтобы дорожка из облаков не была прямой линейкой.
+		local bend = Vector3.new(-flat.Unit.Z, 0, flat.Unit.X) * math.sin(t * math.pi) * 7
+		local y = from.Y + rise * (1 - (1 - t) ^ ease)
+		local top = Vector3.new(from.X + flat.X * t, y, from.Z + flat.Z * t) + bend
+		cloudStep(parent, top, rng)
+		table.insert(spots, top)
+	end
+	return spots
+end
+
+local function buildTreasure(model)
+	local folder = Instance.new("Folder")
+	folder.Name = "TreasureIsles"
+	folder.Parent = model
+	local stepFolder = Instance.new("Folder")
+	stepFolder.Name = "Steps"
+	stepFolder.Parent = folder
+	-- lowSteps — ступени у земли (под ними не ставим монеты), taken — всё, что занято островами и облаками
+	-- (декоративные парящие островки рядом не ставим).
+	local lowSteps, taken = {}, {}
+	local from = L(TREASURE_START.X, 0.4, TREASURE_START.Z)
+	for i, def in ipairs(TREASURE) do
+		local center = L(def.At.X, def.At.Y, def.At.Z)
+		local flat = Vector3.new(center.X - from.X, 0, center.Z - from.Z).Unit
+		-- Дорожка упирается в край острова со стороны прихода.
+		local landing = center - flat * (def.Size / 2 - 2)
+		local start = i == 1 and from or from + flat * 2
+		for _, s in ipairs(treasureSteps(stepFolder, start, landing, def.Seed, i == 1 and FIRST_CLIMB or BETWEEN_ISLES)) do
+			table.insert(taken, s)
+			if s.Y - C.Y < 10 then
+				table.insert(lowSteps, s)
+			end
+		end
+		table.insert(taken, center)
+		treasureIslet(folder, def, -flat)
+		-- Следующая лестница стартует с края этого острова.
+		local nextDef = TREASURE[i + 1]
+		if nextDef then
+			local toNext = Vector3.new(nextDef.At.X - def.At.X, 0, nextDef.At.Z - def.At.Z).Unit
+			from = center + toNext * (def.Size / 2 - 2)
+		end
+	end
+	-- Табличка у начала подъёма, лицом к центру острова.
+	local inward = -Vector3.new(TREASURE_START.X, 0, TREASURE_START.Z).Unit
+	local signAt = L(TREASURE_START.X, 0.4, TREASURE_START.Z) + inward * 6 + Vector3.new(inward.Z, 0, -inward.X) * 6
+	part(folder, "SignPost", Vector3.new(0.6, 5, 0.6), signAt + Vector3.new(0, 2.5, 0), MARBLE)
+	sign(folder, "TREASURE ISLES", "jump the clouds · double jump!", Vector3.new(8, 3.2, 0.4), CFrame.lookAt(signAt + Vector3.new(0, 6, 0), signAt + Vector3.new(0, 6, 0) + inward), rgb(255, 246, 225), rgb(255, 190, 80))
+	return lowSteps, taken
+end
+
 function Sky.Build(world)
 	local model = Instance.new("Model")
 	model.Name = "SkyIsles"
@@ -827,6 +1372,16 @@ function Sky.Build(world)
 	prompt.MaxActivationDistance = 16
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = portal
+	-- Облачка у подножия арки: прячут ленты, которые у 3D-модели портала торчат из-под основания.
+	-- Середина свободна — там проход к порталу.
+	for _, sx in ipairs({ -1, 1 }) do
+		for k, off in ipairs({ { 5.5, -5, 7 }, { 9.5, -3, 9 }, { 12, 0.5, 10 }, { 11, 4.5, 8 }, { 7.5, -7.5, 6 } }) do
+			local c = cloud(model, "PortalPuff", off[3], L(sx * off[1], archY + 0.4 + (k % 2) * 0.4, portalZ + off[2]), rgb(250, 246, 255), false, false, true)
+			if c then
+				c:SetAttribute("Sway", 0.3)
+			end
+		end
+	end
 
 	-- Радуги, деревья, фонари, заборы, цветы, пруд.
 	rainbow(model, L(0, 0.5, -95), 80)
@@ -870,12 +1425,25 @@ function Sky.Build(world)
 		local r = sr:NextNumber(10, 175)
 		star(sparks, L(math.cos(a) * r, sr:NextNumber(6, 40), math.sin(a) * r), sr:NextNumber(1.2, 3))
 	end
+	-- Островки с сундуками и облака-ступени к ним.
+	local lowSteps, taken = buildTreasure(model)
 	local islets = Instance.new("Folder")
 	islets.Name = "Islets"
 	islets.Parent = model
 	for i = 1, 10 do
 		local a = i / 10 * math.pi * 2
-		islet(islets, L(math.cos(a) * (215 + (i % 3) * 25), 5 + (i % 4) * 14, math.sin(a) * (215 + (i % 3) * 25)), i * 13)
+		local at = L(math.cos(a) * (215 + (i % 3) * 25), 5 + (i % 4) * 14, math.sin(a) * (215 + (i % 3) * 25))
+		-- Декоративный островок не ставим там, где висят острова с сундуками и облака к ним.
+		local free = true
+		for _, p in ipairs(taken) do
+			if (Vector3.new(at.X - p.X, 0, at.Z - p.Z)).Magnitude < 50 then
+				free = false
+				break
+			end
+		end
+		if free then
+			islet(islets, at, i * 13)
+		end
 	end
 
 	-- Монеты: стоячие золотые диски, значение 150, нужен уровень скорости мира.
@@ -897,6 +1465,13 @@ function Sky.Build(world)
 		end
 		if pos.Z - C.Z > 98 and pos.Z - C.Z < 126 then
 			ok = false
+		end
+		-- Под нижними ступенями лестницы монет нет: их не достать.
+		for _, s in ipairs(lowSteps) do
+			if (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(s.X, 0, s.Z)).Magnitude < 7 then
+				ok = false
+				break
+			end
 		end
 		if ok then
 			placed += 1

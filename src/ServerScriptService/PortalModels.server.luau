@@ -61,6 +61,6 @@ task.spawn(function()
 	if not gate or not PortalDecor.Template(template) then
 		return
 	end
-	PortalDecor.Dress(sky, template, { Name = "NeonGateModel", Bottom = (gate.CFrame * CFrame.new(0, -gate.Size.Y / 2, 0)).Position, Facing = gate.CFrame.LookVector, Yaw = math.pi, Height = 24, Glow = rgb(190, 140, 255), Fancy = true })
+	PortalDecor.Dress(sky, template, { Name = "NeonGateModel", Bottom = (gate.CFrame * CFrame.new(0, -gate.Size.Y / 2, 0)).Position, Facing = gate.CFrame.LookVector, Yaw = math.pi, Height = 24, Glow = rgb(190, 140, 255), Fancy = true, Sink = 3.3 })
 	gate.Transparency = 1
 end)

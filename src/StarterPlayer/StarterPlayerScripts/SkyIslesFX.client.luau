@@ -42,9 +42,10 @@ sky.DescendantAdded:Connect(function(d)
 end)
 local clouds = {}
 local CollectionService = game:GetService("CollectionService")
+-- Атрибут Sway задаёт размах вручную: плотным облачным стенам (водопад) нужен маленький, чтобы не было щелей.
 local function addCloud(c)
 	if c:IsA("BasePart") and c:IsDescendantOf(sky) then
-		table.insert(clouds, { part = c, base = c.CFrame, phase = math.random() * 6, sway = 1 + math.random() * 2 })
+		table.insert(clouds, { part = c, base = c.CFrame, phase = math.random() * 6, sway = c:GetAttribute("Sway") or (1 + math.random() * 2) })
 	end
 end
 for _, c in ipairs(CollectionService:GetTagged("SkyCloud")) do

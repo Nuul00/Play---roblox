@@ -33,7 +33,8 @@ local function sparkles(parent: Instance, color: Color3, rate: number, size: num
 end
 
 -- Портал: bottom — точка на земле под центром проёма, facing — направление, куда смотрит проём,
--- height — высота модели, glow — цвет света и частиц, yaw — доворот модели вокруг вертикали (радианы).
+-- height — высота модели, glow — цвет света и частиц, yaw — доворот модели вокруг вертикали (радианы),
+-- sink — на сколько студов утопить модель в землю (когда у меша ниже основания свисают ленты и т. п.).
 function PortalDecor.Dress(parent: Instance, templateName: string, opts: { [string]: any }): Model?
 	local template = PortalDecor.Template(templateName)
 	if not template then
@@ -61,9 +62,10 @@ function PortalDecor.Dress(parent: Instance, templateName: string, opts: { [stri
 	local _, size = model:GetBoundingBox()
 	model:ScaleTo(opts.Height / math.max(size.Y, 0.01))
 	local facing = Vector3.new(opts.Facing.X, 0, opts.Facing.Z).Unit
+	local base = opts.Bottom - Vector3.new(0, opts.Sink or 0, 0)
 	local cf
 	cf, size = model:GetBoundingBox()
-	local placed = CFrame.lookAt(opts.Bottom, opts.Bottom + facing) * CFrame.Angles(0, opts.Yaw or 0, 0)
+	local placed = CFrame.lookAt(base, base + facing) * CFrame.Angles(0, opts.Yaw or 0, 0)
 	-- Центр рамки модели над точкой bottom, низ — на земле.
 	local offset = model:GetPivot():ToObjectSpace(cf)
 	model:PivotTo(placed * CFrame.new(0, size.Y / 2, 0) * offset:Inverse())
@@ -73,7 +75,7 @@ function PortalDecor.Dress(parent: Instance, templateName: string, opts: { [stri
 	local aperture = Instance.new("Part")
 	aperture.Name = "Aperture"
 	aperture.Size = Vector3.new(size.X * (opts.ApertureWidth or 0.45), size.Y * (opts.ApertureHeight or 0.55), 0.4)
-	aperture.CFrame = CFrame.lookAt(opts.Bottom, opts.Bottom + facing) * CFrame.new(0, size.Y * (opts.ApertureY or 0.42), 0)
+	aperture.CFrame = CFrame.lookAt(base, base + facing) * CFrame.new(0, size.Y * (opts.ApertureY or 0.42), 0)
 	aperture.Transparency = 1
 	aperture.Anchored = true
 	aperture.CanCollide = false
