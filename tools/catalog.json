@@ -397,185 +397,263 @@
   },
   {
     "Id": 4,
-    "Name": "Gummy Egg",
+    "Name": "Disco Grid Egg",
     "World": "neon",
     "Price": 2500,
     "X": 540,
     "Z": 132,
     "Color": [
-      255,
-      120,
-      190
+      232,
+      68,
+      255
     ],
     "Pets": [
       {
         "Id": 19,
-        "Name": "Gummy Kitty",
+        "Name": "Pixel Cat",
+        "Visual": "NeonDisco_Cat",
         "Rarity": "Common",
-        "Chance": 40,
-        "Visual": "Gummy Kitty",
+        "Chance": 54,
         "Multiplier": 8.4,
         "Color": [
-          230,
-          112,
-          199
-        ]
-      },
-      {
-        "Id": 20,
-        "Name": "Gummy Bunny",
-        "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Gummy Bunny",
-        "Multiplier": 10.5,
-        "Color": [
-          255,
-          143,
-          165
+          232,
+          68,
+          255
         ]
       },
       {
         "Id": 21,
-        "Name": "Gummy Fox",
-        "Rarity": "Rare",
-        "Chance": 17,
-        "Visual": "Gummy Fox",
-        "Multiplier": 14,
+        "Name": "Neon Raccoon",
+        "Visual": "NeonDisco_Raccoon",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 10.5,
         "Color": [
-          255,
-          109,
-          196
+          232,
+          68,
+          255
         ]
       },
       {
         "Id": 22,
-        "Name": "Gummy Doggy",
-        "Rarity": "Epic",
-        "Chance": 9,
-        "Visual": "Gummy Doggy",
-        "Multiplier": 21,
+        "Name": "Grid Panda",
+        "Visual": "NeonDisco_Panda",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 11.9,
         "Color": [
-          255,
-          140,
-          227
+          232,
+          68,
+          255
         ]
       },
       {
         "Id": 23,
-        "Name": "Gummylord",
-        "Rarity": "Mythic",
-        "Chance": 3.9,
-        "Visual": "Gummylord",
-        "Multiplier": 42,
+        "Name": "Holo Wolf",
+        "Visual": "NeonDisco_Wolf",
+        "Rarity": "Rare",
+        "Chance": 7,
+        "Multiplier": 15.4,
         "Color": [
-          255,
-          106,
-          193
+          232,
+          68,
+          255
         ]
       },
       {
         "Id": 24,
-        "Name": "Gummy Spacial Star",
+        "Name": "Laser Owl",
+        "Visual": "NeonDisco_Owl",
+        "Rarity": "Rare",
+        "Chance": 5,
+        "Multiplier": 18.2,
+        "Color": [
+          232,
+          68,
+          255
+        ]
+      },
+      {
+        "Id": 46,
+        "Name": "Disco Lion",
+        "Visual": "NeonDisco_Lion",
+        "Rarity": "Epic",
+        "Chance": 2,
+        "Multiplier": 24.5,
+        "Color": [
+          232,
+          68,
+          255
+        ]
+      },
+      {
+        "Id": 47,
+        "Name": "Synth Shark",
+        "Visual": "NeonDisco_Shark",
+        "Rarity": "Epic",
+        "Chance": 1,
+        "Multiplier": 35,
+        "Color": [
+          232,
+          68,
+          255
+        ]
+      },
+      {
+        "Id": 48,
+        "Name": "Cube Dragon",
+        "Visual": "NeonDisco_Dragon",
+        "Rarity": "Legendary",
+        "Chance": 0.9,
+        "Multiplier": 56,
+        "Color": [
+          232,
+          68,
+          255
+        ]
+      },
+      {
+        "Id": 49,
+        "Name": "Matrix Bot",
+        "Visual": "NeonDisco_Robot",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Visual": "Gummy Spacial Star",
         "Multiplier": 105,
         "Color": [
-          255,
-          137,
-          224
+          232,
+          68,
+          255
         ]
       }
     ]
   },
   {
     "Id": 5,
-    "Name": "Ice Cream Egg",
+    "Name": "Tech Core Egg",
     "World": "neon",
     "Price": 10000,
     "X": 571,
     "Z": 132,
     "Color": [
-      150,
-      220,
+      54,
+      205,
       255
     ],
     "Pets": [
       {
         "Id": 25,
-        "Name": "Ice Cream Kitty",
+        "Name": "Core Cat",
+        "Visual": "NeonTech_Cat",
         "Rarity": "Common",
-        "Chance": 38,
-        "Visual": "Ice Cream Kitty",
+        "Chance": 54,
         "Multiplier": 14.4,
         "Color": [
-          125,
-          212,
+          54,
+          205,
           255
         ]
       },
       {
-        "Id": 26,
-        "Name": "Ice Cream Bunny",
+        "Id": 27,
+        "Name": "Security Dog",
+        "Visual": "NeonTech_Dog",
         "Rarity": "Uncommon",
-        "Chance": 30,
-        "Visual": "Ice Cream Bunny",
+        "Chance": 18,
         "Multiplier": 18,
         "Color": [
-          156,
-          243,
-          230
-        ]
-      },
-      {
-        "Id": 27,
-        "Name": "Ice Cream Doggy",
-        "Rarity": "Rare",
-        "Chance": 18,
-        "Visual": "Ice Cream Doggy",
-        "Multiplier": 24,
-        "Color": [
-          187,
-          209,
+          54,
+          205,
           255
         ]
       },
       {
         "Id": 28,
-        "Name": "Ice Cream Bat",
-        "Rarity": "Epic",
-        "Chance": 9,
-        "Visual": "Ice Cream Bat",
-        "Multiplier": 36,
+        "Name": "Repair Panda",
+        "Visual": "NeonTech_Panda",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 20.4,
         "Color": [
-          153,
-          240,
+          54,
+          205,
           255
         ]
       },
       {
         "Id": 29,
-        "Name": "Ice Cream Shock",
-        "Rarity": "Mythic",
-        "Chance": 4.8,
-        "Visual": "Ice Cream Shock",
-        "Multiplier": 72,
+        "Name": "Drone Fox",
+        "Visual": "NeonTech_Fox",
+        "Rarity": "Rare",
+        "Chance": 7,
+        "Multiplier": 26.4,
         "Color": [
-          184,
-          206,
+          54,
+          205,
           255
         ]
       },
       {
         "Id": 30,
-        "Name": "Ice Cream Doubull",
+        "Name": "AI Owl",
+        "Visual": "NeonTech_Owl",
+        "Rarity": "Rare",
+        "Chance": 5,
+        "Multiplier": 31.2,
+        "Color": [
+          54,
+          205,
+          255
+        ]
+      },
+      {
+        "Id": 50,
+        "Name": "Cyber Lion",
+        "Visual": "NeonTech_Lion",
+        "Rarity": "Epic",
+        "Chance": 2,
+        "Multiplier": 42,
+        "Color": [
+          54,
+          205,
+          255
+        ]
+      },
+      {
+        "Id": 51,
+        "Name": "Data Shark",
+        "Visual": "NeonTech_Shark",
+        "Rarity": "Epic",
+        "Chance": 1,
+        "Multiplier": 60,
+        "Color": [
+          54,
+          205,
+          255
+        ]
+      },
+      {
+        "Id": 52,
+        "Name": "Nano Dragon",
+        "Visual": "NeonTech_Dragon",
+        "Rarity": "Legendary",
+        "Chance": 0.9,
+        "Multiplier": 96,
+        "Color": [
+          54,
+          205,
+          255
+        ]
+      },
+      {
+        "Id": 53,
+        "Name": "Core Robot",
+        "Visual": "NeonTech_Robot",
         "Rarity": "Secret",
-        "Chance": 0.2,
-        "Visual": "Ice Cream Doubull",
+        "Chance": 0.1,
         "Multiplier": 180,
         "Color": [
-          150,
-          237,
+          54,
+          205,
           255
         ]
       }
@@ -583,11 +661,262 @@
   },
   {
     "Id": 6,
-    "Name": "Galactic Egg",
+    "Name": "City Lights Egg",
     "World": "neon",
     "Price": 50000,
     "X": 602,
     "Z": 132,
+    "Color": [
+      192,
+      88,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 31,
+        "Name": "Skyline Cat",
+        "Visual": "NeonCity_Cat",
+        "Rarity": "Common",
+        "Chance": 54,
+        "Multiplier": 24,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 33,
+        "Name": "Metro Fox",
+        "Visual": "NeonCity_Fox",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 30,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 34,
+        "Name": "Street Owl",
+        "Visual": "NeonCity_Owl",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 34,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 35,
+        "Name": "Tower Wolf",
+        "Visual": "NeonCity_Wolf",
+        "Rarity": "Rare",
+        "Chance": 7,
+        "Multiplier": 44,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 36,
+        "Name": "Neon Deer",
+        "Visual": "NeonCity_Deer",
+        "Rarity": "Rare",
+        "Chance": 5,
+        "Multiplier": 52,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 54,
+        "Name": "Sky Lion",
+        "Visual": "NeonCity_Lion",
+        "Rarity": "Epic",
+        "Chance": 2,
+        "Multiplier": 70,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 55,
+        "Name": "Hover Whale",
+        "Visual": "NeonCity_Whale",
+        "Rarity": "Epic",
+        "Chance": 1,
+        "Multiplier": 100,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 56,
+        "Name": "Sky Dragon",
+        "Visual": "NeonCity_Dragon",
+        "Rarity": "Legendary",
+        "Chance": 0.9,
+        "Multiplier": 160,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      },
+      {
+        "Id": 57,
+        "Name": "Aerial Bot",
+        "Visual": "NeonCity_Robot",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 300,
+        "Color": [
+          192,
+          88,
+          255
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 7,
+    "Name": "Cloud Egg",
+    "World": "sky",
+    "Price": 150000,
+    "X": 1048,
+    "Z": 112,
+    "Color": [
+      190,
+      225,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 58,
+        "Name": "Nimbus Cloud",
+        "Visual": "CloudCloud",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 40,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 59,
+        "Name": "Aviator Bear",
+        "Visual": "CloudBear",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 46,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 60,
+        "Name": "Balloon Hamster",
+        "Visual": "CloudBalloon",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 55,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 61,
+        "Name": "Breeze Tornado",
+        "Visual": "CloudTornado",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 65,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 62,
+        "Name": "Rainbow Kitty",
+        "Visual": "CloudRainbowCat",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 80,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 63,
+        "Name": "Cloud Unicorn",
+        "Visual": "CloudUnicorn",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 110,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 64,
+        "Name": "Sky Griffin",
+        "Visual": "CloudGriffin",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 220,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      },
+      {
+        "Id": 65,
+        "Name": "Angel Cat",
+        "Visual": "CloudAngelCat",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 500,
+        "Color": [
+          190,
+          225,
+          255
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 8,
+    "Name": "Celestial Egg",
+    "World": "sky",
+    "Price": 500000,
+    "X": 1100,
+    "Z": 112,
     "Color": [
       160,
       110,
@@ -595,80 +924,225 @@
     ],
     "Pets": [
       {
-        "Id": 31,
-        "Name": "Galactic Plushie",
+        "Id": 66,
+        "Name": "Moon Cat",
+        "Visual": "CelestialMoonCat",
         "Rarity": "Common",
-        "Chance": 35,
-        "Visual": "Galactic Plushie",
-        "Multiplier": 24,
-        "Color": [
-          135,
-          102,
-          255
-        ]
-      },
-      {
-        "Id": 32,
-        "Name": "Galactic Hedgehog",
-        "Rarity": "Uncommon",
         "Chance": 30,
-        "Visual": "Galactic Hedgehog",
-        "Multiplier": 30,
-        "Color": [
-          166,
-          133,
-          230
-        ]
-      },
-      {
-        "Id": 33,
-        "Name": "Galactic Saturn",
-        "Rarity": "Rare",
-        "Chance": 19,
-        "Visual": "Galactic Saturn",
-        "Multiplier": 40,
-        "Color": [
-          197,
-          99,
-          255
-        ]
-      },
-      {
-        "Id": 34,
-        "Name": "Galactic Angel",
-        "Rarity": "Epic",
-        "Chance": 10,
-        "Visual": "Galactic Angel",
-        "Multiplier": 60,
-        "Color": [
-          163,
-          130,
-          255
-        ]
-      },
-      {
-        "Id": 35,
-        "Name": "Galactic Queen",
-        "Rarity": "Mythic",
-        "Chance": 5.7,
-        "Visual": "Galactic Queen",
-        "Multiplier": 120,
-        "Color": [
-          194,
-          96,
-          255
-        ]
-      },
-      {
-        "Id": 36,
-        "Name": "Galactic Overlord",
-        "Rarity": "Secret",
-        "Chance": 0.3,
-        "Visual": "Galactic Overlord",
-        "Multiplier": 300,
+        "Multiplier": 62,
         "Color": [
           160,
-          127,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 67,
+        "Name": "Storm Cloud",
+        "Visual": "CelestialStorm",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 72,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 68,
+        "Name": "Blossom Sprite",
+        "Visual": "CelestialBlossom",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 86,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 69,
+        "Name": "Sky Castle",
+        "Visual": "CelestialCastle",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 100,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 70,
+        "Name": "Ruins Isle",
+        "Visual": "CelestialRuins",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 125,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 71,
+        "Name": "Winged Wolf",
+        "Visual": "CelestialWolf",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 160,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 72,
+        "Name": "Celestial Dragon",
+        "Visual": "CelestialDragon",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 360,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      },
+      {
+        "Id": 73,
+        "Name": "Galaxy Whale",
+        "Visual": "CelestialWhale",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 850,
+        "Color": [
+          160,
+          110,
+          255
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 9,
+    "Name": "Crystal Egg",
+    "World": "sky",
+    "Price": 1500000,
+    "X": 1152,
+    "Z": 112,
+    "Color": [
+      110,
+      215,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 74,
+        "Name": "Pegasus",
+        "Visual": "CrystalPegasus",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 100,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 75,
+        "Name": "Space Whale",
+        "Visual": "CrystalWhale",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 115,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 76,
+        "Name": "Sun Lion",
+        "Visual": "CrystalLion",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 135,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 77,
+        "Name": "Winged Stag",
+        "Visual": "CrystalStag",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 160,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 78,
+        "Name": "Clockwork Chest",
+        "Visual": "CrystalClock",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 200,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 79,
+        "Name": "Crystal Golem",
+        "Visual": "CrystalGolem",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 260,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 80,
+        "Name": "Phoenix",
+        "Visual": "CrystalPhoenix",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 560,
+        "Color": [
+          110,
+          215,
+          255
+        ]
+      },
+      {
+        "Id": 81,
+        "Name": "Angel Queen",
+        "Visual": "CrystalQueen",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 1400,
+        "Color": [
+          110,
+          215,
           255
         ]
       }

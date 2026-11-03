@@ -50,6 +50,9 @@ end
 local boards = {}
 local function buildBoard(id, stand)
 	local egg = Config.Eggs[id]
+	local neon=egg.World=="neon"
+	-- Яйца Sky Isles — облачный пастельный стиль: светлая панель с градиентом, белая обводка.
+	local sky = egg.World == "sky"
 	local anchor = stand:FindFirstChild("SignAnchor")
 	if not anchor then
 		local cf, size = stand.EggDisplay:GetBoundingBox()
@@ -60,10 +63,10 @@ local function buildBoard(id, stand)
 	end
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggBoard"
-	gui.Size = UDim2.fromScale(13, #egg.Pool > 6 and 13 or 7.4)
+	gui.Size = UDim2.fromScale(neon and 14.5 or 13, neon and 16 or (#egg.Pool > 6 and 13 or 7.4))
 	gui.MaxDistance = 75
 	-- Высокое табло (9 питомцев) поднимаем, чтобы яйцо его не закрывало.
-	gui.StudsOffsetWorldSpace = Vector3.new(0, #egg.Pool > 6 and 4.5 or 0, 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, neon and 6 or (#egg.Pool > 6 and 4.5 or 0), 0)
 	gui.LightInfluence = 0
 	gui.ResetOnSpawn = false
 	gui.Adornee = anchor
@@ -71,11 +74,19 @@ local function buildBoard(id, stand)
 
 	local panel = Instance.new("Frame")
 	panel.Size = UDim2.fromScale(1, 1)
-	panel.BackgroundColor3 = Color3.fromRGB(22, 24, 40)
-	panel.BackgroundTransparency = 0.15
+	panel.BackgroundColor3 = sky and Color3.new(1, 1, 1) or Color3.fromRGB(22, 24, 40)
+	panel.BackgroundTransparency = sky and 0.05 or 0.15
 	panel.Parent = gui
 	Instance.new("UICorner", panel).CornerRadius = UDim.new(0.08, 0)
-	stroke(panel, 3, egg.Color)
+	if sky then
+		local bg = Instance.new("UIGradient")
+		bg.Color = ColorSequence.new(Color3.fromRGB(255, 226, 244), Color3.fromRGB(205, 230, 255))
+		bg.Rotation = 90
+		bg.Parent = panel
+		stroke(panel, 4, Color3.new(1, 1, 1))
+	else
+		stroke(panel, 3, egg.Color)
+	end
 
 	-- Шапка: название и цена.
 	local head = Instance.new("Frame")
@@ -84,12 +95,15 @@ local function buildBoard(id, stand)
 	head.Parent = panel
 	Instance.new("UICorner", head).CornerRadius = UDim.new(0.3, 0)
 	local grad = Instance.new("UIGradient")
-	grad.Color = ColorSequence.new(egg.Color:Lerp(Color3.new(1, 1, 1), 0.25), egg.Color:Lerp(Color3.new(0, 0, 0), 0.25))
+	grad.Color = sky and ColorSequence.new(egg.Color:Lerp(Color3.new(1, 1, 1), 0.55), egg.Color:Lerp(Color3.new(1, 1, 1), 0.15)) or ColorSequence.new(egg.Color:Lerp(Color3.new(1, 1, 1), 0.25), egg.Color:Lerp(Color3.new(0, 0, 0), 0.25))
 	grad.Rotation = 90
 	grad.Parent = head
-	label(head, string.upper(egg.Name), UDim2.fromScale(0.04, 0.08), UDim2.fromScale(0.56, 0.84))
-	local price = label(head, "💰 " .. fmt(egg.Cost), UDim2.fromScale(0.6, 0.12), UDim2.fromScale(0.37, 0.76), Color3.fromRGB(255, 230, 90))
-	price.TextXAlignment = Enum.TextXAlignment.Right
+	if sky then
+		stroke(head, 3, Color3.new(1, 1, 1))
+	end
+	label(head, string.upper(egg.Name), neon and UDim2.fromScale(0.04,0.02) or UDim2.fromScale(0.04,0.08), neon and UDim2.fromScale(0.92,0.43) or UDim2.fromScale(0.56,0.84))
+	local price = label(head, "💰 " .. fmt(egg.Cost), neon and UDim2.fromScale(0.15,0.5) or UDim2.fromScale(0.6,0.12), neon and UDim2.fromScale(0.7,0.44) or UDim2.fromScale(0.37,0.76), Color3.fromRGB(255, 230, 90))
+	price.TextXAlignment = neon and Enum.TextXAlignment.Center or Enum.TextXAlignment.Right
 
 	-- Питомцы: 6 ячеек в ряд, под каждой шанс выпадения.
 	local grid = Instance.new("Frame")
@@ -99,7 +113,7 @@ local function buildBoard(id, stand)
 	grid.Size = UDim2.fromScale(0.95, many and 0.75 or 0.62)
 	grid.Parent = panel
 	local layout = Instance.new("UIGridLayout")
-	layout.CellSize = many and UDim2.fromScale(0.32, 0.317) or UDim2.fromScale(0.155, 1)
+	layout.CellSize = #egg.Pool>9 and UDim2.fromScale(0.188, 0.48) or many and UDim2.fromScale(0.32, 0.317) or UDim2.fromScale(0.155, 1)
 	layout.CellPadding = UDim2.fromScale(0.014, 0.02)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = grid
@@ -108,7 +122,7 @@ local function buildBoard(id, stand)
 		local color = rarityColors[def.Rarity] or Color3.new(1, 1, 1)
 		local cell = Instance.new("Frame")
 		cell.LayoutOrder = i
-		cell.BackgroundColor3 = Color3.fromRGB(40, 44, 66)
+		cell.BackgroundColor3 = sky and Color3.fromRGB(252, 248, 255) or Color3.fromRGB(40, 44, 66)
 		cell.Parent = grid
 		Instance.new("UICorner", cell).CornerRadius = UDim.new(0.14, 0)
 		stroke(cell, 2, color)
@@ -133,7 +147,7 @@ local function buildBoard(id, stand)
 		if many then
 			-- 9 питомцев: шанс, имя и редкость под моделькой.
 			local grad = Instance.new("UIGradient")
-			grad.Color = ColorSequence.new(color:Lerp(Color3.fromRGB(40, 44, 66), 0.6), Color3.fromRGB(30, 32, 50))
+			grad.Color = sky and ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.55), Color3.fromRGB(240, 236, 255)) or ColorSequence.new(color:Lerp(Color3.fromRGB(40, 44, 66), 0.6), Color3.fromRGB(30, 32, 50))
 			grad.Rotation = 90
 			grad.Parent = cell
 			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.56), UDim2.fromScale(0.92, 0.19), color)
@@ -144,7 +158,7 @@ local function buildBoard(id, stand)
 			label(cell, def.Rarity, UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.14), color, Enum.Font.GothamBold)
 		end
 	end
-	label(panel, "Touch the egg · OPEN ×1 / ×3 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), Color3.fromRGB(200, 205, 225), Enum.Font.GothamMedium)
+	label(panel, "Touch the egg · OPEN ×1 / ×3 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), sky and Color3.fromRGB(150, 110, 220) or Color3.fromRGB(200, 205, 225), sky and Enum.Font.FredokaOne or Enum.Font.GothamMedium)
 	table.insert(boards, { gui = gui, anchor = anchor })
 end
 
@@ -155,7 +169,7 @@ local function setupEgg(id, stand)
 	if not display then
 		return
 	end
-	local entry = { model = display, base = display:GetPivot(), phase = id * 1.3, holo = {}, orbs = {} }
+	local entry = { model = display, base = display:GetPivot(), phase = id * 1.3, neon = Config.Eggs[id].World=="neon", spin=0, holo = {}, orbs = {} }
 	local ped = stand:FindFirstChild("Pedestal")
 	if ped then
 		local center = ped:FindFirstChild("Base") and ped.Base.Position or entry.base.Position
@@ -185,10 +199,13 @@ local function setupEgg(id, stand)
 end
 
 for id in ipairs(Config.Eggs) do
-	local zone = Config.Eggs[id].World == "neon" and city or world
+	local zone = Config.Eggs[id].World == "neon" and city or Config.Eggs[id].World == "sky" and world:WaitForChild("SkyIsles", 60) or world
+	if not zone then
+		continue
+	end
 	local stand = zone:WaitForChild("EggStand" .. id, 10)
 	-- Яйца острова 1–3 сервер пересобирает при запуске: ждём готовую модель.
-	while stand and id <= 3 and not stand:GetAttribute("EggReady") do
+	while stand and not stand:GetAttribute("EggReady") do
 		stand.AttributeChanged:Wait()
 	end
 	if stand then
@@ -208,8 +225,13 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, e in ipairs(eggs) do
 		local center = e.base.Position
 		if (center - camPos).Magnitude < 160 then
-			local bob = math.sin(t * 1.6 + e.phase) * 0.35
-			e.model:PivotTo(e.base * CFrame.new(0, 0.35 + bob, 0) * CFrame.Angles(0, t * 0.5, 0))
+			local bob = math.sin(t * (e.neon and 1.05 or 1.6) + e.phase) * (e.neon and 0.2 or 0.35)
+			if e.neon then
+			 e.spin+=dt*(0.38+0.1*math.sin(t*.65+e.phase))
+			 e.model:PivotTo(e.base*CFrame.new(0,.3+bob,0)*CFrame.Angles(math.sin(t*.6+e.phase)*.025,e.spin,math.sin(t*.5+e.phase)*.025))
+			else
+			 e.model:PivotTo(e.base * CFrame.new(0, 0.35 + bob, 0) * CFrame.Angles(0, t * 0.5, 0))
+			end
 			for _, h in ipairs(e.holo) do
 				local rot = CFrame.new(h.center) * CFrame.Angles(0, t * 0.7, 0) * CFrame.new(-h.center)
 				h.part.CFrame = rot * h.base

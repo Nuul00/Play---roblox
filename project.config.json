@@ -1,0 +1,9 @@
+{
+  "project_name": "CoinSprint",
+  "sync_tool": "rojo",
+  "ui_framework": "native",
+  "review_mode": "lean",
+  "genre": "simulator",
+  "max_players": 12,
+  "configured_at": "2026-11-02"
+}

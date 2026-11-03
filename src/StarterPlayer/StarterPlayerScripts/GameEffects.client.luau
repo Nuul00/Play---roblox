@@ -106,7 +106,8 @@ rayParams.IgnoreWater = true
 -- ===== Монеты: вращение и покачивание только у клиента =====
 local coins = {}
 local world = Workspace:WaitForChild("CoinSpeedWorld")
-for _, zone in ipairs({ world, world:WaitForChild("NeonCity") }) do
+local skyWorld = world:WaitForChild("SkyIsles", 30)
+for _, zone in ipairs({ world, world:WaitForChild("NeonCity"), skyWorld }) do
 	for _, coin in ipairs(zone:GetChildren()) do
 		if coin:IsA("BasePart") and coin.Name:match("^Coin_%d+$") then
 			table.insert(coins, { part = coin, base = coin.CFrame, phase = #coins * 0.7 })
@@ -117,6 +118,91 @@ for _, zone in ipairs({ world, world:WaitForChild("NeonCity") }) do
 			end
 		end
 	end
+end
+
+-- ===== Эффект сбора монет: монета вспыхивает, взлетает к игроку и тает, разлетаются искры цветов мира =====
+-- (CoinTypes.Worlds[...].Theme). Редкие монеты дают больше искр; в Неонграде ещё расходится неоновое кольцо.
+local TweenService = game:GetService("TweenService")
+local CoinTypes = require(game:GetService("ReplicatedStorage"):WaitForChild("CoinTypes"))
+local function collectBurst(coin)
+	local worldId = coin:GetAttribute("CoinWorld") or "Sky"
+	local theme = (CoinTypes.Worlds[worldId] or CoinTypes.Worlds.Sky).Theme
+	local rarity = coin:GetAttribute("Rarity") or 1
+	local camera = Workspace.CurrentCamera
+	if not camera or (camera.CFrame.Position - coin.Position).Magnitude > 140 then
+		return
+	end
+	local ghost = coin:Clone()
+	for _, d in ipairs(ghost:GetChildren()) do
+		if not d:IsA("SurfaceAppearance") then
+			d:Destroy()
+		end
+	end
+	ghost.Name = "CoinGhost"
+	ghost.Transparency = 0
+	ghost.Anchored = true
+	ghost.CanCollide = false
+	ghost.CanTouch = false
+	ghost.CanQuery = false
+	ghost.Parent = effects
+	local burst = Instance.new("ParticleEmitter")
+	burst.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	burst.Color = ColorSequence.new(theme[1], theme[2])
+	burst.LightEmission = 1
+	burst.Lifetime = NumberRange.new(0.4, 0.8)
+	burst.Speed = NumberRange.new(6, 12)
+	burst.SpreadAngle = Vector2.new(180, 180)
+	burst.Drag = 4
+	burst.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+	burst.Rate = 0
+	burst.Parent = ghost
+	burst:Emit(16 + rarity * 10)
+	local light = Instance.new("PointLight")
+	light.Color = theme[1]
+	light.Range = 10
+	light.Brightness = 3
+	light.Parent = ghost
+	-- Летит вверх и к игроку, если он рядом, уменьшаясь и растворяясь.
+	local character = localPlayer.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local target = coin.Position + Vector3.new(0, 3, 0)
+	if root and (root.Position - coin.Position).Magnitude < 40 then
+		target = coin.Position:Lerp(root.Position + Vector3.new(0, 2, 0), 0.7)
+	end
+	local info = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	TweenService:Create(ghost, info, { CFrame = CFrame.new(target) * ghost.CFrame.Rotation * CFrame.Angles(0, math.pi, 0), Size = ghost.Size * 0.3, Transparency = 1 }):Play()
+	TweenService:Create(light, TweenInfo.new(0.4), { Brightness = 0 }):Play()
+	if worldId == "Neon" then
+		local ring = Instance.new("Part")
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Material = Enum.Material.Neon
+		ring.Color = theme[rarity % 2 + 1]
+		ring.Size = Vector3.new(0.1, 1, 1)
+		ring.CFrame = CFrame.new(coin.Position - Vector3.new(0, 1.2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+		ring.Transparency = 0.2
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanTouch = false
+		ring.CanQuery = false
+		ring.CastShadow = false
+		ring.Parent = effects
+		local grow = TweenService:Create(ring, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.1, 7 + rarity * 2, 7 + rarity * 2), Transparency = 1 })
+		grow.Completed:Connect(function()
+			ring:Destroy()
+		end)
+		grow:Play()
+	end
+	task.delay(0.9, function()
+		ghost:Destroy()
+	end)
+end
+for _, c in ipairs(coins) do
+	local coin = c.part
+	coin:GetAttributeChangedSignal("Available"):Connect(function()
+		if coin:GetAttribute("Available") == false then
+			collectBurst(coin)
+		end
+	end)
 end
 
 -- ===== Звук сбора монеты: берём звук "coin2" из плейса, иначе стандартный =====

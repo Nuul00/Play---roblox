@@ -147,7 +147,7 @@ local function refreshStats()
 	local walk = humanoid and humanoid.WalkSpeed or Config.GetWalkSpeed(speedLevel.Value)
 	speedText.Text = string.format("%d  speed", walk)
 	-- Итоговый множитель монет: команда питомцев × доход × достижения × зелье монет.
-	local bonus = (player:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0) * (player:GetAttribute("BadgeBonus") or 1)
+	local bonus = (player:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0) * (player:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(player:GetAttribute("Rebirths") or 0)
 	if (player:GetAttribute("PotionEndCoins") or 0) > os.time() then
 		bonus *= 2
 	end

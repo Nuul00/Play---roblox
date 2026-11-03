@@ -126,7 +126,12 @@ wallet.TextXAlignment = Enum.TextXAlignment.Right
 stroke(wallet, INK, 2, 0)
 local close = button(header, "X", 592, 22, 42, 42, Color3.fromRGB(220, 70, 90))
 close.Modal = true
-local gallery = Instance.new("Frame")
+local gallery = Instance.new("ScrollingFrame")
+gallery.BorderSizePixel=0
+gallery.ScrollBarThickness=5
+gallery.ScrollBarImageColor3=Color3.fromRGB(205,150,255)
+gallery.ScrollingDirection=Enum.ScrollingDirection.Y
+gallery.CanvasSize=UDim2.fromOffset(0,0)
 gallery.BackgroundTransparency = 1
 gallery.Position = UDim2.fromOffset(18, 112)
 gallery.Size = UDim2.fromOffset(624, 456)
@@ -135,6 +140,32 @@ local hint = label(panel, "Tap ✓ KEEP on a pet to auto-delete future copies of
 local single = button(panel, "", 18, 598, 198, 52, Color3.fromRGB(130, 90, 220))
 local triple = button(panel, "", 226, 598, 210, 52, Color3.fromRGB(240, 140, 70))
 local auto = button(panel, "", 446, 598, 196, 52, Color3.fromRGB(70, 170, 110))
+
+-- Облачный пастельный стиль окна для яиц Sky Isles: светлый фон с градиентом розовый → небесный,
+-- белая обводка, пастельные кнопки и ячейки. Для остальных миров окно остаётся тёмным.
+local PASTEL_BG = ColorSequence.new(Color3.fromRGB(255, 226, 244), Color3.fromRGB(200, 228, 255))
+local panelGrad = Instance.new("UIGradient", panel)
+panelGrad.Rotation = 90
+panelGrad.Color = PASTEL_BG
+panelGrad.Enabled = false
+local DARK_PANEL = panel.BackgroundColor3
+local BUTTON_COLORS = {
+	dark = { single = Color3.fromRGB(130, 90, 220), triple = Color3.fromRGB(240, 140, 70), auto = Color3.fromRGB(70, 170, 110) },
+	sky = { single = Color3.fromRGB(165, 140, 255), triple = Color3.fromRGB(255, 140, 200), auto = Color3.fromRGB(95, 195, 255) },
+}
+local skyTheme = false
+local function applyTheme(sky)
+	skyTheme = sky
+	panelGrad.Enabled = sky
+	panel.BackgroundColor3 = sky and WHITE or DARK_PANEL
+	panelStroke.Thickness = sky and 5 or 3
+	hint.TextColor3 = sky and Color3.fromRGB(140, 110, 200) or Color3.fromRGB(205, 190, 225)
+	local set = sky and BUTTON_COLORS.sky or BUTTON_COLORS.dark
+	single.BackgroundColor3 = set.single
+	triple.BackgroundColor3 = set.triple
+	auto.BackgroundColor3 = set.auto
+	gallery.ScrollBarImageColor3 = sky and Color3.fromRGB(170, 140, 255) or Color3.fromRGB(205, 150, 255)
+end
 
 -- Плашка автооткрытия: видна, пока режим включён, даже когда окно скрыто анимацией.
 local autoChip = box(gui, 0, 0, 300, 46, Color3.fromRGB(40, 140, 90))
@@ -193,11 +224,11 @@ local function refresh()
 	for _, cell in ipairs(cells) do
 		local deleting = player:GetAttribute("AutoDelete" .. cell.id) == true
 		cell.toggle.Text = deleting and "✕ AUTO-DELETE" or "✓ KEEP"
-		cell.toggle.BackgroundColor3 = deleting and Color3.fromRGB(190, 60, 85) or Color3.fromRGB(60, 80, 120)
+		cell.toggle.BackgroundColor3 = deleting and Color3.fromRGB(190, 60, 85) or (skyTheme and Color3.fromRGB(150, 130, 230) or Color3.fromRGB(60, 80, 120))
 		cell.frame.BackgroundTransparency = deleting and 0.45 or 0
 		local owned = player:GetAttribute("PetOwned" .. cell.id) or 0
 		cell.owned.Text = owned > 0 and ("OWNED ×" .. owned) or "NEW!"
-		cell.owned.TextColor3 = owned > 0 and Color3.fromRGB(205, 195, 225) or Color3.fromRGB(255, 225, 90)
+		cell.owned.TextColor3 = owned > 0 and (skyTheme and Color3.fromRGB(130, 110, 190) or Color3.fromRGB(205, 195, 225)) or (skyTheme and Color3.fromRGB(240, 120, 60) or Color3.fromRGB(255, 225, 90))
 	end
 	local waiting = os.clock() < busy
 	for _, pair in ipairs({ { single, 1 }, { triple, 3 } }) do
@@ -210,7 +241,7 @@ local function refresh()
 	end
 	local on = autoEgg == eggId
 	auto.Text = on and "AUTO: ON\ntap to stop" or "AUTO OPEN\n×3 when possible"
-	auto.BackgroundColor3 = on and Color3.fromRGB(220, 70, 90) or Color3.fromRGB(70, 170, 110)
+	auto.BackgroundColor3 = on and Color3.fromRGB(220, 70, 90) or (skyTheme and BUTTON_COLORS.sky.auto or BUTTON_COLORS.dark.auto)
 end
 
 local function hatch(n)
@@ -249,20 +280,25 @@ local function showEgg(id)
 	eggId = id
 	mode = "egg"
 	local egg = Config.Eggs[id]
-	headerGrad.Color = ColorSequence.new(egg.Color:Lerp(WHITE, 0.15), egg.Color:Lerp(Color3.new(0, 0, 0), 0.35))
-	panelStroke.Color = egg.Color
+	local sky = egg.World == "sky"
+	applyTheme(sky)
+	headerGrad.Color = sky and ColorSequence.new(egg.Color:Lerp(WHITE, 0.45), egg.Color:Lerp(WHITE, 0.05)) or ColorSequence.new(egg.Color:Lerp(WHITE, 0.15), egg.Color:Lerp(Color3.new(0, 0, 0), 0.35))
+	panelStroke.Color = sky and WHITE or egg.Color
 	gallery:ClearAllChildren()
 	cells = {}
 	local count = #egg.Pool
 	local cols = 3
 	local cellW, cellH = 200, count > 6 and 146 or 220
+	gallery.CanvasSize=UDim2.fromOffset(0,math.ceil(count/cols)*(cellH+9)-9)
+	gallery.CanvasPosition=Vector2.zero
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local c = colors[def.Rarity] or colors.Common
-		local cell = box(gallery, (i - 1) % cols * 212, math.floor((i - 1) / cols) * (cellH + 9), cellW, cellH, Color3.fromRGB(46, 38, 72))
+		local cellBg = sky and Color3.fromRGB(252, 248, 255) or Color3.fromRGB(46, 38, 72)
+		local cell = box(gallery, (i - 1) % cols * 212, math.floor((i - 1) / cols) * (cellH + 9), cellW, cellH, cellBg)
 		stroke(cell, c, (def.Rarity == "Secret" or def.Rarity == "Legendary") and 3 or 2, 0)
 		local grad = Instance.new("UIGradient", cell)
-		grad.Color = ColorSequence.new(c:Lerp(Color3.fromRGB(46, 38, 72), 0.55), Color3.fromRGB(36, 30, 58))
+		grad.Color = sky and ColorSequence.new(c:Lerp(WHITE, 0.45), Color3.fromRGB(236, 232, 255)) or ColorSequence.new(c:Lerp(Color3.fromRGB(46, 38, 72), 0.55), Color3.fromRGB(36, 30, 58))
 		grad.Rotation = 90
 		local scene = viewport(cell, 2, 18, 112, cellH - 58)
 		local ok, model = pcall(PetVisuals.Build, entry.Pet)
@@ -274,7 +310,7 @@ local function showEgg(id)
 		label(pill, def.Rarity:upper(), 0, 0, 100, 18, 11, INK, Enum.Font.GothamBlack)
 		local chance = label(cell, string.format("%g%%", entry.Chance), 112, 24, 84, 30, 24, c, Enum.Font.FredokaOne)
 		stroke(chance, INK, 2, 0)
-		label(cell, string.format("×%g 💰", def.Multiplier), 112, 56, 84, 20, 14, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
+		label(cell, string.format("×%g 💰", def.Multiplier), 112, 56, 84, 20, 14, sky and Color3.fromRGB(235, 130, 40) or Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
 		local owned = label(cell, "", 112, 78, 84, 18, 11, Color3.fromRGB(205, 195, 225))
 		local name = label(cell, def.Name, 6, cellH - 42, 188, 18, 14, WHITE, Enum.Font.FredokaOne)
 		stroke(name, INK, 1.5, 0)
@@ -315,34 +351,64 @@ RS:WaitForChild("GameFeedback").OnClientEvent:Connect(function(text)
 end)
 
 -- ===== Анимация открытия =====
-local reveal = box(gui, 0, 0, 760, 380, Color3.fromRGB(30, 24, 52))
+local dim = Instance.new("Frame")
+dim.Name = "RevealDim"
+dim.BackgroundColor3 = Color3.fromRGB(8, 6, 20)
+dim.BackgroundTransparency = 0.45
+dim.BorderSizePixel = 0
+dim.Size = UDim2.fromScale(1, 1)
+dim.Visible = false
+dim.ZIndex = 0
+dim.Parent = gui
+local dimGrad = Instance.new("UIGradient", dim)
+dimGrad.Rotation = 90
+dimGrad.Color = ColorSequence.new(Color3.fromRGB(255, 225, 245), Color3.fromRGB(190, 225, 255))
+dimGrad.Enabled = false
+local reveal = box(gui, 0, 0, 900, 520, Color3.fromRGB(30, 24, 52))
+reveal.BackgroundTransparency = 1
 reveal.AnchorPoint = Vector2.new(0.5, 0.5)
 reveal.Position = UDim2.fromScale(0.5, 0.5)
 reveal.Visible = false
-local revealStroke = stroke(reveal, Color3.fromRGB(239, 167, 236), 3, 0)
+local revealStroke = stroke(reveal, Color3.fromRGB(239, 167, 236), 3, 1)
 local revealScale = Instance.new("UIScale", reveal)
-local revealTitle = label(reveal, "", 15, 10, 730, 44, 28, WHITE, Enum.Font.FredokaOne)
-stroke(revealTitle, INK, 2.5, 0)
+local revealTitle = label(reveal, "", 0, 0, 900, 64, 44, WHITE, Enum.Font.FredokaOne)
+local revealTitleStroke = stroke(revealTitle, INK, 2.5, 0)
 local revealArea = Instance.new("Frame")
 revealArea.BackgroundTransparency = 1
-revealArea.Position = UDim2.fromOffset(12, 60)
-revealArea.Size = UDim2.fromOffset(736, 305)
+revealArea.Position = UDim2.fromOffset(0, 70)
+revealArea.Size = UDim2.fromOffset(900, 440)
 revealArea.Parent = reveal
 local results, scenes, models, resultLabels, glows = {}, {}, {}, {}, {}
+local modelScales, sparks = {}, {}
 local started, finished, revealLength = 0, false, 4.1
+local crackAt, rarityIdx, rayHolders, bestIdx = 2.1, {}, {}, 1
+local SKY_SPARKS = { Color3.fromRGB(255, 150, 210), Color3.fromRGB(150, 205, 255), Color3.fromRGB(190, 160, 255), Color3.fromRGB(255, 220, 130), Color3.fromRGB(160, 240, 210) }
+local RARITY_ORDER = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Mythic = 5, Legendary = 6, Secret = 7 }
+local flash = Instance.new("Frame")
+flash.Name = "RevealFlash"
+flash.BackgroundColor3 = WHITE
+flash.BackgroundTransparency = 1
+flash.BorderSizePixel = 0
+flash.Size = UDim2.fromScale(1, 1)
+flash.ZIndex = 20
+flash.Active = false
+flash.Parent = gui
 local displays = {}
 local world = workspace:WaitForChild("CoinSpeedWorld")
 for id, egg in ipairs(Config.Eggs) do
-	local zone = egg.World == "neon" and world:WaitForChild("NeonCity") or world
-	local stand = zone:WaitForChild("EggStand" .. id)
-	if id <= 3 then
+	task.spawn(function()
+		local zone = egg.World == "neon" and world:WaitForChild("NeonCity") or egg.World == "sky" and world:WaitForChild("SkyIsles") or world
+		local stand = zone:WaitForChild("EggStand" .. id, 60)
+		if not stand then
+			return
+		end
 		while not stand:GetAttribute("EggReady") do
 			stand.AttributeChanged:Wait()
 		end
-	end
-	local display = stand:WaitForChild("EggDisplay")
-	local size = display:GetExtentsSize()
-	displays[id] = { model = display, base = display:GetPivot(), radius = math.max(size.X, size.Z) / 2 }
+		local display = stand:WaitForChild("EggDisplay")
+		local size = display:GetExtentsSize()
+		displays[id] = { model = display, base = display:GetPivot(), radius = math.max(size.X, size.Z) / 2 }
+	end)
 end
 RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	if type(batch) ~= "table" or #batch < 1 or #batch > 3 or not displays[sourceEgg] then
@@ -359,34 +425,110 @@ RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	player:SetAttribute("UIScreen", "hatch")
 	revealArea:ClearAllChildren()
 	results, scenes, models, resultLabels, glows = batch, {}, {}, {}, {}
+	sparks = {}
+	rarityIdx, rayHolders, bestIdx = {}, {}, 1
+	for i, result in ipairs(batch) do
+		rarityIdx[i] = RARITY_ORDER[Config.Pets[result.Pet].Rarity] or 1
+		bestIdx = math.max(bestIdx, rarityIdx[i])
+	end
 	revealStroke.Color = Config.Eggs[sourceEgg].Color
-	local width = 736 / #batch
+	-- Яйца Sky Isles открываются на пастельном фоне-небе, каждое на облачке, искры радужные.
+	local skyHatch = Config.Eggs[sourceEgg].World == "sky"
+	dim.BackgroundColor3 = skyHatch and WHITE or Color3.fromRGB(8, 6, 20) -- у неба цвет даёт градиент
+	dim.BackgroundTransparency = skyHatch and 0.3 or 0.45
+	dimGrad.Enabled = skyHatch
+	revealTitleStroke.Color = skyHatch and Color3.fromRGB(150, 110, 220) or INK
+	local width = 900 / #batch
 	for i = 1, #batch do
 		local x = (i - 1) * width
 		local glow = Instance.new("Frame")
 		glow.BackgroundColor3 = WHITE
 		glow.BackgroundTransparency = 1
 		glow.AnchorPoint = Vector2.new(0.5, 0.5)
-		glow.Position = UDim2.fromOffset(x + width / 2, 100)
-		glow.Size = UDim2.fromOffset(170, 170)
+		glow.Position = UDim2.fromOffset(x + width / 2, 160)
+		glow.Size = UDim2.fromOffset(250, 250)
 		glow.Parent = revealArea
-		corner(glow, 85)
+		corner(glow, 125)
 		glows[i] = glow
-		local scene = viewport(revealArea, x, 0, width, 210)
+		if rarityIdx[i] >= 4 then
+			local holder = Instance.new("Frame")
+			holder.BackgroundTransparency = 1
+			holder.AnchorPoint = Vector2.new(0.5, 0.5)
+			holder.Position = UDim2.fromOffset(x + width / 2, 160)
+			holder.Size = UDim2.fromOffset(10, 10)
+			holder.Parent = revealArea
+			for k = 0, 3 do
+				local bar = Instance.new("Frame")
+				bar.BorderSizePixel = 0
+				bar.AnchorPoint = Vector2.new(0.5, 0.5)
+				bar.Position = UDim2.fromScale(0.5, 0.5)
+				bar.Size = UDim2.new(0, 18, 1, 0)
+				bar.Rotation = k * 45
+				bar.BackgroundColor3 = WHITE
+				bar.BackgroundTransparency = 0
+				bar.Parent = holder
+				local g = Instance.new("UIGradient")
+				g.Rotation = 90
+				g.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(0.5, 0.15),
+					NumberSequenceKeypoint.new(1, 1),
+				})
+				g.Parent = bar
+			end
+			holder.Visible = false
+			rayHolders[i] = holder
+		end
+		if skyHatch then
+			-- Облачко под яйцом: белый овал с пушистыми боками.
+			for k, off in ipairs({ { 0, 0, 190, 54 }, { -70, -12, 90, 60 }, { 70, -10, 96, 62 }, { 0, -22, 110, 70 } }) do
+				local puff = Instance.new("Frame")
+				puff.AnchorPoint = Vector2.new(0.5, 0.5)
+				puff.Position = UDim2.fromOffset(x + width / 2 + off[1], 286 + off[2])
+				puff.Size = UDim2.fromOffset(off[3], off[4])
+				puff.BackgroundColor3 = WHITE
+				puff.BackgroundTransparency = 0.05
+				puff.BorderSizePixel = 0
+				puff.ZIndex = 0
+				puff.Parent = revealArea
+				corner(puff, 60)
+				if k == 1 then
+					stroke(puff, Color3.fromRGB(200, 185, 255), 3, 0)
+				end
+			end
+		end
+		local scene = viewport(revealArea, x, 0, width, 330)
 		scenes[i] = scene
 		local egg = displays[sourceEgg].model:Clone()
 		egg:ScaleTo(egg:GetScale() * 2.8 / egg:GetExtentsSize().Y)
 		egg:PivotTo(CFrame.identity)
 		egg.Parent = scene
 		models[i] = egg
-		resultLabels[i] = label(revealArea, "", x + 5, 214, width - 10, 86, 15, WHITE, Enum.Font.FredokaOne)
+		modelScales[i] = egg:GetScale()
+		local sparkCount = 12 + (rarityIdx[i] >= 3 and 10 or 0) + (rarityIdx[i] >= 5 and 14 or 0) + (rarityIdx[i] >= 7 and 14 or 0)
+		for j = 1, sparkCount do
+			local spark = Instance.new("Frame")
+			spark.BorderSizePixel = 0
+			spark.AnchorPoint = Vector2.new(.5, .5)
+			spark.Size = UDim2.fromOffset(j % 3 == 0 and 7 or 4, j % 3 == 0 and 7 or 4)
+			spark.BackgroundColor3 = skyHatch and SKY_SPARKS[j % #SKY_SPARKS + 1] or Config.Eggs[sourceEgg].Color
+			spark.BackgroundTransparency = 1
+			spark.ZIndex = 3
+			spark.Parent = revealArea
+			corner(spark, 4)
+			table.insert(sparks, { frame = spark, angle = j * math.pi * 2 / sparkCount, center = x + width / 2, egg = i, reach = 150 + 28 * (rarityIdx[i] - 1) + (j % 3) * 22 })
+		end
+		resultLabels[i] = label(revealArea, "", x + 5, 334, width - 10, 100, 20, WHITE, Enum.Font.FredokaOne)
 	end
-	revealLength = auto and 3.5 or 4.1
+	local extra = ({ 0, 0, 0.25, 0.55, 0.8, 1.1, 1.5 })[bestIdx]
+	crackAt = (auto and 1.7 or 2.1) + (auto and extra * 0.5 or extra)
+	revealLength = crackAt + (auto and 1.9 or 2.3) + (bestIdx >= 6 and 0.7 or 0)
 	started = os.clock()
 	finished = false
 	busy = started + revealLength
 	revealTitle.Text = #batch == 3 and "THREE EGGS…" or "OPENING…"
 	reveal.Visible = true
+	dim.Visible = true
 	if auto then
 		autoCount += #batch
 	end
@@ -398,7 +540,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if camera then
 		local size = camera.ViewportSize
 		scale.Scale = math.min(1, (size.X - 28) / 660, (size.Y - 60) / 664)
-		revealScale.Scale = math.min(1, (size.X - 28) / 760, (size.Y - 60) / 380)
+		revealScale.Scale = math.min(1, (size.X - 28) / 900, (size.Y - 40) / 520)
 	end
 	scan += dt
 	if scan > 0.15 then
@@ -442,7 +584,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	if reveal.Visible then
 		local t = os.clock() - started
-		local crack = revealLength * 0.36
+		local crack = crackAt
 		if t >= crack and not finished then
 			finished = true
 			local best = "Common"
@@ -451,6 +593,7 @@ RunService.RenderStepped:Connect(function(dt)
 				models[i]:Destroy()
 				models[i] = PetVisuals.Build(result.Pet)
 				models[i].Parent = scenes[i]
+				modelScales[i] = models[i]:GetScale()
 				local def = Config.Pets[result.Pet]
 				local c = colors[def.Rarity] or WHITE
 				if (order[def.Rarity] or 1) > (order[best] or 1) then
@@ -461,25 +604,105 @@ RunService.RenderStepped:Connect(function(dt)
 				l.Text = string.format("%s\n%s · ×%g\n%s", def.Name, def.Rarity:upper(), def.Multiplier, result.Deleted and "AUTO-DELETED" or ("OWNED ×" .. result.Count))
 				stroke(l, INK, 2, 0)
 				glows[i].BackgroundColor3 = c
-				glows[i].BackgroundTransparency = 0.55
-				TweenService:Create(glows[i], TweenInfo.new(0.6, Enum.EasingStyle.Back), { Size = UDim2.fromOffset(200, 200) }):Play()
+				glows[i].BackgroundTransparency = 0.45
+				local ri = rarityIdx[i]
+				for _, sp in ipairs(sparks) do
+					if sp.egg == i then
+						sp.frame.BackgroundColor3 = ri >= 7 and Color3.fromHSV((sp.angle / (math.pi * 2)) % 1, 0.45, 1) or c
+					end
+				end
+				if rayHolders[i] then
+					rayHolders[i].Visible = true
+					for _, bar in ipairs(rayHolders[i]:GetChildren()) do
+						if bar:IsA("Frame") then
+							bar.BackgroundColor3 = c
+						end
+					end
+				end
+				TweenService:Create(glows[i], TweenInfo.new(0.9, Enum.EasingStyle.Sine), { BackgroundTransparency = 0.82 }):Play()
+				TweenService:Create(glows[i], TweenInfo.new(0.9, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(320, 320) }):Play()
+			end
+			if bestIdx >= 3 then
+				local strength = ({ 0, 0, 0.22, 0.38, 0.5, 0.62, 0.8 })[bestIdx]
+				flash.BackgroundColor3 = bestIdx >= 7 and WHITE or (colors[best] or WHITE):Lerp(WHITE, 0.55)
+				flash.BackgroundTransparency = 1 - strength
+				TweenService:Create(flash, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
 			end
 			revealTitle.Text = (best == "Secret" and "✨ SECRET! ✨") or (best == "Legendary" and "🌟 LEGENDARY! 🌟") or (#results == 3 and "TRIPLE HATCH!" or "YOU HATCHED!")
 			revealTitle.TextColor3 = colors[best] or WHITE
 		end
+		local function smooth(x)
+			x = math.clamp(x, 0, 1)
+			return x * x * (3 - 2 * x)
+		end
+		local fadeIn = smooth(t / 0.45)
+		local fadeOut = smooth((revealLength - t) / 0.5)
+		local alpha = math.min(fadeIn, fadeOut)
+		dim.BackgroundTransparency = 1 - 0.55 * alpha
+		revealTitle.TextTransparency = 1 - alpha
 		for i, m in ipairs(models) do
+			local lift = 1 - fadeOut -- лёгкое «уплывание» в конце
 			if t < crack then
-				m:PivotTo(CFrame.Angles(0, t * 3, math.sin(t * 25 + i) * 0.12 * (t / crack)))
+				local u = math.clamp((t - (i - 1) * 0.12) / crack, 0, 1)
+				local arrive = 1 - (1 - math.clamp(u / .3, 0, 1)) ^ 5
+				local tension = smooth((u - .3) / .7)
+				local ri = rarityIdx[i] or 1
+				local wobble = math.sin(t * (4 + 6 * tension + ri * 0.8) + i * 1.7) * tension * (0.7 + 0.12 * ri)
+				local turn = math.pi * 2 * smooth(u / .85)
+				m:ScaleTo(modelScales[i] * (.7 + .3 * arrive + .03 * tension * math.sin(t * 8)) * (0.94 + 0.06 * fadeIn))
+				m:PivotTo(CFrame.new(0, (1 - arrive) * 1.2 + math.sin(t * 2.2 + i * 2) * .07, 0) * CFrame.Angles(.03 * wobble, turn, wobble * (.03 + .1 * tension)))
+				glows[i].BackgroundColor3 = ri >= 3 and revealStroke.Color:Lerp(colors[Config.Pets[results[i].Pet].Rarity] or WHITE, tension) or revealStroke.Color
+				glows[i].BackgroundTransparency = 1 - (.14 + .03 * ri) * tension * alpha
 			else
-				m:PivotTo(CFrame.Angles(0, math.sin(t * 1.5) * 0.4, 0))
+				local age = t - crack
+				local u = math.clamp(age / .7, 0, 1)
+				local back = 1 + 1.9 * (u - 1) ^ 3 + .9 * (u - 1) ^ 2
+				m:ScaleTo(modelScales[i] * math.max(.05, back) * (1 - .1 * lift))
+				m:PivotTo(CFrame.new(0, math.sin(age * 1.6) * .06 + lift * .25, 0) * CFrame.Angles(0, -.4 * (1 - smooth(u)) + math.sin(age * 1.1) * .12, 0))
+				resultLabels[i].TextTransparency = math.max(1 - smooth((age - .2) / .45), lift)
 			end
+		end
+		for _, particle in ipairs(sparks) do
+			local age = t - crack
+			local u = math.clamp(age / .85, 0, 1)
+			local radius = 40 + (particle.reach or 150) * (1 - (1 - u) ^ 3)
+			particle.frame.Position = UDim2.fromOffset(particle.center + math.cos(particle.angle) * radius, 160 + math.sin(particle.angle) * radius + u * u * 40)
+			particle.frame.BackgroundTransparency = age >= 0 and u * u or 1
+			particle.frame.Rotation = age * 100
 		end
 		for _, g in ipairs(glows) do
 			g.Rotation += dt * 40
 		end
+		local postAge = t - crack
+		for i, holder in pairs(rayHolders) do
+			if holder.Parent and postAge >= 0 then
+				local grow = 1 - (1 - math.clamp(postAge / 0.7, 0, 1)) ^ 3
+				local size = (300 + 70 * (rarityIdx[i] - 4)) * grow
+				holder.Size = UDim2.fromOffset(size, size)
+				holder.Rotation = postAge * 28
+				local fade = math.clamp((revealLength - t) / 0.6, 0, 1)
+				for _, bar in ipairs(holder:GetChildren()) do
+					if bar:IsA("Frame") then
+						bar.BackgroundTransparency = 1 - fade * 0.9 * math.clamp(1.2 - postAge / 3, 0.65, 1)
+					end
+				end
+			end
+		end
+		if bestIdx >= 6 and postAge >= 0 and postAge < 0.5 then
+			local k = (1 - postAge / 0.5) * 7
+			reveal.Position = UDim2.new(0.5, math.sin(postAge * 70) * k, 0.5, math.cos(postAge * 61) * k)
+		else
+			reveal.Position = UDim2.fromScale(0.5, 0.5)
+		end
+		if bestIdx >= 7 and postAge >= 0 then
+			revealTitle.TextColor3 = Color3.fromHSV((t * 0.6) % 1, 0.5, 1)
+		end
 		if t > revealLength then
+			reveal.Position = UDim2.fromScale(0.5, 0.5)
 			reveal.Visible = false
+			dim.Visible = false
 			revealTitle.TextColor3 = WHITE
+			revealTitle.TextTransparency = 0
 			revealArea:ClearAllChildren()
 			models = {}
 			player:SetAttribute("UIScreen", "")

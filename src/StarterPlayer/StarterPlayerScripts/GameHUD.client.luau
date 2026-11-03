@@ -19,27 +19,59 @@ local function button(parent,text,size,pos)
  local b=Instance.new("TextButton");b.Size=size;b.Position=pos;b.Text=text;b.Font=Enum.Font.FredokaOne;b.TextSize=18;b.TextColor3=Color3.fromRGB(255,255,255);b.BackgroundColor3=Color3.fromRGB(60,90,110);b.AutoButtonColor=true;b.Parent=parent;Instance.new("UICorner",b).CornerRadius=UDim.new(0,12);stroke(b,2.5);return b
 end
 
--- Ряд кнопок над панелями валют слева снизу (верхний левый угол занимает окно чата Roblox).
--- Ряд кладём в тот же столбик, что и панели MainHUD, чтобы они масштабировались вместе.
-local panelsColumn=player.PlayerGui:WaitForChild("MainHUD"):WaitForChild("Panels")
-local row=Instance.new("Frame");row.Name="MenuButtons";row.BackgroundTransparency=1;row.LayoutOrder=0;row.Size=UDim2.new(1,0,0,72);row.Parent=panelsColumn
-local function iconButton(order,icon,caption,top,bottom)
- local b=Instance.new("TextButton");b.Name=caption;b.Size=UDim2.fromOffset(54,64);b.Position=UDim2.fromOffset((order-1)*58,0);b.Text="";b.BackgroundColor3=Color3.new(1,1,1);b.Parent=row
- Instance.new("UICorner",b).CornerRadius=UDim.new(0,18)
+-- Ряд глянцевых плиток внизу по центру (как на референсе) + маленькая кнопка настроек.
+local MENU_W,MENU_H,MENU_GAP=76,84,8
+local menuGui=Instance.new("ScreenGui");menuGui.Name="CornerMenuHUD";menuGui.ResetOnSpawn=false;menuGui.DisplayOrder=12;menuGui.Parent=player.PlayerGui
+local row=Instance.new("Frame");row.Name="MenuButtons";row.BackgroundTransparency=1;row.AnchorPoint=Vector2.new(0.5,1);row.Position=UDim2.new(0.5,0,1,-76);row.Size=UDim2.fromOffset(6*MENU_W+5*MENU_GAP+64,MENU_H);row.Parent=menuGui
+local menuScale=Instance.new("UIScale",row)
+local menuInk=Color3.fromRGB(35,22,60)
+local function tile(order,caption,emoji,top,bottom,small)
+ local w,h=small and 46 or MENU_W,small and 46 or MENU_H
+ local x=small and 6*MENU_W+5*MENU_GAP+18 or (order-1)*(MENU_W+MENU_GAP)
+ local b=Instance.new("TextButton");b.Name=caption;b.Size=UDim2.fromOffset(w,h);b.Position=UDim2.fromOffset(x,small and MENU_H-h or 0);b.Text="";b.AutoButtonColor=false;b.BackgroundColor3=Color3.new(1,1,1);b.Parent=row
+ Instance.new("UICorner",b).CornerRadius=UDim.new(0,small and 14 or 18)
  local g=Instance.new("UIGradient");g.Color=ColorSequence.new(top,bottom);g.Rotation=90;g.Parent=b
- stroke(b,3)
- local i=Instance.new("TextLabel");i.BackgroundTransparency=1;i.Size=UDim2.new(1,0,0.72,0);i.Text=icon;i.TextScaled=true;i.Font=Enum.Font.FredokaOne;i.TextColor3=Color3.new(1,1,1);i.Parent=b
- local pad=Instance.new("UIPadding",i);pad.PaddingTop=UDim.new(0.14,0)
- local c=Instance.new("TextLabel");c.BackgroundTransparency=1;c.Position=UDim2.new(0,0,0.66,0);c.Size=UDim2.new(1,0,0.32,0);c.Text=caption;c.TextScaled=true;c.Font=Enum.Font.FredokaOne;c.TextColor3=Color3.new(1,1,1);c.Parent=b
- stroke(c,1.5)
- b.MouseEnter:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(58,68)}):Play() end)
- b.MouseLeave:Connect(function() TweenService:Create(b,TweenInfo.new(0.12),{Size=UDim2.fromOffset(54,64)}):Play() end)
+ stroke(b,3.5,menuInk)
+ local gloss=Instance.new("Frame");gloss.BackgroundColor3=Color3.new(1,1,1);gloss.BackgroundTransparency=0.7;gloss.BorderSizePixel=0;gloss.Position=UDim2.fromOffset(4,4);gloss.Size=UDim2.new(1,-8,0.4,0);gloss.Parent=b
+ Instance.new("UICorner",gloss).CornerRadius=UDim.new(0,small and 10 or 14)
+ local i=Instance.new("TextLabel");i.BackgroundTransparency=1;i.Position=UDim2.new(0,0,0,small and 0 or 4);i.Size=UDim2.new(1,0,small and 1 or 0.62,0);i.Text=emoji;i.TextScaled=true;i.Font=Enum.Font.FredokaOne;i.TextColor3=Color3.new(1,1,1);i.Parent=b
+ Instance.new("UIPadding",i).PaddingTop=UDim.new(0,small and 6 or 4);i:FindFirstChildOfClass("UIPadding").PaddingBottom=UDim.new(0,small and 6 or 0)
+ if not small then
+  local c=Instance.new("TextLabel");c.BackgroundTransparency=1;c.Position=UDim2.new(0,0,0.64,0);c.Size=UDim2.new(1,0,0.3,0);c.Text=caption;c.TextScaled=true;c.Font=Enum.Font.FredokaOne;c.TextColor3=Color3.new(1,1,1);c.Parent=b
+  stroke(c,2,menuInk)
+  Instance.new("UIPadding",c).PaddingLeft=UDim.new(0,4);c:FindFirstChildOfClass("UIPadding").PaddingRight=UDim.new(0,4)
+ end
+ local s=Instance.new("UIScale",b)
+ b.MouseEnter:Connect(function() TweenService:Create(s,TweenInfo.new(0.12,Enum.EasingStyle.Back),{Scale=1.1}):Play() end)
+ b.MouseLeave:Connect(function() TweenService:Create(s,TweenInfo.new(0.12),{Scale=1}):Play() end)
+ b.MouseButton1Down:Connect(function() TweenService:Create(s,TweenInfo.new(0.06),{Scale=0.92}):Play() end)
+ b.MouseButton1Up:Connect(function() TweenService:Create(s,TweenInfo.new(0.1),{Scale=1.1}):Play() end)
  return b
 end
-local indexButton=iconButton(1,"📖","INDEX",Color3.fromRGB(255,190,90),Color3.fromRGB(220,110,40))
-local inventoryButton=iconButton(2,"🎒","ITEMS",Color3.fromRGB(150,230,120),Color3.fromRGB(60,160,70))
-local statButton=iconButton(3,"📊","STATS",Color3.fromRGB(120,210,255),Color3.fromRGB(50,120,230))
-local settingsButton=iconButton(4,"⚙","SETTINGS",Color3.fromRGB(190,190,205),Color3.fromRGB(110,110,135))
+local indexButton=tile(1,"INDEX","📖",Color3.fromRGB(255,200,90),Color3.fromRGB(235,115,35))
+local inventoryButton=tile(2,"ITEMS","🎒",Color3.fromRGB(165,240,120),Color3.fromRGB(55,165,70))
+local statButton=tile(3,"STATS","📊",Color3.fromRGB(130,215,255),Color3.fromRGB(50,115,235))
+local teleportButton=tile(4,"TELEPORT","🌀",Color3.fromRGB(225,130,255),Color3.fromRGB(105,45,215))
+local dailyButton=tile(5,"DAILY","🎁",Color3.fromRGB(255,160,195),Color3.fromRGB(215,65,130))
+local rebirthButton=tile(6,"REBIRTH","🔄",Color3.fromRGB(255,225,100),Color3.fromRGB(230,150,40))
+local settingsButton=tile(7,"SETTINGS","⚙",Color3.fromRGB(205,205,220),Color3.fromRGB(115,115,145),true)
+-- Красная точка на DAILY, когда награда готова.
+local DailyConfig=require(ReplicatedStorage:WaitForChild("DailyConfig"))
+local dot=Instance.new("TextLabel");dot.Size=UDim2.fromOffset(24,24);dot.Position=UDim2.new(1,-14,0,-8);dot.BackgroundColor3=Color3.fromRGB(235,60,70);dot.Text="!";dot.Font=Enum.Font.FredokaOne;dot.TextSize=18;dot.TextColor3=Color3.new(1,1,1);dot.ZIndex=5;dot.Parent=dailyButton
+Instance.new("UICorner",dot).CornerRadius=UDim.new(1,0);stroke(dot,2,menuInk)
+local dotTimer=0
+local function scaleCorner(dt)
+ local camera=workspace.CurrentCamera
+ if camera then local v=camera.ViewportSize;menuScale.Scale=math.clamp(math.min(v.X/700,v.Y/520),.5,1) end
+ dotTimer+=dt
+ if dotTimer>1 then dotTimer=0;dot.Visible=DailyConfig.State(player:GetAttribute("DailyDay"),player:GetAttribute("DailyClaimedAt"),workspace:GetServerTimeNow()).Ready and player:GetAttribute("ProfileReady")==true end
+end
+RunService.RenderStepped:Connect(scaleCorner)
+gui.Destroying:Connect(function() menuGui:Destroy() end)
+dailyButton.Activated:Connect(function() player:SetAttribute("UIScreen",player:GetAttribute("UIScreen")=="daily" and "" or "daily") end)
+teleportButton.Activated:Connect(function() player:SetAttribute("UIScreen",player:GetAttribute("UIScreen")=="teleport" and "" or "teleport") end)
+local rebirthToast=Instance.new("BindableEvent")
+rebirthButton.Activated:Connect(function() player:SetAttribute("UIScreen",player:GetAttribute("UIScreen")=="rebirth" and "" or "rebirth") end)
 local openInventory=Instance.new("BindableEvent");openInventory.Name="OpenInventory";openInventory.Parent=player.PlayerGui
 
 local function window(name,titleText,size)
@@ -119,12 +151,14 @@ local function update()
  local pet=Config.Pets[player:GetAttribute("PetLevel") or 0]
  local owned=0
  for i=1,#Config.Pets do if (player:GetAttribute("PetOwned"..i) or 0)>0 then owned=owned+1 end end
- content.Text=string.format("Coins                  %g\nSpeed                  %d  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nBest pet               %s\nPet bonus             x%g\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",stats.Coins.Value,Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),pet and pet.Name or "None",Config.GetPetMultiplier(player:GetAttribute("PetLevel") or 0),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,#Config.Pets,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
+ content.Text=string.format("Coins                  %g\nSpeed                  %d  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%g\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",stats.Coins.Value,Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",Config.GetPetMultiplier(player:GetAttribute("PetLevel") or 0),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,#Config.Pets,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
 end
 stats.Coins.Changed:Connect(update);stats.SpeedLevel.Changed:Connect(update);player.AttributeChanged:Connect(update);update()
-local toast=Instance.new("TextLabel");toast.AnchorPoint=Vector2.new(0.5,1);toast.Position=UDim2.new(0.5,0,1,-30);toast.Size=UDim2.new(0.7,0,0,38);toast.BackgroundColor3=Color3.fromRGB(30,47,50);toast.BackgroundTransparency=0.08;toast.TextColor3=Color3.fromRGB(243,235,207);toast.TextWrapped=true;toast.Font=Enum.Font.GothamBold;toast.TextSize=16;toast.Visible=false;toast.Parent=gui;Instance.new("UICorner",toast).CornerRadius=UDim.new(0,10)
+local toast=Instance.new("TextLabel");toast.AnchorPoint=Vector2.new(0.5,1);toast.Position=UDim2.new(0.5,0,1,-190);toast.Size=UDim2.new(0.7,0,0,38);toast.BackgroundColor3=Color3.fromRGB(30,47,50);toast.BackgroundTransparency=0.08;toast.TextColor3=Color3.fromRGB(243,235,207);toast.TextWrapped=true;toast.Font=Enum.Font.GothamBold;toast.TextSize=16;toast.Visible=false;toast.Parent=gui;Instance.new("UICorner",toast).CornerRadius=UDim.new(0,10)
 local version=0
-ReplicatedStorage:WaitForChild("GameFeedback").OnClientEvent:Connect(function(message) version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end)
+local function showToast(message) version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end
+rebirthToast.Event:Connect(function() showToast("Rebirth is coming soon!") end)
+ReplicatedStorage:WaitForChild("GameFeedback").OnClientEvent:Connect(function(message,success) if success then return end version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end)
 local hidden=false
 local previous=true
 RunService.RenderStepped:Connect(function()

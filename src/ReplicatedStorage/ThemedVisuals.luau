@@ -32,6 +32,61 @@ local PALETTES = {
 		dark = rgb(25, 18, 55),
 		branch = rgb(120, 90, 200),
 	},
+	Sky = {
+		main = rgb(150, 200, 255),
+		light = rgb(225, 240, 255),
+		white = rgb(255, 255, 255),
+		accent = rgb(255, 214, 120),
+		deep = rgb(90, 140, 230),
+		gold = rgb(255, 215, 100),
+		eye = rgb(70, 110, 220),
+		dark = rgb(40, 60, 110),
+		branch = rgb(180, 200, 240),
+	},
+	Cloud = {
+		main = rgb(160, 205, 255),
+		light = rgb(228, 242, 255),
+		white = rgb(255, 255, 255),
+		accent = rgb(255, 214, 120),
+		deep = rgb(100, 150, 235),
+		gold = rgb(255, 215, 100),
+		eye = rgb(70, 130, 235),
+		dark = rgb(45, 65, 120),
+		branch = rgb(190, 210, 245),
+	},
+	Celestial = {
+		main = rgb(105, 75, 195),
+		light = rgb(200, 175, 255),
+		white = rgb(250, 244, 255),
+		accent = rgb(255, 214, 120),
+		deep = rgb(52, 32, 125),
+		gold = rgb(255, 215, 100),
+		eye = rgb(255, 225, 130),
+		dark = rgb(25, 18, 60),
+		branch = rgb(150, 120, 220),
+	},
+	Crystal = {
+		main = rgb(125, 205, 245),
+		light = rgb(208, 240, 255),
+		white = rgb(242, 252, 255),
+		accent = rgb(85, 225, 255),
+		deep = rgb(65, 135, 205),
+		gold = rgb(255, 225, 120),
+		eye = rgb(80, 215, 255),
+		dark = rgb(30, 55, 100),
+		branch = rgb(170, 220, 250),
+	},
+	Aurora = {
+		main = rgb(255, 170, 220),
+		light = rgb(255, 225, 245),
+		white = rgb(255, 255, 255),
+		accent = rgb(120, 230, 255),
+		deep = rgb(170, 90, 220),
+		gold = rgb(255, 235, 130),
+		eye = rgb(130, 70, 210),
+		dark = rgb(70, 40, 100),
+		branch = rgb(200, 150, 230),
+	},
 }
 
 local function builder(name)
@@ -551,7 +606,247 @@ function STAR.Spirit(P, K, pal)
 	K.feet(-0.8, 0.5, -0.45, 0.45, pal.gold)
 end
 
-local BUILDERS = { Sakura = SAKURA, Starlight = STAR }
+-- ===== Cloud / Celestial / Crystal: питомцы третьего мира (Sky Isles) =====
+local function halo(P, y, r, color)
+	for k = 0, 17 do
+		local a = k / 18 * math.pi * 2
+		P("Halo", Vector3.new(0.3, 0.07, 0.1), CFrame.new(math.cos(a) * r, y, math.sin(a) * r) * CFrame.Angles(0, -a, 0), color, nil, M.Neon)
+	end
+end
+local function sparkles(K, pal, n, radius)
+	for i = 1, n do
+		local a = i * 2.4
+		K.ball("Sparkle", Vector3.new(math.cos(a) * radius, ((i * 37) % 13 - 6) * 0.14, math.sin(a) * radius), 0.09, pal.white, M.Neon)
+	end
+end
+local SKYP = {}
+function SKYP.Bear(P, K, pal)
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), pal.white)
+	for _, s in ipairs({ -1, 1 }) do
+		K.ball("Ear", Vector3.new(s * 0.62, 0.78, 0), 0.5, pal.white)
+		K.ball("EarIn", Vector3.new(s * 0.62, 0.78, -0.14), 0.26, pal.accent)
+		K.disc("GogRing", Vector3.new(s * 0.38, 0.3, -0.83), Vector3.new(0, 0, -1), 0.6, 0.08, pal.gold, M.Metal)
+		K.disc("GogLens", Vector3.new(s * 0.38, 0.3, -0.87), Vector3.new(0, 0, -1), 0.44, 0.05, rgb(150, 225, 255), M.Neon)
+	end
+	P("GogBand", Vector3.new(1.76, 0.14, 1.66), CFrame.new(0, 0.3, 0), pal.deep)
+	K.ball("Muzzle", Vector3.new(0, -0.3, -0.82), 0.7, pal.light)
+	K.ball("Nose", Vector3.new(0, -0.22, -1.14), 0.2, pal.dark)
+	P("Scarf", Vector3.new(1.8, 0.3, 1.7), CFrame.new(0, -0.62, 0), pal.accent)
+	P("ScarfTail", Vector3.new(0.35, 0.8, 0.15), CFrame.new(0.5, -1.0, -0.8) * CFrame.Angles(0, 0, 0.15), pal.accent)
+	K.feet(-0.8, 0.5, -0.45, 0.45, pal.white)
+end
+function SKYP.Balloon(P, K, pal)
+	K.ball("Balloon", Vector3.new(0, 1.0, 0), 2.0, pal.white)
+	for i = 1, 6 do
+		local a = i / 6 * math.pi * 2
+		K.ball("Puff", Vector3.new(math.cos(a) * 0.85, 0.8 + (i % 2) * 0.3, math.sin(a) * 0.85), 0.9, pal.light)
+	end
+	for _, s in ipairs({ -1, 1 }) do
+		P("Rope", Vector3.new(0.05, 0.9, 0.05), CFrame.new(s * 0.45, -0.15, 0) * CFrame.Angles(0, 0, -s * 0.35), pal.gold)
+	end
+	P("Basket", Vector3.new(1.1, 0.6, 1.1), CFrame.new(0, -0.9, 0), rgb(190, 140, 90), nil, M.Wood)
+	K.ball("Hamster", Vector3.new(0, -0.5, 0), 0.95, pal.light)
+	K.eyes(-0.45, -0.46, 0.2, 0.2, "happy")
+	K.cheeks(-0.6, -0.44, 0.3, pal.accent)
+	for _, s in ipairs({ -1, 1 }) do
+		K.ball("Ear", Vector3.new(s * 0.34, -0.05, 0), 0.26, pal.light)
+	end
+end
+function SKYP.Tornado(P, K, pal)
+	for i = 0, 9 do
+		local t = i / 9
+		local r = 0.25 + t * 0.8
+		local a = i * 0.9
+		P("Swirl", Vector3.new(0.3, r * 2, r * 2), CFrame.new(math.sin(a) * 0.1, (t - 0.5) * 2.0, math.cos(a) * 0.1) * CFrame.Angles(0, 0, HALF), i % 2 == 0 and pal.light or pal.main, "cyl", i % 3 == 0 and M.Neon or nil)
+	end
+	K.eyes(0.35, -0.83, 0.28, 0.3, nil, pal.deep)
+	for i = 1, 5 do
+		local a = i * 1.3
+		K.ball("Leaf", Vector3.new(math.cos(a) * 1.2, (i - 3) * 0.35, math.sin(a) * 1.2), 0.2, rgb(120, 210, 110))
+	end
+end
+function SKYP.RainbowCat(P, K, pal)
+	local cols = { rgb(255, 90, 90), rgb(255, 170, 80), rgb(255, 235, 100), rgb(110, 220, 130), rgb(100, 180, 255), rgb(170, 130, 255) }
+	for i, c in ipairs(cols) do
+		P("Rainbow", Vector3.new(1.7, 0.2, 1.6), CFrame.new(0, 0.55 - i * 0.22, 1.5), c, nil, M.Neon)
+	end
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), pal.white)
+	K.eyes(0.1, -0.81, 0.4, 0.34, "happy")
+	K.cheeks(-0.2, -0.81, 0.6, rgb(255, 150, 190))
+	for _, s in ipairs({ -1, 1 }) do
+		K.ear(Vector3.new(s * 0.5, 0.72, 0.1), s, 0.55, 0.6, 0.2, pal.white, rgb(255, 170, 200), 0.15)
+	end
+	for i = -1, 1 do
+		K.ball("CloudBase", Vector3.new(i * 0.6, -0.9, 0), 0.8, pal.light)
+	end
+end
+function SKYP.Griffin(P, K, pal)
+	K.cube("Body", Vector3.new(0, -0.15, 0.2), Vector3.new(1.6, 1.3, 1.8), pal.gold:Lerp(pal.white, 0.3))
+	K.ball("Head", Vector3.new(0, 0.4, -0.55), 1.15, pal.white)
+	P("Beak", Vector3.new(0.3, 0.3, 0.5), CFrame.new(0, 0.28, -1.2), pal.accent, "ball")
+	K.eyes(0.52, -1.0, 0.28, 0.24, nil, pal.eye)
+	for _, s in ipairs({ -1, 1 }) do
+		K.wing(Vector3.new(s * 0.7, 0.35, 0.3), s, 1.9, pal.white, pal.gold, 6)
+	end
+	K.ball("TailTuft", Vector3.new(0, 0, 1.3), 0.55, pal.gold)
+	K.feet(-0.85, 0.45, -0.3, 0.6, pal.gold)
+end
+function SKYP.AngelCat(P, K, pal)
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), pal.white)
+	K.eyes(0.08, -0.81, 0.4, 0.34, nil, pal.gold)
+	for _, s in ipairs({ -1, 1 }) do
+		K.ear(Vector3.new(s * 0.5, 0.72, 0.1), s, 0.55, 0.62, 0.2, pal.white, pal.accent, 0.15)
+		K.wing(Vector3.new(s * 0.75, 0.3, 0.3), s, 1.6, pal.white, pal.gold, 5)
+	end
+	halo(P, 1.3, 0.65, pal.gold)
+	K.cheeks(-0.2, -0.81, 0.6, rgb(255, 190, 200))
+	K.star(Vector3.new(0, 0.55, -0.82), Vector3.new(0, 0, -1), 0.6)
+	K.feet(-0.8, 0.5, -0.45, 0.45, pal.gold)
+end
+function SKYP.Storm(P, K, pal)
+	local dark, mid = rgb(70, 55, 120), rgb(105, 85, 165)
+	for i = 1, 18 do
+		local a = i * 2.4
+		local y = ((i * 7) % 11) / 11 * 1.1 - 0.45
+		local r = 0.8 - math.abs(y) * 0.25
+		K.ball("Cloud", Vector3.new(math.cos(a) * r, y, math.sin(a) * r * 0.85), 0.85, i % 3 == 0 and mid or dark)
+	end
+	K.ball("Core", Vector3.zero, 1.55, mid)
+	K.eyes(0.05, -0.79, 0.3, 0.34, nil, pal.gold)
+	for i = -1, 1 do
+		P("Bolt", Vector3.new(0.14, 0.7, 0.14), CFrame.new(i * 0.55, -0.95, -0.2) * CFrame.Angles(0, 0, i * 0.4), pal.gold, nil, M.Neon)
+	end
+end
+function SKYP.Blossom(P, K, pal)
+	local pink, light = rgb(255, 170, 215), rgb(255, 220, 238)
+	for i = 1, 16 do
+		local a = i * 2.4
+		local r = 0.55 + (i % 3) * 0.15
+		K.ball("Bloom", Vector3.new(math.cos(a) * r, 0.6 + ((i * 5) % 7) / 7 * 0.7, math.sin(a) * r), 0.75 + (i % 2) * 0.2, i % 2 == 0 and pink or light)
+	end
+	K.cube("Body", Vector3.new(0, -0.15, 0), Vector3.new(1.4, 1.3, 1.4), rgb(255, 160, 205))
+	K.eyes(-0.1, -0.71, 0.33, 0.32, nil, rgb(255, 110, 190))
+	K.cheeks(-0.3, -0.71, 0.5, rgb(255, 120, 170))
+	for i = 1, 5 do
+		K.ball("Petal", Vector3.new(((i * 41) % 11 - 5) * 0.28, -0.9 - (i % 3) * 0.15, ((i * 17) % 9 - 4) * 0.25), 0.16, light)
+	end
+	K.feet(-0.85, 0.4, -0.3, 0.3, rgb(120, 70, 60))
+end
+local function islandBase(P, K, pal)
+	K.cube("Rock", Vector3.new(0, -0.55, 0), Vector3.new(1.8, 1.0, 1.8), rgb(80, 68, 120), 0.3)
+	P("Grass", Vector3.new(2.0, 0.28, 2.0), CFrame.new(0, 0.05, 0), rgb(120, 200, 110))
+	K.eyes(-0.5, -0.92, 0.4, 0.3, nil, rgb(120, 230, 255))
+	P("Water", Vector3.new(0.28, 0.9, 0.1), CFrame.new(0.72, -0.6, -0.93), rgb(150, 220, 255), nil, M.Neon)
+end
+function SKYP.Castle(P, K, pal)
+	islandBase(P, K, pal)
+	P("Keep", Vector3.new(0.9, 0.8, 0.9), CFrame.new(0, 0.55, 0), pal.white)
+	for _, s in ipairs({ -1, 1 }) do
+		P("Tower", Vector3.new(0.4, 1.1, 0.4), CFrame.new(s * 0.62, 0.7, 0), pal.light)
+		K.ball("Roof", Vector3.new(s * 0.62, 1.4, 0), 0.5, pal.accent)
+	end
+	P("Spire", Vector3.new(0.45, 1.3, 0.45), CFrame.new(0, 1.3, 0), pal.light)
+	K.ball("SpireRoof", Vector3.new(0, 2.0, 0), 0.6, pal.gold)
+	K.star(Vector3.new(0, 2.5, 0), Vector3.new(0, 0, -1), 0.7)
+end
+function SKYP.Ruins(P, K, pal)
+	islandBase(P, K, pal)
+	for _, s in ipairs({ -1, 1 }) do
+		P("Pillar", Vector3.new(0.35, s < 0 and 1.2 or 0.8, 0.35), CFrame.new(s * 0.6, s < 0 and 0.7 or 0.5, 0), pal.light, nil, M.Marble)
+	end
+	P("ArchBeam", Vector3.new(1.0, 0.25, 0.35), CFrame.new(-0.35, 1.4, 0) * CFrame.Angles(0, 0, 0.12), pal.white, nil, M.Marble)
+	for i = 1, 6 do
+		K.ball("Ivy", Vector3.new(((i * 29) % 11 - 5) * 0.15, 0.2 + (i % 3) * 0.3, ((i * 13) % 7 - 3) * 0.2), 0.22, rgb(90, 190, 90))
+	end
+	K.star(Vector3.new(0.6, 1.4, 0), Vector3.new(0, 0, -1), 0.5)
+end
+function SKYP.Pegasus(P, K, pal)
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), pal.white)
+	K.eyes(0.08, -0.81, 0.4, 0.36, nil, pal.eye)
+	K.cheeks(-0.18, -0.81, 0.6, rgb(255, 190, 220))
+	for _, s in ipairs({ -1, 1 }) do
+		K.ear(Vector3.new(s * 0.5, 0.72, 0.1), s, 0.45, 0.55, 0.2, pal.white, pal.accent, 0.15)
+		K.wing(Vector3.new(s * 0.75, 0.35, 0.3), s, 1.8, pal.white, pal.light, 6)
+	end
+	local mane = { pal.accent, pal.light, pal.main, pal.white }
+	for k = 0, 6 do
+		K.ball("Mane", Vector3.new(0, 0.7 - k * 0.2, 0.2 + k * 0.08), 0.55, mane[k % 4 + 1])
+	end
+	for k = 0, 3 do
+		K.ball("Tail", Vector3.new(0, -0.2 - k * 0.1, 0.85 + k * 0.2), 0.45, mane[k + 1])
+	end
+	K.feet(-0.8, 0.5, -0.45, 0.45, pal.gold)
+end
+function SKYP.Stag(P, K, pal)
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), pal.main)
+	P("Muzzle", Vector3.new(0.8, 0.5, 0.4), CFrame.new(0, -0.3, -0.86), pal.light)
+	K.ball("Nose", Vector3.new(0, -0.2, -1.08), 0.16, pal.dark)
+	K.eyes(0.15, -0.81, 0.4, 0.3, nil, pal.eye)
+	for _, s in ipairs({ -1, 1 }) do
+		K.ear(Vector3.new(s * 0.62, 0.55, 0), s, 0.4, 0.5, 0.15, pal.main, pal.light, 0.9)
+		P("Antler", Vector3.new(0.14, 1.1, 0.14), CFrame.new(s * 0.45, 1.2, 0.05) * CFrame.Angles(0, 0, -s * 0.25), pal.gold, nil, M.Foil)
+		for b = 1, 3 do
+			P("Branch", Vector3.new(0.5, 0.11, 0.11), CFrame.new(s * (0.55 + b * 0.1), 0.95 + b * 0.25, 0.05) * CFrame.Angles(0, 0, s * 0.5), pal.gold, nil, M.Foil)
+		end
+		K.wing(Vector3.new(s * 0.8, 0.0, 0.3), s, 0.9, pal.white, pal.light, 3)
+	end
+	K.star(Vector3.new(0, 0.55, -0.82), Vector3.new(0, 0, -1), 0.5)
+	K.feet(-0.8, 0.5, -0.45, 0.45, pal.deep)
+end
+function SKYP.Clock(P, K, pal)
+	K.cube("Chest", Vector3.zero, Vector3.new(1.7, 1.4, 1.6), rgb(150, 105, 75), 0.2, M.Wood)
+	P("Lid", Vector3.new(1.76, 0.4, 1.66), CFrame.new(0, 0.85, 0), rgb(120, 80, 55), nil, M.Wood)
+	K.disc("FaceRim", Vector3.new(0, 0.05, -0.83), Vector3.new(0, 0, -1), 1.0, 0.06, pal.gold, M.Metal)
+	K.disc("Face", Vector3.new(0, 0.05, -0.87), Vector3.new(0, 0, -1), 0.84, 0.05, rgb(255, 250, 235))
+	P("HandH", Vector3.new(0.07, 0.3, 0.04), CFrame.new(0, 0.2, -0.9), rgb(40, 35, 50))
+	P("HandM", Vector3.new(0.3, 0.06, 0.04), CFrame.new(0.13, 0.05, -0.9), rgb(40, 35, 50))
+	K.eyes(0.82, -0.84, 0.4, 0.24, nil, rgb(200, 255, 255))
+	K.ball("Lock", Vector3.new(0, 0.5, -0.86), 0.2, pal.gold, M.Metal)
+	for _, s in ipairs({ -1, 1 }) do
+		K.wing(Vector3.new(s * 0.85, 0.1, 0.3), s, 1.6, pal.white, pal.gold, 5)
+	end
+	K.feet(-0.75, 0.55, -0.45, 0.45, pal.gold)
+end
+function SKYP.Golem(P, K, pal)
+	local glass = rgb(110, 195, 235)
+	K.cube("Body", Vector3.zero, Vector3.new(1.7, 1.5, 1.6), glass, 0.2, M.Glass)
+	K.eyes(0.15, -0.81, 0.38, 0.34, nil, pal.accent)
+	P("Mouth", Vector3.new(0.5, 0.08, 0.05), CFrame.new(0, -0.25, -0.82), pal.accent, nil, M.Neon)
+	for k = 1, 8 do
+		local a = k * 0.8
+		P("Crystal", Vector3.new(0.3, 0.55 + (k % 3) * 0.3, 0.3), CFrame.new(math.cos(a) * 0.55, 0.95, math.sin(a) * 0.5) * CFrame.Angles(0.25 * math.cos(a), math.rad(45), 0.25 * math.sin(a)), k % 2 == 0 and pal.accent or pal.light, nil, M.Neon)
+	end
+	for _, s in ipairs({ -1, 1 }) do
+		K.cube("Arm", Vector3.new(s * 1.05, -0.2, 0), Vector3.new(0.45, 0.8, 0.45), glass, 0.12, M.Glass)
+		P("ArmCrystal", Vector3.new(0.2, 0.5, 0.2), CFrame.new(s * 1.1, 0.35, 0) * CFrame.Angles(0, math.rad(45), s * 0.3), pal.accent, nil, M.Neon)
+	end
+	K.feet(-0.8, 0.5, -0.45, 0.45, pal.deep)
+end
+function SKYP.Phoenix(P, K, pal)
+	local fire, gold = rgb(255, 140, 55), rgb(255, 215, 90)
+	K.ball("Body", Vector3.zero, 1.6, fire)
+	K.ball("Belly", Vector3.new(0, -0.2, -0.4), 1.0, gold)
+	K.ball("Head", Vector3.new(0, 0.6, -0.4), 1.0, gold)
+	K.eyes(0.68, -0.88, 0.25, 0.22, nil, rgb(120, 40, 20))
+	P("Beak", Vector3.new(0.28, 0.24, 0.42), CFrame.new(0, 0.52, -1.0), rgb(255, 120, 60), "ball")
+	for i = -1, 1 do
+		P("Crest", Vector3.new(0.18, 0.55, 0.18), CFrame.new(i * 0.2, 1.25, -0.35) * CFrame.Angles(0, 0, -i * 0.3), fire, "ball", M.Neon)
+	end
+	for _, s in ipairs({ -1, 1 }) do
+		K.wing(Vector3.new(s * 0.7, 0.25, 0.2), s, 1.8, fire, gold, 6)
+	end
+	for i = 1, 5 do
+		P("TailFeather", Vector3.new(0.3, 0.45, 1.5), CFrame.new((i - 3) * 0.24, -0.25, 1.15) * CFrame.Angles(0, (i - 3) * 0.2, 0), fire:Lerp(gold, i / 7), "ball", M.Neon)
+	end
+end
+
+local SKY_BUILDERS = {
+	Cloud = { Cloud = STAR.Cloud, Bear = SKYP.Bear, Balloon = SKYP.Balloon, Tornado = SKYP.Tornado, RainbowCat = SKYP.RainbowCat, Unicorn = STAR.Unicorn, Griffin = SKYP.Griffin, AngelCat = SKYP.AngelCat },
+	Celestial = { MoonCat = STAR.Cat, Storm = SKYP.Storm, Blossom = SKYP.Blossom, Castle = SKYP.Castle, Ruins = SKYP.Ruins, Wolf = STAR.Wolf, Dragon = STAR.Dragon, Whale = STAR.Whale },
+	Crystal = { Pegasus = SKYP.Pegasus, Whale = STAR.Whale, Lion = STAR.Lion, Stag = SKYP.Stag, Clock = SKYP.Clock, Golem = SKYP.Golem, Phoenix = SKYP.Phoenix, Queen = STAR.Spirit },
+}
+
+local BUILDERS = { Sakura = SAKURA, Starlight = STAR, Sky = STAR, Aurora = STAR, Cloud = SKY_BUILDERS.Cloud, Celestial = SKY_BUILDERS.Celestial, Crystal = SKY_BUILDERS.Crystal }
 
 function T.BuildPet(theme, kind, name)
 	local pal = PALETTES[theme]
@@ -624,6 +919,38 @@ function T.BuildEgg(theme)
 		for k = 1, 40 do
 			local fp = surface(0.08 + (k * 0.173) % 0.85, k * 2.39, 0.04)
 			K.ball("Sparkle", fp, 0.12 + (k % 3) * 0.05, k % 4 == 0 and pal.gold or pal.white, M.Neon)
+		end
+	end
+	-- Особенности яиц Sky Isles.
+	if theme == "Cloud" then
+		for k = 0, 9 do
+			local a = k / 10 * math.pi * 2
+			K.ball("CloudBase", Vector3.new(math.cos(a) * 3.0, -3.6, math.sin(a) * 3.0), 1.9 + (k % 3) * 0.35, pal.white)
+		end
+		for _, s in ipairs({ -1, 1 }) do
+			K.wing(Vector3.new(s * 2.5, 0.4, 0), s, 3.4, pal.white, pal.gold, 6)
+		end
+		for k = 0, 23 do
+			local a = k / 24 * math.pi * 2
+			P("Halo", Vector3.new(0.5, 0.1, 0.14), CFrame.new(math.cos(a) * 1.5, 4.5, math.sin(a) * 1.5) * CFrame.Angles(0, -a, 0), pal.gold, nil, M.Neon)
+		end
+	elseif theme == "Celestial" then
+		for k = 0, 35 do
+			local a = k / 36 * math.pi * 2
+			P("OrbitRing", Vector3.new(0.7, 0.1, 0.18), CFrame.Angles(0.45, 0, 0.25) * CFrame.new(math.cos(a) * 4.6, 0, math.sin(a) * 4.6) * CFrame.Angles(0, -a, 0), pal.gold, nil, M.Neon)
+		end
+		local mp, mn = surface(0.62, -HALF, 0.1)
+		K.disc("Moon", mp, mn, 2.0, 0.08, pal.gold, M.Neon)
+		K.disc("MoonCut", mp + Vector3.new(0.5, 0.25, -0.12), mn, 1.7, 0.08, pal.main)
+	elseif theme == "Crystal" then
+		for k = 0, 11 do
+			local a = k / 12 * math.pi * 2
+			local h = 1.8 + (k % 3) * 0.7
+			P("Shard", Vector3.new(0.7, h, 0.7), CFrame.new(math.cos(a) * 3.4, -3.3 + h / 2 - 0.4, math.sin(a) * 3.4) * CFrame.Angles(math.sin(a) * 0.3, a, -math.cos(a) * 0.3) * CFrame.Angles(0, math.rad(45), 0), k % 2 == 0 and pal.accent or pal.light, nil, M.Glass)
+		end
+		for k = 0, 5 do
+			local a = k / 6 * math.pi * 2
+			P("Shard", Vector3.new(0.5, 1.6, 0.5), CFrame.new(math.cos(a) * 0.9, 3.9, math.sin(a) * 0.9) * CFrame.Angles(math.sin(a) * 0.5, a, -math.cos(a) * 0.5) * CFrame.Angles(0, math.rad(45), 0), pal.accent, nil, M.Glass)
 		end
 	end
 	for i = 1, 40 do

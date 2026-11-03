@@ -117,13 +117,21 @@ spine.Parent = book
 text(left, "EGGS", UDim2.fromOffset(0, 34), UDim2.new(1, 0, 0, 30), 24)
 local total = text(left, "", UDim2.fromOffset(0, 426), UDim2.new(1, 0, 0, 26), 18)
 local tabs = {}
+local list = Instance.new("ScrollingFrame")
+list.Position = UDim2.fromOffset(0, 66)
+list.Size = UDim2.fromOffset(388, 354)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 5
+list.CanvasSize = UDim2.fromOffset(0, #Config.Eggs * 58 + 8)
+list.Parent = left
 for id, egg in ipairs(Config.Eggs) do
 	local b = Instance.new("TextButton")
 	b.Text = ""
-	b.Position = UDim2.fromOffset(18, 70 + (id - 1) * 58)
+	b.Position = UDim2.fromOffset(18, 4 + (id - 1) * 58)
 	b.Size = UDim2.fromOffset(352, 50)
 	b.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
-	b.Parent = left
+	b.Parent = list
 	corner(b, 12)
 	local s = stroke(b, 2.5, ink)
 	local dot = Instance.new("Frame")
@@ -135,7 +143,7 @@ for id, egg in ipairs(Config.Eggs) do
 	stroke(dot, 2, ink)
 	local name = text(b, egg.Name, UDim2.fromOffset(48, 4), UDim2.fromOffset(190, 24), 18)
 	name.TextXAlignment = Enum.TextXAlignment.Left
-	local world = text(b, egg.World == "neon" and "Neon District" or "Meadow Isles", UDim2.fromOffset(48, 26), UDim2.fromOffset(190, 18), 13, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
+	local world = text(b, egg.World == "neon" and "Neon District" or egg.World == "sky" and "Sky Isles" or "Meadow Isles", UDim2.fromOffset(48, 26), UDim2.fromOffset(190, 18), 13, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
 	world.TextXAlignment = Enum.TextXAlignment.Left
 	local barBack = Instance.new("Frame")
 	barBack.Position = UDim2.fromOffset(240, 30)
@@ -154,7 +162,11 @@ for id, egg in ipairs(Config.Eggs) do
 end
 
 local header = text(right, "", UDim2.fromOffset(0, 34), UDim2.new(1, 0, 0, 30), 24)
-local grid = Instance.new("Frame")
+local grid = Instance.new("ScrollingFrame")
+grid.BorderSizePixel=0
+grid.ScrollBarThickness=4
+grid.ScrollingDirection=Enum.ScrollingDirection.Y
+grid.CanvasSize=UDim2.fromOffset(0,0)
 grid.BackgroundTransparency = 1
 grid.Position = UDim2.fromOffset(14, 72)
 grid.Size = UDim2.fromOffset(360, 318)
@@ -212,6 +224,8 @@ local function showPage(eggId)
 	local egg = Config.Eggs[eggId]
 	header.Text = egg.Name
 	grid:ClearAllChildren()
+	grid.CanvasSize=UDim2.fromOffset(0,math.ceil(#egg.Pool/3)*106)
+	grid.CanvasPosition=Vector2.zero
 	cards = {}
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]

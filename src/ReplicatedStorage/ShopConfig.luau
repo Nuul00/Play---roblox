@@ -11,7 +11,7 @@ local function rgb(r, g, b)
 end
 local M = Enum.Material
 local function magnet(id, name, price, bonus, look)
-	return { Id = id, Name = name, Price = price, Bonus = bonus, Body = look.Body, Tip = look.Tip, Glow = look.Light ~= nil, Look = look }
+	return { Id = id, Name = name, Price = price, Bonus = bonus, Body = look.Body, Tip = look.Tip, Glow = look.Light ~= nil, Look = look, SkyOnly = look.SkyOnly }
 end
 ShopConfig.Magnets = {
 	magnet(1, "Classic Magnet", 0, 0, { Body = rgb(150, 155, 165), Material = M.Metal, Tip = rgb(225, 230, 235), TipMaterial = M.Metal, Stripe = rgb(255, 200, 40), StripeMaterial = M.SmoothPlastic }),
@@ -46,6 +46,40 @@ ShopConfig.Magnets = {
 		Sparkles = rgb(255, 255, 255),
 		Light = rgb(255, 255, 255),
 	}),
+	-- Магниты Sky Isles (21-30): продаются только в облачном мире (SkyOnly), по арту пользователя.
+	magnet(21, "Cotton Candy", 2500000, 26, { SkyOnly = true, Body = rgb(255, 185, 215), Material = M.SmoothPlastic, Tip = rgb(255, 245, 250), Puffs = rgb(255, 170, 210), Bow = rgb(255, 120, 175), Light = rgb(255, 190, 225) }),
+	magnet(22, "Bubblegum Pop", 4000000, 30, { SkyOnly = true, Body = rgb(255, 140, 200), Material = M.Glass, Tip = rgb(255, 230, 245), Bubbles = rgb(255, 200, 235), Bow = rgb(120, 190, 255), Sparkles = rgb(255, 255, 255) }),
+	magnet(23, "Rainbow Star", 6500000, 34, {
+		SkyOnly = true,
+		Body = rgb(255, 255, 255),
+		Material = M.SmoothPlastic,
+		SegmentColor = function(t)
+			return Color3.fromHSV((1 - t) * 0.82, 0.65, 1)
+		end,
+		Tip = rgb(255, 255, 255),
+		Star = rgb(255, 225, 110),
+		Puffs = rgb(255, 255, 255),
+		Light = rgb(255, 240, 220),
+	}),
+	magnet(24, "Angel Wings", 10000000, 39, { SkyOnly = true, Body = rgb(255, 252, 240), Material = M.Marble, Tip = rgb(255, 215, 100), TipMaterial = M.Foil, Wings = rgb(255, 255, 255), Halo = rgb(255, 225, 120), Star = rgb(255, 235, 150), Light = rgb(255, 240, 190) }),
+	magnet(25, "Crystal Frost", 15000000, 45, { SkyOnly = true, Body = rgb(165, 215, 255), Material = M.Glass, Tip = rgb(235, 250, 255), Crystals = rgb(190, 235, 255), CrystalCount = 10, Gem = rgb(210, 245, 255), Puffs = rgb(235, 245, 255), Light = rgb(170, 225, 255) }),
+	magnet(26, "Sundae Swirl", 23000000, 52, { SkyOnly = true, Body = rgb(255, 235, 215), Material = M.SmoothPlastic, Tip = rgb(255, 150, 190), Puffs = rgb(255, 205, 225), Cherry = rgb(220, 30, 60), Bow = rgb(150, 100, 70) }),
+	magnet(27, "Heart Nebula", 35000000, 60, {
+		SkyOnly = true,
+		Body = rgb(150, 180, 255),
+		Material = M.Glass,
+		SegmentColor = function(t)
+			return Color3.fromHSV(0.55 + t * 0.35, 0.6, 1)
+		end,
+		Tip = rgb(255, 180, 240),
+		TipMaterial = M.Neon,
+		Heart = rgb(255, 150, 220),
+		Sparkles = rgb(255, 255, 255),
+		Light = rgb(200, 170, 255),
+	}),
+	magnet(28, "Midnight Wish", 55000000, 70, { SkyOnly = true, Body = rgb(60, 40, 130), Material = M.SmoothPlastic, Tip = rgb(255, 225, 130), TipMaterial = M.Foil, Moon = rgb(255, 225, 130), Sparkles = rgb(255, 245, 190), Star = rgb(255, 225, 130), Light = rgb(180, 160, 255) }),
+	magnet(29, "Comet Tail", 85000000, 82, { SkyOnly = true, Body = rgb(70, 50, 150), Material = M.Glass, Tip = rgb(150, 235, 255), TipMaterial = M.Neon, Swirl = rgb(190, 150, 255), Ring = rgb(255, 215, 120), Sparkles = rgb(255, 255, 255), Orb = rgb(160, 235, 255), Light = rgb(170, 220, 255) }),
+	magnet(30, "Lollipop Crown", 150000000, 100, { SkyOnly = true, Body = rgb(255, 160, 205), Material = M.SmoothPlastic, Tip = rgb(255, 220, 120), TipMaterial = M.Foil, Crown = rgb(255, 205, 80), CrownGem = rgb(255, 90, 160), Lollipops = rgb(255, 120, 180), Bow = rgb(255, 255, 255), Sparkles = rgb(255, 245, 200), Light = rgb(255, 200, 235) }),
 }
 
 

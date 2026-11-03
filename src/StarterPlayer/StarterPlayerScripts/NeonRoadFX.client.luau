@@ -256,7 +256,7 @@ RunService.RenderStepped:Connect(function(dt)
 	for i, p in ipairs(portalRing) do
 		p.Color = Color3.fromHSV((0.38 + 0.12 * math.sin(t * 2 + i / #portalRing * math.pi * 2)) % 1, 0.7, 1)
 	end
-	if portalDisc then
+	if portalDisc and not portalDisc:GetAttribute("Dressed") then
 		portalDisc.Transparency = 0.15 + 0.15 * math.sin(t * 3)
 	end
 

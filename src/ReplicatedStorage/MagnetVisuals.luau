@@ -16,8 +16,136 @@ local CY = 1.6 -- центр дуги над рукоятью
 local ARM = 1.0 -- длина прямых плеч
 local TIP_Y = CY + ARM + 0.25
 
+local CUSTOM_HEIGHT = 3.4 -- высота процедурного магнита от низа рукояти до наконечников
+
+-- Своя модель (CustomMagnets/Magnet<tier>, например из 3D-генератора) важнее процедурной.
+-- Масштабируем до высоты обычного магнита, ставим низом на рукоять и привариваем к невидимой Handle,
+-- чтобы Tool, хват и витрина магазина работали так же, как с магнитом из деталей.
+local function fromTemplate(template: Instance, name: string): Model?
+	if not template:FindFirstChildWhichIsA("BasePart", true) then
+		return nil
+	end
+	local source = template:Clone()
+	local model = Instance.new("Model")
+	model.Name = name
+	if source:IsA("Model") then
+		for _, child in ipairs(source:GetChildren()) do
+			child.Parent = model
+		end
+		source:Destroy()
+	else
+		source.Parent = model
+	end
+	local cf, size = model:GetBoundingBox()
+	model:ScaleTo(CUSTOM_HEIGHT / math.max(size.Y, 0.1))
+	cf, size = model:GetBoundingBox()
+	-- Низ модели совпадает с низом рукояти (y = -0.5), центр — над рукоятью.
+	model:TranslateBy(Vector3.new(-cf.Position.X, -0.5 + size.Y / 2 - cf.Position.Y, -cf.Position.Z))
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.45, 1.0, 0.45)
+	handle.Transparency = 1
+	handle.CFrame = CFrame.identity
+	handle.Parent = model
+	local parts = {}
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Anchored = false
+			p.CanCollide = false
+			p.CanTouch = false
+			p.CanQuery = false
+			p.Massless = true
+			p.CastShadow = false
+			if p ~= handle then
+				table.insert(parts, p)
+			end
+		elseif p:IsA("JointInstance") or p:IsA("WeldConstraint") then
+			p:Destroy()
+		end
+	end
+	-- Самая крупная деталь — «сердце» магнита: остальные приварены к ней, а она к рукояти через Weld,
+	-- чей C0 клиент (GlowFX) покачивает, чтобы магнит парил над рукоятью.
+	table.sort(parts, function(a, b)
+		return a.Size.Magnitude > b.Size.Magnitude
+	end)
+	local core = parts[1]
+	if core then
+		for i = 2, #parts do
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = core
+			w.Part1 = parts[i]
+			w.Parent = parts[i]
+		end
+		local float = Instance.new("Weld")
+		float.Name = "FloatWeld"
+		float.Part0 = handle
+		float.Part1 = core
+		float.C0 = core.CFrame -- рукоять стоит в начале координат
+		float.Parent = core
+		core.Name = "Core"
+	end
+	model.PrimaryPart = handle
+	return model
+end
+
+-- Сияние: свет, искры и мягкий ореол вокруг магнита. Чем дороже магнит, тем гуще искры.
+local function addGlow(model: Model, def)
+	local core = model:FindFirstChild("Core") or model:FindFirstChild("Handle")
+	if not core then
+		return
+	end
+	local look = def.Look or {}
+	local color: Color3 = look.Light or look.Tip or Color3.fromRGB(255, 220, 120)
+	local tier = def.Id
+	local light = Instance.new("PointLight")
+	light.Name = "Glow"
+	light.Color = color
+	light.Range = 7 + tier * 0.15
+	light.Brightness = 1.2
+	light.Shadows = false
+	light.Parent = core
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Name = "Sparkles"
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Rate = 3 + tier * 0.4
+	sparks.Lifetime = NumberRange.new(0.6, 1.2)
+	sparks.Speed = NumberRange.new(0.3, 1)
+	sparks.SpreadAngle = Vector2.new(180, 180)
+	sparks.Acceleration = Vector3.new(0, 0.8, 0)
+	sparks.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+	sparks.LightEmission = 1
+	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.22), NumberSequenceKeypoint.new(1, 0) })
+	sparks.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	sparks.Parent = core
+	local aura = Instance.new("ParticleEmitter")
+	aura.Name = "Aura"
+	aura.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	aura.Rate = 2
+	aura.Lifetime = NumberRange.new(1, 1.4)
+	aura.Speed = NumberRange.new(0)
+	aura.LockedToPart = true
+	aura.Rotation = NumberRange.new(0, 360)
+	aura.RotSpeed = NumberRange.new(-40, 40)
+	aura.Color = ColorSequence.new(color)
+	aura.LightEmission = 1
+	aura.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(0.5, 2.2), NumberSequenceKeypoint.new(1, 1.4) })
+	aura.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.75), NumberSequenceKeypoint.new(1, 1) })
+	aura.Parent = core
+	core:SetAttribute("BaseBrightness", light.Brightness)
+	core:AddTag("MagnetGlow")
+end
+
 function MagnetVisuals.Build(tier: number): Model
 	local def = ShopConfig.Magnets[tier] or ShopConfig.Magnets[1]
+	local customFolder = script.Parent:FindFirstChild("CustomMagnets")
+	local custom = customFolder and customFolder:FindFirstChild("Magnet" .. def.Id)
+	if custom then
+		local model = fromTemplate(custom, def.Name)
+		if model then
+			addGlow(model, def)
+			return model
+		end
+	end
 	local look = def.Look or {}
 	local model = Instance.new("Model")
 	model.Name = def.Name
@@ -264,6 +392,67 @@ function MagnetVisuals.Build(tier: number): Model
 			end
 		end)
 	end
+	-- ===== Облачные украшения (Sky Isles) =====
+	-- Пушистые облачка вдоль дуги.
+	if look.Puffs then
+		for k = 0, 8 do
+			local t = 0.06 + k / 8 * 0.88
+			local pos = onArc(t, W / 2 - 0.05)
+			local sz = 0.42 + (k % 3) * 0.1
+			piece("Puff", Vector3.new(sz, sz, sz), CFrame.new(pos), k % 2 == 0 and look.Puffs or look.Puffs:Lerp(Color3.new(1, 1, 1), 0.55), M.SmoothPlastic, "ball")
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			for k = 1, 2 do
+				piece("Puff", Vector3.new(0.4, 0.4, 0.4), CFrame.new(side * R, CY + 0.2 + k * 0.38, 0), look.Puffs:Lerp(Color3.new(1, 1, 1), k * 0.25), M.SmoothPlastic, "ball")
+			end
+		end
+	end
+	-- Бантик у рукояти.
+	if look.Bow then
+		piece("BowL", Vector3.new(0.34, 0.26, 0.2), CFrame.new(-0.22, 0.62, -0.1) * CFrame.Angles(0, 0, math.rad(20)), look.Bow, M.SmoothPlastic, "ball")
+		piece("BowR", Vector3.new(0.34, 0.26, 0.2), CFrame.new(0.22, 0.62, -0.1) * CFrame.Angles(0, 0, math.rad(-20)), look.Bow, M.SmoothPlastic, "ball")
+		piece("BowKnot", Vector3.new(0.2, 0.2, 0.2), CFrame.new(0, 0.62, -0.12), look.Bow:Lerp(Color3.new(1, 1, 1), 0.3), M.SmoothPlastic, "ball")
+	end
+	-- Мыльные пузыри.
+	if look.Bubbles then
+		local spots = { { -0.95, 2.9, 0.1, 0.34 }, { 0.9, 3.1, -0.1, 0.28 }, { -1.25, 2.3, 0.2, 0.22 }, { 1.2, 2.2, 0.1, 0.3 }, { 0.2, 3.35, 0.2, 0.2 }, { -0.4, 0.35, 0.3, 0.2 } }
+		for _, b in ipairs(spots) do
+			piece("Bubble", Vector3.new(b[4], b[4], b[4]), CFrame.new(b[1], b[2], b[3]), look.Bubbles, M.Glass, "ball", 0.35)
+		end
+	end
+	-- Нимб над подковой.
+	if look.Halo then
+		local center = Vector3.new(0, CY + ARM + 0.95, 0)
+		for k = 0, 15 do
+			local a = k / 16 * math.pi * 2
+			local p = center + Vector3.new(math.cos(a) * 0.6, math.sin(a) * 0.14, math.sin(a) * 0.35)
+			piece("HaloBit", Vector3.new(0.26, 0.09, 0.1), CFrame.lookAt(p, p + Vector3.new(-math.sin(a), 0, math.cos(a) * 0.5)) * CFrame.Angles(0, math.pi / 2, 0), look.Halo, M.Neon)
+		end
+	end
+	-- Сердечко в центре дуги.
+	if look.Heart then
+		both(function(z)
+			local c = onArc(0.5, 0, z * (front + 0.06))
+			piece("HeartL", Vector3.new(0.24, 0.24, 0.1), CFrame.new(c + Vector3.new(-0.09, 0.07, 0)), look.Heart, M.Neon, "ball")
+			piece("HeartR", Vector3.new(0.24, 0.24, 0.1), CFrame.new(c + Vector3.new(0.09, 0.07, 0)), look.Heart, M.Neon, "ball")
+			piece("HeartB", Vector3.new(0.22, 0.22, 0.1), CFrame.new(c + Vector3.new(0, -0.05, 0)) * CFrame.Angles(0, 0, math.rad(45)), look.Heart, M.Neon)
+		end)
+	end
+	-- Вишенка на конце.
+	if look.Cherry then
+		piece("Cherry", Vector3.new(0.34, 0.34, 0.34), CFrame.new(-R, TIP_Y + 0.4, 0), look.Cherry, M.SmoothPlastic, "ball")
+		piece("CherryStem", Vector3.new(0.05, 0.3, 0.05), CFrame.new(-R + 0.05, TIP_Y + 0.7, 0) * CFrame.Angles(0, 0, math.rad(-20)), rgb(70, 140, 60), M.SmoothPlastic)
+	end
+	-- Леденцы на концах плеч.
+	if look.Lollipops then
+		for i, side in ipairs({ -1, 1 }) do
+			piece("PopStick", Vector3.new(0.07, 0.5, 0.07), CFrame.new(side * R, TIP_Y + 0.3, 0), rgb(255, 250, 245), M.SmoothPlastic)
+			piece("PopHead", Vector3.new(0.5, 0.5, 0.5), CFrame.new(side * R, TIP_Y + 0.72, 0), i == 1 and look.Lollipops or look.Lollipops:Lerp(Color3.new(1, 1, 1), 0.5), M.SmoothPlastic, "ball")
+			both(function(z)
+				piece("PopSwirl", Vector3.new(0.34, 0.07, 0.07), CFrame.new(side * R, TIP_Y + 0.72, z * 0.22) * CFrame.Angles(0, 0, math.rad(side * 30)), Color3.new(1, 1, 1), M.SmoothPlastic)
+			end)
+		end
+	end
 	-- Свечение для редких.
 	if look.Light then
 		local light = Instance.new("PointLight")
@@ -282,6 +471,7 @@ function MagnetVisuals.Build(tier: number): Model
 		end
 	end
 	model.PrimaryPart = handle
+	addGlow(model, def)
 	return model
 end
 

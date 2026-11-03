@@ -15,8 +15,11 @@ local token=game.JobId~="" and game.JobId or game:GetService("HttpService"):Gene
 local function number(v) return type(v)=="number" and v==v and math.abs(v)<1e15 and math.max(0,v) or 0 end
 local function snapshot(p)
  local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
+ data.DailyDay=p:GetAttribute("DailyDay") or 0
+ data.DailyClaimedAt=p:GetAttribute("DailyClaimedAt") or 0
+ data.QuestState=p:GetAttribute("QuestState") or ""
  for i=1,#Config.Pets do data.AutoDelete[tostring(i)]=p:GetAttribute("AutoDelete"..i)==true end
- for _,name in ipairs({"MagnetLevel","IncomeLevel","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=p:GetAttribute(name) or 0 end
+ for _,name in ipairs({"MagnetLevel","IncomeLevel","DoubleLevel","Rebirths","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=p:GetAttribute(name) or 0 end
  for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
  data.Equipped=p:GetAttribute("Equipped") or ""
  data.Potions={};data.PotionLeft={}
@@ -51,9 +54,14 @@ local function load(p)
  if not loaded then p:Kick("Your profile is unavailable or still open on another server. Please rejoin shortly.");return end
  sessions[p]={busy=false,release=false}
  stats.Coins.Value=number(loaded.Coins)
+ p:SetAttribute("DailyDay",math.clamp(math.floor(number(loaded.DailyDay)),0,7))
+ p:SetAttribute("DailyClaimedAt",math.floor(number(loaded.DailyClaimedAt)))
+ p:SetAttribute("QuestState",type(loaded.QuestState)=="string" and loaded.QuestState or "")
  stats.SpeedLevel.Value=math.clamp(math.floor(number(loaded.Speed)),0,Config.MaxSpeedLevel)
  p:SetAttribute("MagnetLevel",math.clamp(math.floor(number(loaded.MagnetLevel)),0,Config.MaxMagnetLevel))
  p:SetAttribute("IncomeLevel",math.clamp(math.floor(number(loaded.IncomeLevel)),0,Config.MaxIncomeLevel))
+ p:SetAttribute("DoubleLevel",math.clamp(math.floor(number(loaded.DoubleLevel)),0,Config.MaxDoubleLevel))
+ p:SetAttribute("Rebirths",math.clamp(math.floor(number(loaded.Rebirths)),0,Config.MaxRebirths))
  for _,name in ipairs({"LifetimeEarned","CoinsCollected","EggsOpened"}) do p:SetAttribute(name,number(loaded[name])) end
  local best=0
  for i=1,#Config.Pets do

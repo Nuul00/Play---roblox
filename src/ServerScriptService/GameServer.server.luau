@@ -42,6 +42,9 @@ if not world:GetAttribute("GroundAligned") then
  end
  world:SetAttribute("GroundAligned",true)
 end
+-- Третий мир Sky Isles строится кодом высоко в небе (модуль SkyIsles).
+local SkyIsles=require(script.Parent:WaitForChild("SkyIsles"))
+local sky=SkyIsles.Build(world)
 -- Камни, камыши, кувшинки, мостик и причал ставим уже на готовый рельеф.
 task.spawn(Pond.Decorate,world)
 local sunsetStand=world:WaitForChild("EggStand1")
@@ -60,6 +63,16 @@ for id,theme in pairs({[2]="Sakura",[3]="Starlight"}) do
  stand:SetAttribute("EggReady",true)
 end
 sunsetStand:SetAttribute("EggReady",true)
+-- Three independent neon collections. Keep stand positions and interaction parts intact.
+local NeonVisuals=require(ReplicatedStorage:WaitForChild("NeonVisuals"))
+for id,theme in pairs({[4]="Disco",[5]="Tech",[6]="City"}) do
+ local stand=city:WaitForChild("EggStand"..id)
+ local old=stand:WaitForChild("EggDisplay")
+ local bounds=old:GetBoundingBox()
+ local egg=NeonVisuals.BuildEgg(theme)
+ egg:PivotTo(CFrame.new(bounds.Position));old:Destroy();egg.Parent=stand
+ stand:SetAttribute("EggReady",true)
+end
 local feedback = Instance.new("RemoteEvent")
 feedback.Name = "GameFeedback"
 feedback.Parent = ReplicatedStorage
@@ -88,6 +101,8 @@ local function setup(player)
  player:SetAttribute("MagnetLevel", 0)
  player:SetAttribute("PetLevel", 0)
  player:SetAttribute("IncomeLevel", 0)
+ player:SetAttribute("DoubleLevel", 0)
+ player:SetAttribute("Rebirths", 0)
  player:SetAttribute("LifetimeEarned", 0)
  player:SetAttribute("CoinsCollected", 0)
  player:SetAttribute("EggsOpened", 0)
@@ -171,7 +186,7 @@ claimIndex.OnServerEvent:Connect(function(p, eggId)
  notify(p, "Index reward: +" .. reward .. " coins!", true)
 end)
 Players.PlayerRemoving:Connect(function(p) claimCooldown[p] = nil end)
-local function interact(p, part, prompt, cityOnly)
+local function interact(p, part, prompt, minLevel)
  -- У яиц нет подсказки E: меню открывается касанием, поэтому prompt может быть nil.
  if p.Parent ~= Players or (prompt and not prompt.Enabled) then return end
  if not p:GetAttribute("ProfileReady") then return end
@@ -179,18 +194,20 @@ local function interact(p, part, prompt, cityOnly)
  if not h or (root.Position - part.Position).Magnitude > Config.ShopDistance then return end
  local stats = p:FindFirstChild("leaderstats")
  if not stats then return end
- if cityOnly and stats.SpeedLevel.Value < 3 then return end
+ local need = type(minLevel) == "number" and minLevel or (minLevel and 3 or 0)
+ if stats.SpeedLevel.Value < need then return end
  local now = os.clock()
  if now - (cooldown[p] or -math.huge) < Config.PurchaseCooldown then return end
  cooldown[p] = now
  return stats, h, root
 end
 -- Открытие меню не списывает деньги. Каждая покупка снова проверяет расстояние.
-local zones = {island=world, neon=city}
+local zones = {island=world, neon=city, sky=sky}
+local ZONE_LEVEL = {[city]=3, [sky]=6}
 local function shopPart(zone, mode, eggId)
  if mode == "egg" then
   local egg=Config.Eggs[eggId]
-  if not egg or (egg.World=="neon")~=(zone==city) then return end
+  if not egg or zones[egg.World]~=zone then return end
   local stand=zone:FindFirstChild("EggStand"..eggId)
   if not stand then return end
   return stand.Interact,stand.Interact:FindFirstChild("OpenEggMenu")
@@ -202,10 +219,25 @@ end
 for id,zone in pairs(zones) do
  local part,prompt=shopPart(zone,"upgrades")
  if prompt then prompt.Triggered:Connect(function(p)
-  if interact(p,part,prompt,zone==city) then openMenu:FireClient(p,"upgrades",id) end
+  if interact(p,part,prompt,ZONE_LEVEL[zone]) then openMenu:FireClient(p,"upgrades",id) end
  end) end
 end
 -- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
+-- Апгрейды киоска: у каждого свой уровень, цена и максимум; предел зоны — Config.ZoneMax.
+local UPGRADES = {
+ speed = { name = "Speed", max = Config.MaxSpeedLevel, cost = Config.GetUpgradeCost,
+  get = function(_p, stats) return stats.SpeedLevel.Value end,
+  set = function(p, stats, v) stats.SpeedLevel.Value = v; PlayerSystems.ApplySpeed(p) end },
+ magnet = { name = "Magnet", max = Config.MaxMagnetLevel, cost = Config.GetMagnetUpgradeCost,
+  get = function(p) return p:GetAttribute("MagnetLevel") or 0 end,
+  set = function(p, _s, v) p:SetAttribute("MagnetLevel", v) end },
+ income = { name = "Coins", max = Config.MaxIncomeLevel, cost = Config.GetIncomeUpgradeCost,
+  get = function(p) return p:GetAttribute("IncomeLevel") or 0 end,
+  set = function(p, _s, v) p:SetAttribute("IncomeLevel", v) end },
+ double = { name = "Double coin", max = Config.MaxDoubleLevel, cost = Config.GetDoubleUpgradeCost,
+  get = function(p) return p:GetAttribute("DoubleLevel") or 0 end,
+  set = function(p, _s, v) p:SetAttribute("DoubleLevel", v) end },
+}
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if kind == "egg" then
   amount = amount == nil and 1 or amount
@@ -214,16 +246,22 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind == "magnettool" or kind == "potion" then
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
-  local shop = world:FindFirstChild("MagnetShop")
-  local zonePart = shop and shop:FindFirstChild("ShopZone")
-  if not zonePart then return end
-  local stats = interact(p, zonePart, nil, false)
+  local stats, inSky
+  for _, candidate in ipairs({{world, 0, false}, {sky, 6, true}}) do
+   local shop = candidate[1]:FindFirstChild("MagnetShop")
+   local zonePart = shop and shop:FindFirstChild("ShopZone")
+   if zonePart then
+    stats = interact(p, zonePart, nil, candidate[2])
+    if stats then inSky = candidate[3]; break end
+   end
+  end
   if not stats then return end
   local cost, name
   if kind == "magnettool" then
    local def = type(eggId) == "number" and ShopConfig.Magnets[eggId]
    if not def then return end
    if eggId <= (p:GetAttribute("MagnetTier") or 1) then PlayerSystems.EquipMagnet(p, eggId); return end
+   if def.SkyOnly and not inSky then notify(p, "This magnet is sold in Sky Isles"); return end
    if eggId ~= (p:GetAttribute("MagnetTier") or 1) + 1 then notify(p, "Buy the previous magnet first!"); return end
    cost, name = def.Price, def.Name
   else
@@ -242,44 +280,29 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   end
   return
  end
- if kind ~= "speed" and kind ~= "magnet" and kind ~= "income" and kind ~= "egg" then return end
+ if not UPGRADES[kind] and kind ~= "egg" then return end
  local zone = zones[zoneId]
  if not zone then return end
  if kind=="egg" and (type(eggId)~="number" or eggId~=math.floor(eggId)) then return end
  local part, prompt = shopPart(zone, kind == "egg" and "egg" or "upgrades",eggId)
  if not part then return end
- local stats, h = interact(p, part, prompt, zone == city)
+ local stats, h = interact(p, part, prompt, ZONE_LEVEL[zone])
  if not stats then return end
  local value, cost
- if kind == "speed" then
-  value = stats.SpeedLevel.Value
-  if value >= Config.MaxSpeedLevel then notify(p,"Speed is maxed!"); return end
-  cost = Config.GetUpgradeCost(value)
- elseif kind == "magnet" then
-  value = p:GetAttribute("MagnetLevel") or 0
-  if value >= Config.MaxMagnetLevel then notify(p,"Magnet is maxed!"); return end
-  cost = Config.GetMagnetUpgradeCost(value)
- elseif kind == "income" then
-  value = p:GetAttribute("IncomeLevel") or 0
-  if value >= Config.MaxIncomeLevel then notify(p,"Income is maxed!"); return end
-  cost = Config.GetIncomeUpgradeCost(value)
- else
+ if kind == "egg" then
   if os.clock() < (hatchUntil[p] or 0) then return end
   cost = Config.Eggs[eggId].Cost * amount
+ else
+  local up = UPGRADES[kind]
+  value = up.get(p, stats)
+  if value >= up.max then notify(p, up.name .. " is maxed!"); return end
+  if value >= (Config.ZoneMax[zoneId] or Config.BaseMaxLevel) then notify(p, "Higher levels are sold in the next world"); return end
+  cost = up.cost(value)
  end
  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
  stats.Coins.Value = stats.Coins.Value - cost
- if kind == "speed" then
-  stats.SpeedLevel.Value = value+1
-  PlayerSystems.ApplySpeed(p)
-  notify(p,"Speed: " .. Config.GetWalkSpeed(value+1),true)
- elseif kind == "magnet" then
-  p:SetAttribute("MagnetLevel",value+1)
-  notify(p,string.format("Magnet radius: %.2f",Config.GetMagnetRadius(value+1)),true)
- elseif kind == "income" then
-  p:SetAttribute("IncomeLevel",value+1)
-  notify(p,"Income: x" .. Config.GetIncomeMultiplier(value+1),true)
- else
+ if kind ~= "egg" then
+  UPGRADES[kind].set(p, stats, value + 1) else
   hatchUntil[p] = os.clock()+3.5
   local results={}
   for _=1,amount do
@@ -308,6 +331,7 @@ task.spawn(function()
  if not ok then warn("[CoinSprint] Не удалось загрузить аватар продавца: " .. tostring(avatar)); return end
  for _, zone in pairs(zones) do
   local shop = zone.UpgradeShop
+  if shop:GetAttribute("NoVendor") then continue end -- пустой прилавок без продавца (Sky Isles)
   local npc = avatar:Clone()
   npc.Name = "Shopkeeper"
   AvatarPose.Prepare(npc)
@@ -319,7 +343,7 @@ task.spawn(function()
    AvatarPose.Place(npc,seatPoint.Position,CFrame.Angles(0,math.pi,0),seatPoint.Position.Y,true)
   else
    local anchor=shop.VendorAnchor.Position
-   AvatarPose.Place(npc,anchor,CFrame.Angles(0,math.pi,0),anchor.Y,false)
+   AvatarPose.Place(npc,anchor,CFrame.Angles(0,shop.VendorAnchor:GetAttribute("Yaw") or math.pi,0),anchor.Y,false)
   end
   local placeholder = shop:FindFirstChild("VendorPlaceholder")
   if placeholder then placeholder:Destroy() end
@@ -354,15 +378,35 @@ do
  local magnetShop = world:FindFirstChild("MagnetShop")
  local zonePart = magnetShop and magnetShop:FindFirstChild("ShopZone")
  if zonePart then shopZones.magnets = zonePart end
+ local skyMagnets = sky:FindFirstChild("MagnetShop")
+ local skyZone = skyMagnets and skyMagnets:FindFirstChild("ShopZone")
+ if skyZone then shopZones.skymagnets = skyZone end
 end
+local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6}
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
+
+-- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
+-- здесь им только раздаются виды; Sky Isles раздаёт виды сам при постройке.
+local CoinTypes = require(ReplicatedStorage:WaitForChild("CoinTypes"))
+for zone, worldId in pairs({[world] = "Meadow", [city] = "Neon"}) do
+ for _, coin in ipairs(zone:GetChildren()) do
+  if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
+   local kind, rarity = CoinTypes.Pick(worldId, tonumber(string.match(coin.Name, "%d+")))
+   local d = CoinTypes.BaseSize[worldId] * kind.Scale
+   coin.Size = Vector3.new(coin.Size.X, d, d) -- ось цилиндра — X, диаметр — Y и Z
+   coin.Color = kind.Color
+   CoinTypes.Mark(coin, worldId, kind, rarity)
+   CoinTypes.AddGlow(coin, kind.Color, rarity)
+  end
+ end
+end
 
 -- У каждой монеты одно серверное состояние для всех игроков.
 local records = {}
-for _, zone in ipairs({world, city}) do
+for _, zone in ipairs({world, city, sky}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
-   local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = zone == city and 3 or 0}
+   local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = ZONE_LEVEL[zone] or 0}
    table.insert(records, record)
    coin.CanCollide = false
    coin.CanTouch = false
@@ -385,6 +429,8 @@ local function collect(record, p)
  record.part:SetAttribute("Available", false)
  setCoinVisible(record.part, false)
  local earned=record.value*PlayerSystems.CoinMultiplier(p)
+ -- Апгрейд «двойная монета»: шанс получить награду x2.
+ if random:NextNumber()<Config.GetDoubleChance(p:GetAttribute("DoubleLevel") or 0) then earned*=2 end
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
@@ -409,12 +455,14 @@ task.spawn(function()
      local offset = root.Position - zonePart.Position
      local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
-     if inside and not insideZone[key] and (id ~= "neon" or stats.SpeedLevel.Value >= 3) then
-      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") else openMenu:FireClient(p, "upgrades", id) end
+     if inside and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
+      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") else openMenu:FireClient(p, "upgrades", id) end
      end
      insideZone[key] = inside or nil
     end
-    if math.abs(root.Position.Z) <= 230 then
+    if root.Position.Y > 200 then
+     p:SetAttribute("CurrentWorld", "Sky Isles")
+    elseif math.abs(root.Position.Z) <= 230 then
      if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
      elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end
     end
@@ -436,4 +484,4 @@ task.spawn(function()
   task.wait(0.1)
  end
 end)
-print("[CoinSprint] Ready: 2 worlds, "..#records.." coins, "..#Config.Eggs.." eggs, "..#Config.Pets.." pets")
+print("[CoinSprint] Ready: 3 worlds, "..#records.." coins, "..#Config.Eggs.." eggs, "..#Config.Pets.." pets")

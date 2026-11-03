@@ -59,6 +59,84 @@ local function button(parent, text, pos, size, color)
 	stroke(b, 2.5)
 	return b
 end
+-- Сочная заливка: сверху светлее, снизу темнее.
+local function gradient(p, color, light, darkness)
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), light or 0.35), color:Lerp(Color3.new(0, 0, 0), darkness or 0.25))
+	g.Rotation = 90
+	g.Parent = p
+	p.BackgroundColor3 = Color3.new(1, 1, 1) -- UIGradient умножается на цвет фона
+	return g
+end
+-- Глянцевый блик в верхней половине круга или кнопки.
+local function gloss(p, r)
+	local g = Instance.new("Frame")
+	g.Name = "Gloss"
+	g.BackgroundColor3 = Color3.new(1, 1, 1)
+	g.BackgroundTransparency = 0.6
+	g.AnchorPoint = Vector2.new(0.5, 0)
+	g.Position = UDim2.new(0.5, 0, 0.07, 0)
+	g.Size = UDim2.fromScale(0.78, 0.4)
+	g.ZIndex = p.ZIndex + 1
+	g.Parent = p
+	corner(g, r)
+	local fade = Instance.new("UIGradient")
+	fade.Rotation = 90
+	fade.Transparency = NumberSequence.new(0.1, 1)
+	fade.Parent = g
+end
+-- Иконка-конфета: свечение позади, кольцо с градиентом, белая обводка, глянец, тень под эмодзи
+-- и лёгкое покачивание. ring — цвет кольца (ступень прокачки), color — цвет самой иконки.
+local function juicyIcon(parent, icon, color, ringColor, size, pos)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0)
+	holder.Position = pos
+	holder.Size = UDim2.fromOffset(size, size)
+	holder.Parent = parent
+	-- Ореол: полупрозрачный круг цвета иконки с мягкой широкой обводкой.
+	local glow = Instance.new("Frame")
+	glow.BackgroundColor3 = color
+	glow.BackgroundTransparency = 0.55
+	glow.AnchorPoint = Vector2.new(0.5, 0.5)
+	glow.Position = UDim2.fromScale(0.5, 0.5)
+	glow.Size = UDim2.fromScale(1.3, 1.3)
+	glow.Parent = holder
+	corner(glow, size * 2)
+	local halo = stroke(glow, 8, color)
+	halo.Transparency = 0.7
+	local ring = Instance.new("Frame")
+	ring.Name = "Ring"
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Position = UDim2.fromScale(0.5, 0.5)
+	ring.Size = UDim2.fromScale(1, 1)
+	ring.BackgroundColor3 = ringColor
+	ring.Parent = holder
+	corner(ring, size)
+	gradient(ring, ringColor, 0.45, 0.2)
+	stroke(ring, 3.5, Color3.new(1, 1, 1))
+	local inner = Instance.new("Frame")
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.fromScale(0.5, 0.5)
+	inner.Size = UDim2.fromScale(0.8, 0.8)
+	inner.BackgroundColor3 = color
+	inner.Parent = ring
+	corner(inner, size)
+	gradient(inner, color, 0.4, 0.35)
+	stroke(inner, 2, color:Lerp(Color3.new(0, 0, 0), 0.45))
+	gloss(inner, size)
+	local shadow = label(inner, icon, UDim2.new(0, 3, 0, 4), UDim2.fromScale(1, 1), math.floor(size * 0.62), Color3.new(0, 0, 0))
+	shadow.TextTransparency = 0.6
+	shadow.ZIndex = inner.ZIndex + 2
+	local text = label(inner, icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), math.floor(size * 0.62))
+	text.ZIndex = inner.ZIndex + 3
+	-- Покачивание и «дыхание» свечения; останавливаются вместе с окном (Destroy при перерисовке).
+	ring.Rotation = -6
+	TweenService:Create(ring, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = 6 }):Play()
+	TweenService:Create(glow, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { BackgroundTransparency = 0.8, Size = UDim2.fromScale(1.5, 1.5) }):Play()
+	return holder, ring
+end
+
 local function fmt(n)
 	if n >= 1e6 then
 		return string.format("%.1fM", n / 1e6)
@@ -95,22 +173,27 @@ local mode, zoneId
 local zonePart
 local spinning = {}
 
--- Карточка прокачки: иконка в круге цвета ступени, 10 делений уровня, значения до/после, кнопка.
+-- Карточка прокачки: иконка в круге цвета ступени, уровень «N / предел мира», значения до/после, кнопка.
+-- Предел зависит от магазина: Meadow 10, Neon 25, Sky 50 (Config.ZoneMax); цены растут с уровнем.
 local upgradeDefs = {
-	speed = { Title = "SPEED", Icon = "⚡", Accent = Color3.fromRGB(80, 170, 255), Max = function() return Config.MaxSpeedLevel end,
+	speed = { Title = "SPEED", Icon = "⚡", Accent = Color3.fromRGB(80, 170, 255), Global = Config.MaxSpeedLevel,
 		Level = function() return speed.Value end, Cost = Config.GetUpgradeCost,
 		Value = function(l) return tostring(Config.GetWalkSpeed(l)) end, Unit = "walk speed" },
-	magnet = { Title = "MAGNET", Icon = "🧲", Accent = Color3.fromRGB(230, 80, 90), Max = function() return Config.MaxMagnetLevel end,
+	magnet = { Title = "MAGNET", Icon = "🧲", Accent = Color3.fromRGB(230, 80, 90), Global = Config.MaxMagnetLevel,
 		Level = function() return player:GetAttribute("MagnetLevel") or 0 end, Cost = Config.GetMagnetUpgradeCost,
 		Value = function(l) return string.format("%.1f", Config.GetMagnetRadius(l)) end, Unit = "studs radius" },
-	income = { Title = "COINS", Icon = "💰", Accent = Color3.fromRGB(255, 190, 40), Max = function() return Config.MaxIncomeLevel end,
+	income = { Title = "COINS", Icon = "💰", Accent = Color3.fromRGB(255, 190, 40), Global = Config.MaxIncomeLevel,
 		Level = function() return player:GetAttribute("IncomeLevel") or 0 end, Cost = Config.GetIncomeUpgradeCost,
 		Value = function(l) return "x" .. string.format("%g", Config.GetIncomeMultiplier(l)) end, Unit = "coin income" },
+	double = { Title = "DOUBLE", Icon = "✨", Accent = Color3.fromRGB(190, 110, 255), Global = Config.MaxDoubleLevel,
+		Level = function() return player:GetAttribute("DoubleLevel") or 0 end, Cost = Config.GetDoubleUpgradeCost,
+		Value = function(l) return string.format("%g%%", math.floor(Config.GetDoubleChance(l) * 1000 + 0.5) / 10) end, Unit = "double coin chance" },
 }
 local function upgradeCard(parent, kind, pos, size)
 	local d = upgradeDefs[kind]
-	local level, max = d.Level(), d.Max()
-	local tier = ShopConfig.TierColor(level, max)
+	local level = d.Level()
+	local cap = math.min(d.Global, Config.ZoneMax[zoneId] or Config.BaseMaxLevel)
+	local tier = ShopConfig.TierColor(level, d.Global)
 	local card = Instance.new("Frame")
 	card.Position = pos
 	card.Size = size
@@ -118,56 +201,34 @@ local function upgradeCard(parent, kind, pos, size)
 	card.Parent = parent
 	corner(card, 16)
 	stroke(card, 3, tier)
+	gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
 	local head = Instance.new("Frame")
 	head.Size = UDim2.new(1, 0, 0, 38)
 	head.BackgroundColor3 = d.Accent
 	head.Parent = card
 	corner(head, 16)
-	label(head, d.Title, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 22)
-	-- Иконка растёт и меняет цвет обводки по мере прокачки.
-	local ring = Instance.new("Frame")
-	ring.AnchorPoint = Vector2.new(0.5, 0)
-	ring.Position = UDim2.new(0.5, 0, 0, 48)
-	local iconSize = 70 + math.floor(level / math.max(max, 1) * 16)
-	ring.Size = UDim2.fromOffset(iconSize, iconSize)
-	ring.BackgroundColor3 = tier
-	ring.Parent = card
-	corner(ring, iconSize)
-	stroke(ring, 3)
-	local inner = Instance.new("Frame")
-	inner.AnchorPoint = Vector2.new(0.5, 0.5)
-	inner.Position = UDim2.fromScale(0.5, 0.5)
-	inner.Size = UDim2.fromScale(0.8, 0.8)
-	inner.BackgroundColor3 = d.Accent
-	inner.Parent = ring
-	corner(inner, iconSize)
-	label(inner, d.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), math.floor(iconSize * 0.48))
-	label(card, string.format("LEVEL %d / %d", level, max), UDim2.fromOffset(0, 140), UDim2.new(1, 0, 0, 24), 17, tier)
-	-- Деления уровня.
-	local pips = Instance.new("Frame")
-	pips.BackgroundTransparency = 1
-	pips.AnchorPoint = Vector2.new(0.5, 0)
-	pips.Position = UDim2.new(0.5, 0, 0, 166)
-	pips.Size = UDim2.fromOffset(max * 15, 12)
-	pips.Parent = card
-	for i = 1, max do
-		local pip = Instance.new("Frame")
-		pip.Position = UDim2.fromOffset((i - 1) * 15, 0)
-		pip.Size = UDim2.fromOffset(12, 12)
-		pip.BackgroundColor3 = i <= level and ShopConfig.TierColor(i - 1, max) or Color3.fromRGB(35, 38, 52)
-		pip.Parent = pips
-		corner(pip, 4)
-	end
+	gradient(head, d.Accent, 0.3, 0.2)
+	local headText = label(head, d.Title, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 22)
+	headText.TextStrokeTransparency = 0.3
+	-- Иконка растёт и меняет цвет кольца по мере прокачки.
+	local iconSize = 78 + math.floor(level / math.max(d.Global, 1) * 14)
+	local ring = juicyIcon(card, d.Icon, d.Accent, tier, iconSize, UDim2.new(0.5, 0, 0, 48))
+	label(card, string.format("LEVEL %d / %d", level, cap), UDim2.fromOffset(0, 144), UDim2.new(1, 0, 0, 26), 20, tier)
 	local nowText = d.Value(level)
-	local nextText = level < max and d.Value(level + 1) or nowText
-	label(card, level < max and (nowText .. "  →  " .. nextText) or (nowText .. "  MAX"), UDim2.fromOffset(0, 186), UDim2.new(1, 0, 0, 30), 24)
-	label(card, d.Unit, UDim2.fromOffset(0, 214), UDim2.new(1, 0, 0, 20), 14, Color3.fromRGB(200, 205, 220), Enum.Font.GothamMedium)
-	local price = level < max and d.Cost(level) or 0
+	local nextText = level < d.Global and d.Value(level + 1) or nowText
+	label(card, level < cap and (nowText .. "  →  " .. nextText) or (nowText .. "  MAX"), UDim2.fromOffset(0, 174), UDim2.new(1, 0, 0, 30), 24)
+	label(card, d.Unit, UDim2.fromOffset(0, 202), UDim2.new(1, 0, 0, 20), 14, Color3.fromRGB(200, 205, 220), Enum.Font.GothamMedium)
+	local atCap = level >= cap
+	local price = atCap and 0 or d.Cost(level)
 	local affordable = coins.Value >= price
-	local b = button(card, level >= max and "MAXED" or ("BUY  💰 " .. fmt(price)), UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46),
-		level >= max and Color3.fromRGB(120, 120, 130) or (affordable and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)))
+	local text = level >= d.Global and "MAXED" or atCap and "MAX HERE" or ("BUY  💰 " .. fmt(price))
+	local b = button(card, text, UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46),
+		atCap and Color3.fromRGB(120, 120, 130) or (affordable and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)))
+	if atCap and level < d.Global then
+		label(card, "more levels in the next world", UDim2.fromOffset(0, 226), UDim2.new(1, 0, 0, 18), 13, Color3.fromRGB(255, 215, 120), Enum.Font.GothamMedium)
+	end
 	b.Activated:Connect(function()
-		if level < max then
+		if not atCap then
 			buy:FireServer(kind, zoneId)
 			TweenService:Create(ring, TweenInfo.new(0.12), { Size = UDim2.fromOffset(iconSize + 10, iconSize + 10) }):Play()
 		end
@@ -193,15 +254,15 @@ end
 
 local function renderUpgrades()
 	title.Text = "⬆ UPGRADE KIOSK"
-	for i, kind in ipairs({ "speed", "magnet", "income" }) do
-		upgradeCard(body, kind, UDim2.fromOffset((i - 1) * 206, 0), UDim2.fromOffset(196, 356))
+	for i, kind in ipairs({ "speed", "magnet", "income", "double" }) do
+		upgradeCard(body, kind, UDim2.fromOffset((i - 1) * 208, 0), UDim2.fromOffset(200, 340))
 	end
 end
 
 local magnetTab = "magnets"
 local function renderMagnets()
 	title.Text = "🧲 MAGNET SHOP"
-	local tabs = { { "magnets", "MAGNETS" }, { "upgrade", "UPGRADE" }, { "potions", "POTIONS" } }
+	local tabs = { { "magnets", "MAGNETS" }, { "potions", "POTIONS" } }
 	for i, t in ipairs(tabs) do
 		local b = button(body, t[2], UDim2.fromOffset((i - 1) * 140, 0), UDim2.fromOffset(132, 34), t[1] == magnetTab and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(70, 80, 110))
 		b.TextSize = 16
@@ -266,12 +327,6 @@ local function renderMagnets()
 		-- Сразу показываем ряд со следующим магнитом для покупки.
 		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 5)
 		scroll.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 176)
-	elseif magnetTab == "upgrade" then
-		upgradeCard(area, "magnet", UDim2.fromOffset(0, 0), UDim2.fromOffset(196, 312))
-		local info = label(area, "Your pull radius = magnet upgrade + bonus of the magnet in your hand.\n\nHold the magnet (it is always in your hand) to collect coins from further away.", UDim2.fromOffset(220, 20), UDim2.fromOffset(380, 200), 18, Color3.fromRGB(220, 225, 235), Enum.Font.GothamMedium)
-		info.TextXAlignment = Enum.TextXAlignment.Left
-		info.TextYAlignment = Enum.TextYAlignment.Top
-		label(area, string.format("Current radius: %.1f studs", player:GetAttribute("MagnetRadius") or 0), UDim2.fromOffset(220, 230), UDim2.fromOffset(380, 40), 24, Color3.fromRGB(255, 215, 80))
 	else
 		for i, name in ipairs(ShopConfig.PotionOrder) do
 			local def = ShopConfig.Potions[name]
@@ -282,15 +337,8 @@ local function renderMagnets()
 			card.Parent = area
 			corner(card, 16)
 			stroke(card, 3, def.Color)
-			local bottle = Instance.new("Frame")
-			bottle.AnchorPoint = Vector2.new(0.5, 0)
-			bottle.Position = UDim2.new(0.5, 0, 0, 16)
-			bottle.Size = UDim2.fromOffset(90, 90)
-			bottle.BackgroundColor3 = def.Color
-			bottle.Parent = card
-			corner(bottle, 45)
-			stroke(bottle, 3)
-			label(bottle, def.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 44)
+			gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
+			juicyIcon(card, def.Icon, def.Color, def.Color:Lerp(Color3.new(1, 1, 1), 0.3), 92, UDim2.new(0.5, 0, 0, 14))
 			label(card, def.Name, UDim2.fromOffset(0, 116), UDim2.new(1, 0, 0, 28), 20)
 			label(card, def.Effect .. " · 5 min", UDim2.fromOffset(0, 146), UDim2.new(1, 0, 0, 22), 15, def.Color)
 			label(card, "You have: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 176), UDim2.new(1, 0, 0, 22), 16, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
@@ -306,6 +354,11 @@ local function render()
 	body:ClearAllChildren()
 	spinning = {}
 	wallet.Text = "💰 " .. fmt(coins.Value)
+	local wide = mode == "upgrades"
+	window.Size = UDim2.fromOffset(wide and 860 or 640, 430)
+	body.Size = UDim2.fromOffset(wide and 832 or 612, 360)
+	wallet.Position = UDim2.fromOffset(wide and 550 or 330, 12)
+	close.Position = UDim2.new(1, -52, 0, 10)
 	if mode == "upgrades" then
 		renderUpgrades()
 	elseif mode == "magnets" then
@@ -330,9 +383,10 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 	mode, zoneId = newMode, newMode == "magnets" and "magnets" or newZone
 	local world = workspace:WaitForChild("CoinSpeedWorld")
 	if newMode == "magnets" then
-		zonePart = world:FindFirstChild("MagnetShop") and world.MagnetShop:FindFirstChild("ShopZone")
+		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or world
+		zonePart = shopHolder:FindFirstChild("MagnetShop") and shopHolder.MagnetShop:FindFirstChild("ShopZone")
 	else
-		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or world
+		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or world
 		zonePart = zone.UpgradeShop:FindFirstChild("ShopZone") or zone.UpgradeShop:FindFirstChild("Counter")
 	end
 	player:SetAttribute("UIScreen", newMode)
@@ -354,7 +408,7 @@ end
 coins.Changed:Connect(dirty)
 speed.Changed:Connect(dirty)
 player.AttributeChanged:Connect(function(name)
-	if name == "MagnetLevel" or name == "IncomeLevel" or name == "MagnetTier" or name == "MagnetEquipped" or name:sub(1, 6) == "Potion" or name == "MagnetRadius" then
+	if name == "MagnetLevel" or name == "IncomeLevel" or name == "DoubleLevel" or name == "MagnetTier" or name == "MagnetEquipped" or name:sub(1, 6) == "Potion" or name == "MagnetRadius" then
 		dirty()
 	end
 end)
@@ -363,7 +417,7 @@ local spin, check = 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
-		scale.Scale = math.clamp(math.min(camera.ViewportSize.X / 700, camera.ViewportSize.Y / 500), 0.35, 1)
+		scale.Scale = math.clamp(math.min(camera.ViewportSize.X / (window.Size.X.Offset + 60), camera.ViewportSize.Y / 500), 0.35, 1)
 	end
 	if not window.Visible then
 		return

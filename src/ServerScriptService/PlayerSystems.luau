@@ -115,7 +115,7 @@ end
 
 -- ===== Доход =====
 function PlayerSystems.CoinMultiplier(p): number
-	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1)
+	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(p:GetAttribute("Rebirths") or 0)
 	if PlayerSystems.PotionActive(p, "Coins") then
 		m *= 2
 	end

@@ -1,11 +1,40 @@
 -- Sanitized Creator Store meshes take priority; ten rounded fallback species.
 local Config=require(script.Parent:WaitForChild("GameConfig"))
 local PetVisuals={}
+-- Готовая модель-шаблон (Studio/GLB-импорт): масштабируем под размер питомца и фиксируем детали.
+local function fromTemplate(selected,def)
+ if selected and selected:IsA("Model") and selected:FindFirstChildWhichIsA("BasePart",true) then
+  local model=selected:Clone();model.Name=def.Name
+  local size=model:GetExtentsSize()
+  -- Мифики и секретки крупнее обычных, чтобы редкость было видно сразу.
+  local target=({Mythic=3.1,Secret=3.5})[def.Rarity] or 2.5
+  model:ScaleTo(model:GetScale()*target/math.max(size.X,size.Y,size.Z,0.1))
+  model:PivotTo(CFrame.identity)
+  local parts={}
+  for _,p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;table.insert(parts,{part=p,transparency=p.Transparency}) end end
+  model.PrimaryPart=model.PrimaryPart or parts[1].part
+  return model,parts
+ end
+end
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
+ -- Свои модели питомцев (CustomPets/Pet<id>) важнее процедурных.
+ local customFolder=script.Parent:FindFirstChild("CustomPets")
+ local custom=customFolder and customFolder:FindFirstChild("Pet"..id)
+ if custom then
+  local model,parts=fromTemplate(custom,def)
+  if model then return model,parts end
+ end
+ local neonTheme,neonKind=string.match(def.Visual,"^Neon(%a+)_(%a+)$")
+ if neonTheme then return require(script.Parent:WaitForChild("NeonVisuals")).BuildPet(neonTheme,neonKind,def.Name) end
  if string.sub(def.Visual,1,6)=="Sunset" then return require(script.Parent:WaitForChild("SunsetVisuals")).BuildPet(string.sub(def.Visual,7),def.Name) end
  if string.sub(def.Visual,1,6)=="Sakura" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Sakura",string.sub(def.Visual,7),def.Name) end
  if string.sub(def.Visual,1,9)=="Starlight" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Starlight",string.sub(def.Visual,10),def.Name) end
+ for _,theme in ipairs({"Celestial","Crystal","Cloud"}) do
+  if string.sub(def.Visual,1,#theme)==theme then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet(theme,string.sub(def.Visual,#theme+1),def.Name) end
+ end
+ if string.sub(def.Visual,1,3)=="Sky" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Sky",string.sub(def.Visual,4),def.Name) end
+ if string.sub(def.Visual,1,6)=="Aurora" then return require(script.Parent:WaitForChild("ThemedVisuals")).BuildPet("Aurora",string.sub(def.Visual,7),def.Name) end
  -- Visual совпадает с именем модели целиком: сначала паки (PetModels), потом старые PetAssets.
  -- Если модели нет, рисуем запасного питомца из деталей ниже.
  local selected
@@ -16,18 +45,8 @@ function PetVisuals.Build(id)
   end
  end
  do
-  if selected and selected:IsA("Model") and selected:FindFirstChildWhichIsA("BasePart",true) then
-   local model=selected:Clone();model.Name=def.Name
-   local size=model:GetExtentsSize()
-   -- Мифики и секретки крупнее обычных, чтобы редкость было видно сразу.
-   local target=({Mythic=3.1,Secret=3.5})[def.Rarity] or 2.5
-   model:ScaleTo(model:GetScale()*target/math.max(size.X,size.Y,size.Z,0.1))
-   model:PivotTo(CFrame.identity)
-   local parts={}
-   for _,p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;table.insert(parts,{part=p,transparency=p.Transparency}) end end
-   model.PrimaryPart=model.PrimaryPart or parts[1].part
-   return model,parts
-  end
+  local model,parts=fromTemplate(selected,def)
+  if model then return model,parts end
  end
  local model=Instance.new("Model");model.Name=def.Name
  local parts={}
