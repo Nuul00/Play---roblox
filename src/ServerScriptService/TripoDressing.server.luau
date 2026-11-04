@@ -80,6 +80,89 @@ local function dressEgg(stand: Instance, id: number)
 	egg:SetAttribute("Tripo", true)
 end
 
+------------------------------------------------------------------ подставки под яйцами в цвет мира
+-- Старый Pedestal остаётся невидимым (по нему всё так же ходят), сверху — модель Tripo,
+-- вписанная по ширине и не выше 4–5 студов. Яйцо ставим на её верх.
+local PEDESTAL = { "PedestalMeadow", "PedestalMeadow", "PedestalMeadow", "PedestalNeon", "PedestalNeon", "PedestalNeon", "PedestalSky", "PedestalSky", "PedestalSky" }
+local function dressPedestal(stand: Instance, id: number)
+	local template = props and props:FindFirstChild(PEDESTAL[id] or "")
+	local ped = stand:FindFirstChild("Pedestal")
+	if not (template and ped) or stand:GetAttribute("TripoPedestal") then
+		return
+	end
+	local minV, maxV = visualBox(ped)
+	if not minV then
+		return
+	end
+	stand:SetAttribute("TripoPedestal", true)
+	local width = math.max(maxV.X - minV.X, maxV.Z - minV.Z)
+	for _, d in ipairs(ped:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Transparency = 1
+			d.CastShadow = false
+		elseif d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Beam") then
+			(d :: any).Enabled = false
+		elseif d:IsA("Decal") or d:IsA("Texture") then
+			d.Transparency = 1
+		end
+	end
+	local m = template:Clone()
+	m.Name = "TripoPedestal"
+	local _, ext = m:GetBoundingBox()
+	-- По ширине старого подиума; высокую модель приплющиваем (не больше чем вдвое), а если
+	-- и этого мало — уменьшаем.
+	local maxH = id >= 7 and 5 or 4
+	local k = width / math.max(ext.X, ext.Z, 0.01)
+	local squash = 1
+	if ext.Y * k > maxH then
+		squash = maxH / (ext.Y * k)
+		if squash < 0.5 then
+			squash = 0.5
+			k = maxH / 0.5 / ext.Y
+		end
+	end
+	m:ScaleTo(m:GetScale() * k)
+	if squash < 1 then
+		local bcf, bext = m:GetBoundingBox()
+		local floorY = bcf.Position.Y - bext.Y / 2
+		for _, p in ipairs(m:GetDescendants()) do
+			if p:IsA("BasePart") then
+				local up = p.CFrame:VectorToObjectSpace(Vector3.yAxis)
+				local ax, ay, az = math.abs(up.X), math.abs(up.Y), math.abs(up.Z)
+				local sz = p.Size
+				if ax >= ay and ax >= az then
+					sz = Vector3.new(sz.X * squash, sz.Y, sz.Z)
+				elseif ay >= az then
+					sz = Vector3.new(sz.X, sz.Y * squash, sz.Z)
+				else
+					sz = Vector3.new(sz.X, sz.Y, sz.Z * squash)
+				end
+				local pos = p.Position
+				p.Size = sz
+				p.CFrame = (p.CFrame - pos) + Vector3.new(pos.X, floorY + (pos.Y - floorY) * squash, pos.Z)
+			end
+		end
+	end
+	local cf, ext2 = m:GetBoundingBox()
+	local offset = m:GetPivot():ToObjectSpace(cf)
+	local center = (minV + maxV) / 2
+	m:PivotTo(CFrame.new(center.X, minV.Y + ext2.Y / 2, center.Z) * offset:Inverse())
+	for _, p in ipairs(m:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+		end
+	end
+	m.Parent = stand
+	-- яйцо — на верх новой подставки
+	local egg = stand:FindFirstChild("EggDisplay")
+	if egg and egg:IsA("Model") then
+		local ecf, eext = egg:GetBoundingBox()
+		local top = minV.Y + ext2.Y - 0.15
+		local dy = top - (ecf.Position.Y - eext.Y / 2)
+		egg:PivotTo(egg:GetPivot() + Vector3.new(0, dy, 0))
+	end
+end
+
 ------------------------------------------------------------------ магазины
 local function dressShop(shop: Instance?, propName: string)
 	local template = props and props:FindFirstChild(propName)
@@ -140,8 +223,13 @@ for id = 1, 9 do
 	local stand = holder and holder:FindFirstChild("EggStand" .. id, true)
 	if stand then
 		local ok, err = pcall(dressEgg, stand, id)
-		local d = stand:FindFirstChild("EggDisplay")
-		print("[TripoDressing] egg", id, stand:GetFullName(), ok, err, d and d.ClassName, d and d:GetAttribute("Tripo"))
+		if not ok then
+			warn("[TripoDressing] egg", id, err)
+		end
+		local ok2, err2 = pcall(dressPedestal, stand, id)
+		if not ok2 then
+			warn("[TripoDressing] pedestal", id, err2)
+		end
 	else
 		print("[TripoDressing] egg", id, "stand not found")
 	end
@@ -185,7 +273,15 @@ if frozen then
 			fit(t, size, CFrame.new(C + at) * CFrame.Angles(0, yaw, 0), deco)
 		end
 	end
-	put("PenguinStatue", 12, Vector3.new(-26, 0, 60), math.rad(200))
+	-- Пингвин стоит на ледяной подставке.
+	put("PedestalFrozen", 11, Vector3.new(-26, 0, 60), 0)
+	local fped = deco:FindFirstChild("PedestalFrozen")
+	local lift = 0
+	if fped then
+		local _, e = fped:GetBoundingBox()
+		lift = e.Y - 0.2
+	end
+	put("PenguinStatue", 12, Vector3.new(-26, lift, 60), math.rad(200))
 	put("FrozenSled", 10, Vector3.new(26, 0, 62), math.rad(160))
 	put("FrozenMachine", 14, Vector3.new(-60, 0, -10), math.rad(90))
 	for k = 0, 5 do

@@ -56,17 +56,12 @@ task.defer(function()
 end)
 
 local t = 0
-RunService.RenderStepped:Connect(function(dt)
-	t += dt
-	if player == nil then
-		return
-	end
-end)
 
 -- Вращение и лёгкое парение — только в Frozen Peaks и 20 раз в секунду.
 local acc = 0
 local player = game:GetService("Players").LocalPlayer
 RunService.Heartbeat:Connect(function(dt)
+	t += dt
 	acc += dt
 	if acc < 0.05 or player:GetAttribute("CurrentWorld") ~= "Frozen Peaks" then
 		return
