@@ -15,3 +15,6 @@
 2109=de661717-b1de-432f-95fc-bc929b404521#NeonHoverCar 2110=86d6ae6d-b179-4168-8826-b175619eeae7#NeonPalm 2111=cecb4a43-3f62-4661-b032-a74754f9ba5c#SkyLamp 2112=9b7ee393-54f9-4469-a79a-2b5b0cac828f#SkyBalloon 2113=7f67c6a2-08c3-49df-9289-dcceeed86bad#SkyIsland 2114=f03f75ac-fab5-4f33-b31b-3f23a8ba3899#SkyStatue 2115=53bca0cf-144b-44fd-aff7-bdeda7d8eb23#FrozenLamp 2116=554baf3d-e40f-4a9c-883b-eff0b71ecdad#FrozenSled
 # Sky treasure chests 2201-2203 (tiers 1-3)
 2201=8e982bac-9d94-4a00-8c76-c8aa216ec926 2202=8a6885eb-39be-4870-8d00-e59655214460 2203=ecb1c452-de38-497e-864d-0d8f558c1b8b
+# Chests v2 picked: 2301x-> see 2201..2203 = c2583ceb / 537827ef / c9cf35cd
+# Frozen mountains 2301-2303, Frozen coins 2311 Ice 2312 Crystal 2313 Aurora
+2301=c0d2129d-b65b-4447-ab3f-5a3d1d702b51 2302=f0c62b28-9499-445a-8ada-db47c2042e3d 2303=918d16fb-47ec-47c7-8783-cf8cc23569e1 2311=3ec574da-e05f-49a6-beed-cd31e1fe9c43 2312=a585b890-f5dd-40c6-bfe1-dce9ac7943c7 2313=8877bb4a-a111-434d-b25b-08a69c657838

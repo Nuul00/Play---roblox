@@ -251,7 +251,7 @@ function Frozen.BuildGlobe(parent: Instance)
 			local b = math.rad(28 + j * 9)
 			local dir = Vector3.new(math.cos(b) * math.cos(a), math.sin(b), math.cos(b) * math.sin(a))
 			local pos = L(0, GLOBE_Y, 0) + dir * (GLOBE_R - 1.5)
-			part(m, "Shine", Vector3.new(26, 7, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(255, 255, 255), M.Neon, { Transparency = 0.86, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false })
+			part(m, "Shine", Vector3.new(44, 11, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(255, 255, 255), M.Neon, { Transparency = 0.7, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false })
 		end
 	end
 	-- Подставка: снежная «насыпь», красное дерево, золотые кольца, снежинки и сосульки.

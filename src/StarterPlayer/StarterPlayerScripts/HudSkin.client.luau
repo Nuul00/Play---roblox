@@ -387,6 +387,8 @@ local function clear()
 	table.clear(restore)
 end
 
+-- Оттенок скина (Frozen Peaks берёт картинки Sky Isles и красит их в ледяной цвет).
+local currentSkinTint: Color3? = nil
 local function skinButton(button: GuiButton, image: string, side: number, dotImage: string?)
 	local dot: TextLabel? = nil
 	for _, child in ipairs(button:GetChildren()) do
@@ -420,6 +422,7 @@ local function skinButton(button: GuiButton, image: string, side: number, dotIma
 		Name = "SkinImage",
 		BackgroundTransparency = 1,
 		Image = image,
+		ImageColor3 = (currentSkinTint or Color3.new(1, 1, 1)),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromOffset(side, side),
@@ -494,6 +497,7 @@ local function skinPanel(frame: Frame, skin, def)
 		Name = "SkinTile",
 		BackgroundTransparency = 1,
 		Image = skin[def.tile],
+		ImageColor3 = skin.Tint or Color3.new(1, 1, 1),
 		Size = UDim2.fromScale(1, 1),
 		ZIndex = 0,
 	}, frame)
@@ -501,6 +505,7 @@ local function skinPanel(frame: Frame, skin, def)
 		Name = "SkinIcon",
 		BackgroundTransparency = 1,
 		Image = skin[def.icon],
+		ImageColor3 = skin.Tint or Color3.new(1, 1, 1),
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, -12, 0.5, 0),
 		Size = UDim2.fromOffset(h + 16, h + 16),
@@ -551,6 +556,7 @@ local function showTitle(world: string, skin)
 	showVersion += 1
 	local mine = showVersion
 	plate.Image = skin.Plate_Title
+	plate.ImageColor3 = skin.Tint or Color3.new(1, 1, 1)
 	plateText.Text = string.upper(world)
 	plateText.TextColor3 = skin.TitleColor or Color3.new(1, 1, 1)
 	plateStroke.Color = skin.InkColor or INK
@@ -579,6 +585,7 @@ local current = nil
 local function apply(announce: boolean)
 	local world = player:GetAttribute("CurrentWorld")
 	local skin = world and Skins[world]
+	currentSkinTint = skin and skin.Tint or nil
 	if skin and not skin.Btn_Index then
 		skin = nil
 	end

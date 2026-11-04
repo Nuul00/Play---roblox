@@ -5,7 +5,7 @@ local function id(n)
 	return "rbxassetid://" .. n
 end
 
-return {
+local skins = {
 	["Sky Isles"] = {
 		Btn_Index = id(88641355523431), -- из первого набора, без плашки под надписью
 		Btn_Items = id(89863492754384),
@@ -85,3 +85,15 @@ return {
 		InkColor = Color3.fromRGB(40, 10, 70),
 	},
 }
+
+-- Frozen Peaks: картинки Sky Isles, окрашенные в ледяной цвет, и свои цвета меню.
+local frozen = table.clone(skins["Sky Isles"])
+frozen.Tint = Color3.fromRGB(185, 225, 255)
+frozen.MenuTop = Color3.fromRGB(140, 210, 255)
+frozen.MenuBottom = Color3.fromRGB(60, 120, 220)
+frozen.RimColor = Color3.fromRGB(230, 248, 255)
+frozen.TitleColor = Color3.fromRGB(235, 250, 255)
+frozen.InkColor = Color3.fromRGB(20, 60, 120)
+skins["Frozen Peaks"] = frozen
+
+return skins

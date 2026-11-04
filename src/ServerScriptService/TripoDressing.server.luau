@@ -161,6 +161,19 @@ if frozen then
 	pcall(swapAll, frozen, "Igloo", "Igloo", 1.0)
 	pcall(swapAll, frozen, "SnowPine", "SnowPine", 1.1)
 	pcall(swapAll, frozen, "CrystalCluster", "IceCrystals", 1.1)
+	-- Горы: блочные пирамиды меняем на 3D-горы Tripo (три вида по кругу, разный поворот).
+	local peaks = frozen:FindFirstChild("Peaks")
+	if peaks and props:FindFirstChild("FrozenMountain1") then
+		for k, m in ipairs(peaks:GetChildren()) do
+			local t = props:FindFirstChild("FrozenMountain" .. ((k - 1) % 3 + 1))
+			if m:IsA("Model") and t then
+				local cf, ext = m:GetBoundingBox()
+				local bottom = CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)) * CFrame.Angles(0, k * 1.3, 0)
+				hide(m)
+				fit(t, math.max(ext.X, ext.Y, ext.Z) * 1.15, bottom, m, "TripoModel")
+			end
+		end
+	end
 	-- Новый декор у центральной площади: статуя пингвина, санки с подарками и ледяные фонари.
 	local C = Vector3.new(3000, 60, 0)
 	local deco = Instance.new("Folder")
@@ -177,6 +190,23 @@ if frozen then
 	put("FrozenMachine", 14, Vector3.new(-60, 0, -10), math.rad(90))
 	for k = 0, 5 do
 		put("FrozenLamp", 11, Vector3.new(k % 2 == 0 and -12 or 12, 0, 30 + math.floor(k / 2) * 34), 0)
+	end
+end
+-- Сундуки на островках Sky Isles: модель Tripo по номеру сундука, ChestBase остаётся для логики.
+if sky then
+	for _, base in ipairs(game:GetService("CollectionService"):GetTagged("SkyChest")) do
+		local id = base:GetAttribute("ChestId")
+		local chest = base.Parent
+		local template = props and props:FindFirstChild("SkyChest" .. tostring(id))
+		if chest and template and not chest:GetAttribute("Tripo") then
+			chest:SetAttribute("Tripo", true)
+			local look = base.CFrame.LookVector
+			local bottom = CFrame.lookAt(base.Position - Vector3.new(0, base.Size.Y / 2, 0), base.Position - Vector3.new(0, base.Size.Y / 2, 0) + Vector3.new(look.X, 0, look.Z))
+			hide(chest, { ChestBase = true })
+			base.Transparency = 1
+			local m = fit(template, ({ 6, 7, 8.5 })[id] or 6, bottom, chest, "TripoModel")
+			m:SetAttribute("ChestId", id)
+		end
 	end
 end
 print("[TripoDressing] eggs, shops and Frozen decor dressed")

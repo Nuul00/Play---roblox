@@ -10,6 +10,10 @@ local COOLDOWN = 600
 local MAX_DISTANCE = 14
 
 local feedback = ReplicatedStorage:WaitForChild("GameFeedback")
+-- Клиент (ChestFX) играет анимацию открытия и «сон» сундука до конца перезарядки.
+local openedRemote = Instance.new("RemoteEvent")
+openedRemote.Name = "SkyChestOpened"
+openedRemote.Parent = ReplicatedStorage
 local openedAt: { [Player]: { [number]: number } } = {}
 
 local function comma(n: number): string
@@ -64,6 +68,7 @@ local function open(p: Player, base: BasePart)
 		burst:Emit(40)
 	end
 	task.spawn(popLid, base)
+	openedRemote:FireClient(p, id, reward, os.time() + COOLDOWN)
 end
 
 local function hook(base: Instance)
