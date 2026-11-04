@@ -139,7 +139,11 @@ for id = 1, 9 do
 	local holder = (id <= 3 and world) or (id <= 6 and city) or world:WaitForChild("SkyIsles", 30)
 	local stand = holder and holder:FindFirstChild("EggStand" .. id, true)
 	if stand then
-		pcall(dressEgg, stand, id)
+		local ok, err = pcall(dressEgg, stand, id)
+		local d = stand:FindFirstChild("EggDisplay")
+		print("[TripoDressing] egg", id, stand:GetFullName(), ok, err, d and d.ClassName, d and d:GetAttribute("Tripo"))
+	else
+		print("[TripoDressing] egg", id, "stand not found")
 	end
 end
 

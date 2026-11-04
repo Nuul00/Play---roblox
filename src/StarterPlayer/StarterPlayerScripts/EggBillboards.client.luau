@@ -6,6 +6,15 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+-- Модели питомцев из Tripo (ReplicatedStorage.TripoPets) приходят на клиент не сразу: ждём их,
+-- иначе на табло яиц остаются старые процедурные питомцы.
+do
+	local tripo = ReplicatedStorage:WaitForChild("TripoPets", 10)
+	local t0 = os.clock()
+	while tripo and #tripo:GetChildren() < 75 and os.clock() - t0 < 15 do
+		task.wait(0.25)
+	end
+end
 local player = Players.LocalPlayer
 local world = workspace:WaitForChild("CoinSpeedWorld")
 local city = world:WaitForChild("NeonCity")
@@ -171,6 +180,13 @@ local function setupEgg(id, stand)
 		return
 	end
 	local entry = { model = display, base = display:GetPivot(), phase = id * 1.3, neon = Config.Eggs[id].World=="neon", spin=0, holo = {}, orbs = {} }
+	-- Сервер (TripoDressing) меняет модель яйца на модель из Tripo: оживляем уже её.
+	stand.ChildAdded:Connect(function(c)
+		if c.Name == "EggDisplay" and c:IsA("Model") then
+			entry.model = c
+			entry.base = c:GetPivot()
+		end
+	end)
 	local ped = stand:FindFirstChild("Pedestal")
 	if ped then
 		local center = ped:FindFirstChild("Base") and ped.Base.Position or entry.base.Position

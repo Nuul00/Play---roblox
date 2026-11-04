@@ -408,6 +408,18 @@ for id, egg in ipairs(Config.Eggs) do
 		local display = stand:WaitForChild("EggDisplay")
 		local size = display:GetExtentsSize()
 		displays[id] = { model = display, base = display:GetPivot(), radius = math.max(size.X, size.Z) / 2 }
+		-- Модель яйца из Tripo подставляется сервером чуть позже (TripoDressing): берём новую.
+		stand.ChildAdded:Connect(function(c)
+			if c.Name == "EggDisplay" and c:IsA("Model") then
+				local s2 = c:GetExtentsSize()
+				displays[id] = { model = c, base = c:GetPivot(), radius = math.max(s2.X, s2.Z) / 2 }
+			end
+		end)
+		local newer = stand:FindFirstChild("EggDisplay")
+		if newer and newer ~= display then
+			local s2 = newer:GetExtentsSize()
+			displays[id] = { model = newer, base = newer:GetPivot(), radius = math.max(s2.X, s2.Z) / 2 }
+		end
 	end)
 end
 RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
