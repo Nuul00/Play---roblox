@@ -75,7 +75,7 @@ local function buildBoard(id, stand)
 	gui.Name = "EggBoard"
 	gui:SetAttribute("EggId", id) -- по нему PityHUD ставит плашку гарантии над этим табло
 	-- Табло меньше прежнего и видно только рядом с яйцом (см. цикл внизу), зато поверх всего и чётко.
-	gui.Size = UDim2.fromScale(neon and 9.6 or 9, neon and 10.6 or (#egg.Pool > 6 and 9.4 or 5.2))
+	gui.Size = UDim2.fromScale(neon and 11 or 10.5, neon and 12 or (#egg.Pool > 6 and 11 or 6))
 	gui.MaxDistance = 150
 	gui.AlwaysOnTop = true
 	gui.Enabled = false
@@ -234,7 +234,8 @@ local function setupEgg(id, stand)
 		end
 	end
 	local color = egg.Color
-	local light = color:Lerp(Color3.new(1, 1, 1), 0.35)
+	-- в тёмном Неонграде свет белее, чтобы был виден рисунок яйца
+	local light = color:Lerp(Color3.new(1, 1, 1), egg.World == "neon" and 0.75 or 0.35)
 
 	-- Невидимый якорь в центре яйца: свет и искры.
 	local anchor = Instance.new("Part")
@@ -428,7 +429,7 @@ RunService.RenderStepped:Connect(function(dt)
 			local flash = pop < 0.5 and (1 - pop / 0.5) * 6 or 0
 			local shake = w < 0.9 and (1 - w / 0.9) * 1.5 or 0
 			e.anchor.CFrame = CFrame.new(center + Vector3.new(0, 0.35 + bob + hop + popH, 0))
-			e.glow.Brightness = 0.8 + 0.35 * math.sin(t * 2 + e.phase) + x * 1.6 + shake + flash
+			e.glow.Brightness = (e.neon and 1.6 or 0.8) + 0.35 * math.sin(t * 2 + e.phase) + x * 1.6 + shake + flash
 			e.glow.Range = 11 + x * 7 + flash * 2
 			e.sparks.Rate = 2 + e.tier + x * 18
 

@@ -114,6 +114,10 @@ local function dressPedestal(stand: Instance, id: number)
 	local maxH = id >= 7 and 5 or 4
 	local k = width / math.max(ext.X, ext.Z, 0.01)
 	local squash = 1
+	-- слишком плоскую подставку (как монетка) делаем чуть выше, даже если она станет шире
+	if ext.Y * k < 1.8 then
+		k = math.min(1.8 / ext.Y, k * 1.35)
+	end
 	if ext.Y * k > maxH then
 		squash = maxH / (ext.Y * k)
 		if squash < 0.5 then
@@ -190,7 +194,14 @@ local function dressMachine(tier: number)
 	local height = math.min(maxV.Y - minV.Y, 13.5) -- без таблички над машиной
 	hide(model, { Body = true, Sign = true })
 	body.Transparency = 1
-	fit(template, height * 1.05, CFrame.lookAt(center, center + look.Unit), model, "TripoModel")
+	local tm = fit(template, height * 1.05, CFrame.lookAt(center, center + look.Unit), model, "TripoModel")
+	-- табличку — над верхом новой модели
+	local sign = model:FindFirstChild("Sign")
+	if sign and sign:IsA("BasePart") then
+		local cf, ext = tm:GetBoundingBox()
+		local top = cf.Position.Y + ext.Y / 2
+		sign.CFrame = sign.CFrame + Vector3.new(0, top + sign.Size.Y / 2 + 0.6 - sign.Position.Y, 0)
+	end
 end
 
 ------------------------------------------------------------------ магазины
