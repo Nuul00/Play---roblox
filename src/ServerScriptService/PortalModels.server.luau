@@ -23,6 +23,48 @@ task.spawn(function()
 	if old then
 		PortalDecor.HideOld(old, { Sign = true })
 	end
+	-- Кольцо модели сквозное — сквозь него было видно дома («прорезь»). Закрываем его
+	-- светящейся гладью портала с искрами, а табличку поднимаем над аркой.
+	local gate = city:FindFirstChild("IslandGateModel")
+	if gate then
+		local cf, size = gate:GetBoundingBox()
+		local fill = Instance.new("Part")
+		fill.Name = "IslandGateFill"
+		fill.Shape = Enum.PartType.Cylinder
+		fill.Anchored, fill.CanCollide, fill.CanQuery, fill.CanTouch = true, false, false, false
+		fill.Material = Enum.Material.Neon
+		fill.Color = rgb(90, 230, 200)
+		fill.Size = Vector3.new(0.4, size.Y * 0.655, size.Y * 0.655)
+		fill.CFrame = CFrame.new(cf.Position + Vector3.new(0, size.Y * 0.07, 0)) * disc.CFrame.Rotation
+		fill.Parent = gate
+		local swirl = Instance.new("ParticleEmitter")
+		swirl.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		swirl.Color = ColorSequence.new(rgb(200, 255, 235), rgb(120, 255, 190))
+		swirl.LightEmission = 1
+		swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+		swirl.Lifetime = NumberRange.new(0.8, 1.4)
+		swirl.Speed = NumberRange.new(0.5, 1.5)
+		swirl.SpreadAngle = Vector2.new(180, 180)
+		swirl.RotSpeed = NumberRange.new(-120, 120)
+		swirl.Rate = 25
+		swirl.Parent = fill
+		local glow = Instance.new("PointLight")
+		glow.Color = rgb(110, 255, 190)
+		glow.Range = 16
+		glow.Brightness = 1.2
+		glow.Parent = fill
+		local sign = old and old:FindFirstChild("Sign", true)
+		if sign and (sign:IsA("BasePart") or sign:IsA("Model")) then
+			local scf, ssize
+			if sign:IsA("BasePart") then
+				scf, ssize = sign.CFrame, sign.Size
+			else
+				scf, ssize = sign:GetBoundingBox()
+			end
+			local top = cf.Position.Y + size.Y / 2
+			sign:PivotTo(sign:GetPivot() + Vector3.new(0, top + ssize.Y / 2 + 1 - scf.Position.Y, 0))
+		end
+	end
 end)
 
 -- Неонград → Sky Isles: облачная сцена вместо облаков из шаров.

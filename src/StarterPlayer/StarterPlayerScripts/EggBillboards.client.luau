@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
@@ -73,10 +74,13 @@ local function buildBoard(id, stand)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggBoard"
 	gui:SetAttribute("EggId", id) -- по нему PityHUD ставит плашку гарантии над этим табло
-	gui.Size = UDim2.fromScale(neon and 14.5 or 13, neon and 16 or (#egg.Pool > 6 and 13 or 7.4))
-	gui.MaxDistance = 75
+	-- Табло меньше прежнего и видно только рядом с яйцом (см. цикл внизу), зато поверх всего и чётко.
+	gui.Size = UDim2.fromScale(neon and 9.6 or 9, neon and 10.6 or (#egg.Pool > 6 and 9.4 or 5.2))
+	gui.MaxDistance = 150
+	gui.AlwaysOnTop = true
+	gui.Enabled = false
 	-- Высокое табло (9 питомцев) поднимаем, чтобы яйцо его не закрывало.
-	gui.StudsOffsetWorldSpace = Vector3.new(0, neon and 6 or (#egg.Pool > 6 and 4.5 or 0), 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, neon and 3 or (#egg.Pool > 6 and 2 or 0), 0)
 	gui.LightInfluence = 0
 	gui.ResetOnSpawn = false
 	gui.Adornee = anchor
@@ -84,6 +88,9 @@ local function buildBoard(id, stand)
 
 	local panel = Instance.new("Frame")
 	panel.Size = UDim2.fromScale(1, 1)
+	local pop = Instance.new("UIScale")
+	pop.Scale = 0.6
+	pop.Parent = panel
 	panel.BackgroundColor3 = sky and Color3.new(1, 1, 1) or Color3.fromRGB(22, 24, 40)
 	panel.BackgroundTransparency = sky and 0.05 or 0.15
 	panel.Parent = gui
@@ -138,7 +145,7 @@ local function buildBoard(id, stand)
 		stroke(cell, 2, color)
 		local view = Instance.new("ViewportFrame")
 		view.BackgroundTransparency = 1
-		view.Size = UDim2.fromScale(1, many and 0.58 or 0.66)
+		view.Size = UDim2.fromScale(1, many and 0.62 or 0.66)
 		view.Ambient = Color3.fromRGB(200, 200, 215)
 		view.LightColor = Color3.fromRGB(255, 248, 230)
 		view.LightDirection = Vector3.new(-1, -1, -2)
@@ -160,16 +167,15 @@ local function buildBoard(id, stand)
 			grad.Color = sky and ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.55), Color3.fromRGB(240, 236, 255)) or ColorSequence.new(color:Lerp(Color3.fromRGB(40, 44, 66), 0.6), Color3.fromRGB(30, 32, 50))
 			grad.Rotation = 90
 			grad.Parent = cell
-			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.56), UDim2.fromScale(0.92, 0.19), color)
-			label(cell, def.Name, UDim2.fromScale(0.04, 0.75), UDim2.fromScale(0.92, 0.13), Color3.new(1, 1, 1), Enum.Font.GothamBold)
-			label(cell, def.Rarity:upper(), UDim2.fromScale(0.04, 0.88), UDim2.fromScale(0.92, 0.1), color, Enum.Font.GothamBlack)
+			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.6), UDim2.fromScale(0.92, 0.23), color)
+			label(cell, def.Rarity:upper(), UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.15), color, Enum.Font.GothamBlack)
 		else
 			label(cell, string.format("%g%%", entry.Chance), UDim2.fromScale(0.04, 0.64), UDim2.fromScale(0.92, 0.2), color)
 			label(cell, def.Rarity, UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.14), color, Enum.Font.GothamBold)
 		end
 	end
 	label(panel, "Touch the egg · OPEN ×1 / ×3 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), sky and Color3.fromRGB(150, 110, 220) or Color3.fromRGB(200, 205, 225), sky and Enum.Font.FredokaOne or Enum.Font.GothamMedium)
-	table.insert(boards, { gui = gui, anchor = anchor })
+	table.insert(boards, { gui = gui, anchor = anchor, pop = pop, shown = false })
 end
 
 -- Оживление яиц: парят и крутятся, «дышат» (лёгкое сжатие-растяжение), время от времени
@@ -334,9 +340,29 @@ ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(_, 
 	end
 end)
 
+-- Табло появляется (с «пружинкой»), когда игрок подходит к яйцу ближе 24 студов.
+local BOARD_NEAR = 24
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
+	do
+		local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		for _, b in ipairs(boards) do
+			local a = b.anchor
+			local pos = a and a.Parent and (a:IsA("Attachment") and a.WorldPosition or a.Position)
+			local near = r ~= nil and pos ~= nil and (r.Position - pos).Magnitude < BOARD_NEAR
+			if near ~= b.shown then
+				b.shown = near
+				if near then
+					b.gui.Enabled = true
+					b.pop.Scale = 0.6
+					TweenService:Create(b.pop, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+				else
+					b.gui.Enabled = false
+				end
+			end
+		end
+	end
 	local now = os.clock()
 	local camera = workspace.CurrentCamera
 	local camPos = camera and camera.CFrame.Position or Vector3.zero

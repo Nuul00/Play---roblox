@@ -122,6 +122,162 @@ local function hook(gui: Instance)
 	end
 end
 
+
+------------------------------------------------------------------ украшения окон
+-- На большие окна (инвентарь, индекс, магазины…) по углам садятся украшения мира:
+-- Meadow — цветы и бабочка, Sky — облака, звёзды и радуга, Neon — светящиеся уголки,
+-- Frozen — снежинки и лёд. Украшения слегка покачиваются.
+local RunService = game:GetService("RunService")
+local DECOR = {
+	["Meadow Isles"] = { tl = "🌸", tr = "🌼", bl = "🍃", br = "🌷", top = "🦋", row = { "🌼", "🌸", "🌷", "🌸", "🌼" } },
+	["Sky Isles"] = { tl = "☁️", tr = "☁️", bl = "⭐", br = "🌈", top = "✨", row = { "☁️", "⭐", "☁️", "⭐", "☁️" } },
+	["Frozen Peaks"] = { tl = "❄️", tr = "❄️", bl = "🧊", br = "❄️", top = "✨", row = { "❄️", "✨", "❄️", "✨", "❄️" } },
+	["Neon District"] = { neon = true },
+}
+local CORNER = { tl = Vector2.new(0, 0), tr = Vector2.new(1, 0), bl = Vector2.new(0, 1), br = Vector2.new(1, 1), top = Vector2.new(0.72, 0) }
+local decorated: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
+local wiggles = {}
+local decoWorld = nil
+
+local function isWindow(f: Instance): boolean
+	if not f:IsA("Frame") or f.BackgroundTransparency > 0.5 or not f:FindFirstChildOfClass("UICorner") then
+		return false
+	end
+	local cam = workspace.CurrentCamera
+	local vp = cam and cam.ViewportSize or Vector2.new(1920, 1080)
+	local a = f.AbsoluteSize
+	return a.X >= 320 and a.Y >= 200 and a.X < vp.X * 0.9 and a.Y < vp.Y * 0.9
+end
+
+local function clearDecor()
+	for f in pairs(decorated) do
+		local d = f:FindFirstChild("WorldDeco")
+		if d then
+			d:Destroy()
+		end
+	end
+	table.clear(decorated)
+	table.clear(wiggles)
+end
+
+local function decorate(f: Frame, set)
+	decorated[f] = true
+	local holder = Instance.new("Folder")
+	holder.Name = "WorldDeco"
+	local a = f.AbsoluteSize
+	local size = math.clamp(math.min(a.X, a.Y) * 0.2, 42, 84)
+	if set.neon then
+		-- светящиеся уголки-скобки, розовые и голубые
+		for key, c in pairs(CORNER) do
+			if key ~= "top" then
+				local col = (key == "tl" or key == "br") and Color3.fromRGB(80, 240, 255) or Color3.fromRGB(255, 70, 220)
+				for k = 1, 2 do
+					local bar = Instance.new("Frame")
+					bar.Name = "NeonBracket"
+					bar.BorderSizePixel = 0
+					bar.BackgroundColor3 = col
+					bar.AnchorPoint = c
+					bar.Position = UDim2.new(c.X, c.X == 0 and -3 or 3, c.Y, c.Y == 0 and -3 or 3)
+					bar.Size = k == 1 and UDim2.fromOffset(size * 1.3, 7) or UDim2.fromOffset(7, size * 1.3)
+					bar.ZIndex = 60
+					local st = Instance.new("UIStroke")
+					st.Color = col
+					st.Thickness = 3
+					st.Transparency = 0.5
+					st.Parent = bar
+					bar.Parent = holder
+					table.insert(wiggles, { obj = bar, neon = st, phase = math.random() * 6 })
+				end
+			end
+		end
+	else
+		for key, c in pairs(CORNER) do
+			local emoji = set[key]
+			if emoji then
+				local l = Instance.new("TextLabel")
+				l.Name = "Deco"
+				l.BackgroundTransparency = 1
+				l.Text = emoji
+				l.TextScaled = true
+				l.Font = Enum.Font.GothamBold
+				l.AnchorPoint = Vector2.new(0.5, 0.5)
+				l.Position = UDim2.new(c.X, c.X == 0 and 6 or (c.X == 1 and -6 or 0), c.Y, c.Y == 0 and 4 or -4)
+				local sz = key == "top" and size * 0.7 or size
+				l.Size = UDim2.fromOffset(sz, sz)
+				l.ZIndex = 60
+				l.Parent = holder
+				table.insert(wiggles, { obj = l, base = l.Position, phase = math.random() * 6, fly = key == "top" })
+			end
+		end
+		-- гирлянда по нижнему краю
+		if set.row then
+			for i, emoji in ipairs(set.row) do
+				local l = Instance.new("TextLabel")
+				l.Name = "Deco"
+				l.BackgroundTransparency = 1
+				l.Text = emoji
+				l.TextScaled = true
+				l.Font = Enum.Font.GothamBold
+				l.AnchorPoint = Vector2.new(0.5, 0.5)
+				l.Position = UDim2.new(i / (#set.row + 1), 0, 1, 0)
+				l.Size = UDim2.fromOffset(size * 0.5, size * 0.5)
+				l.ZIndex = 60
+				l.Parent = holder
+				table.insert(wiggles, { obj = l, base = l.Position, phase = i * 0.9 })
+			end
+		end
+	end
+	holder.Parent = f
+end
+
+local function decorAll()
+	local set = DECOR[player:GetAttribute("CurrentWorld") or ""]
+	local w = player:GetAttribute("CurrentWorld")
+	if w ~= decoWorld then
+		decoWorld = w
+		clearDecor()
+	end
+	if not set then
+		return
+	end
+	for gui in pairs(roots) do
+		if gui.Parent and gui.Enabled then
+			for _, d in ipairs(gui:GetDescendants()) do
+				local inside = false
+				local a = d.Parent
+				while a and a ~= gui do
+					if decorated[a] or a.Name == "WorldDeco" then
+						inside = true
+						break
+					end
+					a = a.Parent
+				end
+				if not inside and not decorated[d] and isWindow(d) then
+					decorate(d :: Frame, set)
+				end
+			end
+		end
+	end
+end
+
+local dt0 = 0
+RunService.RenderStepped:Connect(function(dt)
+	dt0 += dt
+	for _, w in ipairs(wiggles) do
+		local o = w.obj
+		if o.Parent and o.Parent.Parent and (o.Parent.Parent :: GuiObject).Visible then
+			if w.neon then
+				w.neon.Transparency = 0.35 + 0.35 * math.sin(dt0 * 3 + w.phase)
+			elseif w.fly then
+				o.Position = w.base + UDim2.fromOffset(math.sin(dt0 * 0.9 + w.phase) * 40, math.sin(dt0 * 2.2 + w.phase) * 6)
+				o.Rotation = math.sin(dt0 * 6 + w.phase) * 12
+			else
+				o.Rotation = math.sin(dt0 * 1.4 + w.phase) * 8
+			end
+		end
+	end
+end)
+
 local function onWorld()
 	theme = THEMES[player:GetAttribute("CurrentWorld") or ""]
 	paintAll()
@@ -143,4 +299,5 @@ while true do
 	if theme then
 		paintAll()
 	end
+	decorAll()
 end

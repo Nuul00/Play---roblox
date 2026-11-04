@@ -163,6 +163,36 @@ local function dressPedestal(stand: Instance, id: number)
 	end
 end
 
+
+------------------------------------------------------------------ машины улучшения питомцев
+-- Golden / Diamond / Rainbow: модели Tripo вместо машин из деталей. Body (с ProximityPrompt)
+-- и табличка Sign остаются, остальное прячем. Модель смотрит туда же, куда панель машины.
+local MACHINE = { "GoldenMachine", "DiamondMachine", "RainbowMachine" }
+local function dressMachine(tier: number)
+	local folder = workspace:WaitForChild("PetMachines", 30)
+	local model = folder and folder:WaitForChild("PetMachine" .. tier, 30)
+	local template = props and props:FindFirstChild(MACHINE[tier])
+	if not (model and template) or model:GetAttribute("Tripo") then
+		return
+	end
+	local body, panel = model:FindFirstChild("Body"), model:FindFirstChild("Panel")
+	local minV, maxV = visualBox(model)
+	if not (body and minV) then
+		return
+	end
+	model:SetAttribute("Tripo", true)
+	local look = panel and (panel.Position - body.Position) or body.CFrame.LookVector
+	look = Vector3.new(look.X, 0, look.Z)
+	if look.Magnitude < 0.1 then
+		look = Vector3.new(0, 0, -1)
+	end
+	local center = Vector3.new(body.Position.X, minV.Y, body.Position.Z)
+	local height = math.min(maxV.Y - minV.Y, 13.5) -- без таблички над машиной
+	hide(model, { Body = true, Sign = true })
+	body.Transparency = 1
+	fit(template, height * 1.05, CFrame.lookAt(center, center + look.Unit), model, "TripoModel")
+end
+
 ------------------------------------------------------------------ магазины
 local function dressShop(shop: Instance?, propName: string)
 	local template = props and props:FindFirstChild(propName)
@@ -237,6 +267,14 @@ end
 
 local sky = world:WaitForChild("SkyIsles", 30)
 local frozen = world:WaitForChild("FrozenPeaks", 30)
+for tier = 1, 3 do
+	task.spawn(function()
+		local ok, err = pcall(dressMachine, tier)
+		if not ok then
+			warn("[TripoDressing] machine", tier, err)
+		end
+	end)
+end
 pcall(dressShop, world:FindFirstChild("UpgradeShop"), "MeadowUpgradeShop")
 pcall(dressShop, world:FindFirstChild("MagnetShop"), "MeadowMagnetShop")
 pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop")
