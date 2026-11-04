@@ -49,6 +49,12 @@ local sky=SkyIsles.Build(world)
 local FrozenPeaks=require(script.Parent:WaitForChild("FrozenPeaks"))
 local frozen=FrozenPeaks.Build(world)
 FrozenPeaks.BuildSkyPortal(sky)
+-- Пятый и шестой миры: Magma Volcano (вход — арка во Frozen Peaks) и Cosmic Galaxy (арка в вулкане).
+local MagmaVolcano=require(script.Parent:WaitForChild("MagmaVolcano"))
+local volcano=MagmaVolcano.Build(world)
+MagmaVolcano.BuildFrozenPortal(frozen)
+local CosmicGalaxy=require(script.Parent:WaitForChild("CosmicGalaxy"))
+local galaxy=CosmicGalaxy.Build(world)
 -- Камни, камыши, кувшинки, мостик и причал ставим уже на готовый рельеф.
 task.spawn(Pond.Decorate,world)
 local sunsetStand=world:WaitForChild("EggStand1")
@@ -211,8 +217,8 @@ local function interact(p, part, prompt, minLevel)
  return stats, h, root
 end
 -- Открытие меню не списывает деньги. Каждая покупка снова проверяет расстояние.
-local zones = {island=world, neon=city, sky=sky, frozen=frozen}
-local ZONE_LEVEL = {[city]=3, [sky]=6, [frozen]=10}
+local zones = {island=world, neon=city, sky=sky, frozen=frozen, volcano=volcano, galaxy=galaxy}
+local ZONE_LEVEL = {[city]=3, [sky]=6, [frozen]=10, [volcano]=13, [galaxy]=16}
 local function shopPart(zone, mode, eggId)
  if mode == "egg" then
   local egg=Config.Eggs[eggId]
@@ -257,7 +263,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
   -- Какой магазин магнитов рядом: от него зависит, какие магниты можно купить (def.World).
   local stats, shopWorld
-  for _, candidate in ipairs({{world, 0, "Meadow Isles"}, {sky, 6, "Sky Isles"}, {frozen, 10, "Frozen Peaks"}}) do
+  for _, candidate in ipairs({{world, 0, "Meadow Isles"}, {sky, 6, "Sky Isles"}, {frozen, 10, "Frozen Peaks"}, {volcano, 13, "Magma Volcano"}, {galaxy, 16, "Cosmic Galaxy"}}) do
    local shop = candidate[1] and candidate[1]:FindFirstChild("MagnetShop")
    local zonePart = shop and shop:FindFirstChild("ShopZone")
    if zonePart then
@@ -411,8 +417,13 @@ do
  local frozenMagnets = frozen and frozen:FindFirstChild("MagnetShop")
  local frozenZone = frozenMagnets and frozenMagnets:FindFirstChild("ShopZone")
  if frozenZone then shopZones.frozenmagnets = frozenZone end
+ for key, m in pairs({volcanomagnets = volcano, galaxymagnets = galaxy}) do
+  local shop = m and m:FindFirstChild("MagnetShop")
+  local z = shop and shop:FindFirstChild("ShopZone")
+  if z then shopZones[key] = z end
+ end
 end
-local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10, frozenmagnets = 10}
+local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10, frozenmagnets = 10, volcano = 13, volcanomagnets = 13, galaxy = 16, galaxymagnets = 16}
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
@@ -433,7 +444,7 @@ end
 
 -- У каждой монеты одно серверное состояние для всех игроков.
 local records = {}
-for _, zone in ipairs({world, city, sky, frozen}) do
+for _, zone in ipairs({world, city, sky, frozen, volcano, galaxy}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
    local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = ZONE_LEVEL[zone] or 0}
@@ -486,7 +497,7 @@ task.spawn(function()
      local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
      if inside and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
-      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") else openMenu:FireClient(p, "upgrades", id) end
+      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") elseif id == "volcanomagnets" then openMenu:FireClient(p, "magnets", "volcano") elseif id == "galaxymagnets" then openMenu:FireClient(p, "magnets", "galaxy") else openMenu:FireClient(p, "upgrades", id) end
      end
      insideZone[key] = inside or nil
     end
@@ -494,6 +505,10 @@ task.spawn(function()
      p:SetAttribute("CurrentWorld", "Sky Isles")
     elseif math.abs(root.Position.X - FrozenPeaks.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
      p:SetAttribute("CurrentWorld", "Frozen Peaks")
+    elseif math.abs(root.Position.X - MagmaVolcano.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
+     p:SetAttribute("CurrentWorld", "Magma Volcano")
+    elseif math.abs(root.Position.X - CosmicGalaxy.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
+     p:SetAttribute("CurrentWorld", "Cosmic Galaxy")
     elseif math.abs(root.Position.Z) <= 230 then
      if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
      elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end

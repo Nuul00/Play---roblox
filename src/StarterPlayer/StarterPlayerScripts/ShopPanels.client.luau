@@ -480,10 +480,10 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 	mode, zoneId = newMode, newMode == "magnets" and "magnets" or newZone
 	local world = workspace:WaitForChild("CoinSpeedWorld")
 	if newMode == "magnets" then
-		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or world
+		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world
 		zonePart = shopHolder:FindFirstChild("MagnetShop") and shopHolder.MagnetShop:FindFirstChild("ShopZone")
 	else
-		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or world
+		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world
 		zonePart = zone.UpgradeShop:FindFirstChild("ShopZone") or zone.UpgradeShop:FindFirstChild("Counter")
 	end
 	player:SetAttribute("UIScreen", newMode)

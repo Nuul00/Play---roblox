@@ -5,7 +5,8 @@ W.Worlds = {
 	{ Id = "Neon District", Name = "Neon District", Emoji = "🌃", Top = Color3.fromRGB(230, 120, 255), Bottom = Color3.fromRGB(95, 40, 200), Desc = "Neon city and rare eggs", Speed = 3, Open = true },
 	{ Id = "Sky Isles", Name = "Sky Isles", Emoji = "☁️", Top = Color3.fromRGB(150, 215, 255), Bottom = Color3.fromRGB(110, 120, 240), Desc = "Cloud world, sky eggs and magnets", Speed = 6, Open = true },
 	{ Id = "Frozen Peaks", Name = "Frozen Peaks", Emoji = "❄️", Top = Color3.fromRGB(170, 235, 255), Bottom = Color3.fromRGB(60, 140, 220), Desc = "Ice peaks, crystals and aurora", Speed = 10, Open = true },
-	{ Id = "Candy Kingdom", Name = "Candy Kingdom", Emoji = "🍭", Top = Color3.fromRGB(255, 170, 215), Bottom = Color3.fromRGB(220, 70, 150), Desc = "Sweet world", Speed = 99, Open = false },
+	{ Id = "Magma Volcano", Name = "Magma Volcano", Emoji = "🌋", Top = Color3.fromRGB(255, 150, 60), Bottom = Color3.fromRGB(170, 40, 20), Desc = "Lava rivers, fire pets and magnets", Speed = 13, Open = true },
+	{ Id = "Cosmic Galaxy", Name = "Cosmic Galaxy", Emoji = "🌌", Top = Color3.fromRGB(150, 140, 255), Bottom = Color3.fromRGB(60, 30, 140), Desc = "Planets, stars and cosmic pets", Speed = 16, Open = true },
 }
 function W.Find(id)
 	for _, w in ipairs(W.Worlds) do

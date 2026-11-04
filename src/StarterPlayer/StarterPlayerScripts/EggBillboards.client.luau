@@ -314,7 +314,8 @@ local function setupEgg(id, stand)
 end
 
 for id in ipairs(Config.Eggs) do
-	local zone = Config.Eggs[id].World == "neon" and city or Config.Eggs[id].World == "sky" and world:WaitForChild("SkyIsles", 60) or world
+	local w = Config.Eggs[id].World
+	local zone = w == "neon" and city or w == "sky" and world:WaitForChild("SkyIsles", 60) or w == "volcano" and world:WaitForChild("MagmaVolcano", 60) or w == "galaxy" and world:WaitForChild("CosmicGalaxy", 60) or world
 	if not zone then
 		continue
 	end

@@ -143,7 +143,7 @@ for id, egg in ipairs(Config.Eggs) do
 	stroke(dot, 2, ink)
 	local name = text(b, egg.Name, UDim2.fromOffset(48, 4), UDim2.fromOffset(190, 24), 18)
 	name.TextXAlignment = Enum.TextXAlignment.Left
-	local world = text(b, egg.World == "neon" and "Neon District" or egg.World == "sky" and "Sky Isles" or "Meadow Isles", UDim2.fromOffset(48, 26), UDim2.fromOffset(190, 18), 13, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
+	local world = text(b, egg.World == "neon" and "Neon District" or egg.World == "sky" and "Sky Isles" or egg.World == "volcano" and "Magma Volcano" or egg.World == "galaxy" and "Cosmic Galaxy" or "Meadow Isles", UDim2.fromOffset(48, 26), UDim2.fromOffset(190, 18), 13, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
 	world.TextXAlignment = Enum.TextXAlignment.Left
 	local barBack = Instance.new("Frame")
 	barBack.Position = UDim2.fromOffset(240, 30)

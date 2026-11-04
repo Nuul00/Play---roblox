@@ -19,6 +19,18 @@ local WORLDS = {
 		tint = { TintColor = Color3.fromRGB(240, 225, 255), Saturation = 0.15, Contrast = 0.05 },
 	},
 	["Sky Isles"] = { music = 1841593944 }, -- Enchanted Kingdom
+	["Magma Volcano"] = {
+		music = 1836646815, -- пока трек Неонграда; свой подберём
+		light = { ClockTime = 18.3, Brightness = 1.6, Ambient = Color3.fromRGB(120, 60, 40), OutdoorAmbient = Color3.fromRGB(150, 80, 50), ExposureCompensation = 0.1 },
+		tint = { TintColor = Color3.fromRGB(255, 232, 215), Saturation = 0.12, Contrast = 0.08 },
+		atmosphere = { Density = 0.33, Haze = 1.4, Color = Color3.fromRGB(255, 140, 90), Decay = Color3.fromRGB(120, 40, 30) },
+	},
+	["Cosmic Galaxy"] = {
+		music = 1841593944, -- пока трек Sky Isles; свой подберём
+		light = { ClockTime = 0, Brightness = 1.2, Ambient = Color3.fromRGB(70, 60, 130), OutdoorAmbient = Color3.fromRGB(90, 80, 170), ExposureCompensation = 0.15 },
+		tint = { TintColor = Color3.fromRGB(235, 230, 255), Saturation = 0.18, Contrast = 0.06 },
+		atmosphere = { Density = 0.3, Haze = 0.4, Color = Color3.fromRGB(80, 60, 160), Decay = Color3.fromRGB(30, 20, 80) },
+	},
 	["Frozen Peaks"] = {
 		music = 9046740461, -- Winter Holidays
 		light = { ClockTime = 19.6, Brightness = 2.2, Ambient = Color3.fromRGB(125, 145, 190), OutdoorAmbient = Color3.fromRGB(150, 175, 220), ExposureCompensation = 0.15 },

@@ -8,7 +8,7 @@ local function rgb(r, g, b)
 end
 
 -- Диаметр обычной монеты: на 10% меньше прежних (3 студа в Meadow и Неонграде, 3,4 в Sky).
-CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06, Frozen = 3.06 }
+CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06, Frozen = 3.06, Volcano = 3.06, Galaxy = 3.06 }
 
 CoinTypes.Worlds = {
 	Meadow = {
@@ -40,6 +40,22 @@ CoinTypes.Worlds = {
 			{ Id = "Ice", Weight = 60, Value = 400, Scale = 1, Color = rgb(140, 220, 255) },
 			{ Id = "Crystal", Weight = 30, Value = 800, Scale = 1.12, Color = rgb(120, 170, 255) },
 			{ Id = "Aurora", Weight = 10, Value = 1600, Scale = 1.25, Color = rgb(120, 255, 200) },
+		},
+	},
+	Volcano = {
+		Theme = { rgb(255, 120, 40), rgb(255, 210, 90) }, -- раскалённая лава и угли
+		Kinds = {
+			{ Id = "Ember", Weight = 60, Value = 2800, Scale = 1, Color = rgb(255, 150, 50) },
+			{ Id = "Magma", Weight = 30, Value = 5600, Scale = 1.12, Color = rgb(255, 70, 40) },
+			{ Id = "Obsidian", Weight = 10, Value = 11200, Scale = 1.25, Color = rgb(170, 80, 255) },
+		},
+	},
+	Galaxy = {
+		Theme = { rgb(120, 170, 255), rgb(230, 120, 240) }, -- звёздный синий и туманность
+		Kinds = {
+			{ Id = "Stardust", Weight = 60, Value = 19600, Scale = 1, Color = rgb(130, 190, 255) },
+			{ Id = "Nebula", Weight = 30, Value = 39200, Scale = 1.12, Color = rgb(225, 115, 240) },
+			{ Id = "Cosmic", Weight = 10, Value = 78400, Scale = 1.25, Color = rgb(255, 220, 120) },
 		},
 	},
 }

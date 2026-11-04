@@ -96,4 +96,22 @@ frozen.TitleColor = Color3.fromRGB(235, 250, 255)
 frozen.InkColor = Color3.fromRGB(20, 60, 120)
 skins["Frozen Peaks"] = frozen
 
+-- Magma Volcano и Cosmic Galaxy: тоже картинки Sky Isles, окрашенные под мир.
+local volcano = table.clone(skins["Sky Isles"])
+volcano.Tint = Color3.fromRGB(255, 185, 150)
+volcano.MenuTop = Color3.fromRGB(255, 130, 60)
+volcano.MenuBottom = Color3.fromRGB(180, 40, 20)
+volcano.RimColor = Color3.fromRGB(255, 210, 90)
+volcano.TitleColor = Color3.fromRGB(255, 240, 210)
+volcano.InkColor = Color3.fromRGB(90, 25, 10)
+skins["Magma Volcano"] = volcano
+local galaxy = table.clone(skins["Sky Isles"])
+galaxy.Tint = Color3.fromRGB(185, 175, 255)
+galaxy.MenuTop = Color3.fromRGB(140, 110, 255)
+galaxy.MenuBottom = Color3.fromRGB(50, 30, 140)
+galaxy.RimColor = Color3.fromRGB(130, 230, 255)
+galaxy.TitleColor = Color3.fromRGB(235, 235, 255)
+galaxy.InkColor = Color3.fromRGB(25, 15, 70)
+skins["Cosmic Galaxy"] = galaxy
+
 return skins

@@ -21,6 +21,12 @@ local function destination(id)
 	elseif id == "Frozen Peaks" then
 		local frozen = world:FindFirstChild("FrozenPeaks")
 		return frozen and frozen:GetAttribute("Spawn")
+	elseif id == "Magma Volcano" then
+		local m = world:FindFirstChild("MagmaVolcano")
+		return m and m:GetAttribute("Spawn")
+	elseif id == "Cosmic Galaxy" then
+		local m = world:FindFirstChild("CosmicGalaxy")
+		return m and m:GetAttribute("Spawn")
 	end
 	return nil
 end
@@ -120,4 +126,18 @@ task.spawn(function()
 	local frozen = world:WaitForChild("FrozenPeaks", 60)
 	local arch = frozen and frozen:WaitForChild("PortalToSkyArch", 30)
 	walkIn(arch and arch:WaitForChild("PortalToSky", 30), "Sky Isles")
+	local toVolcano = frozen and frozen:WaitForChild("PortalToVolcanoArch", 30)
+	walkIn(toVolcano and toVolcano:WaitForChild("PortalToVolcano", 30), "Magma Volcano")
+end)
+task.spawn(function()
+	local volcano = world:WaitForChild("MagmaVolcano", 60)
+	local a1 = volcano and volcano:WaitForChild("PortalToFrozenArch", 30)
+	walkIn(a1 and a1:WaitForChild("PortalToFrozen", 30), "Frozen Peaks")
+	local a2 = volcano and volcano:WaitForChild("PortalToGalaxyArch", 30)
+	walkIn(a2 and a2:WaitForChild("PortalToGalaxy", 30), "Cosmic Galaxy")
+end)
+task.spawn(function()
+	local galaxy = world:WaitForChild("CosmicGalaxy", 60)
+	local a = galaxy and galaxy:WaitForChild("PortalToVolcanoArch", 30)
+	walkIn(a and a:WaitForChild("PortalToVolcano", 30), "Magma Volcano")
 end)

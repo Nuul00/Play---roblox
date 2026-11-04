@@ -26,6 +26,8 @@ local THEMES = {
 	["Neon District"] = { hue = 0.78, sat = 0.72, edgeHue = 0.52, edgeSat = 0.8, light = 1.0 },
 	["Sky Isles"] = { hue = 0.79, sat = 0.48, edgeHue = 0.12, edgeSat = 0.7, light = 1.7 },
 	["Frozen Peaks"] = { hue = 0.58, sat = 0.6, edgeHue = 0.53, edgeSat = 0.3, light = 1.55 },
+	["Magma Volcano"] = { hue = 0.03, sat = 0.7, edgeHue = 0.09, edgeSat = 0.85, light = 1.25 },
+	["Cosmic Galaxy"] = { hue = 0.72, sat = 0.6, edgeHue = 0.52, edgeSat = 0.6, light = 1.2 },
 }
 
 local theme = nil
@@ -133,6 +135,8 @@ local DECOR = {
 	["Sky Isles"] = { tl = "☁️", tr = "☁️", bl = "⭐", br = "🌈", top = "✨", row = { "☁️", "⭐", "☁️", "⭐", "☁️" } },
 	["Frozen Peaks"] = { tl = "❄️", tr = "❄️", bl = "🧊", br = "❄️", top = "✨", row = { "❄️", "✨", "❄️", "✨", "❄️" } },
 	["Neon District"] = { neon = true },
+	["Magma Volcano"] = { tl = "🔥", tr = "🌋", bl = "🔥", br = "🔥", top = "✨", row = { "🔥", "💥", "🔥", "💥", "🔥" } },
+	["Cosmic Galaxy"] = { tl = "🪐", tr = "🌙", bl = "🚀", br = "⭐", top = "🌠", row = { "⭐", "✨", "🪐", "✨", "⭐" } },
 }
 local CORNER = { tl = Vector2.new(0, 0), tr = Vector2.new(1, 0), bl = Vector2.new(0, 1), br = Vector2.new(1, 1), top = Vector2.new(0.72, 0) }
 local decorated: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any

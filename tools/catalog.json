@@ -1147,5 +1147,719 @@
         ]
       }
     ]
+  },
+  {
+    "Id": 10,
+    "Name": "Ember Egg",
+    "World": "volcano",
+    "Price": 5000000,
+    "X": 5948,
+    "Z": 112,
+    "Color": [
+      255,
+      120,
+      40
+    ],
+    "Pets": [
+      {
+        "Id": 82,
+        "Name": "Ember Pup",
+        "Visual": "VolcanoPup",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 160,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 83,
+        "Name": "Lava Bunny",
+        "Visual": "VolcanoBunny",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 185,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 84,
+        "Name": "Ash Kitty",
+        "Visual": "VolcanoKitty",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 215,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 85,
+        "Name": "Magma Fox",
+        "Visual": "VolcanoFox",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 255,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 86,
+        "Name": "Fire Salamander",
+        "Visual": "VolcanoSalamander",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 320,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 87,
+        "Name": "Flame Wolf",
+        "Visual": "VolcanoWolf",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 420,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 88,
+        "Name": "Lava Dragon",
+        "Visual": "VolcanoDragon",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 900,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      },
+      {
+        "Id": 89,
+        "Name": "Phoenix King",
+        "Visual": "VolcanoPhoenix",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 2200,
+        "Color": [
+          255,
+          120,
+          40
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 11,
+    "Name": "Magma Egg",
+    "World": "volcano",
+    "Price": 20000000,
+    "X": 6000,
+    "Z": 112,
+    "Color": [
+      230,
+      60,
+      30
+    ],
+    "Pets": [
+      {
+        "Id": 90,
+        "Name": "Obsidian Bear",
+        "Visual": "VolcanoBear",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 250,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 91,
+        "Name": "Lava Golem",
+        "Visual": "VolcanoGolem",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 290,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 92,
+        "Name": "Fire Owl",
+        "Visual": "VolcanoOwl",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 340,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 93,
+        "Name": "Molten Turtle",
+        "Visual": "VolcanoTurtle",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 400,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 94,
+        "Name": "Volcano Crab",
+        "Visual": "VolcanoCrab",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 500,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 95,
+        "Name": "Inferno Lion",
+        "Visual": "VolcanoLion",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 650,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 96,
+        "Name": "Magma Hydra",
+        "Visual": "VolcanoHydra",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 1400,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      },
+      {
+        "Id": 97,
+        "Name": "Flame Titan",
+        "Visual": "VolcanoTitan",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 3500,
+        "Color": [
+          230,
+          60,
+          30
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 12,
+    "Name": "Obsidian Egg",
+    "World": "volcano",
+    "Price": 80000000,
+    "X": 6052,
+    "Z": 112,
+    "Color": [
+      130,
+      60,
+      190
+    ],
+    "Pets": [
+      {
+        "Id": 98,
+        "Name": "Obsidian Panther",
+        "Visual": "VolcanoPanther",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 400,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 99,
+        "Name": "Crystal Imp",
+        "Visual": "VolcanoImp",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 460,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 100,
+        "Name": "Ember Bat",
+        "Visual": "VolcanoBat",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 540,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 101,
+        "Name": "Lava Unicorn",
+        "Visual": "VolcanoUnicorn",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 640,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 102,
+        "Name": "Smoke Serpent",
+        "Visual": "VolcanoSerpent",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 800,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 103,
+        "Name": "Obsidian Griffin",
+        "Visual": "VolcanoGriffin",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 1050,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 104,
+        "Name": "Volcano Spirit",
+        "Visual": "VolcanoSpirit",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 2200,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      },
+      {
+        "Id": 105,
+        "Name": "Eclipse Dragon",
+        "Visual": "VolcanoEclipseDragon",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 5500,
+        "Color": [
+          130,
+          60,
+          190
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 13,
+    "Name": "Rocket Egg",
+    "World": "galaxy",
+    "Price": 400000000,
+    "X": 7448,
+    "Z": 112,
+    "Color": [
+      120,
+      170,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 106,
+        "Name": "Astro Pup",
+        "Visual": "GalaxyPup",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 650,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 107,
+        "Name": "Rocket Cat",
+        "Visual": "GalaxyCat",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 750,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 108,
+        "Name": "Moon Bunny",
+        "Visual": "GalaxyBunny",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 880,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 109,
+        "Name": "Alien Blob",
+        "Visual": "GalaxyBlob",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 1040,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 110,
+        "Name": "UFO Hamster",
+        "Visual": "GalaxyHamster",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 1300,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 111,
+        "Name": "Comet Fox",
+        "Visual": "GalaxyFox",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 1700,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 112,
+        "Name": "Robo Astronaut",
+        "Visual": "GalaxyRobot",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 3600,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 113,
+        "Name": "Star Whale",
+        "Visual": "GalaxyWhale",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 9000,
+        "Color": [
+          120,
+          170,
+          255
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 14,
+    "Name": "Nebula Egg",
+    "World": "galaxy",
+    "Price": 2000000000,
+    "X": 7500,
+    "Z": 112,
+    "Color": [
+      220,
+      110,
+      230
+    ],
+    "Pets": [
+      {
+        "Id": 114,
+        "Name": "Nebula Kitty",
+        "Visual": "GalaxyKitty",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 1000,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 115,
+        "Name": "Planet Turtle",
+        "Visual": "GalaxyTurtle",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 1150,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 116,
+        "Name": "Galaxy Owl",
+        "Visual": "GalaxyOwl",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 1350,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 117,
+        "Name": "Cosmic Jelly",
+        "Visual": "GalaxyJelly",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 1600,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 118,
+        "Name": "Saturn Bear",
+        "Visual": "GalaxyBear",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 2000,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 119,
+        "Name": "Meteor Wolf",
+        "Visual": "GalaxyWolf",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 2600,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 120,
+        "Name": "Nebula Dragon",
+        "Visual": "GalaxyDragon",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 5500,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      },
+      {
+        "Id": 121,
+        "Name": "Starlight Phoenix",
+        "Visual": "GalaxyPhoenix",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 14000,
+        "Color": [
+          220,
+          110,
+          230
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 15,
+    "Name": "Supernova Egg",
+    "World": "galaxy",
+    "Price": 10000000000,
+    "X": 7552,
+    "Z": 112,
+    "Color": [
+      255,
+      215,
+      110
+    ],
+    "Pets": [
+      {
+        "Id": 122,
+        "Name": "Black Hole Cat",
+        "Visual": "GalaxyCat",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 1600,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 123,
+        "Name": "Quasar Lion",
+        "Visual": "GalaxyLion",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 1850,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 124,
+        "Name": "Solar Pegasus",
+        "Visual": "GalaxyPegasus",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 2150,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 125,
+        "Name": "Cosmic Kraken",
+        "Visual": "GalaxyKraken",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 2550,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 126,
+        "Name": "Star Guardian",
+        "Visual": "GalaxyGuardian",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 3200,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 127,
+        "Name": "Galaxy Unicorn",
+        "Visual": "GalaxyUnicorn",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 4200,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 128,
+        "Name": "Supernova Dragon",
+        "Visual": "GalaxyDragon",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 9000,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      },
+      {
+        "Id": 129,
+        "Name": "Universe Spirit",
+        "Visual": "GalaxySpirit",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 22000,
+        "Color": [
+          255,
+          215,
+          110
+        ]
+      }
+    ]
   }
 ]

@@ -84,6 +84,26 @@ const skySeries=[
 skySeries.forEach(([Name,theme,Price,Color,firstId,mults,pets],i)=>{
  eggs.push({Id:7+i,Name,World:'sky',Price,X:1100-52+i*52,Z:112,Color,Pets:pets.map(([pn,kind],j)=>({Id:firstId+j,Name:pn,Visual:theme+kind,Rarity:skyRarity[j],Chance:skyOdds[j],Multiplier:mults[j],Color}))});
 });
+// Пятый и шестой миры: Magma Volcano (центр X=6000) и Cosmic Galaxy (X=7500). По три яйца на
+// 8 питомцев с теми же шансами, что в Sky Isles. Модели питомцев и яиц — из Tripo (TripoPets/TripoEggs).
+const lateSeries=[
+ ['volcano',6000,10,82,[
+  ['Ember Egg',5000000,[255,120,40],[160,185,215,255,320,420,900,2200],[['Ember Pup','Pup'],['Lava Bunny','Bunny'],['Ash Kitty','Kitty'],['Magma Fox','Fox'],['Fire Salamander','Salamander'],['Flame Wolf','Wolf'],['Lava Dragon','Dragon'],['Phoenix King','Phoenix']]],
+  ['Magma Egg',20000000,[230,60,30],[250,290,340,400,500,650,1400,3500],[['Obsidian Bear','Bear'],['Lava Golem','Golem'],['Fire Owl','Owl'],['Molten Turtle','Turtle'],['Volcano Crab','Crab'],['Inferno Lion','Lion'],['Magma Hydra','Hydra'],['Flame Titan','Titan']]],
+  ['Obsidian Egg',80000000,[130,60,190],[400,460,540,640,800,1050,2200,5500],[['Obsidian Panther','Panther'],['Crystal Imp','Imp'],['Ember Bat','Bat'],['Lava Unicorn','Unicorn'],['Smoke Serpent','Serpent'],['Obsidian Griffin','Griffin'],['Volcano Spirit','Spirit'],['Eclipse Dragon','EclipseDragon']]],
+ ]],
+ ['galaxy',7500,13,106,[
+  ['Rocket Egg',400000000,[120,170,255],[650,750,880,1040,1300,1700,3600,9000],[['Astro Pup','Pup'],['Rocket Cat','Cat'],['Moon Bunny','Bunny'],['Alien Blob','Blob'],['UFO Hamster','Hamster'],['Comet Fox','Fox'],['Robo Astronaut','Robot'],['Star Whale','Whale']]],
+  ['Nebula Egg',2000000000,[220,110,230],[1000,1150,1350,1600,2000,2600,5500,14000],[['Nebula Kitty','Kitty'],['Planet Turtle','Turtle'],['Galaxy Owl','Owl'],['Cosmic Jelly','Jelly'],['Saturn Bear','Bear'],['Meteor Wolf','Wolf'],['Nebula Dragon','Dragon'],['Starlight Phoenix','Phoenix']]],
+  ['Supernova Egg',10000000000,[255,215,110],[1600,1850,2150,2550,3200,4200,9000,22000],[['Black Hole Cat','Cat'],['Quasar Lion','Lion'],['Solar Pegasus','Pegasus'],['Cosmic Kraken','Kraken'],['Star Guardian','Guardian'],['Galaxy Unicorn','Unicorn'],['Supernova Dragon','Dragon'],['Universe Spirit','Spirit']]],
+ ]],
+];
+for(const [world,cx,firstEgg,firstPet,series] of lateSeries){
+ series.forEach(([Name,Price,Color,mults,pets],i)=>{
+  const theme=world==='volcano'?'Volcano':'Galaxy';
+  eggs.push({Id:firstEgg+i,Name,World:world,Price,X:cx-52+i*52,Z:112,Color,Pets:pets.map(([pn,kind],j)=>({Id:firstPet+i*8+j,Name:pn,Visual:theme+kind,Rarity:skyRarity[j],Chance:skyOdds[j],Multiplier:mults[j],Color}))});
+ });
+}
 for(const e of eggs){const total=e.Pets.reduce((a,p)=>a+p.Chance,0);if(Math.abs(total-100)>1e-9) throw new Error(e.Name+' odds total '+total);}
 writeFileSync('tools/catalog.json',JSON.stringify(eggs,null,2));
 const luaString=s=>JSON.stringify(s);
@@ -111,7 +131,7 @@ Config.ZoneMax={island=10,neon=25,sky=50,frozen=75,volcano=100,galaxy=125}
 Config.BaseMaxLevel=10
 Config.EnableGlobalBoards=true
 Config.EnableStudioDataStores=false
-Config.Worlds={island={Name="Meadow Isles",CenterX=0,Width=300,Depth=460,BaseValue=5},neon={Name="Neon District",CenterX=500,Width=300,Depth=460,BaseValue=25},sky={Name="Sky Isles",CenterX=1100,Width=300,Depth=300,BaseValue=150}}
+Config.Worlds={island={Name="Meadow Isles",CenterX=0,Width=300,Depth=460,BaseValue=5},neon={Name="Neon District",CenterX=500,Width=300,Depth=460,BaseValue=25},sky={Name="Sky Isles",CenterX=1100,Width=300,Depth=300,BaseValue=150},frozen={Name="Frozen Peaks",CenterX=3000,Width=440,Depth=440,BaseValue=900},volcano={Name="Magma Volcano",CenterX=6000,Width=440,Depth=440,BaseValue=6000},galaxy={Name="Cosmic Galaxy",CenterX=7500,Width=440,Depth=440,BaseValue=40000}}
 Config.Pets={
 ${pets}
 }
