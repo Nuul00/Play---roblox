@@ -116,6 +116,10 @@ end
 -- ===== Доход =====
 function PlayerSystems.CoinMultiplier(p): number
 	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(p:GetAttribute("Rebirths") or 0)
+	m *= (p:GetAttribute("IndexBonus") or 1) * (p:GetAttribute("FriendBonus") or 1)
+	if PlayerSystems.EventActive("Golden") then
+		m *= 2
+	end
 	if PlayerSystems.PotionActive(p, "Coins") then
 		m *= 2
 	end
@@ -151,6 +155,8 @@ function PlayerSystems.MagnetRadius(p): number
 	end
 	return r
 end
+-- Магнит всегда в руках (панели инструментов Roblox нет): снять или надеть его можно только
+-- в магазине магнитов. Атрибут MagnetOff = true — игрок снял магнит, бонус радиуса не действует.
 function PlayerSystems.GiveMagnet(p)
 	local tier = p:GetAttribute("MagnetEquipped") or 1
 	for _, container in ipairs({ p:FindFirstChild("Backpack"), p.Character }) do
@@ -160,6 +166,9 @@ function PlayerSystems.GiveMagnet(p)
 				old:Destroy()
 			end
 		end
+	end
+	if p:GetAttribute("MagnetOff") then
+		return
 	end
 	local character = p.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -189,8 +198,14 @@ function PlayerSystems.EquipMagnet(p, tier)
 		return
 	end
 	p:SetAttribute("MagnetEquipped", tier)
+	p:SetAttribute("MagnetOff", false)
 	PlayerSystems.GiveMagnet(p)
 	notifyFn(p, ShopConfig.Magnets[tier].Name .. " equipped", true)
+end
+function PlayerSystems.UnequipMagnet(p)
+	p:SetAttribute("MagnetOff", true)
+	PlayerSystems.GiveMagnet(p) -- уберёт инструмент и не выдаст новый
+	notifyFn(p, "Magnet taken off", true)
 end
 
 -- ===== Начальные значения =====
@@ -198,6 +213,11 @@ function PlayerSystems.Setup(p)
 	p:SetAttribute("Equipped", "")
 	p:SetAttribute("PetBonus", 1)
 	p:SetAttribute("BadgeBonus", 1)
+	p:SetAttribute("IndexBonus", 1)
+	p:SetAttribute("FriendBonus", 1)
+	for _, tier in ipairs(ShopConfig.Pity) do
+		p:SetAttribute("Pity" .. tier.Rarity, 0)
+	end
 	p:SetAttribute("PetsDiscovered", 0)
 	p:SetAttribute("MagnetTier", 1)
 	p:SetAttribute("MagnetEquipped", 1)
@@ -237,5 +257,71 @@ task.spawn(function()
 		end
 	end
 end)
+
+-- ===== Мировые события =====
+function PlayerSystems.EventActive(id: string): boolean
+	return workspace:GetAttribute("EventId") == id and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow()
+end
+
+-- ===== Бонус индекса =====
+-- Каждая забранная страница индекса (все питомцы одного яйца) — постоянно +5% к монетам.
+function PlayerSystems.RefreshIndexBonus(p)
+	local pages = 0
+	for i = 1, #Config.Eggs do
+		if p:GetAttribute("IndexClaimed" .. i) then
+			pages += 1
+		end
+	end
+	p:SetAttribute("IndexBonus", 1 + pages * ShopConfig.IndexBonusPerPage)
+end
+
+-- ===== Гарантия (pity) =====
+local pityRandom = Random.new()
+local function rank(petId: number): number
+	local def = Config.Pets[petId]
+	return def and ShopConfig.RarityRank[def.Rarity] or 1
+end
+PlayerSystems.RarityRank = rank
+-- Вызывается для каждого открытого питомца уже после обычного броска (и зелья удачи).
+-- Возвращает итогового питомца и true, если сработала гарантия.
+function PlayerSystems.ApplyPity(p, eggId: number, result: number): (number, boolean)
+	local egg = Config.Eggs[eggId]
+	for _, tier in ipairs(ShopConfig.Pity) do
+		local key = "Pity" .. tier.Rarity
+		p:SetAttribute(key, (p:GetAttribute(key) or 0) + 1)
+	end
+	local forced = false
+	for _, tier in ipairs(ShopConfig.Pity) do
+		local need = ShopConfig.RarityRank[tier.Rarity]
+		if (p:GetAttribute("Pity" .. tier.Rarity) or 0) >= tier.Threshold and rank(result) < need and egg then
+			local total = 0
+			local pool = {}
+			for _, entry in ipairs(egg.Pool) do
+				if rank(entry.Pet) == need then
+					table.insert(pool, entry)
+					total += entry.Weight
+				end
+			end
+			if total > 0 then
+				local roll = pityRandom:NextInteger(1, total)
+				for _, entry in ipairs(pool) do
+					roll -= entry.Weight
+					if roll <= 0 then
+						result = entry.Pet
+						break
+					end
+				end
+				forced = true
+				break
+			end
+		end
+	end
+	for _, tier in ipairs(ShopConfig.Pity) do
+		if rank(result) >= ShopConfig.RarityRank[tier.Rarity] then
+			p:SetAttribute("Pity" .. tier.Rarity, 0)
+		end
+	end
+	return result, forced
+end
 
 return PlayerSystems

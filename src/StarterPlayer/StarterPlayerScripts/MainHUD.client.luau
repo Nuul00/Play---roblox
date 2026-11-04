@@ -148,6 +148,10 @@ local function refreshStats()
 	speedText.Text = string.format("%d  speed", walk)
 	-- Итоговый множитель монет: команда питомцев × доход × достижения × зелье монет.
 	local bonus = (player:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0) * (player:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(player:GetAttribute("Rebirths") or 0)
+	bonus *= (player:GetAttribute("IndexBonus") or 1) * (player:GetAttribute("FriendBonus") or 1)
+	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow() then
+		bonus *= 2
+	end
 	if (player:GetAttribute("PotionEndCoins") or 0) > os.time() then
 		bonus *= 2
 	end
@@ -155,6 +159,8 @@ local function refreshStats()
 	magnetText.Text = string.format("%.1f  magnet", player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0))
 end
 speedLevel.Changed:Connect(refreshStats)
+workspace:GetAttributeChangedSignal("EventId"):Connect(refreshStats)
+workspace:GetAttributeChangedSignal("EventEnd"):Connect(refreshStats)
 player.AttributeChanged:Connect(refreshStats)
 player.CharacterAdded:Connect(function(character)
 	character:WaitForChild("Humanoid"):GetPropertyChangedSignal("WalkSpeed"):Connect(refreshStats)

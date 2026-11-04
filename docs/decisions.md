@@ -60,3 +60,15 @@
 ## Custom pet meshes
 - Own pet models live in src/ReplicatedStorage/CustomPets/Pet<id>.model.json (a Model with a MeshPart whose MeshId/TextureID are rbxassetid values). PetVisuals checks this folder first, then falls back to procedural/library models.
 - Pet 1 (Cloud Puff) uses a Tripo model, decimated to 16k triangles with a re-baked 1024 texture (sources in assets/pets/sunset_pet1, uploaded to Roblox from Studio's 3D importer).
+
+## 2026-11-04 — HUD по мирам, гарантия, события
+
+- HUD: картинки из ChatGPT (assets/hud/<мир>) загружены в Roblox, ID в `HudSkins.luau`.
+  `HudSkin.client.luau` надевает скин мира поверх GameHUD/MainHUD; меню собрано за кнопкой «≡»
+  (3D-окно на SurfaceGui), настройки в правом верхнем углу, панель инструментов Roblox скрыта.
+- Магнит всегда в руках; снять/надеть — только в магазине магнитов (атрибут MagnetOff).
+- Гарантия: Legendary каждые 100 питомцев, Secret каждые 2000, счётчики общие и в профиле
+  (`ShopConfig.Pity`). Прогресс показан на плашке над табло ближайшего яйца.
+- Объявление о Legendary+ на весь сервер, кинематографичное открытие, бонус за друзей (+10%, до +50%),
+  +5% монет за каждую забранную страницу индекса, мировые события Golden/Lucky Hour.
+- Оптимизация SkyIslesFX: 30/20 Гц, отсечение по дистанции, BulkMoveTo (≈25.8 → 20.3 мс/кадр).

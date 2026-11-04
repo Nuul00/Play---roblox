@@ -1,0 +1,87 @@
+-- Картинки HUD для каждого мира (загружены в Roblox, исходники в assets/hud/<мир>).
+-- Скрипт HudSkin.client.luau надевает скин того мира, где сейчас игрок (атрибут CurrentWorld).
+-- Мир без записи (или с пустой таблицей) показывает старый, нарисованный кодом HUD.
+local function id(n)
+	return "rbxassetid://" .. n
+end
+
+return {
+	["Sky Isles"] = {
+		Btn_Index = id(88641355523431), -- из первого набора, без плашки под надписью
+		Btn_Items = id(89863492754384),
+		Btn_Stats = id(81896402914065),
+		Btn_Teleport = id(122500134734053),
+		Btn_Daily = id(121386316202129),
+		Btn_Rebirth = id(125684832032023),
+		Btn_Settings = id(96260478413145),
+		Dot_Notify = id(134536403609138),
+		Icon_Coin = id(70577537318809),
+		Icon_Speed = id(135198384581197),
+		Icon_Multiplier = id(97601189630131),
+		Icon_Magnet = id(78428431713161),
+		Tile_Gold = id(106995575136587), -- нарезаны под размер плиток 230x64
+		Tile_Blue = id(114165190909004), -- 230x48
+		Tile_Pink = id(76027179982049),
+		Tile_Purple = id(114868347922461),
+		Bar_Menu = id(73420073290291),
+		Pill_Eggs = id(94370499607707),
+		Plate_Title = id(101898875621576),
+		Frame_Window = id(116320321540886),
+		-- Цвета для кнопки меню «≡» и подложки окна меню (рисуются кодом).
+		MenuTop = Color3.fromRGB(176, 110, 240),
+		MenuBottom = Color3.fromRGB(110, 50, 200),
+		RimColor = Color3.fromRGB(255, 196, 70),
+		TitleColor = Color3.fromRGB(255, 244, 214),
+		InkColor = Color3.fromRGB(70, 30, 110),
+	},
+	["Meadow Isles"] = {
+		Btn_Index = id(104974236481668),
+		Btn_Items = id(114075224596760),
+		Btn_Stats = id(123518183999700),
+		Btn_Teleport = id(79098521181451),
+		Btn_Daily = id(78439314435183),
+		Btn_Rebirth = id(101736977090566),
+		Btn_Settings = id(133920498319124),
+		Dot_Notify = id(112043877481460),
+		Icon_Coin = id(72186119049876),
+		Icon_Speed = id(140447830456392),
+		Icon_Multiplier = id(79453197539387),
+		Icon_Magnet = id(119673058489528),
+		Tile_Gold = id(118362275782261),
+		Tile_Blue = id(104255571541580),
+		Tile_Pink = id(125587789218548),
+		Tile_Purple = id(88758981347036),
+		Plate_Title = id(94507067642184),
+		Frame_Window = id(94400832847125),
+		MenuTop = Color3.fromRGB(130, 205, 255),
+		MenuBottom = Color3.fromRGB(60, 150, 230),
+		RimColor = Color3.fromRGB(255, 200, 60),
+		TitleColor = Color3.fromRGB(255, 255, 240),
+		InkColor = Color3.fromRGB(40, 80, 30),
+	},
+	["Neon District"] = {
+		Btn_Index = id(99144797099074),
+		Btn_Items = id(88451603624630),
+		Btn_Stats = id(78727752046309),
+		Btn_Teleport = id(84340642670683),
+		Btn_Daily = id(134649289832916),
+		Btn_Rebirth = id(126878844228114),
+		Btn_Settings = id(117660781410696),
+		Dot_Notify = id(117222460312624),
+		Icon_Coin = id(125874103204402),
+		Icon_Speed = id(117175588167040),
+		Icon_Multiplier = id(140426435069231),
+		Icon_Magnet = id(94740712274612),
+		Tile_Gold = id(122870591802062),
+		Tile_Blue = id(83183227898043),
+		Tile_Pink = id(94604081353380),
+		Tile_Purple = id(96812786089559),
+		Plate_Title = id(117451035153506),
+		Frame_Window = id(121764880003429),
+		MenuTop = Color3.fromRGB(110, 50, 190),
+		MenuBottom = Color3.fromRGB(35, 15, 80),
+		RimColor = Color3.fromRGB(255, 80, 220),
+		TitleColor = Color3.fromRGB(130, 240, 255),
+		InkColor = Color3.fromRGB(40, 10, 70),
+	},
+}

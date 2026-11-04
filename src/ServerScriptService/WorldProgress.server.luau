@@ -33,6 +33,8 @@ local function snapshot(p)
  data.MagnetEquipped=p:GetAttribute("MagnetEquipped") or 1
  data.IndexClaimed={}
  for i=1,#Config.Eggs do data.IndexClaimed[tostring(i)]=p:GetAttribute("IndexClaimed"..i)==true end
+ data.Pity={}
+ for _,tier in ipairs(ShopConfig.Pity) do data.Pity[tier.Rarity]=p:GetAttribute("Pity"..tier.Rarity) or 0 end
  return data
 end
 local function load(p)
@@ -85,6 +87,10 @@ local function load(p)
  if #team>0 then PlayerSystems.SetEquipped(p,team) else PlayerSystems.EquipBest(p) end
  PlayerSystems.GiveMagnet(p)
  for i=1,#Config.Eggs do p:SetAttribute("IndexClaimed"..i,type(loaded.IndexClaimed)=="table" and loaded.IndexClaimed[tostring(i)]==true) end
+ PlayerSystems.RefreshIndexBonus(p)
+ for _,tier in ipairs(ShopConfig.Pity) do
+  p:SetAttribute("Pity"..tier.Rarity,math.clamp(math.floor(number(type(loaded.Pity)=="table" and loaded.Pity[tier.Rarity])),0,tier.Threshold))
+ end
  local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
  if h then h.WalkSpeed=Config.GetWalkSpeed(stats.SpeedLevel.Value) end
  p:SetAttribute("ProfileReady",true);p:SetAttribute("SaveStatus","SAVING ENABLED")

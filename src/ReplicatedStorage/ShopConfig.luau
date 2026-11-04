@@ -131,4 +131,32 @@ function ShopConfig.ParseEquipped(text: string?): { number }
 	return list
 end
 
+-- ===== Гарантия (pity) =====
+-- Счётчик растёт на каждого открытого питомца (x3 = три шага). Выпала редкость не ниже
+-- указанной — счётчик сбрасывается. Дошёл до порога — следующий питомец этой редкости
+-- гарантирован (берётся из пула того яйца, которое открывают). Проверка идёт сверху вниз.
+ShopConfig.Pity = {
+	{ Rarity = "Secret", Threshold = 2000 },
+	{ Rarity = "Legendary", Threshold = 100 },
+}
+ShopConfig.RarityRank = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Mythic = 5, Legendary = 6, Secret = 7 }
+-- Объявление на весь сервер начиная с этой редкости.
+ShopConfig.AnnounceRank = 6
+
+-- ===== Постоянные бонусы =====
+-- За каждую полностью собранную и забранную страницу индекса (все питомцы одного яйца).
+ShopConfig.IndexBonusPerPage = 0.05
+-- За каждого друга на сервере, с потолком.
+ShopConfig.FriendBonusEach = 0.1
+ShopConfig.FriendBonusMax = 0.5
+-- ===== Мировые события =====
+-- Раз в Interval секунд на весь сервер включается следующее событие из списка на Duration секунд.
+-- Сервер пишет в workspace атрибуты EventId и EventEnd (серверное время), клиенты рисуют таймер.
+ShopConfig.EventInterval = 15 * 60
+ShopConfig.EventFirstDelay = 5 * 60
+ShopConfig.Events = {
+	{ Id = "Golden", Name = "GOLDEN HOUR", Desc = "x2 coins for everyone!", Duration = 180, Icon = "💰", Color = Color3.fromRGB(255, 200, 60) },
+	{ Id = "Lucky", Name = "LUCKY HOUR", Desc = "Luck boost on every egg!", Duration = 180, Icon = "🍀", Color = Color3.fromRGB(90, 220, 120) },
+}
+
 return ShopConfig

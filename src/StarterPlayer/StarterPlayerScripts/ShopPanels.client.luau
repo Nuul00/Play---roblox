@@ -298,7 +298,7 @@ local function renderMagnets()
 		for i, def in ipairs(ShopConfig.Magnets) do
 			local card = Instance.new("Frame")
 			card.LayoutOrder = i
-			card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
+			card.BackgroundColor3 = (i == equipped and not player:GetAttribute("MagnetOff")) and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
 			card.Parent = scroll
 			corner(card, 14)
 			stroke(card, 3, def.Body)
@@ -307,8 +307,8 @@ local function renderMagnets()
 			label(card, def.Name, UDim2.fromOffset(4, 84), UDim2.fromOffset(104, 30), 14)
 			label(card, def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull", UDim2.fromOffset(4, 112), UDim2.fromOffset(104, 16), 12, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
 			local text, color
-			if i == equipped then
-				text, color = "IN HAND", Color3.fromRGB(110, 110, 120)
+			if i == equipped and not player:GetAttribute("MagnetOff") then
+				text, color = "TAKE OFF", Color3.fromRGB(215, 120, 60)
 			elseif i <= ownedTier then
 				text, color = "EQUIP", Color3.fromRGB(70, 140, 220)
 			elseif i == ownedTier + 1 then
@@ -319,7 +319,7 @@ local function renderMagnets()
 			local b = button(card, text, UDim2.fromOffset(8, 132), UDim2.fromOffset(96, 30), color)
 			b.TextSize = 13
 			b.Activated:Connect(function()
-				if i ~= equipped and i <= ownedTier + 1 then
+				if i <= ownedTier + 1 then
 					buy:FireServer("magnettool", "magnets", i)
 				end
 			end)
@@ -408,7 +408,7 @@ end
 coins.Changed:Connect(dirty)
 speed.Changed:Connect(dirty)
 player.AttributeChanged:Connect(function(name)
-	if name == "MagnetLevel" or name == "IncomeLevel" or name == "DoubleLevel" or name == "MagnetTier" or name == "MagnetEquipped" or name:sub(1, 6) == "Potion" or name == "MagnetRadius" then
+	if name == "MagnetLevel" or name == "IncomeLevel" or name == "DoubleLevel" or name == "MagnetTier" or name == "MagnetEquipped" or name == "MagnetOff" or name:sub(1, 6) == "Potion" or name == "MagnetRadius" then
 		dirty()
 	end
 end)

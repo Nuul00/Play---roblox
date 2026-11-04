@@ -60,7 +60,7 @@ end)
 local bands = {}
 for _, d in ipairs(sky:GetChildren()) do
 	if d.Name == "RainbowBand" then
-		table.insert(bands, d)
+		table.insert(bands, { part = d, band = d:GetAttribute("Band") or 1, along = d:GetAttribute("Along") or 0 })
 	end
 end
 
@@ -78,19 +78,36 @@ tint.TintColor = Color3.fromRGB(255, 232, 248)
 tint.Saturation = 0.08
 tint.Brightness = 0
 
+-- Детали острова собираем один раз (и дополняем по мере появления): страховке и входу в мир
+-- не нужно каждый раз обходить ~5000 объектов.
+local skyParts = {}
+for _, d in ipairs(sky:GetDescendants()) do
+	if d:IsA("BasePart") then
+		table.insert(skyParts, d)
+	end
+end
+sky.DescendantAdded:Connect(function(d)
+	if d:IsA("BasePart") then
+		table.insert(skyParts, d)
+	end
+end)
+local function showSkyParts()
+	for _, p in ipairs(skyParts) do
+		if p.LocalTransparencyModifier > 0 then
+			p.LocalTransparencyModifier = 0
+		end
+	end
+end
+
 local saved
 local function setActive(on)
 	if on then
 		-- страховка: на входе гарантируем, что геометрия острова не спрятана клиентом
-		for _, d in ipairs(sky:GetDescendants()) do
-			if d:IsA("BasePart") and d.LocalTransparencyModifier > 0 then
-				d.LocalTransparencyModifier = 0
-			end
-		end
+		showSkyParts()
 		saved = { Lighting.ClockTime, Lighting.Brightness, Lighting.Ambient, Lighting.OutdoorAmbient, Lighting.ExposureCompensation }
 		atmosphere.Parent = Lighting
 		tint.Parent = Lighting
-		TweenService:Create(Lighting, TweenInfo.new(1.5), {
+		TweenService:Create(Lighting, TweenInfo.new(0.4), {
 			ClockTime = 18.2,
 			Brightness = 1.6,
 			Ambient = Color3.fromRGB(125, 105, 165),
@@ -101,7 +118,7 @@ local function setActive(on)
 		atmosphere.Parent = nil
 		tint.Parent = nil
 		if saved then
-			TweenService:Create(Lighting, TweenInfo.new(1.5), {
+			TweenService:Create(Lighting, TweenInfo.new(0.4), {
 				ClockTime = saved[1],
 				Brightness = saved[2],
 				Ambient = saved[3],
@@ -139,8 +156,14 @@ local function spawnRipple()
 	end)
 	grow:Play()
 end
+-- Производительность: медленные плавные движения обновляем 30 раз в секунду, цвета — 20,
+-- а облака и звёзды дальше CULL студов от камеры не трогаем (смещение там всё равно не видно).
+-- Облака двигаем одним пакетом через BulkMoveTo. Так кадр в мире стал примерно вдвое легче.
+local MOVE_STEP, COLOR_STEP, CULL = 1 / 30, 1 / 20, 300
+local cloudParts, cloudFrames = {}, {}
 local t = 0
 local guard = 0
+local moveAcc, colorAcc = 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	local near = camera ~= nil and (camera.CFrame.Position - center).Magnitude < 420
@@ -153,28 +176,9 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	t += dt
 	guard += dt
-	if guard > 0.75 then
+	if guard > 2 then
 		guard = 0
-		for _, d in ipairs(sky:GetDescendants()) do
-			if d:IsA("BasePart") and d.LocalTransparencyModifier > 0 then
-				d.LocalTransparencyModifier = 0
-			end
-		end
-	end
-	for _, i in ipairs(islets) do
-		i.model:PivotTo(i.base + Vector3.new(0, math.sin(t * 0.6 + i.phase) * 2.2, 0))
-	end
-	for _, s in ipairs(stars) do
-		local a = t + s.phase
-		s.model:PivotTo(s.base * CFrame.new(0, math.sin(a * 0.9) * s.amp, 0) * CFrame.Angles(0, a * s.spin, math.sin(a * 0.7) * 0.15))
-	end
-	if cushion and cushion.Parent then
-		cushion:PivotTo(cushionBase + Vector3.new(0, math.sin(t * 0.5) * 2.5, 0))
-	end
-	-- Кувшинки покачиваются на воде и медленно поворачиваются.
-	for _, l in ipairs(lilies) do
-		local a = t + l.phase
-		l.model:PivotTo(l.base * CFrame.new(0, math.sin(a * 1.6) * 0.08, 0) * CFrame.Angles(math.sin(a) * 0.04, a * 0.15, math.cos(a * 1.3) * 0.04))
+		showSkyParts()
 	end
 	-- Круги на воде: время от времени в случайной точке пруда расходится светлое кольцо.
 	if pondWater and pondWater.Parent then
@@ -188,21 +192,56 @@ RunService.RenderStepped:Connect(function(dt)
 		r.OffsetStudsU = t * (k % 2 == 0 and 0.7 or -0.5)
 		r.OffsetStudsV = t * 0.4
 	end
-	for _, c in ipairs(clouds) do
-		local a = t * 0.25 + c.phase
-		c.part.CFrame = c.base + Vector3.new(math.sin(a) * c.sway, math.sin(a * 1.7) * 0.6, math.cos(a * 0.8) * c.sway)
+
+	local camPos = camera.CFrame.Position
+	moveAcc += dt
+	if moveAcc >= MOVE_STEP then
+		moveAcc = 0
+		for _, i in ipairs(islets) do
+			i.model:PivotTo(i.base + Vector3.new(0, math.sin(t * 0.6 + i.phase) * 2.2, 0))
+		end
+		for _, s in ipairs(stars) do
+			if (s.base.Position - camPos).Magnitude < CULL then
+				local a = t + s.phase
+				s.model:PivotTo(s.base * CFrame.new(0, math.sin(a * 0.9) * s.amp, 0) * CFrame.Angles(0, a * s.spin, math.sin(a * 0.7) * 0.15))
+			end
+		end
+		if cushion and cushion.Parent then
+			cushion:PivotTo(cushionBase + Vector3.new(0, math.sin(t * 0.5) * 2.5, 0))
+		end
+		-- Кувшинки покачиваются на воде и медленно поворачиваются.
+		for _, l in ipairs(lilies) do
+			local a = t + l.phase
+			l.model:PivotTo(l.base * CFrame.new(0, math.sin(a * 1.6) * 0.08, 0) * CFrame.Angles(math.sin(a) * 0.04, a * 0.15, math.cos(a * 1.3) * 0.04))
+		end
+		-- Облака — после подушки, как и раньше: если деталь есть в обоих списках, побеждает облако.
+		table.clear(cloudParts)
+		table.clear(cloudFrames)
+		for _, c in ipairs(clouds) do
+			if c.part.Parent and (c.base.Position - camPos).Magnitude < CULL then
+				local a = t * 0.25 + c.phase
+				table.insert(cloudParts, c.part)
+				table.insert(cloudFrames, c.base + Vector3.new(math.sin(a) * c.sway, math.sin(a * 1.7) * 0.6, math.cos(a * 0.8) * c.sway))
+			end
+		end
+		if #cloudParts > 0 then
+			workspace:BulkMoveTo(cloudParts, cloudFrames, Enum.BulkMoveMode.FireCFrameChanged)
+		end
 	end
-	local trimHue = 0.72 + 0.12 * math.sin(t * 0.4)
-	for k, p in ipairs(trims) do
-		p.Color = Color3.fromHSV((trimHue + 0.04 * math.sin(t + k)) % 1, 0.32, 1)
-	end
-	-- Радуги: цвета бегут волной вдоль дуги, полосы сохраняют порядок, яркость пульсирует.
-	for _, b in ipairs(bands) do
-		local band = b:GetAttribute("Band") or 1
-		local along = b:GetAttribute("Along") or 0
-		local hue = ((band - 1) / 7 * 0.8 - t * 0.18 + along * 0.6) % 1
-		local wave = math.sin(t * 3 - along * 12)
-		b.Color = Color3.fromHSV(hue, 0.65 - 0.15 * wave, 1)
-		b.Transparency = 0.2 - 0.12 * wave
+
+	colorAcc += dt
+	if colorAcc >= COLOR_STEP then
+		colorAcc = 0
+		local trimHue = 0.72 + 0.12 * math.sin(t * 0.4)
+		for k, p in ipairs(trims) do
+			p.Color = Color3.fromHSV((trimHue + 0.04 * math.sin(t + k)) % 1, 0.32, 1)
+		end
+		-- Радуги: цвета бегут волной вдоль дуги, полосы сохраняют порядок, яркость пульсирует.
+		for _, b in ipairs(bands) do
+			local hue = ((b.band - 1) / 7 * 0.8 - t * 0.18 + b.along * 0.6) % 1
+			local wave = math.sin(t * 3 - b.along * 12)
+			b.part.Color = Color3.fromHSV(hue, 0.65 - 0.15 * wave, 1)
+			b.part.Transparency = 0.2 - 0.12 * wave
+		end
 	end
 end)

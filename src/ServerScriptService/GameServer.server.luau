@@ -87,6 +87,10 @@ buy.Name = "GameShopBuy"
 buy.Parent = ReplicatedStorage
 local hatched = Instance.new("RemoteEvent")
 hatched.Name = "GameHatched"
+-- Объявление всем игрокам о редком выпадении (Legendary и выше).
+local announce = Instance.new("RemoteEvent")
+announce.Name = "GameAnnounce"
+announce.Parent = ReplicatedStorage
 hatched.Parent = ReplicatedStorage
 local function alive(player)
  local character = player.Character
@@ -182,8 +186,9 @@ claimIndex.OnServerEvent:Connect(function(p, eggId)
  if not stats then return end
  local reward = Config.GetIndexReward(eggId)
  p:SetAttribute("IndexClaimed" .. eggId, true)
+ PlayerSystems.RefreshIndexBonus(p)
  stats.Coins.Value = stats.Coins.Value + reward
- notify(p, "Index reward: +" .. reward .. " coins!", true)
+ notify(p, "Index reward: +" .. reward .. " coins and +" .. math.floor(ShopConfig.IndexBonusPerPage * 100 + 0.5) .. "% coins forever!", true)
 end)
 Players.PlayerRemoving:Connect(function(p) claimCooldown[p] = nil end)
 local function interact(p, part, prompt, minLevel)
@@ -260,7 +265,15 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   if kind == "magnettool" then
    local def = type(eggId) == "number" and ShopConfig.Magnets[eggId]
    if not def then return end
-   if eggId <= (p:GetAttribute("MagnetTier") or 1) then PlayerSystems.EquipMagnet(p, eggId); return end
+   if eggId <= (p:GetAttribute("MagnetTier") or 1) then
+    -- Повторное нажатие на магнит в руках снимает его, на любой другой купленный — надевает.
+    if eggId == (p:GetAttribute("MagnetEquipped") or 1) and not p:GetAttribute("MagnetOff") then
+     PlayerSystems.UnequipMagnet(p)
+    else
+     PlayerSystems.EquipMagnet(p, eggId)
+    end
+    return
+   end
    if def.SkyOnly and not inSky then notify(p, "This magnet is sold in Sky Isles"); return end
    if eggId ~= (p:GetAttribute("MagnetTier") or 1) + 1 then notify(p, "Buy the previous magnet first!"); return end
    cost, name = def.Price, def.Name
@@ -308,20 +321,29 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   for _=1,amount do
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
   -- Зелье удачи: два броска, остаётся более редкий питомец.
-  if PlayerSystems.PotionActive(p, "Luck") then
+  if PlayerSystems.PotionActive(p, "Luck") or PlayerSystems.EventActive("Lucky") then
    local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
    if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
   end
+  -- Гарантия: после N питомцев без нужной редкости выдаём её из пула этого яйца.
+  local forced
+  result, forced = PlayerSystems.ApplyPity(p, eggId, result)
   local attribute = "PetOwned" .. result
   local deleted=p:GetAttribute("AutoDelete"..result)==true
   local count = (p:GetAttribute(attribute) or 0)+(deleted and 0 or 1)
   if not deleted then p:SetAttribute(attribute,count) end
   -- Автоматически сопровождает самый сильный из открытых питомцев.
   if not deleted then PlayerSystems.OnHatched(p, result) end
-  table.insert(results,{Pet=result,Count=count,Deleted=deleted})
+  table.insert(results,{Pet=result,Count=count,Deleted=deleted,Forced=forced})
   end
   p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+amount)
   hatched:FireClient(p,results,eggId)
+  -- Лучшее редкое выпадение из пачки видят все на сервере.
+  local best
+  for _,r in ipairs(results) do
+   if PlayerSystems.RarityRank(r.Pet)>=ShopConfig.AnnounceRank and (not best or PlayerSystems.RarityRank(r.Pet)>PlayerSystems.RarityRank(best.Pet)) then best=r end
+  end
+  if best then announce:FireAllClients(p.DisplayName,best.Pet,best.Forced==true) end
  end
 end)
 

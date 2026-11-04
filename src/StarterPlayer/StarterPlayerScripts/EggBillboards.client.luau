@@ -63,6 +63,7 @@ local function buildBoard(id, stand)
 	end
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggBoard"
+	gui:SetAttribute("EggId", id) -- по нему PityHUD ставит плашку гарантии над этим табло
 	gui.Size = UDim2.fromScale(neon and 14.5 or 13, neon and 16 or (#egg.Pool > 6 and 13 or 7.4))
 	gui.MaxDistance = 75
 	-- Высокое табло (9 питомцев) поднимаем, чтобы яйцо его не закрывало.
