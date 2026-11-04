@@ -97,7 +97,7 @@ body.Parent = window
 local current = "pets"
 local spinning = {}
 
-local function viewport(parent, pos, size, petId)
+local function viewport(parent, pos, size, petCode)
 	local view = Instance.new("ViewportFrame")
 	view.BackgroundTransparency = 1
 	view.Position = pos
@@ -106,7 +106,7 @@ local function viewport(parent, pos, size, petId)
 	view.LightDirection = Vector3.new(-1, -1, -2)
 	view.Parent = parent
 	local wm = Instance.new("WorldModel", view)
-	local model = PetVisuals.Build(petId)
+	local model = PetVisuals.BuildCode(petCode)
 	model.Parent = wm
 	local _, ext = model:GetBoundingBox()
 	local d = math.max(ext.X, ext.Y, ext.Z)
@@ -118,8 +118,14 @@ local function viewport(parent, pos, size, petId)
 	table.insert(spinning, model)
 end
 
-local function count(id)
-	return player:GetAttribute("PetOwned" .. id) or 0
+-- code = id + ступень*1000 (обычный, золотой, алмазный, радужный).
+local function count(code)
+	local id, tier = ShopConfig.SplitPet(code)
+	return player:GetAttribute(ShopConfig.OwnedAttr(id, tier)) or 0
+end
+local function codeMult(code)
+	local id, tier = ShopConfig.SplitPet(code)
+	return Config.GetPetMultiplier(id) * ShopConfig.VariantMult(tier)
 end
 
 -- ===== Питомцы =====
@@ -152,27 +158,32 @@ local function buildPets()
 	grid.Parent = list
 	local ids = {}
 	for id = 1, #Config.Pets do
-		if count(id) > 0 then
-			table.insert(ids, id)
+		for tier = 0, #ShopConfig.Variants do
+			local code = ShopConfig.PetCode(id, tier)
+			if count(code) > 0 then
+				table.insert(ids, code)
+			end
 		end
 	end
 	table.sort(ids, function(a, b)
-		return Config.GetPetMultiplier(a) > Config.GetPetMultiplier(b)
+		return codeMult(a) > codeMult(b)
 	end)
 	if #ids == 0 then
 		label(body, "No pets yet — open an egg!", UDim2.fromOffset(0, 120), UDim2.fromOffset(748, 40), 24)
 	end
 	for _, id in ipairs(ids) do
-		local def = Config.Pets[id]
+		local baseId, tier = ShopConfig.SplitPet(id)
+		local def = Config.Pets[baseId]
+		local variant = ShopConfig.Variants[tier]
 		local card = Instance.new("TextButton")
 		card.Text = ""
 		card.BackgroundColor3 = (equippedCount[id] or 0) > 0 and Color3.fromRGB(70, 120, 80) or Color3.fromRGB(58, 66, 92)
 		card.Parent = list
 		corner(card, 14)
-		stroke(card, 3, rarityColors[def.Rarity] or dark)
+		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
-		label(card, def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 22), 15)
-		label(card, def.Rarity .. " · x" .. string.format("%g", def.Multiplier), UDim2.fromOffset(4, 118), UDim2.fromOffset(130, 18), 13, rarityColors[def.Rarity] == rarityColors.Secret and Color3.new(1, 1, 1) or rarityColors[def.Rarity])
+		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 22), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
+		label(card, def.Rarity .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 118), UDim2.fromOffset(130, 18), 13, rarityColors[def.Rarity] == rarityColors.Secret and Color3.new(1, 1, 1) or rarityColors[def.Rarity])
 		label(card, "own " .. count(id), UDim2.fromOffset(4, 140), UDim2.fromOffset(60, 20), 13, Color3.fromRGB(210, 210, 220), Enum.Font.GothamMedium)
 		if (equippedCount[id] or 0) > 0 then
 			local tag = label(card, "✔ x" .. equippedCount[id], UDim2.fromOffset(70, 140), UDim2.fromOffset(62, 20), 14, Color3.fromRGB(150, 255, 150))
@@ -322,7 +333,7 @@ player.AttributeChanged:Connect(function(name)
 	if not window.Visible or pending then
 		return
 	end
-	if name == "Equipped" or name == "PetBonus" or name:sub(1, 8) == "PetOwned" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" then
+	if name == "Equipped" or name == "PetBonus" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" then
 		pending = true
 		task.defer(function()
 			pending = false

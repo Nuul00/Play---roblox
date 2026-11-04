@@ -8,7 +8,7 @@ local function rgb(r, g, b)
 end
 
 -- Диаметр обычной монеты: на 10% меньше прежних (3 студа в Meadow и Неонграде, 3,4 в Sky).
-CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06 }
+CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06, Frozen = 3.06 }
 
 CoinTypes.Worlds = {
 	Meadow = {
@@ -32,6 +32,14 @@ CoinTypes.Worlds = {
 			{ Id = "Cloud", Weight = 60, Value = 150, Scale = 1, Color = rgb(255, 200, 110), Model = "Coin1" },
 			{ Id = "Star", Weight = 30, Value = 300, Scale = 1.12, Color = rgb(190, 130, 255), Model = "Coin2" },
 			{ Id = "Wings", Weight = 10, Value = 600, Scale = 1.25, Color = rgb(255, 225, 120), Model = "Coin3" },
+		},
+	},
+	Frozen = {
+		Theme = { rgb(150, 230, 255), rgb(200, 160, 255) }, -- лёд и северное сияние
+		Kinds = {
+			{ Id = "Ice", Weight = 60, Value = 400, Scale = 1, Color = rgb(140, 220, 255) },
+			{ Id = "Crystal", Weight = 30, Value = 800, Scale = 1.12, Color = rgb(120, 170, 255) },
+			{ Id = "Aurora", Weight = 10, Value = 1600, Scale = 1.25, Color = rgb(120, 255, 200) },
 		},
 	},
 }

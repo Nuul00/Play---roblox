@@ -33,6 +33,12 @@ local function snapshot(p)
  data.MagnetEquipped=p:GetAttribute("MagnetEquipped") or 1
  data.IndexClaimed={}
  for i=1,#Config.Eggs do data.IndexClaimed[tostring(i)]=p:GetAttribute("IndexClaimed"..i)==true end
+ data.Variants={}
+ for _,v in ipairs(ShopConfig.Variants) do
+  local t={}
+  for i=1,#Config.Pets do local n=p:GetAttribute("Pet"..v.Key..i) or 0; if n>0 then t[tostring(i)]=n end end
+  data.Variants[v.Key]=t
+ end
  data.Pity={}
  for _,tier in ipairs(ShopConfig.Pity) do data.Pity[tier.Rarity]=p:GetAttribute("Pity"..tier.Rarity) or 0 end
  return data
@@ -65,6 +71,11 @@ local function load(p)
  p:SetAttribute("DoubleLevel",math.clamp(math.floor(number(loaded.DoubleLevel)),0,Config.MaxDoubleLevel))
  p:SetAttribute("Rebirths",math.clamp(math.floor(number(loaded.Rebirths)),0,Config.MaxRebirths))
  for _,name in ipairs({"LifetimeEarned","CoinsCollected","EggsOpened"}) do p:SetAttribute(name,number(loaded[name])) end
+ -- Улучшенные питомцы (золото/алмаз/радуга) грузим до команды, чтобы их можно было надеть.
+ for _,v in ipairs(ShopConfig.Variants) do
+  local t=type(loaded.Variants)=="table" and type(loaded.Variants[v.Key])=="table" and loaded.Variants[v.Key] or {}
+  for i=1,#Config.Pets do p:SetAttribute("Pet"..v.Key..i,math.floor(number(t[tostring(i)]))) end
+ end
  local best=0
  for i=1,#Config.Pets do
   p:SetAttribute("AutoDelete"..i,type(loaded.AutoDelete)=="table" and loaded.AutoDelete[tostring(i)]==true)

@@ -127,6 +127,13 @@ for i,m in ipairs(modes) do
 end
 local hint=Instance.new("TextLabel");hint.BackgroundTransparency=1;hint.Position=UDim2.fromOffset(20,190);hint.Size=UDim2.fromOffset(380,40);hint.TextWrapped=true;hint.Text="Only changes what you see. Street lamps glow at night.";hint.Font=Enum.Font.Gotham;hint.TextSize=14;hint.TextColor3=Color3.fromRGB(200,210,220);hint.Parent=settings
 applyTime("Evening")
+-- Музыка миров (WorldAmbience): вкл/выкл только у этого игрока.
+settings.Size=UDim2.fromOffset(420,300)
+local music=button(settings,"🎵 Music: ON",UDim2.fromOffset(380,40),UDim2.fromOffset(20,240));music.BackgroundColor3=Color3.fromRGB(90,160,110)
+music.Activated:Connect(function()
+ local off=not player:GetAttribute("MusicOff");player:SetAttribute("MusicOff",off)
+ music.Text=off and "🔇 Music: OFF" or "🎵 Music: ON";music.BackgroundColor3=off and Color3.fromRGB(150,80,80) or Color3.fromRGB(90,160,110)
+end)
 
 local screens={stats=panel,settings=settings}
 local function hideAll()

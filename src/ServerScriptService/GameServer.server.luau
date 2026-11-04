@@ -45,6 +45,10 @@ end
 -- Третий мир Sky Isles строится кодом высоко в небе (модуль SkyIsles).
 local SkyIsles=require(script.Parent:WaitForChild("SkyIsles"))
 local sky=SkyIsles.Build(world)
+-- Четвёртый мир Frozen Peaks (модуль FrozenPeaks), вход — ледяная арка на Sky Isles.
+local FrozenPeaks=require(script.Parent:WaitForChild("FrozenPeaks"))
+local frozen=FrozenPeaks.Build(world)
+FrozenPeaks.BuildSkyPortal(sky)
 -- Камни, камыши, кувшинки, мостик и причал ставим уже на готовый рельеф.
 task.spawn(Pond.Decorate,world)
 local sunsetStand=world:WaitForChild("EggStand1")
@@ -207,8 +211,8 @@ local function interact(p, part, prompt, minLevel)
  return stats, h, root
 end
 -- Открытие меню не списывает деньги. Каждая покупка снова проверяет расстояние.
-local zones = {island=world, neon=city, sky=sky}
-local ZONE_LEVEL = {[city]=3, [sky]=6}
+local zones = {island=world, neon=city, sky=sky, frozen=frozen}
+local ZONE_LEVEL = {[city]=3, [sky]=6, [frozen]=10}
 local function shopPart(zone, mode, eggId)
  if mode == "egg" then
   local egg=Config.Eggs[eggId]
@@ -404,7 +408,7 @@ do
  local skyZone = skyMagnets and skyMagnets:FindFirstChild("ShopZone")
  if skyZone then shopZones.skymagnets = skyZone end
 end
-local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6}
+local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10}
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
@@ -425,7 +429,7 @@ end
 
 -- У каждой монеты одно серверное состояние для всех игроков.
 local records = {}
-for _, zone in ipairs({world, city, sky}) do
+for _, zone in ipairs({world, city, sky, frozen}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
    local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = ZONE_LEVEL[zone] or 0}
@@ -484,6 +488,8 @@ task.spawn(function()
     end
     if root.Position.Y > 200 then
      p:SetAttribute("CurrentWorld", "Sky Isles")
+    elseif math.abs(root.Position.X - FrozenPeaks.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
+     p:SetAttribute("CurrentWorld", "Frozen Peaks")
     elseif math.abs(root.Position.Z) <= 230 then
      if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
      elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end
@@ -506,4 +512,4 @@ task.spawn(function()
   task.wait(0.1)
  end
 end)
-print("[CoinSprint] Ready: 3 worlds, "..#records.." coins, "..#Config.Eggs.." eggs, "..#Config.Pets.." pets")
+print("[CoinSprint] Ready: 4 worlds, "..#records.." coins, "..#Config.Eggs.." eggs, "..#Config.Pets.." pets")

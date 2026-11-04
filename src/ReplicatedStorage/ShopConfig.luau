@@ -149,6 +149,36 @@ ShopConfig.IndexBonusPerPage = 0.05
 -- За каждого друга на сервере, с потолком.
 ShopConfig.FriendBonusEach = 0.1
 ShopConfig.FriendBonusMax = 0.5
+-- ===== Улучшенные питомцы (машины) =====
+-- В каждом мире стоит своя машина: Need одинаковых питомцев предыдущей ступени → 1 питомец этой.
+-- Обычный → Golden (Meadow) → Diamond (Neon District) → Rainbow (Sky Isles).
+-- Множитель ступени умножает базовый множитель питомца.
+-- В списке надетых питомцев ступень кодируется числом: id + ступень * 1000 (1001 = золотой id 1).
+ShopConfig.Variants = {
+	{ Key = "Gold", Name = "Golden", Mult = 2, Need = 5, World = "Meadow Isles", Color = Color3.fromRGB(255, 200, 50), Icon = "🟡" },
+	{ Key = "Diamond", Name = "Diamond", Mult = 3.5, Need = 5, World = "Neon District", Color = Color3.fromRGB(120, 230, 255), Icon = "💎" },
+	{ Key = "Rainbow", Name = "Rainbow", Mult = 6, Need = 5, World = "Sky Isles", Color = Color3.fromRGB(255, 120, 220), Icon = "🌈" },
+}
+ShopConfig.VariantStep = 1000
+function ShopConfig.SplitPet(code: number): (number, number)
+	local tier = math.floor(code / ShopConfig.VariantStep)
+	return code - tier * ShopConfig.VariantStep, tier
+end
+function ShopConfig.PetCode(id: number, tier: number): number
+	return id + tier * ShopConfig.VariantStep
+end
+-- Имя атрибута, где хранится количество питомцев этой ступени.
+function ShopConfig.OwnedAttr(id: number, tier: number): string
+	if tier <= 0 then
+		return "PetOwned" .. id
+	end
+	return "Pet" .. ShopConfig.Variants[tier].Key .. id
+end
+function ShopConfig.VariantMult(tier: number): number
+	local v = ShopConfig.Variants[tier]
+	return v and v.Mult or 1
+end
+
 -- ===== Мировые события =====
 -- Раз в Interval секунд на весь сервер включается следующее событие из списка на Duration секунд.
 -- Сервер пишет в workspace атрибуты EventId и EventEnd (серверное время), клиенты рисуют таймер.

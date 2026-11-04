@@ -18,6 +18,9 @@ local function destination(id)
 	elseif id == "Sky Isles" then
 		local sky = world:FindFirstChild("SkyIsles")
 		return sky and sky:GetAttribute("Spawn")
+	elseif id == "Frozen Peaks" then
+		local frozen = world:FindFirstChild("FrozenPeaks")
+		return frozen and frozen:GetAttribute("Spawn")
 	end
 	return nil
 end
@@ -110,4 +113,11 @@ end)
 task.spawn(function()
 	local sky = world:WaitForChild("SkyIsles", 60)
 	walkIn(sky and sky:WaitForChild("PortalToNeon", 30), "Neon District")
+	local arch = sky and sky:WaitForChild("PortalToFrozenArch", 30)
+	walkIn(arch and arch:WaitForChild("PortalToFrozen", 30), "Frozen Peaks")
+end)
+task.spawn(function()
+	local frozen = world:WaitForChild("FrozenPeaks", 60)
+	local arch = frozen and frozen:WaitForChild("PortalToSkyArch", 30)
+	walkIn(arch and arch:WaitForChild("PortalToSky", 30), "Sky Isles")
 end)

@@ -15,58 +15,94 @@ function PlayerSystems.SetNotifier(fn)
 end
 
 -- ===== Команда питомцев =====
-local function owned(p, id)
-	return p:GetAttribute("PetOwned" .. id) or 0
+-- В списке надетых лежат «коды»: id + ступень * 1000 (см. ShopConfig.Variants).
+local function owned(p, code)
+	local id, tier = ShopConfig.SplitPet(code)
+	if not Config.Pets[id] or (tier > 0 and not ShopConfig.Variants[tier]) then
+		return 0
+	end
+	return p:GetAttribute(ShopConfig.OwnedAttr(id, tier)) or 0
 end
+local function mult(code)
+	local id, tier = ShopConfig.SplitPet(code)
+	return Config.GetPetMultiplier(id) * ShopConfig.VariantMult(tier)
+end
+PlayerSystems.Owned = owned
+PlayerSystems.CodeMultiplier = mult
 function PlayerSystems.GetEquipped(p): { number }
 	return ShopConfig.ParseEquipped(p:GetAttribute("Equipped"))
 end
 function PlayerSystems.SetEquipped(p, list: { number })
 	local counts, clean = {}, {}
-	for _, id in ipairs(list) do
-		if Config.Pets[id] and #clean < ShopConfig.MaxEquipped then
-			counts[id] = (counts[id] or 0) + 1
-			if counts[id] <= owned(p, id) then
-				table.insert(clean, id)
+	for _, code in ipairs(list) do
+		if owned(p, code) > 0 and #clean < ShopConfig.MaxEquipped then
+			counts[code] = (counts[code] or 0) + 1
+			if counts[code] <= owned(p, code) then
+				table.insert(clean, code)
 			end
 		end
 	end
 	table.sort(clean, function(a, b)
-		return Config.GetPetMultiplier(a) > Config.GetPetMultiplier(b)
+		return mult(a) > mult(b)
 	end)
 	local mults, text = {}, {}
-	for _, id in ipairs(clean) do
-		table.insert(mults, Config.GetPetMultiplier(id))
-		table.insert(text, tostring(id))
+	for _, code in ipairs(clean) do
+		table.insert(mults, mult(code))
+		table.insert(text, tostring(code))
 	end
 	p:SetAttribute("Equipped", table.concat(text, ","))
 	p:SetAttribute("PetBonus", ShopConfig.TeamBonus(mults))
-	p:SetAttribute("PetLevel", clean[1] or 0) -- самый сильный, для статистики
+	p:SetAttribute("PetLevel", clean[1] and (ShopConfig.SplitPet(clean[1])) or 0) -- самый сильный, для статистики
 end
 function PlayerSystems.EquipBest(p)
 	local all = {}
 	for id = 1, #Config.Pets do
-		for _ = 1, math.min(owned(p, id), ShopConfig.MaxEquipped) do
-			table.insert(all, id)
+		for tier = 0, #ShopConfig.Variants do
+			local code = ShopConfig.PetCode(id, tier)
+			for _ = 1, math.min(owned(p, code), ShopConfig.MaxEquipped) do
+				table.insert(all, code)
+			end
 		end
 	end
 	table.sort(all, function(a, b)
-		return Config.GetPetMultiplier(a) > Config.GetPetMultiplier(b)
+		return mult(a) > mult(b)
 	end)
 	PlayerSystems.SetEquipped(p, { all[1], all[2], all[3] })
 end
 -- Новый питомец: занимает свободное место или заменяет самого слабого, если сильнее.
-function PlayerSystems.OnHatched(p, id)
+function PlayerSystems.OnHatched(p, code)
 	local list = PlayerSystems.GetEquipped(p)
 	if #list < ShopConfig.MaxEquipped then
-		table.insert(list, id)
+		table.insert(list, code)
 	else
 		local weakest = list[#list]
-		if Config.GetPetMultiplier(id) > Config.GetPetMultiplier(weakest) then
-			list[#list] = id
+		if mult(code) > mult(weakest) then
+			list[#list] = code
 		end
 	end
 	PlayerSystems.SetEquipped(p, list)
+end
+
+-- ===== Машины улучшения =====
+-- Need питомцев ступени tier-1 одного вида превращаются в одного питомца ступени tier.
+function PlayerSystems.Fuse(p, tier: number, id: number): boolean
+	local v = ShopConfig.Variants[tier]
+	if not v or not Config.Pets[id] then
+		return false
+	end
+	local fromAttr = ShopConfig.OwnedAttr(id, tier - 1)
+	local have = p:GetAttribute(fromAttr) or 0
+	if have < v.Need then
+		notifyFn(p, "Need " .. v.Need .. " of this pet (you have " .. have .. ")")
+		return false
+	end
+	p:SetAttribute(fromAttr, have - v.Need)
+	local toAttr = ShopConfig.OwnedAttr(id, tier)
+	p:SetAttribute(toAttr, (p:GetAttribute(toAttr) or 0) + 1)
+	PlayerSystems.SetEquipped(p, PlayerSystems.GetEquipped(p)) -- снимет потраченных питомцев
+	PlayerSystems.OnHatched(p, ShopConfig.PetCode(id, tier))
+	notifyFn(p, v.Icon .. " " .. v.Name .. " " .. Config.Pets[id].Name .. " created! x" .. string.format("%g", mult(ShopConfig.PetCode(id, tier))), true)
+	return true
 end
 
 -- ===== Зелья =====

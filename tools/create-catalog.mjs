@@ -107,7 +107,7 @@ Config.MaxMagnetLevel=50
 Config.MaxDoubleLevel=50
 Config.MaxUpgradeLevel=50
 -- Предел прокачки в магазине каждого мира: Meadow 10, Neon 25, Sky 50.
-Config.ZoneMax={island=10,neon=25,sky=50}
+Config.ZoneMax={island=10,neon=25,sky=50,frozen=50}
 Config.BaseMaxLevel=10
 Config.EnableGlobalBoards=true
 Config.EnableStudioDataStores=false

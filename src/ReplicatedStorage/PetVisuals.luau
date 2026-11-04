@@ -103,4 +103,72 @@ function PetVisuals.Build(id)
  end
  return model,parts
 end
+-- ===== Улучшенные варианты (машины) =====
+-- tier 1 — золотой, 2 — алмазный, 3 — радужный. Текстуры снимаем: питомец становится «статуэткой»
+-- из золота, льда-алмаза или переливающегося неона. Радугу анимирует клиент (атрибут Rainbow).
+local VARIANT = {
+	[1] = { color = Color3.fromRGB(255, 196, 52), material = Enum.Material.Foil, sparkle = Color3.fromRGB(255, 236, 150) },
+	[2] = { color = Color3.fromRGB(150, 235, 255), material = Enum.Material.Glass, transparency = 0.12, sparkle = Color3.fromRGB(200, 250, 255) },
+	[3] = { material = Enum.Material.Neon, sparkle = Color3.fromRGB(255, 255, 255) },
+}
+function PetVisuals.ApplyVariant(model: Model, tier: number, withParticles: boolean?)
+	local v = VARIANT[tier]
+	if not v then
+		return
+	end
+	local parts = {}
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") then
+			table.insert(parts, d)
+		elseif d:IsA("SurfaceAppearance") or d:IsA("Decal") or d:IsA("Texture") then
+			d:Destroy()
+		end
+	end
+	for k, part in ipairs(parts) do
+		if part:IsA("MeshPart") then
+			part.TextureID = ""
+		end
+		if part.Transparency < 0.95 then
+			part.Material = v.material
+			if v.color then
+				-- Чуть разные оттенки по деталям, чтобы статуэтка не была плоской.
+				part.Color = v.color:Lerp(Color3.new(1, 1, 1), (k % 3) * 0.08)
+			else
+				part.Color = Color3.fromHSV((k * 0.13) % 1, 0.65, 1)
+			end
+			if v.transparency then
+				part.Transparency = math.max(part.Transparency, v.transparency)
+			end
+		end
+	end
+	if tier == 3 then
+		model:SetAttribute("Rainbow", true)
+	end
+	model:SetAttribute("VariantTier", tier)
+	if withParticles and model.PrimaryPart then
+		local sparkle = Instance.new("ParticleEmitter")
+		sparkle.Name = "VariantSparkle"
+		sparkle.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sparkle.Color = ColorSequence.new(v.sparkle)
+		sparkle.LightEmission = 1
+		sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+		sparkle.Transparency = NumberSequence.new(0.2, 1)
+		sparkle.Lifetime = NumberRange.new(0.6, 1)
+		sparkle.Rate = tier * 4
+		sparkle.Speed = NumberRange.new(0.5, 1.5)
+		sparkle.SpreadAngle = Vector2.new(180, 180)
+		sparkle.Parent = model.PrimaryPart
+	end
+end
+-- Код питомца (id + ступень*1000) → модель с нужным видом.
+function PetVisuals.BuildCode(code: number, withParticles: boolean?)
+	local id = code % 1000
+	local tier = math.floor(code / 1000)
+	local model, parts = PetVisuals.Build(id)
+	if tier > 0 then
+		PetVisuals.ApplyVariant(model, tier, withParticles)
+	end
+	return model, parts
+end
+
 return PetVisuals

@@ -25,10 +25,11 @@ local function clearPets(record)
 end
 local function rebuild(record)
 	clearPets(record)
-	for slot, id in ipairs(ShopConfig.ParseEquipped(record.player:GetAttribute("Equipped"))) do
+	for slot, code in ipairs(ShopConfig.ParseEquipped(record.player:GetAttribute("Equipped"))) do
+		local id, tier = ShopConfig.SplitPet(code)
 		local def = Config.Pets[id]
 		if def then
-			local model = PetVisuals.Build(id)
+			local model = PetVisuals.BuildCode(code, true)
 			model.Name = "Pet_" .. record.player.UserId .. "_" .. slot
 			model.Parent = effects
 			local tag = Instance.new("BillboardGui")
@@ -44,9 +45,21 @@ local function rebuild(record)
 			text.TextSize = 13
 			text.TextColor3 = Color3.new(1, 1, 1)
 			text.TextStrokeTransparency = 0.3
-			text.Text = def.Name .. "  x" .. string.format("%g", def.Multiplier)
+			local variant = ShopConfig.Variants[tier]
+			text.Text = (variant and (variant.Name .. " ") or "") .. def.Name .. "  x" .. string.format("%g", def.Multiplier * ShopConfig.VariantMult(tier))
+			if variant then
+				text.TextColor3 = variant.Color:Lerp(Color3.new(1, 1, 1), 0.3)
+			end
 			text.Parent = tag
-			table.insert(record.pets, { model = model, slot = slot })
+			local rainbow = {}
+			if tier == 3 then
+				for _, d in ipairs(model:GetDescendants()) do
+					if d:IsA("BasePart") then
+						table.insert(rainbow, d)
+					end
+				end
+			end
+			table.insert(record.pets, { model = model, slot = slot, rainbow = rainbow })
 		end
 	end
 end
@@ -296,3 +309,23 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 end)
+
+-- Радужные питомцы переливаются цветами (10 раз в секунду, только у видимых).
+do
+	local acc, hue = 0, 0
+	RunService.RenderStepped:Connect(function(dt)
+		acc += dt
+		hue += dt * 0.25
+		if acc < 0.1 then
+			return
+		end
+		acc = 0
+		for _, record in pairs(records) do
+			for _, pet in ipairs(record.pets) do
+				for k, part in ipairs(pet.rainbow or {}) do
+					part.Color = Color3.fromHSV((hue + k * 0.09) % 1, 0.7, 1)
+				end
+			end
+		end
+	end)
+end
