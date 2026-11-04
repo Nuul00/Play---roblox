@@ -19,8 +19,11 @@ end
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
  -- Свои модели питомцев (CustomPets/Pet<id>) важнее процедурных.
+ -- TripoPets (не синхронизируется Rojo) — модели из Tripo, вставленные прямо в Studio.
  local customFolder=script.Parent:FindFirstChild("CustomPets")
  local custom=customFolder and customFolder:FindFirstChild("Pet"..id)
+ local tripoFolder=script.Parent:FindFirstChild("TripoPets")
+ custom=custom or (tripoFolder and tripoFolder:FindFirstChild("Pet"..id))
  if custom then
   local model,parts=fromTemplate(custom,def)
   if model then return model,parts end
