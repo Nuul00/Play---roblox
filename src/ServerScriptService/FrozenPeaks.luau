@@ -46,7 +46,9 @@ local function part(parent: Instance, name: string, size: Vector3, cf: CFrame | 
 	return p
 end
 local function ball(parent, name, d, pos, color, material, props)
-	return part(parent, name, Vector3.new(d, d, d), pos, color, material, props and props or nil):: any
+	local p = part(parent, name, Vector3.new(d, d, d), pos, color, material, props and props or nil)
+	p.Shape = Enum.PartType.Ball
+	return p :: any
 end
 local function disc(parent, name, d, h, pos, color, material, props)
 	local p = part(parent, name, Vector3.new(h, d, d), CFrame.new(pos) * CFrame.Angles(0, 0, math.pi / 2), color, material, props)
@@ -224,6 +226,80 @@ local function portalArch(parent, name: string, at: Vector3, yaw: number, target
 	return m, field
 end
 
+-- ===== Снежный шар =====
+-- Стекло: снаружи — шар Glass, изнутри — вывернутая сфера (SpecialMesh с отрицательным масштабом),
+-- потому что грани детали видны только снаружи. Подставка — красное дерево с золотом и снежинками.
+local GLOBE_R, GLOBE_Y, BASE_R = 222, 40, 214
+local UNDERSIDE_SPIKES = false
+function Frozen.BuildGlobe(parent: Instance)
+	local m = Instance.new("Model")
+	m.Name = "SnowGlobe"
+	local noHit = { CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false }
+	local outer = ball(m, "GlassOuter", GLOBE_R * 2, L(0, GLOBE_Y, 0), rgb(220, 238, 255), M.Glass, noHit)
+	outer.Transparency = 0.82
+	outer.Reflectance = 0.25
+	local inner = part(m, "GlassInner", Vector3.new(GLOBE_R * 2 - 2, GLOBE_R * 2 - 2, GLOBE_R * 2 - 2), L(0, GLOBE_Y, 0), rgb(205, 228, 255), M.SmoothPlastic, noHit)
+	inner.Transparency = 0.9
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Scale = Vector3.new(-1, -1, -1)
+	mesh.Parent = inner
+	-- Блики на стекле: светлые дуги, как на настоящем шаре.
+	for k = 0, 3 do
+		local a = math.rad(-55 + k * 22)
+		for j = 0, 5 do
+			local b = math.rad(28 + j * 9)
+			local dir = Vector3.new(math.cos(b) * math.cos(a), math.sin(b), math.cos(b) * math.sin(a))
+			local pos = L(0, GLOBE_Y, 0) + dir * (GLOBE_R - 1.5)
+			part(m, "Shine", Vector3.new(26, 7, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(255, 255, 255), M.Neon, { Transparency = 0.86, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false })
+		end
+	end
+	-- Подставка: снежная «насыпь», красное дерево, золотые кольца, снежинки и сосульки.
+	local baseTop = -2
+	disc(m, "SnowCap", BASE_R * 2, 3, L(0, baseTop - 1.5, 0), SNOW, M.Snow)
+	local woodC = rgb(128, 38, 30)
+	disc(m, "BaseUpper", BASE_R * 2 + 6, 34, L(0, baseTop - 20, 0), woodC, M.Wood)
+	disc(m, "GoldRing1", BASE_R * 2 + 10, 3, L(0, baseTop - 4, 0), rgb(240, 190, 80), M.Foil)
+	disc(m, "BaseLip", BASE_R * 2 + 26, 10, L(0, baseTop - 40, 0), woodC:Lerp(rgb(60, 15, 10), 0.3), M.Wood)
+	disc(m, "GoldRing2", BASE_R * 2 + 30, 3, L(0, baseTop - 34.5, 0), rgb(240, 190, 80), M.Foil)
+	disc(m, "BaseFoot", BASE_R * 2 + 12, 22, L(0, baseTop - 56, 0), woodC:Lerp(rgb(40, 10, 8), 0.45), M.Wood)
+	for k = 1, 16 do
+		local a = k / 16 * math.pi * 2
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local at = L(0, baseTop - 20, 0) + dir * (BASE_R + 3.4)
+		local plate = part(m, "Snowflake", Vector3.new(14, 14, 0.4), CFrame.lookAt(at, at + dir), woodC, M.Wood, { CanCollide = false, Transparency = 1 })
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Front
+		gui.CanvasSize = Vector2.new(100, 100)
+		gui.LightInfluence = 0.3
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.fromScale(1, 1)
+		t.Text = "❄"
+		t.TextScaled = true
+		t.TextColor3 = rgb(245, 250, 255)
+		t.Parent = gui
+		gui.Parent = plate
+		-- Сосульки свисают с верхнего края подставки.
+		for j = 0, 2 do
+			local aa = a + (j - 1) * 0.12
+			local d2 = Vector3.new(math.cos(aa), 0, math.sin(aa))
+			local len = 4 + ((k + j) % 3) * 2.5
+			local p0 = L(0, baseTop - 5.5 - len / 2, 0) + d2 * (BASE_R + 4)
+			part(m, "Icicle", Vector3.new(1.2, len, 1.2), CFrame.new(p0) * CFrame.Angles(0, aa, 0), rgb(215, 238, 255), M.Glass, { Transparency = 0.25, CanCollide = false, CanTouch = false, CanQuery = false })
+		end
+	end
+	-- Невидимая стенка внутри стекла, чтобы не уйти за край подставки.
+	for k = 1, 36 do
+		local a = k / 36 * math.pi * 2
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local at = L(0, 18, 0) + dir * (BASE_R - 6)
+		part(m, "GlobeWall", Vector3.new(40, 40, 2), CFrame.lookAt(at, at + dir), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CastShadow = false })
+	end
+	m.Parent = parent
+	return m
+end
+
 -- ===== Постройка мира =====
 function Frozen.Build(world: Instance)
 	local model = Instance.new("Model")
@@ -235,8 +311,9 @@ function Frozen.Build(world: Instance)
 	ground.Parent = model
 	disc(ground, "Deck", 330, 6, L(0, -3, 0), SNOW, M.Snow)
 	disc(ground, "Rim", 336, 4, L(0, -4.5, 0), ICE, M.Glacier)
-	-- Снизу острова — перевёрнутые ледяные пики (как сосульки).
-	for k = 1, 30 do
+	-- Снизу острова — перевёрнутые ледяные пики. Теперь остров стоит на подставке снежного шара,
+	-- поэтому пики не строим (UNDERSIDE_SPIKES = false), но код оставлен.
+	for k = 1, UNDERSIDE_SPIKES and 30 or 0 do
 		local a = k / 30 * math.pi * 2 + rand:NextNumber(-0.1, 0.1)
 		local r = rand:NextNumber(40, 150)
 		local w = rand:NextNumber(30, 60)
@@ -399,6 +476,9 @@ function Frozen.Build(world: Instance)
 			table.insert(placedSpots, { x, z, 2 })
 		end
 	end
+
+	-- Снежный шар: весь мир стоит внутри стеклянной колбы на подставке, как ёлочная игрушка.
+	Frozen.BuildGlobe(model)
 
 	-- Страховка: упавшего возвращаем на вход.
 	local net = part(model, "SafetyNet", Vector3.new(900, 2, 900), L(0, -140, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })

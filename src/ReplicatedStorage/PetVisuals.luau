@@ -5,6 +5,11 @@ local PetVisuals={}
 local function fromTemplate(selected,def)
  if selected and selected:IsA("Model") and selected:FindFirstChildWhichIsA("BasePart",true) then
   local model=selected:Clone();model.Name=def.Name
+  -- У моделей из Tripo Bridge точка опоры повёрнута: ставим её в центр рамки без поворота, иначе питомец лежит на боку.
+  if selected:GetAttribute("TripoName") then
+   local bb=model:GetBoundingBox()
+   model.WorldPivot=CFrame.new(bb.Position)
+  end
   local size=model:GetExtentsSize()
   -- Мифики и секретки крупнее обычных, чтобы редкость было видно сразу.
   local target=({Mythic=3.1,Secret=3.5})[def.Rarity] or 2.5
@@ -12,6 +17,13 @@ local function fromTemplate(selected,def)
   model:PivotTo(CFrame.identity)
   local parts={}
   for _,p in ipairs(model:GetDescendants()) do if p:IsA("BasePart") then p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;table.insert(parts,{part=p,transparency=p.Transparency}) end end
+  if selected:GetAttribute("TripoName") then
+   -- Детали Tripo повёрнуты внутри модели, поэтому опорой делаем невидимую деталь без поворота.
+   local root=Instance.new("Part");root.Name="PetRoot";root.Size=Vector3.new(0.2,0.2,0.2);root.Transparency=1
+   root.Anchored=true;root.CanCollide=false;root.CanTouch=false;root.CanQuery=false;root.CFrame=CFrame.identity;root.Parent=model
+   model.PrimaryPart=root
+   table.insert(parts,{part=root,transparency=1})
+  end
   model.PrimaryPart=model.PrimaryPart or parts[1].part
   return model,parts
  end
