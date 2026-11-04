@@ -266,6 +266,8 @@ local function renderUpgrades()
 end
 
 local magnetTab = "magnets"
+local magnetZone = nil
+local MAGNET_TITLES = { island = "🧲 MAGNET SHOP", sky = "☁️ SKY MAGNETS", frozen = "❄️ FROZEN MAGNETS", volcano = "🌋 VOLCANO MAGNETS", galaxy = "🌌 GALAXY MAGNETS" }
 -- Магазин магнитов строится ОДИН раз (карточки и 3D-превью кэшируются), дальше только обновляются
 -- надписи и цвета. Раньше всё окно со всеми превью пересобиралось при каждом изменении монет —
 -- а монеты, пока стоишь в магазине, меняются постоянно, отсюда и были лаги.
@@ -300,7 +302,7 @@ local function buildMagnetPanel()
 	scroll.Parent = magnetPanel
 	magnetArea = scroll
 	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.fromOffset(112, 168)
+	grid.CellSize = UDim2.fromOffset(140, 196)
 	grid.CellPadding = UDim2.fromOffset(8, 8)
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.Parent = scroll
@@ -312,13 +314,13 @@ local function buildMagnetPanel()
 		corner(card, 14)
 		stroke(card, 3, def.Body)
 		label(card, "#" .. i, UDim2.fromOffset(6, 2), UDim2.fromOffset(30, 16), 12, Color3.fromRGB(200, 205, 220))
-		label(card, def.Name, UDim2.fromOffset(4, 84), UDim2.fromOffset(104, 30), 14)
+		label(card, def.Name, UDim2.fromOffset(4, 110), UDim2.fromOffset(132, 26), 15)
 		local sub = def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull"
 		if def.World and def.World ~= "Meadow Isles" then
 			sub = sub .. " · " .. string.split(def.World, " ")[1]
 		end
-		label(card, sub, UDim2.fromOffset(4, 112), UDim2.fromOffset(104, 16), 11, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
-		local b = button(card, "", UDim2.fromOffset(8, 132), UDim2.fromOffset(96, 30), Color3.fromRGB(80, 80, 90))
+		label(card, sub, UDim2.fromOffset(4, 136), UDim2.fromOffset(132, 16), 12, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
+		local b = button(card, "", UDim2.fromOffset(8, 158), UDim2.fromOffset(124, 30), Color3.fromRGB(80, 80, 90))
 		b.TextSize = 13
 		b.Activated:Connect(function()
 			if i <= (player:GetAttribute("MagnetTier") or 1) + 1 then
@@ -347,8 +349,8 @@ RunService.Heartbeat:Connect(function()
 		end
 		local view = Instance.new("ViewportFrame")
 		view.BackgroundTransparency = 1
-		view.Position = UDim2.fromOffset(6, 6)
-		view.Size = UDim2.fromOffset(100, 78)
+		view.Position = UDim2.fromOffset(6, 8)
+		view.Size = UDim2.fromOffset(128, 100)
 		view.Ambient = Color3.fromRGB(200, 200, 210)
 		view.LightColor = Color3.fromRGB(255, 250, 240)
 		local ok, model = pcall(MagnetVisuals.Build, job.tier)
@@ -391,7 +393,7 @@ end
 
 local lastTier = nil
 local function renderMagnets()
-	title.Text = "🧲 MAGNET SHOP"
+	title.Text = MAGNET_TITLES[magnetZone or ""] or "🧲 MAGNET SHOP"
 	if not magnetPanel then
 		buildMagnetPanel()
 	end
@@ -432,8 +434,8 @@ local function renderMagnets()
 	end
 	if lastTier ~= ownedTier then
 		lastTier = ownedTier
-		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 5)
-		magnetArea.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 176)
+		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 4)
+		magnetArea.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 204)
 	end
 end
 
@@ -478,6 +480,9 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 		return
 	end
 	mode, zoneId = newMode, newMode == "magnets" and "magnets" or newZone
+	if newMode == "magnets" then
+		magnetZone = newZone
+	end
 	local world = workspace:WaitForChild("CoinSpeedWorld")
 	if newMode == "magnets" then
 		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world

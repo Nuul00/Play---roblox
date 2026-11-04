@@ -397,7 +397,7 @@ local displays = {}
 local world = workspace:WaitForChild("CoinSpeedWorld")
 for id, egg in ipairs(Config.Eggs) do
 	task.spawn(function()
-		local zone = egg.World == "neon" and world:WaitForChild("NeonCity") or egg.World == "sky" and world:WaitForChild("SkyIsles") or egg.World == "volcano" and world:WaitForChild("MagmaVolcano") or egg.World == "galaxy" and world:WaitForChild("CosmicGalaxy") or world
+		local zone = egg.World == "neon" and world:WaitForChild("NeonCity") or egg.World == "sky" and world:WaitForChild("SkyIsles") or egg.World == "volcano" and world:WaitForChild("MagmaVolcano") or egg.World == "galaxy" and world:WaitForChild("CosmicGalaxy") or egg.World == "frozen" and world:WaitForChild("FrozenPeaks") or world
 		local stand = zone:WaitForChild("EggStand" .. id, 60)
 		if not stand then
 			return

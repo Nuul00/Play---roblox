@@ -1861,5 +1861,362 @@
         ]
       }
     ]
+  },
+  {
+    "Id": 16,
+    "Name": "Snowflake Egg",
+    "World": "frozen",
+    "Price": 2000000,
+    "X": 2948,
+    "Z": 112,
+    "Color": [
+      200,
+      235,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 130,
+        "Name": "Snow Bunny",
+        "Visual": "FrozenBunny",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 110,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 131,
+        "Name": "Penguin Chick",
+        "Visual": "FrozenPenguin",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 125,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 132,
+        "Name": "Arctic Fox",
+        "Visual": "FrozenFox",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 145,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 133,
+        "Name": "Snowy Owl",
+        "Visual": "FrozenOwl",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 175,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 134,
+        "Name": "Polar Cub",
+        "Visual": "FrozenPolarCub",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 220,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 135,
+        "Name": "Ice Kitten",
+        "Visual": "FrozenKitten",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 285,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 136,
+        "Name": "Frost Fairy",
+        "Visual": "FrozenFairy",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 610,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      },
+      {
+        "Id": 137,
+        "Name": "Snowflake Spirit",
+        "Visual": "FrozenSpirit",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 1500,
+        "Color": [
+          200,
+          235,
+          255
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 17,
+    "Name": "Aurora Egg",
+    "World": "frozen",
+    "Price": 3000000,
+    "X": 3000,
+    "Z": 112,
+    "Color": [
+      110,
+      230,
+      190
+    ],
+    "Pets": [
+      {
+        "Id": 138,
+        "Name": "Aurora Fox",
+        "Visual": "FrozenAuroraFox",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 130,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 139,
+        "Name": "Husky Pup",
+        "Visual": "FrozenHusky",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 150,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 140,
+        "Name": "Seal Pup",
+        "Visual": "FrozenSeal",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 175,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 141,
+        "Name": "Reindeer",
+        "Visual": "FrozenReindeer",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 210,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 142,
+        "Name": "Narwhal",
+        "Visual": "FrozenNarwhal",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 260,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 143,
+        "Name": "Aurora Wolf",
+        "Visual": "FrozenWolf",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 340,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 144,
+        "Name": "Aurora Phoenix",
+        "Visual": "FrozenPhoenix",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 730,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      },
+      {
+        "Id": 145,
+        "Name": "Northern Dragon",
+        "Visual": "FrozenAuroraDragon",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 1800,
+        "Color": [
+          110,
+          230,
+          190
+        ]
+      }
+    ]
+  },
+  {
+    "Id": 18,
+    "Name": "Glacier Egg",
+    "World": "frozen",
+    "Price": 4000000,
+    "X": 3052,
+    "Z": 112,
+    "Color": [
+      90,
+      170,
+      255
+    ],
+    "Pets": [
+      {
+        "Id": 146,
+        "Name": "Yeti",
+        "Visual": "FrozenYeti",
+        "Rarity": "Common",
+        "Chance": 30,
+        "Multiplier": 145,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 147,
+        "Name": "Ice Golem",
+        "Visual": "FrozenGolem",
+        "Rarity": "Common",
+        "Chance": 25,
+        "Multiplier": 170,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 148,
+        "Name": "Frost Tiger",
+        "Visual": "FrozenTiger",
+        "Rarity": "Uncommon",
+        "Chance": 18,
+        "Multiplier": 195,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 149,
+        "Name": "Woolly Mammoth",
+        "Visual": "FrozenMammoth",
+        "Rarity": "Uncommon",
+        "Chance": 12,
+        "Multiplier": 235,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 150,
+        "Name": "Penguin King",
+        "Visual": "FrozenPenguinKing",
+        "Rarity": "Rare",
+        "Chance": 8,
+        "Multiplier": 290,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 151,
+        "Name": "Glacier Griffin",
+        "Visual": "FrozenGriffin",
+        "Rarity": "Epic",
+        "Chance": 5,
+        "Multiplier": 380,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 152,
+        "Name": "Frost Dragon",
+        "Visual": "FrozenDragon",
+        "Rarity": "Legendary",
+        "Chance": 1.9,
+        "Multiplier": 820,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      },
+      {
+        "Id": 153,
+        "Name": "Ice Queen",
+        "Visual": "FrozenQueen",
+        "Rarity": "Secret",
+        "Chance": 0.1,
+        "Multiplier": 2000,
+        "Color": [
+          90,
+          170,
+          255
+        ]
+      }
+    ]
   }
 ]

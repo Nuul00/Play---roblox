@@ -300,6 +300,58 @@ function Frozen.BuildGlobe(parent: Instance)
 	return m
 end
 
+
+-- ===== Ледяной подиум с яйцом (id 16–18) =====
+-- Структура как у яиц других миров: Pedestal/Base, Interact, EggDisplay, SignAnchor и EggReady.
+local function eggStand(parent, id: number, at: Vector3, color: Color3)
+	local stand = Instance.new("Model")
+	stand.Name = "EggStand" .. id
+	stand.Parent = parent
+	local ped = Instance.new("Model")
+	ped.Name = "Pedestal"
+	ped.Parent = stand
+	disc(ped, "Base", 15, 0.5, at + Vector3.new(0, 0.25, 0), SNOW, M.Snow)
+	disc(ped, "Rim", 15.6, 0.3, at + Vector3.new(0, 0.4, 0), ICE, M.Neon, { CanCollide = false })
+	local glow = disc(ped, "Glow", 10, 0.2, at + Vector3.new(0, 0.55, 0), color, M.Neon, { CanCollide = false })
+	local rise = Instance.new("ParticleEmitter")
+	rise.Name = "Rise"
+	rise.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	rise.Rate = 10
+	rise.Lifetime = NumberRange.new(1.5, 2.5)
+	rise.Speed = NumberRange.new(2, 4)
+	rise.EmissionDirection = Enum.NormalId.Right -- ось диска смотрит вверх
+	rise.SpreadAngle = Vector2.new(10, 10)
+	rise.Color = ColorSequence.new(color, rgb(255, 255, 255))
+	rise.LightEmission = 1
+	rise.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0) })
+	rise.Parent = glow
+	for i = 1, 8 do
+		local a = i / 8 * math.pi * 2
+		local pos = at + Vector3.new(math.cos(a) * 8.4, 0, math.sin(a) * 8.4)
+		local h = 2.2 + (i % 2) * 1.6
+		part(ped, "Icicle", Vector3.new(1.1, h, 1.1), CFrame.new(pos + Vector3.new(0, h / 2, 0)) * CFrame.Angles(0, a, 0.12), ICE, M.Glass, { Transparency = 0.2, CanCollide = false })
+	end
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 16
+	light.Brightness = 1.4
+	light.Parent = glow
+	part(stand, "Interact", Vector3.new(14, 7, 14), at + Vector3.new(0, 4, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
+	local egg = Instance.new("Model")
+	egg.Name = "EggDisplay"
+	local noHit = { CanCollide = false }
+	ball(egg, "Bottom", 5, at + Vector3.new(0, 3.2, 0), color, M.SmoothPlastic, noHit)
+	local body = ball(egg, "Body", 4.6, at + Vector3.new(0, 3.9, 0), color, M.SmoothPlastic, noHit)
+	ball(egg, "Top", 3.8, at + Vector3.new(0, 5.3, 0), color, M.SmoothPlastic, noHit)
+	ball(egg, "Tip", 2.6, at + Vector3.new(0, 6.4, 0), color, M.SmoothPlastic, noHit)
+	egg.PrimaryPart = body
+	egg.WorldPivot = CFrame.new((egg:GetBoundingBox()).Position)
+	egg.Parent = stand
+	part(stand, "SignAnchor", Vector3.new(1, 1, 1), at + Vector3.new(0, 13, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	stand:SetAttribute("EggReady", true)
+	return stand
+end
+
 -- ===== Постройка мира =====
 function Frozen.Build(world: Instance)
 	local model = Instance.new("Model")
@@ -368,7 +420,7 @@ function Frozen.Build(world: Instance)
 	decor.Name = "Decor"
 	decor.Parent = model
 	-- Занятые места: центр, магазин и площадка перед ним, проход к магазину, озеро, иглу, вход.
-	local placedSpots = { { 0, 0, 34 }, { -85, 40, 26 }, { -85, 66, 20 }, { -45, 45, 14 }, { 75, 20, 42 }, { -70, -55, 16 }, { 0, 110, 14 } }
+	local placedSpots = { { 0, 0, 34 }, { -85, 40, 26 }, { -85, 66, 20 }, { -45, 45, 14 }, { 75, 20, 42 }, { -70, -55, 16 }, { 0, 110, 14 }, { -85, 100, 22 }, { -45, 100, 12 }, { 100, 110, 22 } }
 	local function free(x, z, r)
 		if (Vector2.new(x, z)).Magnitude > 150 then
 			return false
@@ -383,6 +435,22 @@ function Frozen.Build(world: Instance)
 		end
 		return true
 	end
+	-- Ледяной сад яиц за центральным кристаллом: площадка, дорожка от площади и три подиума.
+	disc(paths, "EggGarden", 150, 0.34, L(0, 0.17, -78), ICE:Lerp(SNOW, 0.55), M.Ice)
+	disc(paths, "EggGardenRing", 152, 0.22, L(0, 0.11, -78), rgb(150, 220, 255), M.Neon, { CanCollide = false })
+	part(paths, "PathEggs", Vector3.new(14, 0.3, 40), L(0, 0.15, -35), ICE, M.Ice, { Transparency = 0.05 })
+	for i, egg in ipairs({ { 16, rgb(200, 235, 255) }, { 17, rgb(110, 230, 190) }, { 18, rgb(90, 170, 255) } }) do
+		local x = (i - 2) * 52
+		eggStand(model, egg[1], L(x, 0.34, -80), egg[2])
+		table.insert(placedSpots, { x, -80, 16 })
+	end
+	table.insert(placedSpots, { 0, -35, 9 })
+	-- ряд «замороженных» аватаров за садом яиц (FrozenStatues.server.luau)
+	for k = -3, 3 do
+		table.insert(placedSpots, { k * 22, -118, 11 })
+	end
+	disc(paths, "StatueRow", 30, 0.3, L(0, 0.15, -118), ICE:Lerp(SNOW, 0.4), M.Ice)
+	part(paths, "StatueWalk", Vector3.new(160, 0.3, 20), L(0, 0.15, -118), ICE:Lerp(SNOW, 0.55), M.Ice, { Transparency = 0.05 })
 	local trees = 0
 	for _ = 1, 400 do
 		if trees >= 34 then

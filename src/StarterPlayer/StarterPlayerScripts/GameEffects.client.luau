@@ -120,7 +120,8 @@ rayParams.IgnoreWater = true
 local coins = {}
 local world = Workspace:WaitForChild("CoinSpeedWorld")
 local skyWorld = world:WaitForChild("SkyIsles", 30)
-for _, zone in ipairs({ world, world:WaitForChild("NeonCity"), skyWorld }) do
+-- Frozen Peaks свои монеты-модели оживляет сам (TripoCoins), здесь — Volcano и Galaxy.
+for _, zone in ipairs({ world, world:WaitForChild("NeonCity"), skyWorld, world:WaitForChild("MagmaVolcano", 30), world:WaitForChild("CosmicGalaxy", 30) }) do
 	for _, coin in ipairs(zone:GetChildren()) do
 		if coin:IsA("BasePart") and coin.Name:match("^Coin_%d+$") then
 			table.insert(coins, { part = coin, base = coin.CFrame, phase = #coins * 0.7 })

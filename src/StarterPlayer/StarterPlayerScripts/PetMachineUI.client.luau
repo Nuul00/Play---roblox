@@ -280,8 +280,190 @@ player.AttributeChanged:Connect(function(name)
 	end
 end)
 
--- Успешное превращение: вспышка ядра и купола у машины.
-fuse.OnClientEvent:Connect(function(tier)
+-- ===== Показ превращения в 3D =====
+-- Нужные питомцы вылетают от игрока и залетают в машину, кружатся внутри и сжимаются, машина
+-- трясётся и светится цветом ступени; вспышка, ударная волна — и новый питомец поднимается
+-- из машины, светясь, с подписью, и улетает к игроку.
+local PetVisualsFS = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local GameConfigFS = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local function fsPet(code: number, color: Color3?)
+	local ok, m = pcall(PetVisualsFS.BuildCode, code)
+	if not ok or not m then
+		return nil
+	end
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false
+		elseif d:IsA("Script") or d:IsA("LocalScript") then
+			d:Destroy()
+		end
+	end
+	if color then
+		local hl = Instance.new("Highlight")
+		hl.FillColor = color
+		hl.FillTransparency = 0.8
+		hl.OutlineColor = Color3.new(1, 1, 1)
+		hl.OutlineTransparency = 0.2
+		hl.Parent = m
+	end
+	m.Parent = workspace
+	return m
+end
+local function fuseShow(tier: number, id: number?)
+	local machine = workspace:FindFirstChild("PetMachines") and workspace.PetMachines:FindFirstChild("PetMachine" .. tostring(tier))
+	local body = machine and (machine:FindFirstChild("TripoModel") or machine)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not (body and root and id) then
+		return
+	end
+	local def = ShopConfig.Variants[tier]
+	local color = def.Color
+	local prevColor = tier > 1 and ShopConfig.Variants[tier - 1].Color or nil
+	local cf, size = body:GetBoundingBox()
+	local chamber = cf.Position + Vector3.new(0, size.Y * 0.12, 0)
+	local need = def.Need or 5
+	-- 1) питомцы летят в машину
+	local pets = {}
+	for i = 1, need do
+		local m = fsPet(ShopConfig.PetCode(id, tier - 1), prevColor)
+		if m then
+			local a = i / need * math.pi * 2
+			local start = root.Position + Vector3.new(math.cos(a) * 3, 3.5, math.sin(a) * 3)
+			table.insert(pets, { m = m, start = start, a = a, scale = m:GetScale() })
+		end
+	end
+	local glow = Instance.new("Part")
+	glow.Anchored, glow.CanCollide, glow.CanQuery, glow.CanTouch, glow.CastShadow = true, false, false, false, false
+	glow.Transparency = 1
+	glow.Size = Vector3.new(1, 1, 1)
+	glow.Position = chamber
+	glow.Parent = workspace
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 24
+	light.Brightness = 0
+	light.Parent = glow
+	local swirl = Instance.new("ParticleEmitter")
+	swirl.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	swirl.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+	swirl.LightEmission = 1
+	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+	swirl.Lifetime = NumberRange.new(0.4, 0.8)
+	swirl.Speed = NumberRange.new(-6, -3) -- к центру
+	swirl.Shape = Enum.ParticleEmitterShape.Sphere
+	swirl.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+	swirl.Rate = 0
+	swirl.Parent = glow
+	local base = body:GetPivot()
+	local t0 = os.clock()
+	local FLY, SPIN = 0.9, 1.3
+	while true do
+		local t = os.clock() - t0
+		if t > FLY + SPIN then
+			break
+		end
+		for i, p in ipairs(pets) do
+			if t < FLY then
+				local k = t / FLY
+				local arc = Vector3.new(0, math.sin(k * math.pi) * 6, 0)
+				p.m:PivotTo(CFrame.new(p.start:Lerp(chamber, k * k) + arc) * CFrame.Angles(0, k * 8, 0))
+			else
+				local k = (t - FLY) / SPIN
+				local r = 2.6 * (1 - k)
+				local a = p.a + k * 18
+				p.m:PivotTo(CFrame.new(chamber + Vector3.new(math.cos(a) * r, math.sin(k * 12 + i) * 0.5, math.sin(a) * r)) * CFrame.Angles(0, a, 0))
+				p.m:ScaleTo(p.scale * math.max(0.05, 0.7 * (1 - k)))
+			end
+		end
+		if t > FLY then
+			local k = (t - FLY) / SPIN
+			swirl.Rate = 80
+			light.Brightness = 1 + k * 6
+			-- машина дрожит (только у этого игрока)
+			body:PivotTo(base * CFrame.new(math.sin(t * 60) * 0.12 * k, 0, math.cos(t * 53) * 0.12 * k))
+		end
+		task.wait()
+	end
+	body:PivotTo(base)
+	for _, p in ipairs(pets) do
+		p.m:Destroy()
+	end
+	swirl.Rate = 0
+	-- 2) вспышка и ударная волна
+	local flash = Instance.new("Part")
+	flash.Shape = Enum.PartType.Ball
+	flash.Material = Enum.Material.Neon
+	flash.Color = color
+	flash.Anchored, flash.CanCollide, flash.CanQuery, flash.CanTouch, flash.CastShadow = true, false, false, false, false
+	flash.Size = Vector3.new(2, 2, 2)
+	flash.Position = chamber
+	flash.Parent = workspace
+	TweenService:Create(flash, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(16, 16, 16), Transparency = 1 }):Play()
+	local ring = Instance.new("Part")
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Material = Enum.Material.Neon
+	ring.Color = color
+	ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
+	ring.Size = Vector3.new(0.2, 2, 2)
+	ring.CFrame = CFrame.new(cf.Position.X, cf.Position.Y - size.Y / 2 + 0.3, cf.Position.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	ring.Parent = workspace
+	TweenService:Create(ring, TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(0.2, 30, 30), Transparency = 1 }):Play()
+	TweenService:Create(light, TweenInfo.new(0.8), { Brightness = 0 }):Play()
+	-- 3) новый питомец поднимается и улетает к игроку
+	local result = fsPet(ShopConfig.PetCode(id, tier), color)
+	if result then
+		local sc = result:GetScale()
+		local gui = Instance.new("BillboardGui")
+		gui.Size = UDim2.fromOffset(260, 50)
+		gui.StudsOffset = Vector3.new(0, 4, 0)
+		gui.AlwaysOnTop = true
+		gui.LightInfluence = 0
+		local lbl = Instance.new("TextLabel")
+		lbl.BackgroundTransparency = 1
+		lbl.Size = UDim2.fromScale(1, 1)
+		lbl.Font = Enum.Font.FredokaOne
+		lbl.TextScaled = true
+		lbl.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.3)
+		local pet = GameConfigFS.Pets[id]
+		lbl.Text = (def.Icon or "✨") .. " " .. string.upper(def.Name) .. " " .. (pet and pet.Name or "") .. "!"
+		local st = Instance.new("UIStroke")
+		st.Thickness = 3
+		st.Color = Color3.fromRGB(30, 20, 50)
+		st.Parent = lbl
+		lbl.Parent = gui
+		gui.Adornee = result.PrimaryPart or result:FindFirstChildWhichIsA("BasePart", true)
+		gui.Parent = result
+		local top = chamber + Vector3.new(0, size.Y * 0.55 + 3, 0)
+		local t1 = os.clock()
+		while os.clock() - t1 < 1.6 do
+			local k = (os.clock() - t1) / 1.6
+			local pos = k < 0.6 and chamber:Lerp(top, math.sin(k / 0.6 * math.pi / 2)) or top
+			result:PivotTo(CFrame.new(pos + Vector3.new(0, math.sin(k * 10) * 0.2, 0)) * CFrame.Angles(0, k * math.pi * 4, 0))
+			result:ScaleTo(sc * math.min(1.3, 0.3 + k * 1.6))
+			task.wait()
+		end
+		local r2 = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local from = result:GetPivot().Position
+		local t2 = os.clock()
+		while os.clock() - t2 < 0.6 do
+			local k = (os.clock() - t2) / 0.6
+			local target = r2 and r2.Position + Vector3.new(0, 2, 0) or from
+			result:PivotTo(CFrame.new(from:Lerp(target, k * k)) * CFrame.Angles(0, k * 10, 0))
+			result:ScaleTo(sc * math.max(0.05, 1.3 * (1 - k)))
+			task.wait()
+		end
+		result:Destroy()
+	end
+	task.delay(1, function()
+		glow:Destroy()
+		flash:Destroy()
+		ring:Destroy()
+	end)
+end
+
+-- Успешное превращение: 3D-показ и вспышка ядра и купола у машины.
+fuse.OnClientEvent:Connect(function(tier, id)
+	task.spawn(fuseShow, tier, id)
 	local machine = workspace:FindFirstChild("PetMachines") and workspace.PetMachines:FindFirstChild("PetMachine" .. tostring(tier))
 	local core = machine and machine:FindFirstChild("Core")
 	if not core then

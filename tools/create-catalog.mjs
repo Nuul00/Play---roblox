@@ -97,10 +97,16 @@ const lateSeries=[
   ['Nebula Egg',2000000000,[220,110,230],[1000,1150,1350,1600,2000,2600,5500,14000],[['Nebula Kitty','Kitty'],['Planet Turtle','Turtle'],['Galaxy Owl','Owl'],['Cosmic Jelly','Jelly'],['Saturn Bear','Bear'],['Meteor Wolf','Wolf'],['Nebula Dragon','Dragon'],['Starlight Phoenix','Phoenix']]],
   ['Supernova Egg',10000000000,[255,215,110],[1600,1850,2150,2550,3200,4200,9000,22000],[['Black Hole Cat','Cat'],['Quasar Lion','Lion'],['Solar Pegasus','Pegasus'],['Cosmic Kraken','Kraken'],['Star Guardian','Guardian'],['Galaxy Unicorn','Unicorn'],['Supernova Dragon','Dragon'],['Universe Spirit','Spirit']]],
  ]],
+ // Яйца Frozen Peaks (добавлены позже, поэтому id после Galaxy): 16–18, питомцы 130–153.
+ ['frozen',3000,16,130,[
+  ['Snowflake Egg',2000000,[200,235,255],[110,125,145,175,220,285,610,1500],[['Snow Bunny','Bunny'],['Penguin Chick','Penguin'],['Arctic Fox','Fox'],['Snowy Owl','Owl'],['Polar Cub','PolarCub'],['Ice Kitten','Kitten'],['Frost Fairy','Fairy'],['Snowflake Spirit','Spirit']]],
+  ['Aurora Egg',3000000,[110,230,190],[130,150,175,210,260,340,730,1800],[['Aurora Fox','AuroraFox'],['Husky Pup','Husky'],['Seal Pup','Seal'],['Reindeer','Reindeer'],['Narwhal','Narwhal'],['Aurora Wolf','Wolf'],['Aurora Phoenix','Phoenix'],['Northern Dragon','AuroraDragon']]],
+  ['Glacier Egg',4000000,[90,170,255],[145,170,195,235,290,380,820,2000],[['Yeti','Yeti'],['Ice Golem','Golem'],['Frost Tiger','Tiger'],['Woolly Mammoth','Mammoth'],['Penguin King','PenguinKing'],['Glacier Griffin','Griffin'],['Frost Dragon','Dragon'],['Ice Queen','Queen']]],
+ ]],
 ];
 for(const [world,cx,firstEgg,firstPet,series] of lateSeries){
  series.forEach(([Name,Price,Color,mults,pets],i)=>{
-  const theme=world==='volcano'?'Volcano':'Galaxy';
+  const theme=world==='volcano'?'Volcano':world==='galaxy'?'Galaxy':'Frozen';
   eggs.push({Id:firstEgg+i,Name,World:world,Price,X:cx-52+i*52,Z:112,Color,Pets:pets.map(([pn,kind],j)=>({Id:firstPet+i*8+j,Name:pn,Visual:theme+kind,Rarity:skyRarity[j],Chance:skyOdds[j],Multiplier:mults[j],Color}))});
  });
 }

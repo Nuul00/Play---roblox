@@ -156,6 +156,10 @@ function PlayerSystems.CoinMultiplier(p): number
 	if PlayerSystems.EventActive("Golden") then
 		m *= 2
 	end
+	-- Мини-ивент Frozen Peaks «Метель»: x2 монет тем, кто в этот момент во Frozen.
+	if (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() and p:GetAttribute("CurrentWorld") == "Frozen Peaks" then
+		m *= 2
+	end
 	if PlayerSystems.PotionActive(p, "Coins") then
 		m *= 2
 	end

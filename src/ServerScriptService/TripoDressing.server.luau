@@ -84,6 +84,7 @@ end
 -- Старый Pedestal остаётся невидимым (по нему всё так же ходят), сверху — модель Tripo,
 -- вписанная по ширине и не выше 4–5 студов. Яйцо ставим на её верх.
 local PEDESTAL = { "PedestalMeadow", "PedestalMeadow", "PedestalMeadow", "PedestalNeon", "PedestalNeon", "PedestalNeon", "PedestalSky", "PedestalSky", "PedestalSky" }
+PEDESTAL[16], PEDESTAL[17], PEDESTAL[18] = "PedestalFrozen", "PedestalFrozen", "PedestalFrozen"
 local function dressPedestal(stand: Instance, id: number)
 	local template = props and props:FindFirstChild(PEDESTAL[id] or "")
 	local ped = stand:FindFirstChild("Pedestal")
@@ -310,8 +311,11 @@ local function swapAll(root: Instance, oldName: string, propName: string, scale:
 end
 
 task.wait(2)
-for id = 1, 9 do
-	local holder = (id <= 3 and world) or (id <= 6 and city) or world:WaitForChild("SkyIsles", 30)
+local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local HOLDER = { island = "", neon = "NeonCity", sky = "SkyIsles", volcano = "MagmaVolcano", galaxy = "CosmicGalaxy", frozen = "FrozenPeaks" }
+for id = 1, #Config.Eggs do
+	local hname = HOLDER[Config.Eggs[id].World] or ""
+	local holder = hname == "" and world or world:WaitForChild(hname, 30)
 	local stand = holder and holder:FindFirstChild("EggStand" .. id, true)
 	if stand then
 		local ok, err = pcall(dressEgg, stand, id)

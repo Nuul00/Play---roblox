@@ -315,7 +315,7 @@ end
 
 for id in ipairs(Config.Eggs) do
 	local w = Config.Eggs[id].World
-	local zone = w == "neon" and city or w == "sky" and world:WaitForChild("SkyIsles", 60) or w == "volcano" and world:WaitForChild("MagmaVolcano", 60) or w == "galaxy" and world:WaitForChild("CosmicGalaxy", 60) or world
+	local zone = w == "neon" and city or w == "sky" and world:WaitForChild("SkyIsles", 60) or w == "volcano" and world:WaitForChild("MagmaVolcano", 60) or w == "galaxy" and world:WaitForChild("CosmicGalaxy", 60) or w == "frozen" and world:WaitForChild("FrozenPeaks", 60) or world
 	if not zone then
 		continue
 	end
