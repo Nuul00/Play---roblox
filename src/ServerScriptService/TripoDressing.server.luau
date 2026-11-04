@@ -195,6 +195,57 @@ local function dressMachine(tier: number)
 	hide(model, { Body = true, Sign = true })
 	body.Transparency = 1
 	local tm = fit(template, height * 1.05, CFrame.lookAt(center, center + look.Unit), model, "TripoModel")
+	-- Чтобы машину было видно издалека: контур, свет спереди и светящаяся метка на земле,
+	-- куда подходить (кольцо цвета машины с искрами).
+	local color = ({ Color3.fromRGB(255, 200, 50), Color3.fromRGB(120, 230, 255), Color3.fromRGB(255, 120, 220) })[tier]
+	local hl = Instance.new("Highlight")
+	hl.FillColor = color
+	hl.FillTransparency = 0.88
+	hl.OutlineColor = color:Lerp(Color3.new(1, 1, 1), 0.3)
+	hl.OutlineTransparency = 0.25
+	hl.DepthMode = Enum.HighlightDepthMode.Occluded
+	hl.Parent = tm
+	local front = center + look.Unit * 8
+	local lamp = Instance.new("Part")
+	lamp.Name = "MachineLight"
+	lamp.Anchored, lamp.CanCollide, lamp.CanQuery, lamp.CanTouch, lamp.CastShadow = true, false, false, false, false
+	lamp.Transparency = 1
+	lamp.Size = Vector3.new(1, 1, 1)
+	lamp.Position = front + Vector3.new(0, 7, 0)
+	lamp.Parent = model
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 20
+	light.Brightness = 1.6
+	light.Parent = lamp
+	local ring = Instance.new("Part")
+	ring.Name = "MachineMarker"
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
+	ring.Material = Enum.Material.Neon
+	ring.Color = color
+	ring.Transparency = 0.25
+	ring.Size = Vector3.new(0.2, 11, 11)
+	ring.CFrame = CFrame.new(front + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	ring.Parent = model
+	local inner = ring:Clone()
+	inner.Name = "MachineMarkerInner"
+	inner.Material = Enum.Material.SmoothPlastic
+	inner.Color = color:Lerp(Color3.new(0, 0, 0), 0.55)
+	inner.Transparency = 0.1
+	inner.Size = Vector3.new(0.24, 9.4, 9.4)
+	inner.Parent = model
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Color = ColorSequence.new(color, Color3.new(1, 1, 1))
+	sparks.LightEmission = 0.6
+	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+	sparks.Lifetime = NumberRange.new(1.2, 2)
+	sparks.Speed = NumberRange.new(3, 6)
+	sparks.EmissionDirection = Enum.NormalId.Right -- ось цилиндра смотрит вверх
+	sparks.SpreadAngle = Vector2.new(12, 12)
+	sparks.Rate = 14
+	sparks.Parent = ring
 	-- табличку — над верхом новой модели
 	local sign = model:FindFirstChild("Sign")
 	if sign and sign:IsA("BasePart") then

@@ -255,13 +255,14 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind == "magnettool" or kind == "potion" then
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
-  local stats, inSky
-  for _, candidate in ipairs({{world, 0, false}, {sky, 6, true}}) do
-   local shop = candidate[1]:FindFirstChild("MagnetShop")
+  -- Какой магазин магнитов рядом: от него зависит, какие магниты можно купить (def.World).
+  local stats, shopWorld
+  for _, candidate in ipairs({{world, 0, "Meadow Isles"}, {sky, 6, "Sky Isles"}, {frozen, 10, "Frozen Peaks"}}) do
+   local shop = candidate[1] and candidate[1]:FindFirstChild("MagnetShop")
    local zonePart = shop and shop:FindFirstChild("ShopZone")
    if zonePart then
     stats = interact(p, zonePart, nil, candidate[2])
-    if stats then inSky = candidate[3]; break end
+    if stats then shopWorld = candidate[3]; break end
    end
   end
   if not stats then return end
@@ -278,7 +279,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
     end
     return
    end
-   if def.SkyOnly and not inSky then notify(p, "This magnet is sold in Sky Isles"); return end
+   if def.World and def.World ~= shopWorld then notify(p, "This magnet is sold in " .. def.World); return end
    if eggId ~= (p:GetAttribute("MagnetTier") or 1) + 1 then notify(p, "Buy the previous magnet first!"); return end
    cost, name = def.Price, def.Name
   else
@@ -407,8 +408,11 @@ do
  local skyMagnets = sky:FindFirstChild("MagnetShop")
  local skyZone = skyMagnets and skyMagnets:FindFirstChild("ShopZone")
  if skyZone then shopZones.skymagnets = skyZone end
+ local frozenMagnets = frozen and frozen:FindFirstChild("MagnetShop")
+ local frozenZone = frozenMagnets and frozenMagnets:FindFirstChild("ShopZone")
+ if frozenZone then shopZones.frozenmagnets = frozenZone end
 end
-local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10}
+local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10, frozenmagnets = 10}
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
@@ -482,7 +486,7 @@ task.spawn(function()
      local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
      if inside and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
-      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") else openMenu:FireClient(p, "upgrades", id) end
+      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") else openMenu:FireClient(p, "upgrades", id) end
      end
      insideZone[key] = inside or nil
     end

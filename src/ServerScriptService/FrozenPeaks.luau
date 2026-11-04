@@ -175,9 +175,9 @@ local function mountain(parent, at: Vector3, w: number, h: number)
 end
 
 -- ===== Ледяной магазин =====
-local function shop(parent, at: Vector3)
+local function shop(parent, at: Vector3, name: string?, title: string?)
 	local m = Instance.new("Model")
-	m.Name = "UpgradeShop"
+	m.Name = name or "UpgradeShop"
 	disc(m, "Plinth", 22, 0.6, at + Vector3.new(0, 0.3, 2), SNOW, M.Snow)
 	disc(m, "PlinthGlow", 22.8, 0.3, at + Vector3.new(0, 0.2, 2), ICE, M.Neon, { CanCollide = false })
 	part(m, "Counter", Vector3.new(14, 4, 3), at + Vector3.new(0, 2.6, -2), ICE, M.Ice, { Transparency = 0.15 })
@@ -194,7 +194,7 @@ local function shop(parent, at: Vector3)
 		local len = 1.5 + (i % 3) * 0.8
 		part(m, "Icicle", Vector3.new(0.6, len, 0.6), CFrame.new(at + Vector3.new(-8 + (i - 1) * 2, 13.6 - len / 2, 3.6)) * CFrame.Angles(0, math.pi / 4, 0), ICE, M.Glass, { CanCollide = false, Transparency = 0.2 })
 	end
-	sign(m, "FROZEN SHOP", Vector3.new(15, 3.6, 0.5), CFrame.new(at + Vector3.new(0, 18.5, -2.6)) * CFrame.Angles(0, math.pi, 0), rgb(255, 255, 255), rgb(60, 130, 220))
+	sign(m, title or "FROZEN SHOP", Vector3.new(15, 3.6, 0.5), CFrame.new(at + Vector3.new(0, 18.5, -2.6)) * CFrame.Angles(0, math.pi, 0), rgb(255, 255, 255), rgb(60, 130, 220))
 	local zone = disc(m, "ShopZone", 24, 0.3, at + Vector3.new(0, 0.7, 10), rgb(150, 220, 255), M.SmoothPlastic, { Transparency = 0.55, CanCollide = false })
 	zone.Size = Vector3.new(0.3, 24, 24)
 	part(m, "VendorAnchor", Vector3.new(1, 1, 1), at + Vector3.new(0, 0.6, -5.5), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
@@ -340,6 +340,9 @@ function Frozen.Build(world: Instance)
 
 	-- Магазин слева, озеро справа, иглу и снеговики.
 	shop(model, L(-85, 0.3, 40))
+	-- Магазин магнитов Frozen Peaks (магниты 31–40 продаются только здесь).
+	shop(model, L(-85, 0.3, 100), "MagnetShop", "FROZEN MAGNETS")
+	part(paths, "PathMagnets", Vector3.new(80, 0.3, 14), L(-45, 0.16, 100), ICE, M.Ice, { Transparency = 0.05 })
 	local lake = disc(model, "FrozenLake", 70, 0.4, L(75, 0.2, 20), rgb(150, 210, 245), M.Ice, { Transparency = 0.15, Reflectance = 0.25 })
 	lake.Name = "FrozenLake"
 	disc(model, "LakeEdge", 74, 0.25, L(75, 0.1, 20), SNOW, M.Snow)

@@ -239,6 +239,21 @@ local function buildPotions()
 end
 
 -- ===== Достижения =====
+local function short(n: number): string
+	if n >= 1e15 then
+		return string.format("%.3gQa", n / 1e15)
+	elseif n >= 1e12 then
+		return string.format("%.3gT", n / 1e12)
+	elseif n >= 1e9 then
+		return string.format("%.3gB", n / 1e9)
+	elseif n >= 1e6 then
+		return string.format("%.3gM", n / 1e6)
+	elseif n >= 1e4 then
+		return string.format("%.3gK", n / 1e3)
+	end
+	return tostring(math.floor(n))
+end
+
 local function buildBadges()
 	local unlocked = 0
 	for _, b in ipairs(ShopConfig.Badges) do
@@ -248,14 +263,32 @@ local function buildBadges()
 	end
 	local header = label(body, string.format("Unlocked %d / %d   ·   Coin bonus x%.3f", unlocked, #ShopConfig.Badges, ShopConfig.BadgeBonus ^ unlocked), UDim2.fromOffset(0, 0), UDim2.fromOffset(748, 34), 19)
 	header.TextXAlignment = Enum.TextXAlignment.Left
+	-- Достижений много (цепочки с уровнями) — прокручиваемый список по две в ряд.
+	local list = Instance.new("ScrollingFrame")
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.Position = UDim2.fromOffset(0, 44)
+	list.Size = UDim2.new(1, 0, 1, -44)
+	list.ScrollBarThickness = 8
+	list.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
+	list.ScrollingDirection = Enum.ScrollingDirection.Y
+	list.CanvasSize = UDim2.fromOffset(0, math.ceil(#ShopConfig.Badges / 2) * 118)
+	list.Parent = body
+	-- сразу прокручиваем к первому неоткрытому
+	local firstOpen
+	for i, b in ipairs(ShopConfig.Badges) do
+		if not player:GetAttribute("Badge" .. b.Id) then
+			firstOpen = firstOpen or i
+		end
+	end
 	for i, b in ipairs(ShopConfig.Badges) do
 		local done = player:GetAttribute("Badge" .. b.Id) == true
 		local value = math.min(player:GetAttribute(b.Stat) or 0, b.Goal)
 		local row = Instance.new("Frame")
-		row.Position = UDim2.fromOffset(((i - 1) % 2) * 378, 44 + math.floor((i - 1) / 2) * 118)
-		row.Size = UDim2.fromOffset(368, 108)
+		row.Position = UDim2.fromOffset(((i - 1) % 2) * 378, math.floor((i - 1) / 2) * 118)
+		row.Size = UDim2.fromOffset(362, 108)
 		row.BackgroundColor3 = done and Color3.fromRGB(70, 110, 70) or Color3.fromRGB(58, 66, 92)
-		row.Parent = body
+		row.Parent = list
 		corner(row, 14)
 		stroke(row, 3, done and Color3.fromRGB(255, 210, 80) or dark)
 		local medal = Instance.new("Frame")
@@ -268,7 +301,7 @@ local function buildBadges()
 		label(medal, b.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 38)
 		local n = label(row, b.Name .. (done and "  ✔" or ""), UDim2.fromOffset(100, 8), UDim2.fromOffset(260, 28), 20)
 		n.TextXAlignment = Enum.TextXAlignment.Left
-		local d = label(row, b.Desc .. " · x1.05 coins", UDim2.fromOffset(100, 36), UDim2.fromOffset(260, 22), 14, Color3.fromRGB(210, 215, 230), Enum.Font.GothamMedium)
+		local d = label(row, b.Desc .. string.format(" · x%g coins", ShopConfig.BadgeBonus), UDim2.fromOffset(100, 36), UDim2.fromOffset(260, 22), 14, Color3.fromRGB(210, 215, 230), Enum.Font.GothamMedium)
 		d.TextXAlignment = Enum.TextXAlignment.Left
 		local barBack = Instance.new("Frame")
 		barBack.Position = UDim2.fromOffset(100, 68)
@@ -281,7 +314,10 @@ local function buildBadges()
 		bar.BackgroundColor3 = done and Color3.fromRGB(255, 210, 80) or Color3.fromRGB(90, 200, 120)
 		bar.Parent = barBack
 		corner(bar, 10)
-		label(barBack, string.format("%d / %d", math.floor(value), b.Goal), UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 13)
+		label(barBack, string.format("%s / %s", short(math.floor(value)), short(b.Goal)), UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 13)
+	end
+	if firstOpen then
+		list.CanvasPosition = Vector2.new(0, math.max(math.floor((firstOpen - 1) / 2) - 1, 0) * 118)
 	end
 end
 

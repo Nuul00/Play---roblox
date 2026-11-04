@@ -138,7 +138,13 @@ local function juicyIcon(parent, icon, color, ringColor, size, pos)
 end
 
 local function fmt(n)
-	if n >= 1e6 then
+	if n >= 1e15 then
+		return string.format("%.1fQa", n / 1e15)
+	elseif n >= 1e12 then
+		return string.format("%.1fT", n / 1e12)
+	elseif n >= 1e9 then
+		return string.format("%.1fB", n / 1e9)
+	elseif n >= 1e6 then
 		return string.format("%.1fM", n / 1e6)
 	elseif n >= 1e3 then
 		return string.format("%.1fK", n / 1e3):gsub("%.0K", "K")
@@ -260,99 +266,190 @@ local function renderUpgrades()
 end
 
 local magnetTab = "magnets"
-local function renderMagnets()
-	title.Text = "🧲 MAGNET SHOP"
+-- Магазин магнитов строится ОДИН раз (карточки и 3D-превью кэшируются), дальше только обновляются
+-- надписи и цвета. Раньше всё окно со всеми превью пересобиралось при каждом изменении монет —
+-- а монеты, пока стоишь в магазине, меняются постоянно, отсюда и были лаги.
+local magnetPanel, magnetArea, potionArea, tabButtons, magnetCards = nil, nil, nil, {}, {}
+local buildQueue = {}
+local function buildMagnetPanel()
+	magnetPanel = Instance.new("Frame")
+	magnetPanel.Name = "MagnetPanel"
+	magnetPanel.BackgroundTransparency = 1
+	magnetPanel.Size = UDim2.fromOffset(612, 360)
+	magnetPanel.Parent = body
 	local tabs = { { "magnets", "MAGNETS" }, { "potions", "POTIONS" } }
 	for i, t in ipairs(tabs) do
-		local b = button(body, t[2], UDim2.fromOffset((i - 1) * 140, 0), UDim2.fromOffset(132, 34), t[1] == magnetTab and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(70, 80, 110))
+		local b = button(magnetPanel, t[2], UDim2.fromOffset((i - 1) * 140, 0), UDim2.fromOffset(132, 34), Color3.fromRGB(70, 80, 110))
 		b.TextSize = 16
 		b.Activated:Connect(function()
 			magnetTab = t[1]
 			window:SetAttribute("Dirty", true)
 		end)
+		tabButtons[t[1]] = b
 	end
-	local area = Instance.new("Frame")
-	area.BackgroundTransparency = 1
-	area.Position = UDim2.fromOffset(0, 44)
-	area.Size = UDim2.fromOffset(612, 316)
-	area.Parent = body
-	if magnetTab == "magnets" then
-		local ownedTier = player:GetAttribute("MagnetTier") or 1
-		local equipped = player:GetAttribute("MagnetEquipped") or 1
-		-- 20 магнитов: прокручиваемая сетка по 5 в ряд.
-		local scroll = Instance.new("ScrollingFrame")
-		scroll.BackgroundTransparency = 1
-		scroll.BorderSizePixel = 0
-		scroll.Size = UDim2.fromScale(1, 1)
-		scroll.ScrollBarThickness = 8
-		scroll.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
-		scroll.ScrollingDirection = Enum.ScrollingDirection.Y
-		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		scroll.CanvasSize = UDim2.new()
-		scroll.Parent = area
-		local grid = Instance.new("UIGridLayout")
-		grid.CellSize = UDim2.fromOffset(112, 168)
-		grid.CellPadding = UDim2.fromOffset(8, 8)
-		grid.SortOrder = Enum.SortOrder.LayoutOrder
-		grid.Parent = scroll
-		for i, def in ipairs(ShopConfig.Magnets) do
-			local card = Instance.new("Frame")
-			card.LayoutOrder = i
-			card.BackgroundColor3 = (i == equipped and not player:GetAttribute("MagnetOff")) and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
-			card.Parent = scroll
-			corner(card, 14)
-			stroke(card, 3, def.Body)
-			label(card, "#" .. i, UDim2.fromOffset(6, 2), UDim2.fromOffset(30, 16), 12, Color3.fromRGB(200, 205, 220))
-			magnetViewport(card, i, UDim2.fromOffset(6, 6), UDim2.fromOffset(100, 78))
-			label(card, def.Name, UDim2.fromOffset(4, 84), UDim2.fromOffset(104, 30), 14)
-			label(card, def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull", UDim2.fromOffset(4, 112), UDim2.fromOffset(104, 16), 12, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
-			local text, color
-			if i == equipped and not player:GetAttribute("MagnetOff") then
-				text, color = "TAKE OFF", Color3.fromRGB(215, 120, 60)
-			elseif i <= ownedTier then
-				text, color = "EQUIP", Color3.fromRGB(70, 140, 220)
-			elseif i == ownedTier + 1 then
-				text, color = "💰 " .. fmt(def.Price), coins.Value >= def.Price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)
-			else
-				text, color = "🔒 LOCKED", Color3.fromRGB(80, 80, 90)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.Position = UDim2.fromOffset(0, 44)
+	scroll.Size = UDim2.fromOffset(612, 316)
+	scroll.ScrollBarThickness = 8
+	scroll.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
+	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
+	scroll.Parent = magnetPanel
+	magnetArea = scroll
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.fromOffset(112, 168)
+	grid.CellPadding = UDim2.fromOffset(8, 8)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = scroll
+	for i, def in ipairs(ShopConfig.Magnets) do
+		local card = Instance.new("Frame")
+		card.LayoutOrder = i
+		card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
+		card.Parent = scroll
+		corner(card, 14)
+		stroke(card, 3, def.Body)
+		label(card, "#" .. i, UDim2.fromOffset(6, 2), UDim2.fromOffset(30, 16), 12, Color3.fromRGB(200, 205, 220))
+		label(card, def.Name, UDim2.fromOffset(4, 84), UDim2.fromOffset(104, 30), 14)
+		local sub = def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull"
+		if def.World and def.World ~= "Meadow Isles" then
+			sub = sub .. " · " .. string.split(def.World, " ")[1]
+		end
+		label(card, sub, UDim2.fromOffset(4, 112), UDim2.fromOffset(104, 16), 11, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
+		local b = button(card, "", UDim2.fromOffset(8, 132), UDim2.fromOffset(96, 30), Color3.fromRGB(80, 80, 90))
+		b.TextSize = 13
+		b.Activated:Connect(function()
+			if i <= (player:GetAttribute("MagnetTier") or 1) + 1 then
+				buy:FireServer("magnettool", "magnets", i)
 			end
-			local b = button(card, text, UDim2.fromOffset(8, 132), UDim2.fromOffset(96, 30), color)
-			b.TextSize = 13
-			b.Activated:Connect(function()
-				if i <= ownedTier + 1 then
-					buy:FireServer("magnettool", "magnets", i)
-				end
-			end)
+		end)
+		magnetCards[i] = { card = card, button = b }
+		table.insert(buildQueue, { card = card, tier = i })
+	end
+	potionArea = Instance.new("Frame")
+	potionArea.BackgroundTransparency = 1
+	potionArea.Position = UDim2.fromOffset(0, 44)
+	potionArea.Size = UDim2.fromOffset(612, 316)
+	potionArea.Parent = magnetPanel
+end
+
+-- 3D-превью строим понемногу (по 3 за кадр), чтобы открытие магазина не подвисало.
+RunService.Heartbeat:Connect(function()
+	if #buildQueue == 0 or not window.Visible then
+		return
+	end
+	for _ = 1, 3 do
+		local job = table.remove(buildQueue, 1)
+		if not job then
+			break
 		end
-		-- Сразу показываем ряд со следующим магнитом для покупки.
+		local view = Instance.new("ViewportFrame")
+		view.BackgroundTransparency = 1
+		view.Position = UDim2.fromOffset(6, 6)
+		view.Size = UDim2.fromOffset(100, 78)
+		view.Ambient = Color3.fromRGB(200, 200, 210)
+		view.LightColor = Color3.fromRGB(255, 250, 240)
+		local ok, model = pcall(MagnetVisuals.Build, job.tier)
+		if ok and model then
+			model:PivotTo(CFrame.Angles(0, 0.6, 0))
+			model.Parent = view
+			magnetCards[job.tier].model = model
+		end
+		local cam = Instance.new("Camera")
+		cam.FieldOfView = 40
+		cam.CFrame = CFrame.lookAt(Vector3.new(0, 1.6, -6.2), Vector3.new(0, 1.3, 0))
+		cam.Parent = view
+		view.CurrentCamera = cam
+		view.Parent = job.card
+	end
+end)
+
+local function renderPotions()
+	potionArea:ClearAllChildren()
+	for i, name in ipairs(ShopConfig.PotionOrder) do
+		local def = ShopConfig.Potions[name]
+		local card = Instance.new("Frame")
+		card.Position = UDim2.fromOffset((i - 1) * 206, 0)
+		card.Size = UDim2.fromOffset(196, 312)
+		card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
+		card.Parent = potionArea
+		corner(card, 16)
+		stroke(card, 3, def.Color)
+		gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
+		juicyIcon(card, def.Icon, def.Color, def.Color:Lerp(Color3.new(1, 1, 1), 0.3), 92, UDim2.new(0.5, 0, 0, 14))
+		label(card, def.Name, UDim2.fromOffset(0, 116), UDim2.new(1, 0, 0, 28), 20)
+		label(card, def.Effect .. " · 5 min", UDim2.fromOffset(0, 146), UDim2.new(1, 0, 0, 22), 15, def.Color)
+		label(card, "You have: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 176), UDim2.new(1, 0, 0, 22), 16, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
+		local b = button(card, "BUY  💰 " .. fmt(def.Price), UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46), coins.Value >= def.Price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80))
+		b.Activated:Connect(function()
+			buy:FireServer("potion", "magnets", name)
+		end)
+	end
+end
+
+local lastTier = nil
+local function renderMagnets()
+	title.Text = "🧲 MAGNET SHOP"
+	if not magnetPanel then
+		buildMagnetPanel()
+	end
+	magnetPanel.Visible = true
+	for key, b in pairs(tabButtons) do
+		b.BackgroundColor3 = key == magnetTab and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(70, 80, 110)
+	end
+	magnetArea.Visible = magnetTab == "magnets"
+	potionArea.Visible = magnetTab == "potions"
+	if magnetTab == "potions" then
+		renderPotions()
+		return
+	end
+	local ownedTier = player:GetAttribute("MagnetTier") or 1
+	local equipped = player:GetAttribute("MagnetOff") and 0 or (player:GetAttribute("MagnetEquipped") or 1)
+	table.clear(spinning)
+	for i, def in ipairs(ShopConfig.Magnets) do
+		local c = magnetCards[i]
+		c.card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
+		local text, color
+		if i == equipped then
+			text, color = "TAKE OFF", Color3.fromRGB(215, 120, 60)
+		elseif i <= ownedTier then
+			text, color = "EQUIP", Color3.fromRGB(70, 140, 220)
+		elseif i == ownedTier + 1 then
+			text, color = "💰 " .. fmt(def.Price), coins.Value >= def.Price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)
+		else
+			text, color = "🔒 LOCKED", Color3.fromRGB(80, 80, 90)
+		end
+		if c.button.Text ~= text then
+			c.button.Text = text
+		end
+		c.button.BackgroundColor3 = color
+		-- крутятся только надетый и следующий для покупки
+		if c.model and (i == equipped or i == ownedTier + 1) then
+			table.insert(spinning, c.model)
+		end
+	end
+	if lastTier ~= ownedTier then
+		lastTier = ownedTier
 		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 5)
-		scroll.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 176)
-	else
-		for i, name in ipairs(ShopConfig.PotionOrder) do
-			local def = ShopConfig.Potions[name]
-			local card = Instance.new("Frame")
-			card.Position = UDim2.fromOffset((i - 1) * 206, 0)
-			card.Size = UDim2.fromOffset(196, 312)
-			card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
-			card.Parent = area
-			corner(card, 16)
-			stroke(card, 3, def.Color)
-			gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
-			juicyIcon(card, def.Icon, def.Color, def.Color:Lerp(Color3.new(1, 1, 1), 0.3), 92, UDim2.new(0.5, 0, 0, 14))
-			label(card, def.Name, UDim2.fromOffset(0, 116), UDim2.new(1, 0, 0, 28), 20)
-			label(card, def.Effect .. " · 5 min", UDim2.fromOffset(0, 146), UDim2.new(1, 0, 0, 22), 15, def.Color)
-			label(card, "You have: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 176), UDim2.new(1, 0, 0, 22), 16, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
-			local b = button(card, "BUY  💰 " .. fmt(def.Price), UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46), coins.Value >= def.Price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80))
-			b.Activated:Connect(function()
-				buy:FireServer("potion", "magnets", name)
-			end)
-		end
+		magnetArea.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 176)
 	end
 end
 
 local function render()
-	body:ClearAllChildren()
-	spinning = {}
+	-- Панель магнитов не удаляем (кэш), всё остальное пересобираем.
+	for _, c in ipairs(body:GetChildren()) do
+		if c ~= magnetPanel then
+			c:Destroy()
+		end
+	end
+	if magnetPanel then
+		magnetPanel.Visible = false
+	end
+	if mode ~= "magnets" then
+		spinning = {}
+	end
 	wallet.Text = "💰 " .. fmt(coins.Value)
 	local wide = mode == "upgrades"
 	window.Size = UDim2.fromOffset(wide and 860 or 640, 430)
@@ -383,7 +480,7 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 	mode, zoneId = newMode, newMode == "magnets" and "magnets" or newZone
 	local world = workspace:WaitForChild("CoinSpeedWorld")
 	if newMode == "magnets" then
-		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or world
+		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or world
 		zonePart = shopHolder:FindFirstChild("MagnetShop") and shopHolder.MagnetShop:FindFirstChild("ShopZone")
 	else
 		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or world
@@ -413,7 +510,7 @@ player.AttributeChanged:Connect(function(name)
 	end
 end)
 
-local spin, check = 0, 0
+local spin, check, lastRender = 0, 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
@@ -422,7 +519,10 @@ RunService.RenderStepped:Connect(function(dt)
 	if not window.Visible then
 		return
 	end
-	if window:GetAttribute("Dirty") then
+	-- Обновляем окно не чаще 4 раз в секунду (монеты меняются постоянно); кошелёк — сразу.
+	wallet.Text = "💰 " .. fmt(coins.Value)
+	if window:GetAttribute("Dirty") and os.clock() - lastRender > 0.25 then
+		lastRender = os.clock()
 		window:SetAttribute("Dirty", false)
 		render()
 	end

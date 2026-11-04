@@ -31,6 +31,24 @@ flakes.SpreadAngle = Vector2.new(15, 15)
 flakes.Acceleration = Vector3.new(1.5, 0, 0.8)
 flakes.RotSpeed = NumberRange.new(-60, 60)
 flakes.Parent = snow
+-- Второй слой: мягкие круглые хлопья покрупнее, кружатся, как в потрясённом снежном шаре.
+local soft = Instance.new("ParticleEmitter")
+soft.Name = "GlobeFlakes"
+soft.Texture = "rbxasset://textures/particles/smoke_main.dds"
+soft.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
+soft.LightEmission = 0.5
+soft.LightInfluence = 0.2
+soft.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.35) })
+soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0.05), NumberSequenceKeypoint.new(0.85, 0.2), NumberSequenceKeypoint.new(1, 1) })
+soft.Lifetime = NumberRange.new(7, 10)
+soft.Rate = 260
+soft.Speed = NumberRange.new(3, 6)
+soft.EmissionDirection = Enum.NormalId.Bottom
+soft.SpreadAngle = Vector2.new(25, 25)
+soft.RotSpeed = NumberRange.new(-90, 90)
+soft.Rotation = NumberRange.new(0, 360)
+soft.Parent = snow
+snow.Size = Vector3.new(180, 1, 180)
 
 local bands = {}
 for _, b in ipairs(frozen:WaitForChild("Aurora", 30):GetDescendants()) do
@@ -68,7 +86,11 @@ local function step(dt: number)
 	local cam = workspace.CurrentCamera
 	if cam then
 		local p = cam.CFrame.Position
-		snow.CFrame = CFrame.new(p.X, p.Y + 35, p.Z)
+		snow.CFrame = CFrame.new(p.X, p.Y + 38, p.Z)
+		-- ветер внутри шара медленно меняет направление — снег кружится
+		local wx, wz = math.sin(t * 0.21) * 3.5, math.cos(t * 0.17) * 3.5
+		flakes.Acceleration = Vector3.new(wx, 0, wz)
+		soft.Acceleration = Vector3.new(wx * 1.3, math.sin(t * 0.5) * 0.6, wz * 1.3)
 	end
 	for _, b in ipairs(bands) do
 		local k = b.k

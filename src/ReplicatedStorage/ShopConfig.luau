@@ -11,7 +11,9 @@ local function rgb(r, g, b)
 end
 local M = Enum.Material
 local function magnet(id, name, price, bonus, look)
-	return { Id = id, Name = name, Price = price, Bonus = bonus, Body = look.Body, Tip = look.Tip, Glow = look.Light ~= nil, Look = look, SkyOnly = look.SkyOnly }
+	-- World: магнит продаётся только в магазине этого мира (Sky Isles — бывший SkyOnly).
+	local worldName = look.World or (look.SkyOnly and "Sky Isles" or nil)
+	return { Id = id, Name = name, Price = price, Bonus = bonus, Body = look.Body, Tip = look.Tip, Glow = look.Light ~= nil, Look = look, SkyOnly = look.SkyOnly, World = worldName }
 end
 ShopConfig.Magnets = {
 	magnet(1, "Classic Magnet", 0, 0, { Body = rgb(150, 155, 165), Material = M.Metal, Tip = rgb(225, 230, 235), TipMaterial = M.Metal, Stripe = rgb(255, 200, 40), StripeMaterial = M.SmoothPlastic }),
@@ -82,6 +84,65 @@ ShopConfig.Magnets = {
 	magnet(30, "Lollipop Crown", 150000000, 100, { SkyOnly = true, Body = rgb(255, 160, 205), Material = M.SmoothPlastic, Tip = rgb(255, 220, 120), TipMaterial = M.Foil, Crown = rgb(255, 205, 80), CrownGem = rgb(255, 90, 160), Lollipops = rgb(255, 120, 180), Bow = rgb(255, 255, 255), Sparkles = rgb(255, 245, 200), Light = rgb(255, 200, 235) }),
 }
 
+-- Магниты 31–60: Frozen Peaks, Magma Volcano и Cosmic Galaxy (по 10 на мир). Модели — из Tripo
+-- (ReplicatedStorage/CustomMagnets/Magnet<id>); цвета ниже нужны для запасного вида из деталей.
+do
+	local WORLD_MAGNETS = {
+		{ "Frozen Peaks", {
+			{ "Snowflake Magnet", rgb(190, 230, 255), rgb(255, 255, 255) },
+			{ "Icicle Spear", rgb(160, 215, 255), rgb(235, 250, 255) },
+			{ "Penguin Pal", rgb(30, 30, 40), rgb(255, 160, 40) },
+			{ "Frost Bite", rgb(90, 200, 255), rgb(200, 245, 255) },
+			{ "Aurora Wave", rgb(90, 230, 170), rgb(200, 120, 255) },
+			{ "Yeti Claw", rgb(240, 245, 255), rgb(90, 160, 255) },
+			{ "Glacier Heart", rgb(40, 110, 220), rgb(150, 220, 255) },
+			{ "Snow Globe", rgb(200, 40, 50), rgb(255, 215, 90) },
+			{ "Ice Queen Crown", rgb(190, 220, 255), rgb(230, 235, 255) },
+			{ "Blizzard King", rgb(30, 60, 150), rgb(255, 210, 70) },
+		} },
+		{ "Magma Volcano", {
+			{ "Ember Spark", rgb(60, 40, 35), rgb(255, 140, 40) },
+			{ "Lava Lamp", rgb(230, 60, 30), rgb(255, 200, 60) },
+			{ "Obsidian Edge", rgb(20, 15, 25), rgb(170, 90, 255) },
+			{ "Fire Dragon", rgb(200, 30, 30), rgb(255, 180, 40) },
+			{ "Magma Core", rgb(90, 30, 20), rgb(255, 230, 80) },
+			{ "Phoenix Feather", rgb(255, 120, 30), rgb(255, 220, 90) },
+			{ "Volcano Rock", rgb(110, 70, 50), rgb(255, 100, 30) },
+			{ "Flame Spirit", rgb(60, 140, 255), rgb(255, 150, 40) },
+			{ "Molten Gold", rgb(255, 190, 40), rgb(255, 240, 150) },
+			{ "Solar Flare", rgb(255, 160, 30), rgb(255, 250, 180) },
+		} },
+		{ "Cosmic Galaxy", {
+			{ "Rocket Boost", rgb(240, 240, 250), rgb(255, 70, 60) },
+			{ "Saturn Rings", rgb(140, 90, 220), rgb(255, 210, 140) },
+			{ "Alien UFO", rgb(90, 220, 110), rgb(200, 255, 200) },
+			{ "Meteor Shower", rgb(60, 50, 70), rgb(255, 150, 60) },
+			{ "Nebula Swirl", rgb(220, 110, 230), rgb(120, 180, 255) },
+			{ "Black Hole", rgb(20, 10, 35), rgb(170, 90, 255) },
+			{ "Star Crystal", rgb(150, 200, 255), rgb(255, 220, 90) },
+			{ "Cosmic Comet", rgb(120, 200, 255), rgb(240, 250, 255) },
+			{ "Planet Crown", rgb(80, 60, 160), rgb(255, 200, 80) },
+			{ "Supernova", rgb(255, 255, 255), rgb(255, 180, 240) },
+		} },
+	}
+	local id = #ShopConfig.Magnets
+	for _, w in ipairs(WORLD_MAGNETS) do
+		for _, m in ipairs(w[2]) do
+			id += 1
+			local k = id - 30
+			local price = math.floor(150000000 * 1.6 ^ k / 1000 + 0.5) * 1000
+			ShopConfig.Magnets[id] = magnet(id, m[1], price, 100 + 6 * k, {
+				World = w[1],
+				Body = m[2],
+				Material = M.SmoothPlastic,
+				Tip = m[3],
+				TipMaterial = M.Neon,
+				Stripe = m[3],
+				Light = m[3],
+			})
+		end
+	end
+end
 
 -- Зелья действуют 5 минут, повторное использование продлевает время.
 ShopConfig.PotionOrder = { "Coins", "Speed", "Luck" }
@@ -91,16 +152,51 @@ ShopConfig.Potions = {
 	Luck = { Name = "Luck Potion", Icon = "🍀", Effect = "x2 egg luck", Price = 600, Duration = 300, Color = Color3.fromRGB(90, 220, 110) },
 }
 
--- Достижения: каждое навсегда даёт x1.05 к монетам (умножается на остальные бонусы).
-ShopConfig.BadgeBonus = 1.05
-ShopConfig.Badges = {
-	{ Id = "Pickup100", Name = "First Steps", Desc = "Pick up 100 coins", Stat = "CoinsCollected", Goal = 100, Icon = "👣" },
-	{ Id = "Pickup1000", Name = "Coin Collector", Desc = "Pick up 1,000 coins", Stat = "CoinsCollected", Goal = 1000, Icon = "🪙" },
-	{ Id = "Eggs10", Name = "Egg Opener", Desc = "Open 10 eggs", Stat = "EggsOpened", Goal = 10, Icon = "🥚" },
-	{ Id = "Eggs100", Name = "Egg Master", Desc = "Open 100 eggs", Stat = "EggsOpened", Goal = 100, Icon = "🐣" },
-	{ Id = "Rich", Name = "Rich", Desc = "Earn 100,000 coins", Stat = "LifetimeEarned", Goal = 100000, Icon = "💎" },
-	{ Id = "Index12", Name = "Explorer", Desc = "Discover 12 pets", Stat = "PetsDiscovered", Goal = 12, Icon = "📖" },
-}
+-- Достижения: цепочки с уровнями (I, II, III…) по каждой статистике. Каждое открытое достижение
+-- навсегда даёт x1.03 к монетам (умножается на остальные бонусы). Первые шесть Id остались
+-- прежними, чтобы у игроков не пропали уже полученные.
+ShopConfig.BadgeBonus = 1.03
+ShopConfig.Badges = {}
+do
+	local ROMAN = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
+	local function short(n)
+		if n >= 1e15 then
+			return (n / 1e15) .. "Qa"
+		elseif n >= 1e12 then
+			return (n / 1e12) .. "T"
+		elseif n >= 1e9 then
+			return (n / 1e9) .. "B"
+		elseif n >= 1e6 then
+			return (n / 1e6) .. "M"
+		elseif n >= 1e3 then
+			return (n / 1e3) .. "K"
+		end
+		return tostring(n)
+	end
+	-- { статистика, иконка, название, описание (%s — цель), цели, старые Id для первых уровней }
+	local CHAINS = {
+		{ "CoinsCollected", "🪙", "Coin Collector", "Pick up %s coins", { 100, 1000, 10000, 50000, 250000, 1000000, 5000000 }, { "Pickup100", "Pickup1000" } },
+		{ "EggsOpened", "🥚", "Egg Master", "Open %s eggs", { 10, 100, 500, 2500, 10000, 50000 }, { "Eggs10", "Eggs100" } },
+		{ "LifetimeEarned", "💎", "Rich", "Earn %s coins in total", { 100000, 10000000, 1000000000, 100000000000, 10000000000000, 1000000000000000 }, { "Rich" } },
+		{ "PetsDiscovered", "📖", "Explorer", "Discover %s pets", { 12, 25, 40, 60, 80, 100 }, { "Index12" } },
+		{ "Rebirths", "🔄", "Reborn", "Rebirth %s times", { 1, 3, 5, 10, 15 }, {} },
+		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 20, 30, 40, 50, 60 }, {} },
+	}
+	for _, c in ipairs(CHAINS) do
+		for i, goal in ipairs(c[5]) do
+			table.insert(ShopConfig.Badges, {
+				Id = c[6][i] or (c[1] .. goal),
+				Name = c[3] .. " " .. ROMAN[i],
+				Desc = string.format(c[4], short(goal)),
+				Stat = c[1],
+				Goal = goal,
+				Icon = c[2],
+				Chain = c[1],
+				Level = i,
+			})
+		end
+	end
+end
 
 -- Уровни прокачки красятся по ступеням: бронза, серебро, золото, алмаз.
 ShopConfig.TierColors = {

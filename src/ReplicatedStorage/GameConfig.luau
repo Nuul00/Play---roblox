@@ -4,19 +4,19 @@ Config.CoinValue=5
 Config.CoinRespawnSeconds=8
 Config.BaseWalkSpeed=16
 Config.SpeedPerLevel=4
-Config.MaxSpeedLevel=50
+Config.MaxSpeedLevel=125
 Config.FirstUpgradeCost=10
 Config.ShopDistance=14
 Config.PurchaseCooldown=0.4
 Config.ShopkeeperUserId=1361632228
-Config.MaxIncomeLevel=50
+Config.MaxIncomeLevel=125
 Config.BaseMagnetRadius=3
 Config.MagnetRadiusGrowth=0.10
-Config.MaxMagnetLevel=50
-Config.MaxDoubleLevel=50
-Config.MaxUpgradeLevel=50
--- Предел прокачки в магазине каждого мира: Meadow 10, Neon 25, Sky 50.
-Config.ZoneMax={island=10,neon=25,sky=50,frozen=50}
+Config.MaxMagnetLevel=125
+Config.MaxDoubleLevel=125
+Config.MaxUpgradeLevel=125
+-- Предел прокачки в магазине каждого мира: Meadow 10, Neon 25, Sky 50, Frozen 75, Volcano 100, Galaxy 125.
+Config.ZoneMax={island=10,neon=25,sky=50,frozen=75,volcano=100,galaxy=125}
 Config.BaseMaxLevel=10
 Config.EnableGlobalBoards=true
 Config.EnableStudioDataStores=false
@@ -116,16 +116,17 @@ Config.Eggs={
 [9]={Id=9,Name="Crystal Egg",World="sky",Cost=1500000,Position=Vector3.new(1152,2,112),Color=Color3.fromRGB(110,215,255),Pool={{Pet=74,Chance=30,Weight=30000},{Pet=75,Chance=25,Weight=25000},{Pet=76,Chance=18,Weight=18000},{Pet=77,Chance=12,Weight=12000},{Pet=78,Chance=8,Weight=8000},{Pet=79,Chance=5,Weight=5000},{Pet=80,Chance=1.9,Weight=1900},{Pet=81,Chance=0.1,Weight=100}}},
 }
 -- Цена уровня растёт по экспоненте, а на границах миров (10 и 25) умножается: x3 и x8.
-local function tierMult(level) if level>=25 then return 8 elseif level>=10 then return 3 end return 1 end
-local function upCost(base,growth,level) return math.floor(base*growth^level*tierMult(level)+0.5) end
+local function tierMult(level) if level>=100 then return 300 elseif level>=75 then return 90 elseif level>=50 then return 25 elseif level>=25 then return 8 elseif level>=10 then return 3 end return 1 end
+-- После 50 уровня цена растёт мягче (x1.18 за уровень), зато на границах миров — скачки.
+local function upCost(base,growth,level) local g=level>50 and growth^50*1.18^(level-50) or growth^level return math.floor(base*g*tierMult(level)+0.5) end
 function Config.GetUpgradeCost(level) return upCost(10,1.34,level) end
-function Config.GetWalkSpeed(level) return Config.BaseWalkSpeed+4*math.min(level,10)+2*math.clamp(level-10,0,15)+math.clamp(level-25,0,25) end
+function Config.GetWalkSpeed(level) return Config.BaseWalkSpeed+4*math.min(level,10)+2*math.clamp(level-10,0,15)+math.clamp(level-25,0,25)+0.4*math.clamp(level-50,0,75) end
 function Config.GetMagnetRadius(level) return Config.BaseMagnetRadius+0.4*level end
 function Config.GetMagnetUpgradeCost(level) return upCost(8,1.34,level) end
 function Config.GetIncomeMultiplier(level) return 1+0.25*level end
 function Config.GetIncomeUpgradeCost(level) return upCost(20,1.36,level) end
 -- Шанс, что подобранная монета даст двойную награду.
-function Config.GetDoubleChance(level) return math.min(1,0.015*level) end
+function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(0.9,0.75+0.002*(level-50)) end
 function Config.GetDoubleUpgradeCost(level) return upCost(40,1.36,level) end
 -- Ребёрс: за монеты сбрасывает прокачку, но даёт постоянный множитель монет.
 Config.MaxRebirths=15
