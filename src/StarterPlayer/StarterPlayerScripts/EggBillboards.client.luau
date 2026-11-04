@@ -172,19 +172,50 @@ local function buildBoard(id, stand)
 	table.insert(boards, { gui = gui, anchor = anchor })
 end
 
--- Оживление яиц.
+-- Оживление яиц: парят и крутятся, «дышат» (лёгкое сжатие-растяжение), время от времени
+-- вздрагивают, будто вот-вот вылупятся, а когда игрок рядом — радостно подпрыгивают.
+-- Вокруг — огоньки с хвостами, мягкий свет и искры цвета яйца; у дорогого яйца мира
+-- (3-е в каждом мире) ещё и фонтан золотых искр. При открытии яйцо подпрыгивает с вспышкой.
 local eggs = {}
+local fxFolder = Instance.new("Folder")
+fxFolder.Name = "EggFX"
+fxFolder.Parent = workspace
+
+local function measure(entry, model: Model)
+	entry.model = model
+	entry.base = model:GetPivot()
+	local _, size = model:GetBoundingBox()
+	entry.height = size.Y
+	entry.radius = math.max(size.X, size.Z) / 2
+	entry.scale = model:GetScale()
+	entry.applied = 1
+end
+
 local function setupEgg(id, stand)
 	local display = stand:FindFirstChild("EggDisplay")
 	if not display then
 		return
 	end
-	local entry = { model = display, base = display:GetPivot(), phase = id * 1.3, neon = Config.Eggs[id].World=="neon", spin=0, holo = {}, orbs = {} }
+	local egg = Config.Eggs[id]
+	local tier = (id - 1) % 3 + 1 -- 1..3 внутри мира
+	local entry = {
+		id = id,
+		phase = id * 1.3,
+		neon = egg.World == "neon",
+		spin = id,
+		holo = {},
+		orbs = {},
+		tier = tier,
+		excite = 0,
+		nextWobble = 2 + id * 0.7,
+		wobbleAt = -10,
+		popAt = -10,
+	}
+	measure(entry, display)
 	-- Сервер (TripoDressing) меняет модель яйца на модель из Tripo: оживляем уже её.
 	stand.ChildAdded:Connect(function(c)
 		if c.Name == "EggDisplay" and c:IsA("Model") then
-			entry.model = c
-			entry.base = c:GetPivot()
+			task.defer(measure, entry, c)
 		end
 	end)
 	local ped = stand:FindFirstChild("Pedestal")
@@ -196,23 +227,83 @@ local function setupEgg(id, stand)
 			end
 		end
 	end
-	local color = Config.Eggs[id].Color
-	for k = 1, 3 do
+	local color = egg.Color
+	local light = color:Lerp(Color3.new(1, 1, 1), 0.35)
+
+	-- Невидимый якорь в центре яйца: свет и искры.
+	local anchor = Instance.new("Part")
+	anchor.Name = "EggAura" .. id
+	anchor.Anchored, anchor.CanCollide, anchor.CanQuery, anchor.CanTouch, anchor.CastShadow = true, false, false, false, false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.CFrame = CFrame.new(entry.base.Position)
+	anchor.Parent = fxFolder
+	local glow = Instance.new("PointLight")
+	glow.Color = light
+	glow.Range = 12
+	glow.Brightness = 1
+	glow.Shadows = false
+	glow.Parent = anchor
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Color = ColorSequence.new(color, light)
+	sparks.LightEmission = 0.35
+	sparks.LightInfluence = 0
+	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
+	sparks.Transparency = NumberSequence.new(0.1, 1)
+	sparks.Lifetime = NumberRange.new(1, 1.8)
+	sparks.Speed = NumberRange.new(1.5, 3.5)
+	sparks.SpreadAngle = Vector2.new(180, 180)
+	sparks.Acceleration = Vector3.new(0, 2, 0)
+	sparks.Rate = 3
+	sparks.Parent = anchor
+	entry.anchor, entry.glow, entry.sparks = anchor, glow, sparks
+
+	-- Огоньки по орбите: чем дороже яйцо, тем их больше; у каждого светящийся хвост.
+	for k = 1, 2 + tier do
 		local orb = Instance.new("Part")
 		orb.Name = "EggOrb"
 		orb.Shape = Enum.PartType.Ball
-		orb.Size = Vector3.new(0.55, 0.55, 0.55)
+		orb.Size = Vector3.new(0.5, 0.5, 0.5)
 		orb.Material = Enum.Material.Neon
-		orb.Color = color:Lerp(Color3.new(1, 1, 1), 0.3)
-		orb.Anchored = true
-		orb.CanCollide = false
-		orb.CanQuery = false
-		orb.CanTouch = false
-		orb.CastShadow = false
-		orb.Parent = stand
+		orb.Color = light
+		orb.Anchored, orb.CanCollide, orb.CanQuery, orb.CanTouch, orb.CastShadow = true, false, false, false, false
+		local a0 = Instance.new("Attachment")
+		a0.Position = Vector3.new(0, 0.22, 0)
+		a0.Parent = orb
+		local a1 = Instance.new("Attachment")
+		a1.Position = Vector3.new(0, -0.22, 0)
+		a1.Parent = orb
+		local trail = Instance.new("Trail")
+		trail.Attachment0, trail.Attachment1 = a0, a1
+		trail.Color = ColorSequence.new(light, color)
+		trail.LightEmission = 1
+		trail.Transparency = NumberSequence.new(0.2, 1)
+		trail.Lifetime = 0.45
+		trail.FaceCamera = true
+		trail.Parent = orb
+		orb.Parent = fxFolder
 		table.insert(entry.orbs, orb)
 	end
-	table.insert(eggs, entry)
+
+	-- У самого дорогого яйца мира вверх бьёт фонтан золотых искр.
+	if tier == 3 then
+		local pillar = Instance.new("ParticleEmitter")
+		pillar.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		pillar.Color = ColorSequence.new(Color3.fromRGB(255, 200, 60), color)
+		pillar.LightEmission = 0.4
+		pillar.LightInfluence = 0
+		pillar.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0.2) })
+		pillar.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.7, 0.3), NumberSequenceKeypoint.new(1, 1) })
+		pillar.Lifetime = NumberRange.new(1.6, 2.4)
+		pillar.Speed = NumberRange.new(7, 10)
+		pillar.EmissionDirection = Enum.NormalId.Top
+		pillar.SpreadAngle = Vector2.new(6, 6)
+		pillar.Rate = 10
+		pillar.Parent = anchor
+		entry.pillar = pillar
+	end
+	eggs[id] = entry
 end
 
 for id in ipairs(Config.Eggs) do
@@ -234,28 +325,101 @@ for id in ipairs(Config.Eggs) do
 	end
 end
 
+-- При открытии яйца: прыжок с переворотом, вспышка и фонтан искр.
+ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(_, sourceEgg)
+	local e = eggs[sourceEgg]
+	if e then
+		e.popAt = os.clock()
+		e.sparks:Emit(40)
+	end
+end)
+
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
+	local now = os.clock()
 	local camera = workspace.CurrentCamera
 	local camPos = camera and camera.CFrame.Position or Vector3.zero
-	for _, e in ipairs(eggs) do
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	for _, e in pairs(eggs) do
 		local center = e.base.Position
-		if (center - camPos).Magnitude < 160 then
-			local bob = math.sin(t * (e.neon and 1.05 or 1.6) + e.phase) * (e.neon and 0.2 or 0.35)
-			if e.neon then
-			 e.spin+=dt*(0.38+0.1*math.sin(t*.65+e.phase))
-			 e.model:PivotTo(e.base*CFrame.new(0,.3+bob,0)*CFrame.Angles(math.sin(t*.6+e.phase)*.025,e.spin,math.sin(t*.5+e.phase)*.025))
-			else
-			 e.model:PivotTo(e.base * CFrame.new(0, 0.35 + bob, 0) * CFrame.Angles(0, t * 0.5, 0))
+		local camDist = (center - camPos).Magnitude
+		local active = camDist < 160
+		e.sparks.Enabled = active
+		if e.pillar and not active then
+			e.pillar.Enabled = false
+		end
+		if active and e.model.Parent then
+			local dist = root and (root.Position - center).Magnitude or 999
+			local target = math.clamp(1 - (dist - 10) / 22, 0, 1)
+			e.excite += (target - e.excite) * math.min(1, dt * 3)
+			local x = e.excite
+			local h = e.height
+
+			-- вздрагивание раз в несколько секунд (рядом с игроком — чаще)
+			if t > e.nextWobble then
+				e.wobbleAt = t
+				e.nextWobble = t + (x > 0.3 and 2.2 or 5) + math.random() * 3
+				e.sparks:Emit(8 + e.tier * 4)
 			end
-			for _, h in ipairs(e.holo) do
-				local rot = CFrame.new(h.center) * CFrame.Angles(0, t * 0.7, 0) * CFrame.new(-h.center)
-				h.part.CFrame = rot * h.base
+			local w = t - e.wobbleAt
+			local rock = 0
+			if w < 0.9 then
+				rock = math.sin(w * 38) * 0.2 * (1 - w / 0.9)
 			end
+
+			local bob = math.sin(t * (e.neon and 1.05 or 1.6) + e.phase) * (e.neon and 0.22 or 0.35) * (1 - x * 0.5)
+			local hop = math.abs(math.sin(t * 5.5 + e.phase)) * x * 1.1
+			e.spin += dt * ((e.neon and 0.4 or 0.55) + x * 1.4)
+			local lean = math.sin(t * 0.8 + e.phase) * 0.04
+
+			-- прыжок при открытии
+			local pop = now - e.popAt
+			local popH, popSpin = 0, 0
+			if pop < 0.8 then
+				local k = pop / 0.8
+				popH = math.sin(k * math.pi) * (h * 0.6 + 2)
+				popSpin = k * math.pi * 2
+			end
+
+			local pivot = e.base
+				* CFrame.new(0, 0.35 + bob + hop + popH, 0)
+				* CFrame.Angles(0, e.spin + popSpin, 0)
+				* CFrame.new(0, -h / 2, 0)
+				* CFrame.Angles(lean + rock * 0.6, 0, rock)
+				* CFrame.new(0, h / 2, 0)
+			e.model:PivotTo(pivot)
+
+			-- «дыхание»: чуть сжимается и вытягивается (только вблизи, чтобы не тратить кадры)
+			if camDist < 80 then
+				local squash = 1 + math.sin(t * 2.4 + e.phase) * 0.025 + (pop < 0.15 and -0.12 or 0)
+				if math.abs(squash - e.applied) > 0.003 then
+					e.applied = squash
+					e.model:ScaleTo(e.scale * squash)
+				end
+			end
+
+			local flash = pop < 0.5 and (1 - pop / 0.5) * 6 or 0
+			local shake = w < 0.9 and (1 - w / 0.9) * 1.5 or 0
+			e.anchor.CFrame = CFrame.new(center + Vector3.new(0, 0.35 + bob + hop + popH, 0))
+			e.glow.Brightness = 0.8 + 0.35 * math.sin(t * 2 + e.phase) + x * 1.6 + shake + flash
+			e.glow.Range = 11 + x * 7 + flash * 2
+			e.sparks.Rate = 2 + e.tier + x * 18
+
+			local r = math.max(3.4, e.radius + 1.6)
 			for k, orb in ipairs(e.orbs) do
-				local a = t * 1.2 + k / 3 * math.pi * 2 + e.phase
-				orb.CFrame = CFrame.new(center + Vector3.new(math.cos(a) * 3.6, math.sin(t * 2 + k) * 0.8, math.sin(a) * 3.6))
+				local n = #e.orbs
+				local a = t * (1.2 + x * 1.6) + k / n * math.pi * 2 + e.phase
+				local y = math.sin(t * 2 + k * 1.7) * h * 0.3
+				orb.CFrame = CFrame.new(center + Vector3.new(math.cos(a) * r, 0.35 + y + popH * 0.5, math.sin(a) * r))
+			end
+			if e.pillar then
+				e.pillar.Enabled = true
+				e.pillar.Rate = 10 + x * 20
+			end
+			for _, hr in ipairs(e.holo) do
+				local rot = CFrame.new(hr.center) * CFrame.Angles(0, t * 0.7, 0) * CFrame.new(-hr.center)
+				hr.part.CFrame = rot * hr.base
 			end
 		end
 	end
