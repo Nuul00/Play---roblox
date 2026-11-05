@@ -8,7 +8,7 @@ local props = ReplicatedStorage:WaitForChild("TripoProps", 20)
 local world = workspace:WaitForChild("CoinSpeedWorld")
 local city = world:WaitForChild("NeonCity")
 
-local KEEP = { ShopZone = true, VendorAnchor = true, VendorSeatPoint = true, Interact = true, Counter = true }
+local KEEP = { ShopZone = true, VendorAnchor = true, VendorSeatPoint = true, Interact = true, Counter = true, Plinth = true, PlinthGlow = true }
 
 -- Копия модели, вписанная в размер size (по самой длинной стороне), стоит низом на bottom.
 local function fit(template: Model, size: number, bottom: CFrame, parent: Instance, name: string?)
@@ -85,6 +85,8 @@ end
 -- вписанная по ширине и не выше 4–5 студов. Яйцо ставим на её верх.
 local PEDESTAL = { "PedestalMeadow", "PedestalMeadow", "PedestalMeadow", "PedestalNeon", "PedestalNeon", "PedestalNeon", "PedestalSky", "PedestalSky", "PedestalSky" }
 PEDESTAL[16], PEDESTAL[17], PEDESTAL[18] = "PedestalFrozen", "PedestalFrozen", "PedestalFrozen"
+PEDESTAL[10], PEDESTAL[11], PEDESTAL[12] = "PedestalVolcano", "PedestalVolcano", "PedestalVolcano"
+PEDESTAL[13], PEDESTAL[14], PEDESTAL[15] = "PedestalGalaxy", "PedestalGalaxy", "PedestalGalaxy"
 local function dressPedestal(stand: Instance, id: number)
 	local template = props and props:FindFirstChild(PEDESTAL[id] or "")
 	local ped = stand:FindFirstChild("Pedestal")
@@ -347,6 +349,12 @@ pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop")
 pcall(dressShop, sky and sky:FindFirstChild("UpgradeShop"), "SkyUpgradeShop")
 pcall(dressShop, sky and sky:FindFirstChild("MagnetShop"), "SkyMagnetShop")
 pcall(dressShop, frozen and frozen:FindFirstChild("UpgradeShop"), "FrozenShop")
+local volcanoW = world:WaitForChild("MagmaVolcano", 30)
+local galaxyW = world:WaitForChild("CosmicGalaxy", 30)
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop")
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop")
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop")
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop")
 
 if frozen then
 	pcall(swapAll, frozen, "Snowman", "Snowman", 1.15)

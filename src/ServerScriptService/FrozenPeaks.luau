@@ -411,7 +411,7 @@ function Frozen.Build(world: Instance)
 	local peaks = Instance.new("Model")
 	peaks.Name = "Peaks"
 	peaks.Parent = model
-	for _, p in ipairs({ { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { 55, -130, 80, 100 }, { 130, -90, 60, 70 }, { -150, -30, 50, 55 }, { 150, -20, 45, 50 } }) do
+	for _, p in ipairs({ { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { 95, -165, 45, 55 }, { -150, -30, 50, 55 }, { 160, -10, 40, 45 } }) do -- справа от площади — сад яиц, там гор нет
 		mountain(peaks, L(p[1], 0, p[2]), p[3], p[4])
 	end
 
@@ -435,22 +435,28 @@ function Frozen.Build(world: Instance)
 		end
 		return true
 	end
-	-- Ледяной сад яиц за центральным кристаллом: площадка, дорожка от площади и три подиума.
-	disc(paths, "EggGarden", 150, 0.34, L(0, 0.17, -78), ICE:Lerp(SNOW, 0.55), M.Ice)
-	disc(paths, "EggGardenRing", 152, 0.22, L(0, 0.11, -78), rgb(150, 220, 255), M.Neon, { CanCollide = false })
-	part(paths, "PathEggs", Vector3.new(14, 0.3, 40), L(0, 0.15, -35), ICE, M.Ice, { Transparency = 0.05 })
+	-- Ледяной сад яиц справа от площади (слева и сзади стоят большие горы): площадка, дорожка
+	-- от площади и три подиума в ряд; за ними — ряд «замороженных» аватаров (FrozenStatues).
+	local GX, GZ = 105, -75
+	disc(paths, "EggGarden", 120, 0.34, L(GX, 0.17, GZ), ICE:Lerp(SNOW, 0.55), M.Ice)
+	disc(paths, "EggGardenRing", 122, 0.22, L(GX, 0.11, GZ), rgb(150, 220, 255), M.Neon, { CanCollide = false })
+	do
+		local from, to = L(22, 0.15, -16), L(GX - 50, 0.15, GZ + 34)
+		local mid, len = (from + to) / 2, (to - from).Magnitude
+		part(paths, "PathEggs", Vector3.new(12, 0.3, len), CFrame.lookAt(mid, to), ICE, M.Ice, { Transparency = 0.05 })
+	end
 	for i, egg in ipairs({ { 16, rgb(200, 235, 255) }, { 17, rgb(110, 230, 190) }, { 18, rgb(90, 170, 255) } }) do
-		local x = (i - 2) * 52
-		eggStand(model, egg[1], L(x, 0.34, -80), egg[2])
-		table.insert(placedSpots, { x, -80, 16 })
+		local x = GX + (i - 2) * 38
+		eggStand(model, egg[1], L(x, 0.34, GZ + 8), egg[2])
+		table.insert(placedSpots, { x, GZ + 8, 16 })
 	end
-	table.insert(placedSpots, { 0, -35, 9 })
-	-- ряд «замороженных» аватаров за садом яиц (FrozenStatues.server.luau)
+	table.insert(placedSpots, { GX, GZ, 62 })
+	table.insert(placedSpots, { 50, -40, 10 })
+	-- ряд «замороженных» аватаров за садом
+	part(paths, "StatueWalk", Vector3.new(130, 0.3, 18), L(GX, 0.2, GZ - 36), ICE:Lerp(SNOW, 0.4), M.Ice, { Transparency = 0.05 })
 	for k = -3, 3 do
-		table.insert(placedSpots, { k * 22, -118, 11 })
+		table.insert(placedSpots, { GX + k * 18, GZ - 36, 10 })
 	end
-	disc(paths, "StatueRow", 30, 0.3, L(0, 0.15, -118), ICE:Lerp(SNOW, 0.4), M.Ice)
-	part(paths, "StatueWalk", Vector3.new(160, 0.3, 20), L(0, 0.15, -118), ICE:Lerp(SNOW, 0.55), M.Ice, { Transparency = 0.05 })
 	local trees = 0
 	for _ = 1, 400 do
 		if trees >= 34 then

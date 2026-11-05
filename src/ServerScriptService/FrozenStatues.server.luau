@@ -12,8 +12,8 @@ if not frozen then
 end
 
 local CENTER = Vector3.new(3000, 60, 0)
-local ROW_Z = -118
-local SLOTS = { 0, -22, 22, -44, 44, -66, 66 } -- x относительно центра; первое — создателю
+local ROW_X, ROW_Z = 105, -111
+local SLOTS = { 0, -18, 18, -36, 36, -54, 54 } -- x относительно центра; первое — создателю
 local ICE = Color3.fromRGB(170, 220, 255)
 
 local folder = Instance.new("Folder")
@@ -48,7 +48,7 @@ end
 local occupied: { [number]: Model } = {}
 
 local function build(slot: number, userId: number, displayName: string)
-	local x = CENTER.X + SLOTS[slot]
+	local x = CENTER.X + ROW_X + SLOTS[slot]
 	local z = CENTER.Z + ROW_Z
 	local y = groundY(x, z)
 	local m = Instance.new("Model")
@@ -77,21 +77,23 @@ local function build(slot: number, userId: number, displayName: string)
 				d:Destroy()
 			end
 		end
-		local _, size = avatar:GetBoundingBox()
-		avatar:PivotTo(CFrame.new(x, y + 1.2 + size.Y / 2, z) * CFrame.Angles(0, math.pi, 0)) -- лицом к саду яиц
+		avatar:PivotTo(CFrame.new(x, y + 5, z) * CFrame.Angles(0, math.pi, 0)) -- лицом к саду яиц
+		-- ставим ровно низом на постамент (рамка модели считается уже после поворота)
+		local bcf, bsize = avatar:GetBoundingBox()
+		avatar:PivotTo(avatar:GetPivot() + Vector3.new(0, (y + 1.25) - (bcf.Position.Y - bsize.Y / 2), 0))
 		avatar.Name = "Avatar"
 		avatar.Parent = m
 	end
 	-- ледяной кристалл вокруг: прозрачные грани и сосульки
 	local h = 8.5
-	local crystal = part(m, "Ice", Vector3.new(5.4, h, 4.4), CFrame.new(x, y + 1.2 + h / 2, z), ICE, Enum.Material.Glass, { Transparency = 0.55, Reflectance = 0.15, CanCollide = true })
+	local crystal = part(m, "Ice", Vector3.new(5.4, h, 4.4), CFrame.new(x, y + 1.2 + h / 2, z), ICE, Enum.Material.SmoothPlastic, { Transparency = 0.62, Reflectance = 0.12, CanCollide = true })
 	crystal.CastShadow = false
 	for k = 1, 6 do
 		local a = k / 6 * math.pi * 2
 		local sh = 3 + (k % 3)
-		part(m, "Shard", Vector3.new(1.2, sh, 1.2), CFrame.new(x + math.cos(a) * 3.2, y + 1.2 + sh / 2 - 0.4, z + math.sin(a) * 2.8) * CFrame.Angles(math.sin(a) * 0.35, a, math.cos(a) * 0.35), ICE, Enum.Material.Glass, { Transparency = 0.35, CanCollide = false, CastShadow = false })
+		part(m, "Shard", Vector3.new(1.2, sh, 1.2), CFrame.new(x + math.cos(a) * 3.2, y + 1.2 + sh / 2 - 0.4, z + math.sin(a) * 2.8) * CFrame.Angles(math.sin(a) * 0.35, a, math.cos(a) * 0.35), ICE, Enum.Material.Ice, { Transparency = 0.3, CanCollide = false, CastShadow = false })
 	end
-	part(m, "Cap", Vector3.new(2.6, 3.2, 2.6), CFrame.new(x, y + 1.2 + h + 1, z) * CFrame.Angles(0, math.pi / 4, 0), ICE, Enum.Material.Glass, { Transparency = 0.3, CanCollide = false, CastShadow = false })
+	part(m, "Cap", Vector3.new(2.6, 3.2, 2.6), CFrame.new(x, y + 1.2 + h + 1, z) * CFrame.Angles(0, math.pi / 4, 0), ICE, Enum.Material.Ice, { Transparency = 0.25, CanCollide = false, CastShadow = false })
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(150, 215, 255)
 	glow.Range = 14
