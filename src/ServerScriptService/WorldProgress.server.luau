@@ -389,6 +389,8 @@ local function updatePodiums(def,rows)
       local npc=template:Clone()
       npc.Name="Winner"..place
       AvatarPose.Prepare(npc)
+      -- на островах пьедестал невысокий: фигурки чуть меньше, чтобы не закрывать строчки доски
+      if podium:GetAttribute("Yaw") then pcall(function() npc:ScaleTo(npc:GetScale()*0.85) end) end
       npc.Parent=podium
       local top=step.Position+Vector3.new(0,step.Size.Y/2,0)
       if step:IsA("Part") and step.Shape==Enum.PartType.Cylinder then top=step.Position+Vector3.new(0,step.Size.X/2,0) end
