@@ -88,12 +88,66 @@ label(panel, "CHOOSE A WORLD TO TRAVEL TO", UDim2.fromOffset(20, 50), UDim2.from
 
 local cards = {}
 local CW, GAP = 156, 12
+-- Карточки едут в полосе с прокруткой: в окно влезает 5, стрелки по бокам листают к остальным.
+local VISIBLE = 5
+local strip = Instance.new("ScrollingFrame")
+strip.Name = "Strip"
+strip.Position = UDim2.fromOffset(26, 84)
+strip.Size = UDim2.fromOffset(VISIBLE * (CW + GAP) - GAP + 8, 296)
+strip.BackgroundTransparency = 1
+strip.BorderSizePixel = 0
+strip.ScrollBarThickness = 0
+strip.ScrollingDirection = Enum.ScrollingDirection.X
+strip.ElasticBehavior = Enum.ElasticBehavior.Never
+strip.CanvasSize = UDim2.fromOffset(#Worlds.Worlds * (CW + GAP) - GAP + 8, 0)
+strip.ClipsDescendants = true
+strip.Parent = panel
+local function arrow(text, x)
+	local b = Instance.new("TextButton")
+	b.AnchorPoint = Vector2.new(0.5, 0.5)
+	b.Position = UDim2.fromOffset(x, 230)
+	b.Size = UDim2.fromOffset(46, 70)
+	b.Text = text
+	b.Font = Enum.Font.FredokaOne
+	b.TextSize = 34
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.BackgroundColor3 = rgb(255, 196, 60)
+	b.AutoButtonColor = true
+	b.ZIndex = 5
+	b.Parent = panel
+	corner(b, 14)
+	stroke(b, ink, 3.5)
+	local bg = Instance.new("UIGradient", b)
+	bg.Color = ColorSequence.new(rgb(255, 225, 120), rgb(240, 150, 30))
+	bg.Rotation = 90
+	return b
+end
+local maxScroll = math.max(0, #Worlds.Worlds - VISIBLE) * (CW + GAP)
+local left = arrow("‹", 4)
+local right = arrow("›", 876)
+local function updateArrows()
+	local x = strip.CanvasPosition.X
+	left.Visible = x > 4
+	right.Visible = x < maxScroll - 4
+end
+local function scrollTo(x)
+	x = math.clamp(x, 0, maxScroll)
+	TweenService:Create(strip, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CanvasPosition = Vector2.new(x, 0) }):Play()
+end
+left.Activated:Connect(function()
+	scrollTo(strip.CanvasPosition.X - (CW + GAP) * 2)
+end)
+right.Activated:Connect(function()
+	scrollTo(strip.CanvasPosition.X + (CW + GAP) * 2)
+end)
+strip:GetPropertyChangedSignal("CanvasPosition"):Connect(updateArrows)
+updateArrows()
 for i, def in ipairs(Worlds.Worlds) do
 	local card = Instance.new("Frame")
-	card.Position = UDim2.fromOffset(20 + (i - 1) * (CW + GAP), 90)
+	card.Position = UDim2.fromOffset(4 + (i - 1) * (CW + GAP), 6)
 	card.Size = UDim2.fromOffset(CW, 280)
 	card.BackgroundColor3 = Color3.new(1, 1, 1)
-	card.Parent = panel
+	card.Parent = strip
 	corner(card, 18)
 	local cs = stroke(card, ink, 3.5)
 	local g = Instance.new("UIGradient", card)
@@ -196,6 +250,14 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	panel.Visible = player:GetAttribute("UIScreen") == "teleport"
 	if panel.Visible then
 		refresh()
+		-- открываем полосу так, чтобы текущий мир был виден
+		local current = player:GetAttribute("CurrentWorld")
+		for i, c in ipairs(cards) do
+			if c.def.Id == current then
+				strip.CanvasPosition = Vector2.new(math.clamp((i - 3) * (CW + GAP), 0, maxScroll), 0)
+			end
+		end
+		updateArrows()
 	end
 end)
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(refresh)

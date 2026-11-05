@@ -76,9 +76,9 @@ end
 -- остаётся невидимый шар. drift = true — облако плавно плывёт (SkyIslesFX, тег "SkyCloud");
 -- облака внутри парящих островков не помечаем: их двигает весь островок целиком.
 local cloudRng = Random.new(11)
-local function cloud(parent, name, diameter, at, color, collide, hidden, drift)
+local function cloud(parent, name, diameter, at, color, collide, hidden, drift, solid)
 	if #cloudMeshes == 0 then
-		return ball(parent, name, diameter, at, color, collide)
+		return ball(parent, name, diameter, at, color, collide or solid)
 	end
 	if collide then
 		ball(parent, name .. "Collider", diameter, at, color, true).Transparency = 1
@@ -91,6 +91,12 @@ local function cloud(parent, name, diameter, at, color, collide, hidden, drift)
 	c.Name = name
 	c.Size *= diameter * 1.25 / math.max(c.Size.X, c.Size.Z)
 	c.CFrame = CFrame.new(at) * CFrame.Angles(0, cloudRng:NextNumber(0, math.pi * 2), 0) * template.CFrame.Rotation
+	if solid then
+		-- на облако можно встать: столкновения по форме самого меша (у шаблона точная форма столкновений),
+		-- а не по невидимому шару, с края которого игрок соскальзывал
+		c.CanCollide = true
+		c.CanQuery = true
+	end
 	c.Parent = parent
 	if drift then
 		c:AddTag("SkyCloud")
@@ -394,8 +400,8 @@ local function rainbow(parent, at, radius)
 	local inner = radius - #cols * width
 	for _, side in ipairs({ -1, 1 }) do
 		local foot = at + Vector3.new(side * (radius + inner) / 2, 0, 0)
-		cloud(parent, "RainbowCloud", 20, foot + Vector3.new(0, 1.5, 0), rgb(250, 246, 255), false, false, true)
-		cloud(parent, "RainbowCloud", 13, foot + Vector3.new(side * 7, 0.5, 3), rgb(250, 246, 255), false, false, true)
+		cloud(parent, "RainbowCloud", 20, foot + Vector3.new(0, 1.5, 0), rgb(250, 246, 255), false, false, false, true)
+		cloud(parent, "RainbowCloud", 13, foot + Vector3.new(side * 7, 0.5, 3), rgb(250, 246, 255), false, false, false, true)
 	end
 end
 
@@ -1104,7 +1110,7 @@ local function treasureIslet(parent, def, face)
 	local poolAt = at + edgeDir * (R * 0.42)
 	disc(m, "PoolRim", 7.4, 0.5, poolAt + Vector3.new(0, 0.25, 0), rgb(232, 226, 246), M.Slate, { CanCollide = false })
 	disc(m, "Pool", 6.2, 0.2, poolAt + Vector3.new(0, 0.52, 0), rgb(130, 205, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 0.15, Reflectance = 0.2 })
-	local edge = at + edgeDir * (R + 1)
+	local edge = at + edgeDir * (R + 4.5) -- за кромкой облаков островка: струя не прорезает их
 	local streamFrom = poolAt + edgeDir * 3
 	local streamMid = (streamFrom + edge) / 2 + Vector3.new(0, 0.08, 0)
 	part(m, "Stream", Vector3.new(2.4, 0.12, (edge - streamFrom).Magnitude), CFrame.lookAt(streamMid, edge + Vector3.new(0, 0.08, 0)), rgb(150, 215, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false, Transparency = 0.2 })
@@ -1112,18 +1118,40 @@ local function treasureIslet(parent, def, face)
 		local s = rng:NextNumber(0.9, 1.5)
 		part(m, "PoolStone", Vector3.new(s, s * 0.7, s), CFrame.new(poolAt + Vector3.new(math.cos(k * 1.6) * 3.6, 0.3, math.sin(k * 1.6) * 3.6)) * CFrame.Angles(0, k, 0.2), rgb(220, 214, 236), M.Slate, { CanCollide = false })
 	end
-	local fallHeight = 34
+	-- Водопад «бесконечный»: длинная струя вниз, которая плавно растворяется (луч с прозрачностью к низу),
+	-- конца не видно.
+	local fallHeight = 140
 	local fallTop = edge + edgeDir * 0.6
-	local fallMid = fallTop - Vector3.new(0, fallHeight / 2, 0)
-	local sheet = part(m, "FallSheet", Vector3.new(3, fallHeight, 0.4), CFrame.lookAt(fallMid, fallMid + edgeDir), rgb(185, 230, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false })
-	sheet.Transparency = 0.35
+	local beamTop = part(m, "FallTop", Vector3.new(0.2, 0.2, 0.2), fallTop, rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local beamBottom = part(m, "FallBottom", Vector3.new(0.2, 0.2, 0.2), fallTop - Vector3.new(0, fallHeight, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local a0 = Instance.new("Attachment")
+	a0.Parent = beamTop
+	local a1 = Instance.new("Attachment")
+	a1.Parent = beamBottom
+	for _, spec in ipairs({ { 3.2, 0.3, rgb(185, 230, 255) }, { 1.8, 0.15, rgb(245, 252, 255) } }) do
+		local fall = Instance.new("Beam")
+		fall.Name = "FallSheet"
+		fall.Attachment0, fall.Attachment1 = a0, a1
+		fall.Width0, fall.Width1 = spec[1], spec[1] * 1.6
+		fall.FaceCamera = true
+		fall.Color = ColorSequence.new(spec[3])
+		fall.LightEmission = 0.4
+		fall.LightInfluence = 0.6
+		fall.Segments = 8
+		fall.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		fall.TextureMode = Enum.TextureMode.Wrap
+		fall.TextureLength = 12
+		fall.TextureSpeed = 2.5
+		fall.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, spec[2]), NumberSequenceKeypoint.new(0.35, spec[2] + 0.2), NumberSequenceKeypoint.new(1, 1) })
+		fall.Parent = beamTop
+	end
 	local source = part(m, "DropSource", Vector3.new(2.6, 0.2, 0.5), CFrame.lookAt(fallTop, fallTop + edgeDir), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 	emitter(source, {
 		Name = "Streaks",
 		Color = ColorSequence.new(rgb(250, 254, 255)),
 		LightEmission = 0.3,
 		Rate = 70,
-		Lifetime = NumberRange.new(fallHeight / 24),
+		Lifetime = NumberRange.new(2.2),
 		Speed = NumberRange.new(22, 26),
 		EmissionDirection = Enum.NormalId.Bottom,
 		SpreadAngle = Vector2.new(3, 3),
@@ -1133,7 +1161,7 @@ local function treasureIslet(parent, def, face)
 		Shape = Enum.ParticleEmitterShape.Box,
 	})
 	-- Струя растворяется в тумане.
-	local mistAt = part(m, "FallMist", Vector3.new(3, 0.2, 3), fallTop - Vector3.new(0, fallHeight, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local mistAt = part(m, "FallMist", Vector3.new(3, 0.2, 3), fallTop - Vector3.new(0, 50, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 	emitter(mistAt, {
 		Name = "Mist",
 		Color = ColorSequence.new(rgb(240, 250, 255)),
@@ -1301,7 +1329,11 @@ local function buildTreasure(model)
 	-- Табличка у начала подъёма, лицом к центру острова.
 	local inward = -Vector3.new(TREASURE_START.X, 0, TREASURE_START.Z).Unit
 	local signAt = L(TREASURE_START.X, 0.4, TREASURE_START.Z) + inward * 6 + Vector3.new(inward.Z, 0, -inward.X) * 6
-	part(folder, "SignPost", Vector3.new(0.6, 5, 0.6), signAt + Vector3.new(0, 2.5, 0), MARBLE)
+	-- две стойки по краям, за табличкой — не пробивают её насквозь
+	local along = Vector3.new(inward.Z, 0, -inward.X)
+	for _, k in ipairs({ -1, 1 }) do
+		part(folder, "SignPost", Vector3.new(0.5, 7.2, 0.5), signAt + along * (k * 3.3) - inward * 0.5 + Vector3.new(0, 3.6, 0), MARBLE)
+	end
 	sign(folder, "TREASURE ISLES", "jump the clouds · double jump!", Vector3.new(8, 3.2, 0.4), CFrame.lookAt(signAt + Vector3.new(0, 6, 0), signAt + Vector3.new(0, 6, 0) + inward), rgb(255, 246, 225), rgb(255, 190, 80))
 	return lowSteps, taken
 end
@@ -1387,8 +1419,12 @@ function Sky.Build(world)
 	rainbow(model, L(0, 0.5, -95), 80)
 	rainbow(model, L(-100, 0.5, 120), 38)
 	for i = 0, 9 do
-		candyTree(model, L(-24 - (i % 2) * 3, 0.4, 85 - i * 22), i)
-		candyTree(model, L(24 + (i % 2) * 3, 0.4, 85 - i * 22), i + 2)
+		local z = 85 - i * 22
+		-- не на дорожке к магазинам (z 38..52)
+		if math.abs(z - 45) > 12 then
+			candyTree(model, L(-24 - (i % 2) * 3, 0.4, z), i)
+			candyTree(model, L(24 + (i % 2) * 3, 0.4, z), i + 2)
+		end
 	end
 	local deco = Instance.new("Folder")
 	deco.Name = "Decor"
@@ -1411,7 +1447,7 @@ function Sky.Build(world)
 		local a = fr:NextNumber(0, math.pi * 2)
 		local r = fr:NextNumber(30, 140)
 		local fx, fz = math.cos(a) * r, math.sin(a) * r
-		if math.abs(fx) > 14 and (fx + 70) ^ 2 + (fz + 35) ^ 2 > 34 ^ 2 and not (fz > 95 and fz < 130) and not (math.abs(fz - 45) < 14) then
+		if math.abs(fx) > 14 and (fx + 70) ^ 2 + (fz + 35) ^ 2 > 34 ^ 2 and not (fz > 95 and fz < 130) and not (math.abs(fz - 45) < 14) and (fx - 45) ^ 2 + (fz - 62) ^ 2 > 14 ^ 2 then
 			flowers(deco, L(fx, 0.4, fz), i)
 		end
 	end

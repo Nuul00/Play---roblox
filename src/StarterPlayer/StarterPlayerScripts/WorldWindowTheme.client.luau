@@ -1,7 +1,7 @@
 -- Окна и HUD в цвет мира: инвентарь, индекс, ребитх, телепорт, магазины, машины, кнопки.
 -- Перекрашиваем только «подложки» — тёмные и приглушённые цвета фонов, обводок и градиентов.
 -- Яркие кнопки (купить/закрыть), цвета редкости и текст не трогаем, чтобы всё читалось как раньше.
--- Окно ежедневных заданий (DailyUI) не трогаем.
+-- Окно ежедневных наград (DailyRewardsUI) тоже в цвет мира. Ребитх красим без осветления — иначе пересвечен.
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
@@ -18,7 +18,11 @@ local GUIS = {
 	CoinSprintHUD = true,
 	CornerMenuHUD = true,
 	MainHUD = true,
+	DailyRewardsUI = true,
 }
+-- окна, которые не осветляем (только оттенок мира)
+local DIM = { RebirthUI = true }
+local dimNow = false
 
 -- hue/sat — подложки, edgeHue/edgeSat — обводки, light — во сколько раз светлее.
 local THEMES = {
@@ -40,8 +44,13 @@ local function remap(c: Color3, edge: boolean): Color3?
 	local h, s, v = c:ToHSV()
 	local hue = edge and theme.edgeHue or theme.hue
 	local sat = edge and theme.edgeSat or theme.sat
+	local light = theme.light
+	if dimNow then
+		light = math.min(light, 0.95)
+		sat *= 0.8
+	end
 	if v < 0.62 and s < 0.78 then
-		return Color3.fromHSV(hue, sat, math.min(1, v * theme.light))
+		return Color3.fromHSV(hue, sat, math.min(1, v * light))
 	elseif s < 0.15 and v >= 0.62 and not edge then
 		-- светлые серые плашки — лёгкий оттенок мира
 		return Color3.fromHSV(hue, 0.12, v)
@@ -104,9 +113,11 @@ local roots = {}
 local function paintAll()
 	for gui in pairs(roots) do
 		if gui.Parent then
+			dimNow = DIM[gui.Name] == true
 			for _, d in ipairs(gui:GetDescendants()) do
 				paint(d)
 			end
+			dimNow = false
 		end
 	end
 end
@@ -116,12 +127,19 @@ local function hook(gui: Instance)
 		return
 	end
 	roots[gui] = true
+	local dim = DIM[gui.Name] == true
 	gui.DescendantAdded:Connect(function(d)
-		task.defer(paint, d) -- ячейки инвентаря и списков появляются на лету
+		task.defer(function() -- ячейки инвентаря и списков появляются на лету
+			dimNow = dim
+			paint(d)
+			dimNow = false
+		end)
 	end)
+	dimNow = dim
 	for _, d in ipairs(gui:GetDescendants()) do
 		paint(d)
 	end
+	dimNow = false
 end
 
 

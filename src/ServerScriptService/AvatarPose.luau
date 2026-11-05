@@ -60,6 +60,26 @@ function AvatarPose.Sit(model: Model)
 	end
 end
 
+-- Зацикленная эмоция (танец, ура, привет) для статуи на пьедестале. ids = { R15 = "...", R6 = "..." }.
+function AvatarPose.Emote(model: Model, ids: { R15: string, R6: string })
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local animation = Instance.new("Animation")
+	animation.AnimationId = humanoid.RigType == Enum.HumanoidRigType.R15 and ids.R15 or ids.R6
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(animation)
+	end)
+	if ok and track then
+		track.Looped = true
+		track.Priority = Enum.AnimationPriority.Action4
+		track:Play(0.2)
+	end
+end
+
 -- Ставит модель так, чтобы самая низкая точка выбранных частей легла на высоту y.
 -- facing — CFrame только с поворотом (куда смотрит персонаж).
 function AvatarPose.Place(model: Model, position: Vector3, facing: CFrame, y: number, sitting: boolean?)

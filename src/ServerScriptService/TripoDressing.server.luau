@@ -227,7 +227,7 @@ local function dressMachine(tier: number)
 	ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
 	ring.Material = Enum.Material.Neon
 	ring.Color = color
-	ring.Transparency = 0.25
+	ring.Transparency = 1 -- метка невидима: игрок просто встаёт перед машиной
 	ring.Size = Vector3.new(0.2, 11, 11)
 	ring.CFrame = CFrame.new(front + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2)
 	ring.Parent = model
@@ -235,7 +235,7 @@ local function dressMachine(tier: number)
 	inner.Name = "MachineMarkerInner"
 	inner.Material = Enum.Material.SmoothPlastic
 	inner.Color = color:Lerp(Color3.new(0, 0, 0), 0.55)
-	inner.Transparency = 0.1
+	inner.Transparency = 1
 	inner.Size = Vector3.new(0.24, 9.4, 9.4)
 	inner.Parent = model
 	local sparks = Instance.new("ParticleEmitter")
@@ -247,7 +247,8 @@ local function dressMachine(tier: number)
 	sparks.Speed = NumberRange.new(3, 6)
 	sparks.EmissionDirection = Enum.NormalId.Right -- ось цилиндра смотрит вверх
 	sparks.SpreadAngle = Vector2.new(12, 12)
-	sparks.Rate = 14
+	sparks.Rate = 0
+	sparks.Enabled = false
 	sparks.Parent = ring
 	-- табличку — над верхом новой модели
 	local sign = model:FindFirstChild("Sign")
@@ -259,7 +260,7 @@ local function dressMachine(tier: number)
 end
 
 ------------------------------------------------------------------ магазины
-local function dressShop(shop: Instance?, propName: string, faceTo: Vector3?)
+local function dressShop(shop: Instance?, propName: string, faceTo: Vector3?, scale: number?)
 	local template = props and props:FindFirstChild(propName)
 	if not (shop and template) or shop:GetAttribute("Tripo") then
 		return
@@ -292,7 +293,7 @@ local function dressShop(shop: Instance?, propName: string, faceTo: Vector3?)
 	if npc then
 		npc:Destroy()
 	end
-	fit(template, math.max(size.X, size.Y, size.Z) * 0.95, bottom, shop, "TripoModel")
+	fit(template, math.max(size.X, size.Y, size.Z) * 0.95 * (scale or 1), bottom, shop, "TripoModel")
 end
 
 ------------------------------------------------------------------ декор Frozen Peaks
@@ -345,7 +346,7 @@ for tier = 1, 3 do
 end
 pcall(dressShop, world:FindFirstChild("UpgradeShop"), "MeadowUpgradeShop")
 pcall(dressShop, world:FindFirstChild("MagnetShop"), "MeadowMagnetShop")
-pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop")
+pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop", nil, 0.72) -- был огромный, видно недорисованные края
 pcall(dressShop, sky and sky:FindFirstChild("UpgradeShop"), "SkyUpgradeShop")
 pcall(dressShop, sky and sky:FindFirstChild("MagnetShop"), "SkyMagnetShop")
 pcall(dressShop, frozen and frozen:FindFirstChild("UpgradeShop"), "FrozenShop")
@@ -376,7 +377,23 @@ if volcanoW then
 				local cf, ext = m:GetBoundingBox()
 				m:SetAttribute("Tripo", true)
 				hide(m)
-				fit(trees[k % 2 + 1], ext.Y * 1.1, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)) * CFrame.Angles(0, k * 1.7, 0), m, "TripoModel")
+				-- ставим на землю: луч вниз по земле вулкана (старое дерево могло висеть над ней)
+				local base = cf.Position - Vector3.new(0, ext.Y / 2, 0)
+				local ground = volcanoW:FindFirstChild("Ground")
+				local rp = RaycastParams.new()
+				rp.FilterType = Enum.RaycastFilterType.Include
+				rp.FilterDescendantsInstances = { ground or volcanoW, workspace.Terrain }
+				local hit = workspace:Raycast(base + Vector3.new(0, ext.Y + 20, 0), Vector3.new(0, -(ext.Y + 80), 0), rp)
+				if hit then
+					base = Vector3.new(base.X, hit.Position.Y - 0.6, base.Z)
+				end
+				local tm = fit(trees[k % 2 + 1], ext.Y * 1.1, CFrame.new(base) * CFrame.Angles(0, k * 1.7, 0), m, "TripoModel")
+				-- у модели снизу может быть пустота (корни вбок): досаживаем по самой низкой видимой точке
+				local tcf, text = tm:GetBoundingBox()
+				local low = tcf.Position.Y - text.Y / 2
+				if low > base.Y + 0.05 then
+					tm:PivotTo(tm:GetPivot() - Vector3.new(0, low - base.Y, 0))
+				end
 			end
 		end
 	end
@@ -480,7 +497,14 @@ if frozen then
 				local cf, ext = m:GetBoundingBox()
 				local bottom = CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)) * CFrame.Angles(0, k * 1.3, 0)
 				hide(m)
-				fit(t, math.max(ext.X, ext.Y, ext.Z) * 1.15, bottom, m, "TripoModel")
+				local tm = fit(t, math.max(ext.X, ext.Y, ext.Z) * 1.15, bottom, m, "TripoModel")
+				-- горы твёрдые: в скалу нельзя зайти
+				for _, d in ipairs(tm:GetDescendants()) do
+					if d:IsA("BasePart") then
+						d.CanCollide = true
+						d.CanQuery = true
+					end
+				end
 			end
 		end
 	end
@@ -506,8 +530,9 @@ if frozen then
 	put("PenguinStatue", 12, Vector3.new(-26, lift, 60), math.rad(200))
 	put("FrozenSled", 10, Vector3.new(26, 0, 62), math.rad(160))
 	put("FrozenMachine", 14, Vector3.new(-60, 0, -10), math.rad(90))
-	for k = 0, 5 do
-		put("FrozenLamp", 11, Vector3.new(k % 2 == 0 and -12 or 12, 0, 30 + math.floor(k / 2) * 34), 0)
+	-- фонари вдоль главной дорожки (ширина 18), но не на ней и не на дорожках к магазинам (z 40 и 100)
+	for k, z in ipairs({ 22, 22, 62, 62, 84, 84, 124, 124 }) do
+		put("FrozenLamp", 11, Vector3.new(k % 2 == 0 and 16 or -16, 0, z), 0)
 	end
 end
 -- Сундуки на островках Sky Isles: модель Tripo по номеру сундука, ChestBase остаётся для логики.

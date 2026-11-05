@@ -17,20 +17,23 @@ fuse.Parent = ReplicatedStorage
 
 local MAX_DISTANCE = 22
 
--- Где стоят машины и куда смотрят (точки проверены: ровная земля, ничего не мешает).
+-- Где стоят машины и куда смотрят. Каждая стоит у дорожки лицом к ней: в Meadow и Неонграде —
+-- напротив яиц через дорожку EggPath (z = 150) на своей каменной площадке, в Sky — у дорожки
+-- к магазинам (z = 45). Третье значение — дорожка, от которой ведём к машине площадку.
 local SPOTS = {
 	[1] = function()
-		return Vector3.new(138, 0, 156), Vector3.new(0, 0, 180)
+		return Vector3.new(85, 0, 167), Vector3.new(85, 0, 150), world:FindFirstChild("EggPath")
 	end,
 	[2] = function()
-		local floor = world:WaitForChild("NeonCity"):WaitForChild("Floor")
-		return Vector3.new(floor.Position.X + 65, 0, 165), Vector3.new(floor.Position.X, 0, 180)
+		local city = world:WaitForChild("NeonCity")
+		local x = city:WaitForChild("Floor").Position.X
+		return Vector3.new(x + 85, 0, 167), Vector3.new(x + 85, 0, 150), city:FindFirstChild("EggPath")
 	end,
 	[3] = function()
 		local sky = world:WaitForChild("SkyIsles", 120)
 		local deck = sky and sky:WaitForChild("Ground"):WaitForChild("Deck")
 		local c = deck and deck.Position or Vector3.new(1100, 0, 0)
-		return Vector3.new(c.X + 60, 0, c.Z + 80), Vector3.new(c.X, 0, c.Z + 135)
+		return Vector3.new(c.X + 45, 0, c.Z + 62), Vector3.new(c.X + 45, 0, c.Z + 45), nil
 	end,
 }
 
@@ -87,15 +90,35 @@ end
 local function build(tier: number)
 	local def = ShopConfig.Variants[tier]
 	local style = STYLE[tier]
-	local pos, face = SPOTS[tier]()
+	local pos, face, path = SPOTS[tier]()
 	-- Высоту берём из земли под точкой.
 	local hit = workspace:Raycast(pos + Vector3.new(0, 500, 0), Vector3.new(0, -1000, 0))
 	local y = hit and hit.Position.Y or 0
-	local origin = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(face.X, y, face.Z))
 
 	local model = Instance.new("Model")
 	model.Name = "PetMachine" .. tier
 	model:SetAttribute("Tier", tier)
+	-- Каменная площадка под машиной и мостик до дорожки (тем же камнем, что дорожка): машина
+	-- не тонет в траве и к ней видно, как подойти.
+	if path and path:IsA("BasePart") then
+		local top = path.Position.Y + path.Size.Y / 2
+		local edge = path.Position.Z + path.Size.Z / 2
+		local pad = path:Clone()
+		pad.Name = "MachinePad"
+		pad:ClearAllChildren()
+		pad.Size = Vector3.new(17, path.Size.Y, 17)
+		pad.CFrame = CFrame.new(pos.X, path.Position.Y, pos.Z)
+		pad.Parent = model
+		local link = path:Clone()
+		link.Name = "MachinePath"
+		link:ClearAllChildren()
+		local from, to = edge - 0.2, pos.Z - 8.3
+		link.Size = Vector3.new(7, path.Size.Y, math.max(to - from, 0.5))
+		link.CFrame = CFrame.new(pos.X, path.Position.Y, (from + to) / 2)
+		link.Parent = model
+		y = top
+	end
+	local origin = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(face.X, y, face.Z))
 
 	local base = part(model, "Base", Vector3.new(1, 15, 15), origin * CFrame.new(0, 0.5, 0) * CFrame.Angles(0, 0, math.pi / 2), style.base, nil, Enum.PartType.Cylinder)
 	part(model, "Rim", Vector3.new(0.5, 15.8, 15.8), origin * CFrame.new(0, 0.3, 0) * CFrame.Angles(0, 0, math.pi / 2), style.trim, Enum.Material.Neon, Enum.PartType.Cylinder).CanCollide = false
@@ -141,6 +164,7 @@ local function build(tier: number)
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
+	prompt.Enabled = false -- кнопки E нет: окно открывается, когда игрок встаёт перед машиной (PetMachineUI)
 	prompt:SetAttribute("Tier", tier)
 	prompt.Parent = body
 

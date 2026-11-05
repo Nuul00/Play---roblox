@@ -91,17 +91,18 @@ local function sparks(parent: BasePart, rate: number)
 end
 
 -- Одна трещина: ломаная из 3–6 отрезков, иногда с ответвлением.
-local function crack(origin: Vector3)
+local function crack(origin: Vector3, outward: number?)
 	active += 1
 	local model = Instance.new("Model")
 	model.Name = "Crack"
 	model.Parent = folder
 	local glows, rims, halos = {}, {}, {}
-	local heading = rng:NextNumber(0, math.pi * 2)
+	-- трещины бегут от вулкана наружу: направление — от кратера, с небольшим разбросом
+	local heading = outward and (outward + rng:NextNumber(-0.35, 0.35)) or rng:NextNumber(0, math.pi * 2)
 	local pts = { origin }
 	local nSeg = rng:NextInteger(3, 6)
 	for _ = 1, nSeg do
-		heading += rng:NextNumber(-0.7, 0.7)
+		heading += rng:NextNumber(-0.45, 0.45)
 		local len = rng:NextNumber(4, 8.5)
 		local last = pts[#pts]
 		table.insert(pts, last + Vector3.new(math.cos(heading) * len, 0, math.sin(heading) * len))
@@ -203,23 +204,48 @@ local function crack(origin: Vector3)
 	active -= 1
 end
 
--- Ищем точку на голой земле вулкана (не на дорожках, площадях и лаве) в кольце вокруг игрока.
-local function spot(): Vector3?
+-- Вулкан: центр и радиус подножия (по модели Tripo, если она есть).
+local mountain = volcano:WaitForChild("Volcano", 30)
+local VCENTER, VBASE, VTOP = Vector3.new(6000, 60, -110), 90, 140
+local function measureVolcano()
+	local m = mountain and (mountain:FindFirstChild("TripoModel") or mountain)
+	if m and m:IsA("Model") then
+		local cf, ext = m:GetBoundingBox()
+		VCENTER = Vector3.new(cf.Position.X, cf.Position.Y - ext.Y / 2, cf.Position.Z)
+		VBASE = math.max(ext.X, ext.Z) / 2
+		VTOP = cf.Position.Y + ext.Y / 2
+	end
+end
+measureVolcano()
+
+-- Ищем точку на голой земле вулкана (не на дорожках, площадях и лаве) на лучах от подножия
+-- вулкана в ту сторону, где игрок: трещины расходятся от вулкана.
+local function spot(): (Vector3?, number?)
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return nil
 	end
+	local rel = root.Position - VCENTER
+	local pa = math.atan2(rel.Z, rel.X)
+	local pr = Vector2.new(rel.X, rel.Z).Magnitude
 	for _ = 1, 6 do
-		local a = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(NEAR, FAR)
-		local from = root.Position + Vector3.new(math.cos(a) * r, 40, math.sin(a) * r)
+		local a, r
+		if rng:NextNumber() < 0.65 then
+			a = pa + rng:NextNumber(-0.45, 0.45)
+			r = rng:NextNumber(VBASE * 0.8, math.max(VBASE + 25, pr + 35))
+		else
+			a = rng:NextNumber(0, math.pi * 2)
+			r = VBASE * rng:NextNumber(0.8, 1.2)
+		end
+		local p = VCENTER + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		local from = Vector3.new(p.X, root.Position.Y + 40, p.Z)
 		local hit = workspace:Raycast(from, Vector3.new(0, -120, 0), rayParams)
 		if hit then
 			-- над щелью ничего не должно стоять (дорожка, площадь, постройка)
 			local check = workspace:Raycast(from, Vector3.new(0, -120, 0))
-			if check and check.Instance == hit.Instance then
-				return hit.Position
+			if check and check.Instance == hit.Instance and (hit.Position - root.Position).Magnitude < FAR * 1.5 then
+				return hit.Position, a
 			end
 		end
 	end
@@ -247,9 +273,9 @@ local function onWorld()
 		task.spawn(function()
 			while inside do
 				if active < MAX_CRACKS then
-					local p = spot()
+					local p, a = spot()
 					if p then
-						task.spawn(crack, p)
+						task.spawn(crack, p, a)
 					end
 				end
 				task.wait(rng:NextNumber(0.15, 0.45))

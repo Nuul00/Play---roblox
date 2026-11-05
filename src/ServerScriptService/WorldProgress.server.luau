@@ -196,11 +196,46 @@ local function avatarFor(userId)
  end
  return avatarCache[userId] or nil
 end
+-- Топ-3 на пьедестале не стоят столбом: первый танцует, второй радуется, третий машет.
+local EMOTES={
+ {R15="rbxassetid://507771019",R6="rbxassetid://182435998"},
+ {R15="rbxassetid://507770677",R6="rbxassetid://129423030"},
+ {R15="rbxassetid://507770239",R6="rbxassetid://128777973"},
+}
+-- Пьедестал ярче: ступени светятся своим цветом (золото/серебро/бронза), сверху прожектор,
+-- кромки неоновые, таблички с именами не темнеют ночью, над первым местом искры.
+local brightened={}
+local function brighten(podium)
+ if brightened[podium] then return end
+ brightened[podium]=true
+ for _,d in ipairs(podium:GetChildren()) do
+  if d:IsA("BasePart") then
+   local place=tonumber(string.match(d.Name,"^Place(%d)$"))
+   if d.Name=="Rim" then d.Material=Enum.Material.Neon end
+   if place then
+    local l=Instance.new("PointLight");l.Color=d.Color;l.Range=12;l.Brightness=2.2;l.Parent=d
+    local spot=Instance.new("Part");spot.Name="PodiumSpot"..place;spot.Anchored=true;spot.CanCollide=false;spot.CanQuery=false;spot.CanTouch=false;spot.Transparency=1;spot.Size=Vector3.new(1,1,1)
+    spot.CFrame=CFrame.lookAt(d.Position+Vector3.new(0,16,-4),d.Position+Vector3.new(0,3,0));spot.Parent=podium
+    local sl=Instance.new("SpotLight");sl.Face=Enum.NormalId.Front;sl.Angle=40;sl.Range=24;sl.Brightness=place==1 and 6 or 4;sl.Color=Color3.new(1,0.97,0.9):Lerp(d.Color,0.3);sl.Parent=spot
+    if place==1 then
+     local e=Instance.new("ParticleEmitter");e.Texture="rbxasset://textures/particles/sparkles_main.dds";e.Color=ColorSequence.new(Color3.fromRGB(255,230,120),Color3.new(1,1,1))
+     e.LightEmission=1;e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5),NumberSequenceKeypoint.new(1,0)});e.Lifetime=NumberRange.new(1,2);e.Speed=NumberRange.new(1,3)
+     e.SpreadAngle=Vector2.new(180,180);e.Rate=10;e.Parent=d
+    end
+   end
+   if string.match(d.Name,"^Plate%d$") then
+    d.Color=Color3.fromRGB(48,44,86)
+    for _,g in ipairs(d:GetDescendants()) do if g:IsA("SurfaceGui") then g.LightInfluence=0;g.Brightness=1.6 end end
+   end
+  end
+ end
+end
 -- Под каждой доской свой пьедестал (Podium_BoardCoins и т.д.) с топ-3 именно этой доски.
 local function updatePodiums(def,rows)
  for _,zone in ipairs({world,city}) do
   local podium=zone:FindFirstChild("Podium_"..def.Part)
   if podium then
+   pcall(brighten,podium)
    for place=1,3 do
     local step=podium:FindFirstChild("Place"..place)
     local row=rows[place]
@@ -223,6 +258,7 @@ local function updatePodiums(def,rows)
       local top=step.Position+Vector3.new(0,step.Size.Y/2,0)
       if step:IsA("Part") and step.Shape==Enum.PartType.Cylinder then top=step.Position+Vector3.new(0,step.Size.X/2,0) end
       AvatarPose.Place(npc,top,CFrame.Angles(0,0,0),top.Y,false)
+      pcall(AvatarPose.Emote,npc,EMOTES[place])
      end
     end
    end

@@ -198,6 +198,8 @@ local function shop(parent, at: Vector3, name: string?, title: string?)
 	local zone = disc(m, "ShopZone", 24, 0.3, at + Vector3.new(0, 0.7, 10), rgb(150, 220, 255), M.SmoothPlastic, { Transparency = 0.55, CanCollide = false })
 	zone.Size = Vector3.new(0.3, 24, 24)
 	part(m, "VendorAnchor", Vector3.new(1, 1, 1), at + Vector3.new(0, 0.6, -5.5), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
+	-- Магазины стоят слева от главной дорожки, к ним ведут дорожки вдоль X: разворачиваем лицом к ним (+X).
+	m:PivotTo(CFrame.new(at) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.new(at):Inverse() * m:GetPivot())
 	m.Parent = parent
 	return m
 end
@@ -411,7 +413,8 @@ function Frozen.Build(world: Instance)
 	local peaks = Instance.new("Model")
 	peaks.Name = "Peaks"
 	peaks.Parent = model
-	for _, p in ipairs({ { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { -150, -30, 50, 55 }, { 160, -10, 40, 45 } }) do -- справа от площади — сад яиц, там гор нет
+	local PEAKS = { { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { -150, -30, 50, 55 }, { 160, -10, 40, 45 } }
+	for _, p in ipairs(PEAKS) do -- справа от площади — сад яиц, там гор нет
 		mountain(peaks, L(p[1], 0, p[2]), p[3], p[4])
 	end
 
@@ -421,6 +424,16 @@ function Frozen.Build(world: Instance)
 	decor.Parent = model
 	-- Занятые места: центр, магазин и площадка перед ним, проход к магазину, озеро, иглу, вход.
 	local placedSpots = { { 0, 0, 34 }, { -85, 40, 26 }, { -85, 66, 20 }, { -45, 45, 14 }, { 75, 20, 42 }, { -70, -55, 16 }, { 0, 110, 14 }, { -85, 100, 22 }, { -45, 100, 12 }, { 100, 110, 22 } }
+	-- Горы (3D-модели Tripo в 1.15 раза больше пирамид): ни ёлок, ни кристаллов, ни монет внутри скал.
+	for _, p in ipairs(PEAKS) do
+		table.insert(placedSpots, { p[1], p[2], p[3] * 0.72 })
+		table.insert(placedSpots, { p[1] + p[3] * 0.3, p[2] + p[3] * 0.15, p[3] * 0.5 })
+	end
+	-- фонари вдоль дорожки (TripoDressing ставит их на x = ±16)
+	for _, z in ipairs({ 22, 62, 84, 124 }) do
+		table.insert(placedSpots, { 16, z, 3 })
+		table.insert(placedSpots, { -16, z, 3 })
+	end
 	local function free(x, z, r)
 		if (Vector2.new(x, z)).Magnitude > 150 then
 			return false

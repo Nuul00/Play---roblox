@@ -267,6 +267,44 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 		closeWindow()
 	end
 end)
+-- Без кнопки E: встал на место перед машиной (невидимая метка MachineMarker) — окно открылось,
+-- отошёл — закрылось. Повторно открывается только после того, как игрок ушёл с метки.
+task.spawn(function()
+	local machinesFolder = workspace:WaitForChild("PetMachines", 60)
+	if not machinesFolder then
+		return
+	end
+	local onSpot = {}
+	while true do
+		task.wait(0.15)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			for _, m in ipairs(machinesFolder:GetChildren()) do
+				local tier = m:GetAttribute("Tier")
+				local marker = m:FindFirstChild("MachineMarker")
+				local spot = marker and marker.Position or (m.PrimaryPart and m.PrimaryPart.Position)
+				if spot and type(tier) == "number" then
+					local o = root.Position - spot
+					local flat = Vector2.new(o.X, o.Z).Magnitude
+					if flat < 5.5 and math.abs(o.Y) < 7 then
+						if not onSpot[m] then
+							onSpot[m] = true
+							local screen = player:GetAttribute("UIScreen")
+							if screen == nil or screen == "" then
+								open(tier, m)
+							end
+						end
+					elseif flat > 7 then
+						onSpot[m] = nil
+						if currentMachine == m and window.Visible and flat > 16 then
+							closeWindow()
+						end
+					end
+				end
+			end
+		end
+	end
+end)
 local pending = false
 player.AttributeChanged:Connect(function(name)
 	if window.Visible and not pending and string.sub(name, 1, 3) == "Pet" then

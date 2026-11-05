@@ -146,7 +146,7 @@ for i = 1, 6 do
 	ray.Rotation = i * 30
 	ray.Parent = left
 	local g = Instance.new("UIGradient")
-	g.Transparency = tseq({ { 0, 1 }, { 0.5, 0.35 }, { 1, 1 } })
+	g.Transparency = tseq({ { 0, 1 }, { 0.5, 0.72 }, { 1, 1 } })
 	g.Parent = ray
 	table.insert(badgeRays, ray)
 end
@@ -192,15 +192,15 @@ local function bar(y, a, b)
 	local check = text(back, "", 474, 4, 36, 32, 22)
 	return { fill = fill, grad = g, label = label, check = check, a = a, b = b, frac = -1 }
 end
-local coinBar = bar(32, rgb(255, 228, 95), rgb(240, 155, 30))
-local eggBar = bar(78, rgb(255, 160, 235), rgb(175, 85, 255))
+local coinBar = bar(32, rgb(230, 195, 80), rgb(200, 120, 30))
+local eggBar = bar(78, rgb(215, 130, 205), rgb(140, 70, 210))
 
 local function setBar(bb, frac, s, done)
 	frac = math.clamp(frac, 0, 1)
 	bb.label.Text = s
 	bb.check.Text = done and "✅" or ""
 	if done then
-		bb.grad.Color = ColorSequence.new(rgb(170, 255, 150), rgb(60, 190, 85))
+		bb.grad.Color = ColorSequence.new(rgb(120, 205, 110), rgb(40, 135, 70))
 	else
 		bb.grad.Color = ColorSequence.new(bb.a, bb.b)
 	end
@@ -289,7 +289,7 @@ local function updateRoad(r)
 		local done = r >= n.m.At
 		local isNext = not done and nextNode == nil
 		if done then
-			n.grad.Color = ColorSequence.new(rgb(170, 255, 150), rgb(40, 170, 90))
+			n.grad.Color = ColorSequence.new(rgb(120, 205, 110), rgb(35, 125, 70))
 			n.stroke.Color = rgb(255, 225, 110)
 			n.icon.TextTransparency = 0
 			n.corner.Text = "✅"
@@ -384,7 +384,7 @@ shine.Visible = false
 local btnLabel = text(button, "", 0, 4, 380, 54, 28)
 
 local GRAY = ColorSequence.new(rgb(150, 150, 165), rgb(95, 95, 115))
-local GREEN = ColorSequence.new(rgb(175, 255, 140), rgb(50, 185, 80))
+local GREEN = ColorSequence.new(rgb(130, 215, 110), rgb(40, 140, 70))
 local RED = ColorSequence.new(rgb(255, 160, 120), rgb(225, 65, 60))
 local GOLD = ColorSequence.new(rgb(255, 235, 130), rgb(240, 150, 40))
 
