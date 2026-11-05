@@ -448,15 +448,19 @@ local LAVA_GLOW, COSMIC = Color3.fromRGB(255, 120, 40), Color3.fromRGB(170, 120,
 pcall(function()
 	landmark(volcanoW, VCC, "DragonSkullGate", 46, 0, 128, 0, LAVA_GLOW, "ember")
 	landmark(volcanoW, VCC, "LavaFountain", 20, 0, 10, 0, LAVA_GLOW, "ember")
-	-- между развилками к магазинам (z 40/100) и яйцам (z 70), чтобы не перекрывать проходы
-	for i, at in ipairs({ { -19, 85 }, { 19, 85 }, { -19, 116 }, { 19, 116 } }) do
-		landmark(volcanoW, VCC, "LavaPillar", 17, at[1], at[2], i * 1.3, LAVA_GLOW, "ember")
+	-- столбы отступают от дороги в лавовое поле (между развилками к магазинам z 40/100 и яйцам z 70):
+	-- обрамляют путь издалека, а не теснят его
+	for i, at in ipairs({ { -36, 84 }, { 36, 88 }, { -40, 120 }, { 38, 124 } }) do
+		landmark(volcanoW, VCC, "LavaPillar", 18, at[1], at[2], i * 1.3, LAVA_GLOW, "ember")
 	end
 end)
 pcall(function()
-	landmark(galaxyW, GCC, "PlanetPillar", 34, 0, 10, 0, COSMIC)
-	for i, at in ipairs({ { -18, 55 }, { 18, 55 }, { -18, 85 }, { 18, 85 }, { -18, 116 }, { 18, 116 } }) do
-		landmark(galaxyW, GCC, "AlienMonolith", 20, at[1], at[2], i * 0.9, Color3.fromRGB(90, 230, 255))
+	landmark(galaxyW, GCC, "PlanetPillar", 40, 0, 10, 0, COSMIC)
+	-- 4 обелиска кольцом за краем площади по диагоналям (как древний круг камней) — обрамляют
+	-- столб с планетой и не стоят на дорожках
+	for i, at in ipairs({ { -30, -12 }, { 30, -12 }, { -30, 27 }, { 30, 27 } }) do
+		local yaw = math.atan2(-(at[1]), -(at[2] - 10)) -- руны смотрят на центр площади
+		landmark(galaxyW, GCC, "AlienMonolith", 18, at[1], at[2], yaw, Color3.fromRGB(90, 230, 255))
 	end
 	landmark(galaxyW, GCC, "SpaceObservatory", 52, -110, -90, math.rad(35), COSMIC)
 end)
