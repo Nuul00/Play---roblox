@@ -519,8 +519,8 @@ local function skinPanel(frame: Frame, skin, def)
 		-- Круглая иконка скина крупнее старой: сдвигаем текст правее, чтобы он не заезжал под неё.
 		-- Справа на плитке нарисована травка/декор (~22% ширины): текст заканчивается до неё
 		-- и при длинных числах уменьшается, а не наезжает.
-		set(value, "Position", UDim2.fromOffset(h + 12, 0))
-		set(value, "Size", UDim2.new(0.78, -(h + 12), 1, 0))
+		set(value, "Position", UDim2.fromOffset(h + 20, 0))
+		set(value, "Size", UDim2.new(0.8, -(h + 20), 1, 0))
 	end
 end
 
