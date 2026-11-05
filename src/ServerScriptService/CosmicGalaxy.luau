@@ -605,8 +605,8 @@ function Galaxy.Build(world: Instance): Model
 
 	-- Монеты: звезда 19600 / туманность 39200 / космос 78400 (CoinTypes.Worlds.Galaxy). Как у Frozen: Coin_N в модели мира.
 	local placed = 0
-	for _ = 1, 4000 do
-		if placed >= 70 then
+	for _ = 1, 9000 do
+		if placed >= 195 then -- плотность монет как в Sky/Frozen (~1.4 на 1000 кв. стадов)
 			break
 		end
 		local a, r = rand:NextNumber(0, math.pi * 2), math.sqrt(rand:NextNumber()) * 195

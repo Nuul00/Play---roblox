@@ -458,6 +458,61 @@ Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if st
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
 -- здесь им только раздаются виды; Sky Isles раздаёт виды сам при постройке.
 local CoinTypes = require(ReplicatedStorage:WaitForChild("CoinTypes"))
+-- Монет в Meadow и Неонграде было втрое реже, чем в Sky/Frozen (40 на большой мир). Досыпаем копии
+-- имеющихся монет на землю в границах, где они уже лежат, чтобы плотность была ~1.4 на 1000 кв. стадов.
+do
+ local rayP = RaycastParams.new()
+ rayP.FilterType = Enum.RaycastFilterType.Exclude
+ local function fill(zone, target)
+  local list = {}
+  for _, c in ipairs(zone:GetChildren()) do
+   if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then table.insert(list, c) end
+  end
+  if #list == 0 or #list >= target then return end
+  local x0, x1, z0, z1, maxN = math.huge, -math.huge, math.huge, -math.huge, 0
+  for _, c in ipairs(list) do
+   x0, x1 = math.min(x0, c.Position.X), math.max(x1, c.Position.X)
+   z0, z1 = math.min(z0, c.Position.Z), math.max(z1, c.Position.Z)
+   maxN = math.max(maxN, tonumber(string.match(c.Name, "%d+")) or 0)
+  end
+  rayP.FilterDescendantsInstances = list
+  -- высота монеты над землёй берём с первой монеты
+  local t = list[1]
+  local g = workspace:Raycast(t.Position + Vector3.new(0, 2, 0), Vector3.new(0, -60, 0), rayP)
+  local lift = g and (t.Position.Y - g.Position.Y) or 2.6
+  local rng = Random.new(77)
+  local spots = {}
+  for _, c in ipairs(list) do table.insert(spots, c.Position) end
+  local n = #list
+  for _ = 1, target * 40 do
+   if n >= target then break end
+   local x, z = rng:NextNumber(x0, x1), rng:NextNumber(z0, z1)
+   local hit = workspace:Raycast(Vector3.new(x, t.Position.Y + 80, z), Vector3.new(0, -160, 0), rayP)
+   -- только открытая земля: ровная, большая деталь или Terrain (не крыша/лавка/дерево)
+   local ok = hit and hit.Normal.Y > 0.9 and (hit.Instance:IsA("Terrain") or (hit.Instance:IsA("BasePart") and math.max(hit.Instance.Size.X, hit.Instance.Size.Z) > 30))
+   if ok and math.abs(hit.Position.Y + lift - t.Position.Y) < 12 then
+    local pos = Vector3.new(x, hit.Position.Y + lift, z)
+    local free = true
+    for _, q in ipairs(spots) do
+     if (q - pos).Magnitude < 7 then free = false; break end
+    end
+    if free then
+     n += 1; maxN += 1
+     local c = t:Clone()
+     c.Name = "Coin_" .. maxN
+     c.Position = pos
+     for _, d in ipairs(c:GetChildren()) do
+      if d:IsA("Light") or d:IsA("ParticleEmitter") then d:Destroy() end -- сияние раздаст CoinTypes ниже
+     end
+     c.Parent = zone
+     table.insert(spots, pos)
+    end
+   end
+  end
+ end
+ fill(world, 115)
+ fill(city, 90)
+end
 for zone, worldId in pairs({[world] = "Meadow", [city] = "Neon"}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then

@@ -659,8 +659,8 @@ function Volcano.Build(world: Instance): Model
 
 	-- Монеты: угли 2800 / магма 5600 / обсидиан 11200 (CoinTypes.Worlds.Volcano). Как у Frozen: Coin_N в модели мира.
 	local placed = 0
-	for _ = 1, 4000 do
-		if placed >= 70 then
+	for _ = 1, 9000 do
+		if placed >= 165 then -- плотность монет как в Sky/Frozen (~1.4 на 1000 кв. стадов)
 			break
 		end
 		local a, r = rand:NextNumber(0, math.pi * 2), math.sqrt(rand:NextNumber()) * 195

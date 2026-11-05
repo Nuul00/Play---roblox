@@ -24,7 +24,7 @@ local function clearPets(record)
 	record.pets = {}
 end
 -- Расстановка, удобная игроку: камера смотрит из-за спины, поэтому прямо сзади никого нет.
--- Питомцы идут парами по бокам (следующая пара чуть дальше назад), нечётный — впереди по центру.
+-- Питомцы идут парами по бокам (следующая пара чуть дальше назад), нечётный — сзади по центру.
 -- Так обзор чистый, и всё симметрично.
 local PET_SCALE = 1.1
 local function formation(n: number): { Vector3 }
@@ -37,7 +37,7 @@ local function formation(n: number): { Vector3 }
 		table.insert(list, Vector3.new(x, 0, z))
 	end
 	if n % 2 == 1 then
-		table.insert(list, Vector3.new(0, 0, -5.5)) -- впереди, «ведёт» игрока
+		table.insert(list, Vector3.new(0, 0, 3.4 + pairsCount * 3.4)) -- сзади по центру, за последней парой
 	end
 	return list
 end
