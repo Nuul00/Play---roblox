@@ -388,6 +388,79 @@ pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMag
 pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop", GC)
 pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop", GC)
 
+-- «Вау»-достопримечательности Вулкана и Галактики (3D-модели Tripo): врата-череп дракона на входе,
+-- лавовый фонтан на площади, базальтовые столбы вдоль дороги; в космосе — столб с планетой,
+-- инопланетные монолиты и обсерватория. Каждая модель стоит на земле (луч вниз), со светом и частицами.
+local landRay = RaycastParams.new()
+landRay.FilterType = Enum.RaycastFilterType.Include
+local function landmark(worldModel: Instance?, center: Vector3, name: string, size: number, x: number, z: number, yaw: number, glow: Color3, fx: string?)
+	local t = props and props:FindFirstChild(name)
+	if not (worldModel and t) then
+		return
+	end
+	local folder = worldModel:FindFirstChild("Landmarks")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "Landmarks"
+		folder.Parent = worldModel
+	end
+	landRay.FilterDescendantsInstances = { worldModel }
+	local top = center + Vector3.new(x, 80, z)
+	local hit = workspace:Raycast(top, Vector3.new(0, -160, 0), landRay)
+	local y = hit and hit.Position.Y or center.Y
+	local m = fit(t, size, CFrame.new(x + center.X, y - 0.3, z + center.Z) * CFrame.Angles(0, yaw, 0), folder, name)
+	local cf, ext = m:GetBoundingBox()
+	local core = Instance.new("Part")
+	core.Name = "LandmarkGlow"
+	core.Anchored, core.CanCollide, core.CanQuery, core.CanTouch, core.CastShadow = true, false, false, false, false
+	core.Transparency = 1
+	core.Size = Vector3.new(ext.X * 0.6, ext.Y * 0.8, ext.Z * 0.6)
+	core.CFrame = cf
+	core.Parent = m
+	local light = Instance.new("PointLight")
+	light.Color = glow
+	light.Range = math.clamp(size * 0.9, 16, 50)
+	light.Brightness = 2.2
+	light.Parent = core
+	local e = Instance.new("ParticleEmitter")
+	if fx == "ember" then
+		e.Texture = "rbxasset://textures/particles/fire_main.dds"
+		e.Color = ColorSequence.new(Color3.fromRGB(255, 200, 80), Color3.fromRGB(255, 70, 20))
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0) })
+		e.Speed = NumberRange.new(3, 7)
+		e.Acceleration = Vector3.new(0, 4, 0)
+		e.Rate = 10
+	else
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Color = ColorSequence.new(glow, Color3.new(1, 1, 1))
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+		e.Speed = NumberRange.new(1, 3)
+		e.Rate = 8
+	end
+	e.LightEmission = 1
+	e.Lifetime = NumberRange.new(1.5, 3)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Parent = core
+	return m
+end
+local VCC, GCC = Vector3.new(6000, 60, 0), Vector3.new(7500, 60, 0)
+local LAVA_GLOW, COSMIC = Color3.fromRGB(255, 120, 40), Color3.fromRGB(170, 120, 255)
+pcall(function()
+	landmark(volcanoW, VCC, "DragonSkullGate", 46, 0, 128, 0, LAVA_GLOW, "ember")
+	landmark(volcanoW, VCC, "LavaFountain", 20, 0, 10, 0, LAVA_GLOW, "ember")
+	-- между развилками к магазинам (z 40/100) и яйцам (z 70), чтобы не перекрывать проходы
+	for i, at in ipairs({ { -19, 85 }, { 19, 85 }, { -19, 116 }, { 19, 116 } }) do
+		landmark(volcanoW, VCC, "LavaPillar", 17, at[1], at[2], i * 1.3, LAVA_GLOW, "ember")
+	end
+end)
+pcall(function()
+	landmark(galaxyW, GCC, "PlanetPillar", 34, 0, 10, 0, COSMIC)
+	for i, at in ipairs({ { -18, 55 }, { 18, 55 }, { -18, 85 }, { 18, 85 }, { -18, 116 }, { 18, 116 } }) do
+		landmark(galaxyW, GCC, "AlienMonolith", 20, at[1], at[2], i * 0.9, Color3.fromRGB(90, 230, 255))
+	end
+	landmark(galaxyW, GCC, "SpaceObservatory", 52, -110, -90, math.rad(35), COSMIC)
+end)
+
 if frozen then
 	pcall(swapAll, frozen, "Snowman", "Snowman", 1.15)
 	pcall(swapAll, frozen, "Igloo", "Igloo", 1.0)
