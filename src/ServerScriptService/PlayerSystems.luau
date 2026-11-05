@@ -312,6 +312,10 @@ function PlayerSystems.Setup(p)
 	p:GetAttributeChangedSignal("RebirthSlots"):Connect(function()
 		PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
 	end)
+	-- геймпасс «+3 Pet Slots» мог подтвердиться после загрузки команды — возвращаем всю команду
+	p:GetAttributeChangedSignal("Pass_PetSlots"):Connect(function()
+		PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
+	end)
 	for _, tier in ipairs(ShopConfig.Pity) do
 		p:SetAttribute("Pity" .. tier.Rarity, 0)
 	end

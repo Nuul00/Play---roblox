@@ -26,13 +26,36 @@ end
 local function checkPasses(p: Player)
 	for _, def in ipairs(StoreConfig.Passes) do
 		if def.Id and def.Id > 0 then
-			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, p.UserId, def.Id)
-			if ok and owns then
-				applyPass(p, def)
+			-- до 3 попыток: при сбое Roblox игрок не должен остаться без купленного
+			for attempt = 1, 3 do
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, p.UserId, def.Id)
+				if ok then
+					if owns then
+						applyPass(p, def)
+					end
+					break
+				end
+				task.wait(attempt * 2)
 			end
 		end
 	end
 end
+-- Буст удачи тратится только в игре: раз в секунду списываем секунду из Save_LuckBoostLeft,
+-- а GameServer смотрит на атрибут LuckBoostActive.
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for _, p in ipairs(Players:GetPlayers()) do
+			local left = p:GetAttribute("Save_LuckBoostLeft") or 0
+			if left > 0 and p:GetAttribute("ProfileReady") then
+				p:SetAttribute("Save_LuckBoostLeft", left - 1)
+				p:SetAttribute("LuckBoostActive", true)
+			elseif p:GetAttribute("LuckBoostActive") then
+				p:SetAttribute("LuckBoostActive", nil)
+			end
+		end
+	end
+end)
 Players.PlayerAdded:Connect(checkPasses)
 for _, p in ipairs(Players:GetPlayers()) do
 	task.spawn(checkPasses, p)
@@ -76,8 +99,8 @@ local function grant(p: Player, def): boolean
 		end
 		return true
 	elseif def.Kind == "luck" then
-		local start = math.max(os.time(), p:GetAttribute("Save_LuckBoostEnd") or 0)
-		p:SetAttribute("Save_LuckBoostEnd", start + def.Seconds)
+		-- копим оставшиеся секунды (как у зелий): вне игры буст не тратится
+		p:SetAttribute("Save_LuckBoostLeft", (p:GetAttribute("Save_LuckBoostLeft") or 0) + def.Seconds)
 		return true
 	end
 	return false
@@ -89,7 +112,11 @@ MarketplaceService.ProcessReceipt = function(info)
 	if not def or not p then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	-- уже выдавали эту покупку?
+	-- уже выдавали эту покупку? (сначала смотрим в профиле игрока — он сохраняется вместе с выданным)
+	local recent = p:GetAttribute("Save_Receipts") or ""
+	if string.find("," .. recent .. ",", "," .. info.PurchaseId .. ",", 1, true) then
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
 	if receipts then
 		local ok, done = pcall(receipts.GetAsync, receipts, info.PurchaseId)
 		-- в Studio без доступа к API хранилище недоступно: тестовую покупку выдаём сразу
@@ -103,6 +130,21 @@ MarketplaceService.ProcessReceipt = function(info)
 	if not grant(p, def) then
 		warn("[Store] grant failed", def.Key)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	-- запоминаем покупку в профиле (последние 30) и сразу сохраняем профиль
+	local list = string.split(recent, ",")
+	table.insert(list, info.PurchaseId)
+	while #list > 30 do
+		table.remove(list, 1)
+	end
+	p:SetAttribute("Save_Receipts", table.concat(list, ","))
+	local saveNow = game:GetService("ServerStorage"):FindFirstChild("SaveProfileNow")
+	if saveNow then
+		local ok, saved = pcall(saveNow.Invoke, saveNow, p)
+		if not (ok and saved) then
+			-- выдано в памяти и отмечено в профиле: при повторе Roblox второй раз не выдадим
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
 	end
 	if receipts then
 		pcall(receipts.SetAsync, receipts, info.PurchaseId, true)

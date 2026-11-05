@@ -30,6 +30,18 @@ local function fromTemplate(selected,def)
 end
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
+ -- Супер-секретка: модель основы, крупнее и в особом облике (алмаз / золото / радуга).
+ if def.Base and def.Base~=id then
+  local model,parts=PetVisuals.Build(def.Base)
+  model.Name=def.Name
+  pcall(function() model:ScaleTo(model:GetScale()*(def.Scale or 1.4)) end)
+  PetVisuals.ApplyVariant(model,def.Look or 3,true)
+  model:SetAttribute("SuperSecret",def.Super)
+  if type(parts)=="table" then
+   for _,e in ipairs(parts) do if type(e)=="table" and e.part and e.transparency and e.transparency<0.95 then e.transparency=e.part.Transparency end end
+  end
+  return model,parts
+ end
  -- Свои модели питомцев (CustomPets/Pet<id>) важнее процедурных.
  -- TripoPets (не синхронизируется Rojo) — модели из Tripo, вставленные прямо в Studio.
  local customFolder=script.Parent:FindFirstChild("CustomPets")

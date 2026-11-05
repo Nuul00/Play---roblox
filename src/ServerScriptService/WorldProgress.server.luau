@@ -12,7 +12,8 @@ local persistent=game.GameId>0 and (not RunService:IsStudio() or Config.EnableSt
 local store=persistent and DS:GetDataStore("CoinSprint_Profiles_V3")
 local sessions={}
 local token=game.JobId~="" and game.JobId or game:GetService("HttpService"):GenerateGUID(false)
-local function number(v) return type(v)=="number" and v==v and math.abs(v)<1e15 and math.max(0,v) or 0 end
+-- Числа из сохранения: отбрасываем только NaN и бесконечность (раньше всё ≥1e15 обнулялось — поздняя игра теряла монеты).
+local function number(v) return type(v)=="number" and v==v and v~=math.huge and v~=-math.huge and math.clamp(v,0,1e300) or 0 end
 local function snapshot(p)
  local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
  data.DailyDay=p:GetAttribute("DailyDay") or 0
@@ -63,8 +64,15 @@ local function load(p)
    end)
   end)
   if ok and data and data.Session==token then loaded=data;break end
+  if p.Parent~=Players then break end
   task.wait(attempt*2)
  end
+ -- игрок ушёл, пока профиль грузился: сразу снимаем замок, иначе он висел бы до конца жизни сервера
+ if loaded and p.Parent~=Players then
+  pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==token then old.Session=nil;return old end;return nil end) end)
+  return
+ end
+ if p.Parent~=Players then return end
  if not loaded then p:Kick("Your profile is unavailable or still open on another server. Please rejoin shortly.");return end
  sessions[p]={busy=false,release=false}
  stats.Coins.Value=number(loaded.Coins)
@@ -110,7 +118,7 @@ local function load(p)
  end
  if type(loaded.Extra)=="table" then
   for k,v in pairs(loaded.Extra) do
-   if type(k)=="string" and string.sub(k,1,5)=="Save_" and (type(v)=="string" and #v<4000 or type(v)=="boolean" or type(v)=="number" and v==v and math.abs(v)<1e15) then p:SetAttribute(k,v) end
+   if type(k)=="string" and string.sub(k,1,5)=="Save_" and (type(v)=="string" and #v<4000 or type(v)=="boolean" or type(v)=="number" and v==v and v~=math.huge and v~=-math.huge) then p:SetAttribute(k,v) end
   end
  end
  local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
@@ -119,23 +127,43 @@ local function load(p)
 end
 local function save(p,release)
  local session=sessions[p]
- if not session then return end
+ if not session then return true end
  session.release=session.release or release
- if session.busy then if not release then return end;repeat task.wait(0.1) until not session.busy end
+ if session.busy then if not release then return false end;repeat task.wait(0.1) until not session.busy end
  session.busy=true
- local data=snapshot(p)
+ local okSnap,data=pcall(snapshot,p)
+ if not okSnap then session.busy=false;warn("[Profiles] Snapshot failed: "..tostring(data));return false end
  if session.release then data.Session=nil else data.Session=token end
  data.Lease=os.time()
- local ok,err=pcall(function()
-  store:UpdateAsync(tostring(p.UserId),function(old)
-   if type(old)~="table" or old.Session~=token then return nil end
-   return data
+ -- при выходе и выключении сервера пробуем несколько раз с паузой: прогресс не должен теряться
+ local ok,err
+ for attempt=1,(session.release and 4 or 1) do
+  ok,err=pcall(function()
+   store:UpdateAsync(tostring(p.UserId),function(old)
+    if type(old)~="table" or old.Session~=token then return nil end
+    return data
+   end)
   end)
- end)
+  if ok then break end
+  task.wait(attempt*1.5)
+ end
  session.busy=false
- if not ok then warn("[Profiles] Save failed: "..tostring(err));p:SetAttribute("SaveStatus","SAVE RETRY PENDING") end
+ if not ok then warn("[Profiles] Save failed: "..tostring(err));pcall(function() p:SetAttribute("SaveStatus","SAVE RETRY PENDING") end) end
  if session.release and ok then sessions[p]=nil end
+ return ok
 end
+-- Монетизация просит сохранить профиль сразу после покупки (чтобы купленное не пропало при падении сервера).
+local saveNow=Instance.new("BindableFunction")
+saveNow.Name="SaveProfileNow"
+saveNow.OnInvoke=function(p)
+ if not persistent then return true end
+ local session=sessions[p]
+ if not session then return false end
+ local t0=os.clock()
+ while session.busy and os.clock()-t0<10 do task.wait(0.1) end
+ return save(p,false)
+end
+saveNow.Parent=game:GetService("ServerStorage")
 Players.PlayerAdded:Connect(function(p) task.spawn(load,p) end)
 Players.PlayerRemoving:Connect(function(p) save(p,true) end)
 for _,p in ipairs(Players:GetPlayers()) do task.spawn(load,p) end
@@ -270,7 +298,7 @@ local function refresh()
   local rows={}
   for _,p in ipairs(Players:GetPlayers()) do
    table.insert(rows,{Name=p.DisplayName,UserId=p.UserId,Value=p:GetAttribute(def.Stat) or 0})
-   if def.store and p:GetAttribute("ProfileReady") then pcall(function() def.store:UpdateAsync(tostring(p.UserId),function(old) return math.max(old or 0,math.floor((p:GetAttribute(def.Stat) or 0)*def.Scale)) end) end) end
+   if def.store and p:GetAttribute("ProfileReady") then pcall(function() def.store:UpdateAsync(tostring(p.UserId),function(old) return math.max(old or 0,math.floor(math.min((p:GetAttribute(def.Stat) or 0)*def.Scale,9e18))) end) end) end
   end
   table.sort(rows,function(a,b) return a.Value>b.Value end)
   if def.store then

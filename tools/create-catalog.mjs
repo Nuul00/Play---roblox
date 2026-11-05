@@ -201,5 +201,6 @@ function Config.RollEgg(eggId,roll)
  for _,entry in ipairs(egg.Pool) do total=total+entry.Weight; if roll<=total then return entry.Pet end end
  error("Egg weights must total 100000")
 end
+require(script.Parent:WaitForChild("SuperPets"))(Config)
 return Config
 `);

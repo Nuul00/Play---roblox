@@ -354,7 +354,13 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, processed
 	end
 end)
 -- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
-hint.Text = "⌨ E — ×1   R — ×3   T — ×9      ·      Tap ✓ KEEP on a pet to auto-delete its copies"
+hint.Text = "⌨ E ×1  R ×3  T ×9   ·   ✓ KEEP = auto-delete copies   ·   🌌 Super Secrets in every egg: 1 in 3M · 10M · 30M"
+hint.TextScaled = true
+do
+	local c = Instance.new("UITextSizeConstraint")
+	c.MaxTextSize = 12
+	c.Parent = hint
+end
 auto.Activated:Connect(function()
 	if autoEgg == eggId then
 		stopAuto()
@@ -825,6 +831,11 @@ function H.makeEgg(i, result, ctx)
 	local rc = colors[def.Rarity] or WHITE
 	local x = (i - 1) * ctx.width
 	local cx, cy = x + ctx.width / 2, 165
+	if ctx.grid then
+		local col, row = (i - 1) % 3, (i - 1) // 3
+		x = col * ctx.width
+		cx, cy = x + ctx.width / 2, 70 + row * 128
+	end
 	local e = { index = i, result = result, def = def, ri = ri, rc = rc, cx = cx, cy = cy, shards = {}, sparks = {}, confetti = {}, rings = {} }
 	e.dropAt = (i - 1) * (ctx.auto and 0.08 or 0.12)
 	e.dropDur = ctx.auto and 0.4 or 0.6
@@ -896,7 +907,10 @@ function H.makeEgg(i, result, ctx)
 		end
 	end
 	-- Вьюпорт шире колонки, чтобы осколки не обрезались; камера дальше — размер яйца тот же.
-	local vw, vh = ctx.width + (ctx.small and 40 or 140), 440
+	local vw, vh = ctx.width + 140, 440
+	if ctx.grid then
+		vw, vh = ctx.width, 180
+	end
 	local wm = viewport(revealArea, cx - vw / 2, cy - vh / 2, vw, vh)
 	local vp = wm.Parent
 	-- Вьюпорт поверх ореола и лучей; свет нейтральный, чтобы текстура Tripo не выцветала.
@@ -968,7 +982,7 @@ function H.makeEgg(i, result, ctx)
 			flip = rng:NextNumber(6, 14),
 		})
 	end
-	e.label = label(revealArea, "", x + 2, ctx.small and 250 or 334, ctx.width - 4, 100, ctx.small and 12 or 20, WHITE, Enum.Font.FredokaOne)
+	e.label = label(revealArea, "", x + 4, ctx.grid and (cy + 34) or 334, ctx.width - 8, ctx.grid and 40 or 100, ctx.grid and 14 or 20, WHITE, Enum.Font.FredokaOne)
 	e.label.TextTransparency = 1
 	e.label.ZIndex = 6
 	e.labelScale = Instance.new("UIScale")
@@ -977,7 +991,7 @@ function H.makeEgg(i, result, ctx)
 	if result.Count == 1 and not result.Deleted then
 		local tag = label(revealArea, "NEW!", 0, 0, 84, 30, 20, INK, Enum.Font.FredokaOne)
 		tag.AnchorPoint = Vector2.new(0.5, 0.5)
-		tag.Position = UDim2.fromOffset(cx + math.min(70, ctx.width / 2 - 50), cy - 100)
+		tag.Position = UDim2.fromOffset(cx + math.min(70, ctx.width / 2 - 50), cy - (ctx.grid and 50 or 100))
 		tag.BackgroundTransparency = 0
 		tag.BackgroundColor3 = Color3.fromRGB(255, 225, 70)
 		tag.ZIndex = 7
@@ -1011,7 +1025,9 @@ function H.start(batch, sourceEgg, auto)
 	crackAt = (auto and 1.5 or 2.6) + extra * (auto and 0.5 or 1)
 	local stagger = n > 1 and (auto and 0.1 or 0.16) or 0
 	revealLength = crackAt + stagger * (n - 1) + (auto and 1.8 or 2.4) + (H.bestIdx >= 6 and (auto and 0.5 or 0.9) or 0)
-	local ctx = { width = 900 / n, auto = auto, stagger = stagger, eggCfg = eggCfg, disp = displays[sourceEgg], sky = eggCfg.World == "sky" and n < 9, zoom = n >= 9 and 2.5 or 1, small = n >= 9 }
+	-- 9 яиц — сеткой 3×3 (по 3 в ряд), яйца поменьше
+	local grid = n >= 9
+	local ctx = { width = grid and 300 or 900 / n, auto = auto, stagger = stagger, eggCfg = eggCfg, disp = displays[sourceEgg], sky = eggCfg.World == "sky" and not grid, zoom = grid and 2.3 or 1, small = grid, grid = grid }
 	for i, result in ipairs(batch) do
 		H.eggs[i] = H.makeEgg(i, result, ctx)
 	end
@@ -1043,7 +1059,7 @@ function H.burst(e)
 	end
 	local def, result = e.def, e.result
 	e.label.TextColor3 = e.rc
-	e.label.Text = string.format("%s\n%s · ×%g\n%s", def.Name, def.Rarity:upper(), def.Multiplier, result.Deleted and "AUTO-DELETED" or ("OWNED ×" .. result.Count))
+	e.label.Text = string.format("%s\n%s · ×%g\n%s", def.Name, def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity:upper(), def.Multiplier, result.Deleted and "AUTO-DELETED" or ("OWNED ×" .. result.Count))
 	stroke(e.label, INK, 2, 0)
 	for _, sp in ipairs(e.sparks) do
 		sp.frame.BackgroundColor3 = e.ri >= 7 and Color3.fromHSV((sp.angle / (math.pi * 2)) % 1, 0.45, 1) or (e.ri == 6 and H.GOLD:Lerp(WHITE, (sp.angle * 3) % 1 * 0.5) or e.rc)
@@ -1057,7 +1073,15 @@ end
 function H.onBest(t)
 	H.titled, H.titleAt = true, t
 	local best = H.bestName
-	revealTitle.Text = (best == "Secret" and "✨ SECRET! ✨") or (best == "Legendary" and "🌟 LEGENDARY! 🌟") or (#H.eggs == 3 and "TRIPLE HATCH!" or "YOU HATCHED!")
+	local superDef
+	for _, e in ipairs(H.eggs) do
+		local d = e.result and Config.Pets[e.result.Pet]
+		if d and d.Super and (not superDef or d.Super > superDef.Super) then
+			superDef = d
+		end
+	end
+	revealTitle.Text = (superDef and string.format("%s %s SECRET! %s", Config.SuperTiers[superDef.Super].Icon, superDef.SuperKey:upper(), Config.FormatOdds(superDef.Odds)))
+		or (best == "Secret" and "✨ SECRET! ✨") or (best == "Legendary" and "🌟 LEGENDARY! 🌟") or (#H.eggs == 3 and "TRIPLE HATCH!" or "YOU HATCHED!")
 	revealTitle.TextColor3 = colors[best] or WHITE
 	local strength = ({ 0.14, 0.18, 0.28, 0.4, 0.5, 0.62, 0.8 })[H.bestIdx] or 0.2
 	flash.BackgroundColor3 = H.bestIdx >= 7 and WHITE or (H.bestIdx == 6 and H.GOLD or colors[best] or WHITE):Lerp(WHITE, 0.55)

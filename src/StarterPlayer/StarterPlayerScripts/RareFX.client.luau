@@ -76,7 +76,12 @@ local function showNext()
 	gradient.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.25))
 	gradient.Rotation = 90
 	local icon = rarity == "Secret" and "✨" or "🌟"
-	text.Text = string.format("%s <b>%s</b> hatched <b>%s</b>! (%s%s) %s", icon, item.name, def and def.Name or "?", string.upper(rarity), item.forced and " · guaranteed" or "", icon)
+	if def and def.Super then
+		icon = Config.SuperTiers[def.Super].Icon
+		text.Text = string.format("%s <b>%s</b> hatched <b>%s</b>! (%s SECRET · %s) %s", icon, item.name, def.Name, string.upper(def.SuperKey), Config.FormatOdds(def.Odds), icon)
+	else
+		text.Text = string.format("%s <b>%s</b> hatched <b>%s</b>! (%s%s) %s", icon, item.name, def and def.Name or "?", string.upper(rarity), item.forced and " · guaranteed" or "", icon)
+	end
 	banner.Position = UDim2.new(0.5, 0, 0, -80)
 	banner.Visible = true
 	TweenService:Create(banner, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(0.5, 0, 0, 92) }):Play()
@@ -98,6 +103,21 @@ ReplicatedStorage:WaitForChild("GameAnnounce").OnClientEvent:Connect(function(na
 		table.insert(queue, { name = name, pet = pet, forced = forced == true })
 	end
 	showNext()
+end)
+-- Супер-секретка: ещё и системное сообщение в чате у всех на сервере.
+ReplicatedStorage:WaitForChild("SuperSecretAnnounce").OnClientEvent:Connect(function(name, pet)
+	local def = type(pet) == "number" and Config.Pets[pet]
+	if type(name) ~= "string" or not def or not def.Super then
+		return
+	end
+	pcall(function()
+		local channels = game:GetService("TextChatService"):FindFirstChild("TextChannels")
+		local general = channels and channels:FindFirstChild("RBXGeneral")
+		if general then
+			local hex = ({ "#9BE8FF", "#FFD34A", "#FF7AF2" })[def.Super] or "#FFFFFF"
+			general:DisplaySystemMessage(string.format('<font color="%s"><b>%s %s hatched %s! (%s)</b></font>', hex, Config.SuperTiers[def.Super].Icon, name, def.Name, Config.FormatOdds(def.Odds)))
+		end
+	end)
 end)
 local t = 0
 RunService.RenderStepped:Connect(function(dt)

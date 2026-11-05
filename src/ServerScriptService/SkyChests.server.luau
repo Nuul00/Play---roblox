@@ -54,13 +54,16 @@ local function open(p: Player, base: BasePart)
 	end
 	local mine = openedAt[p] or {}
 	openedAt[p] = mine
-	local left = COOLDOWN - (os.time() - (mine[id] or -math.huge))
+	-- перезарядка сохраняется в профиле (Save_Chest<id>): перезаход не обнуляет сундуки
+	local last = math.max(mine[id] or -math.huge, p:GetAttribute("Save_Chest" .. id) or -math.huge)
+	local left = COOLDOWN - (os.time() - last)
 	if left > 0 then
 		feedback:FireClient(p, string.format("This chest refills in %d:%02d", left // 60, left % 60), false)
 		return
 	end
 	-- Без yield между проверкой и выдачей: двойной клик не даст награду дважды.
 	mine[id] = os.time()
+	p:SetAttribute("Save_Chest" .. id, os.time())
 	coins.Value += reward
 	feedback:FireClient(p, "Treasure! +" .. comma(reward) .. " coins", true)
 	local burst = base:FindFirstChild("Burst")

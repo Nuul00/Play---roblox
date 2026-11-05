@@ -1,6 +1,7 @@
 -- Script в ServerScriptService. Все награды и покупки проверяет сервер.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local AvatarPose = require(script.Parent:WaitForChild("AvatarPose"))
 local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
@@ -114,6 +115,9 @@ hatched.Name = "GameHatched"
 local announce = Instance.new("RemoteEvent")
 announce.Name = "GameAnnounce"
 announce.Parent = ReplicatedStorage
+local superAnnounce = Instance.new("RemoteEvent")
+superAnnounce.Name = "SuperSecretAnnounce"
+superAnnounce.Parent = ReplicatedStorage
 hatched.Parent = ReplicatedStorage
 local function alive(player)
  local character = player.Character
@@ -349,15 +353,22 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   local aura=PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).LuckyAura
   if aura then extraLuck+=1+PetAbilities.SuperParams("LuckyAura",aura).Luck end
   extraLuck=math.clamp(extraLuck,0,3)
+  -- Геймпассы «Super Luck» (+2 броска, шанс супер-секреток ×2) и «Mythic Luck» (+1 бросок, ×5).
+  if p:GetAttribute("Pass_SuperLuck") then extraLuck+=2 end
+  if p:GetAttribute("Pass_MythicLuck") then extraLuck+=1 end
+  local superMult=(p:GetAttribute("Pass_SuperLuck") and 2 or 1)*(p:GetAttribute("Pass_MythicLuck") and 5 or 1)
+  if RunService:IsStudio() then superMult*=tonumber(workspace:GetAttribute("DebugSuperOdds")) or 1 end
+  local superHits={}
   for _=1,amount do
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
+  local superPet=Config.RollSuper(eggId,random:NextNumber(),superMult)
   -- Зелье удачи: два броска, остаётся более редкий питомец.
   if PlayerSystems.PotionActive(p, "Luck") or PlayerSystems.EventActive("Lucky") then
    local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
    if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
   end
   -- Геймпасс «2x Luck» и буст удачи из магазина: ещё один бросок, остаётся лучший.
-  if p:GetAttribute("Pass_Luck2x") or (p:GetAttribute("Save_LuckBoostEnd") or 0)>os.time() then
+  if p:GetAttribute("Pass_Luck2x") or p:GetAttribute("LuckBoostActive") then
    local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
    if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
   end
@@ -372,6 +383,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Гарантия: после N питомцев без нужной редкости выдаём её из пула этого яйца.
   local forced
   result, forced = PlayerSystems.ApplyPity(p, eggId, result)
+  if superPet then result=superPet; forced=false; table.insert(superHits,superPet) end
   local attribute = "PetOwned" .. result
   local deleted=p:GetAttribute("AutoDelete"..result)==true
   local count = (p:GetAttribute(attribute) or 0)+(deleted and 0 or 1)
@@ -389,6 +401,8 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
    if PlayerSystems.RarityRank(r.Pet)>=ShopConfig.AnnounceRank and (not best or PlayerSystems.RarityRank(r.Pet)>PlayerSystems.RarityRank(best.Pet)) then best=r end
   end
   if best then announce:FireAllClients(p.DisplayName,best.Pet,best.Forced==true) end
+  -- Супер-секретки: отдельное объявление в чат всем на сервере.
+  for _,id in ipairs(superHits) do superAnnounce:FireAllClients(p.DisplayName,id) end
  end
 end)
 
