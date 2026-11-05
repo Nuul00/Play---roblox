@@ -16,8 +16,8 @@ local rgb = Color3.fromRGB
 local M = Enum.Material
 local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 
-local BOARD_W, BOARD_H = 17, 7.2
-local R = 42 -- радиус острова
+local BOARD_W, BOARD_H = 23, 9.7 -- на 35% крупнее прежних 17x7.2
+local R = 54 -- радиус острова (под крупные доски)
 local GAP = 22 -- пролёт моста над пустотой
 local BRIDGE_W = 10
 local ORDER = { "BoardPickups", "BoardEggs", "BoardCoins" } -- слева направо для того, кто пришёл по мосту
@@ -25,7 +25,7 @@ local ORDER = { "BoardPickups", "BoardEggs", "BoardCoins" } -- слева нап
 local THEMES = {
 	Meadow = {
 		Board = rgb(30, 70, 45), Frame = rgb(120, 80, 45), FrameMat = M.Wood, Trim = rgb(255, 220, 120), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 6,
+		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 8,
 		Steps = { rgb(255, 205, 60), rgb(220, 225, 235), rgb(220, 140, 80) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(110, 200, 90), TopMat = M.Grass, Under = rgb(120, 95, 70), UnderMat = M.Slate, Rim = rgb(90, 160, 70), RimMat = M.Grass,
 		Deck = rgb(150, 100, 60), DeckMat = M.WoodPlanks, Rail = rgb(110, 72, 40), RailMat = M.Wood, Lamp = rgb(255, 210, 120),
@@ -33,7 +33,7 @@ local THEMES = {
 	},
 	NeonCity = {
 		Board = rgb(12, 10, 30), Frame = rgb(30, 26, 60), FrameMat = M.Metal, Trim = rgb(255, 80, 220), TrimMat = M.Neon, Trim2 = rgb(80, 230, 255),
-		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 6,
+		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 8,
 		Steps = { rgb(255, 215, 90), rgb(200, 210, 255), rgb(255, 140, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(22, 18, 44), TopMat = M.Metal, Under = rgb(30, 26, 60), UnderMat = M.Metal, Rim = rgb(255, 80, 220), RimMat = M.Neon, Grid = rgb(80, 230, 255),
 		Deck = rgb(26, 22, 50), DeckMat = M.Metal, Rail = rgb(80, 230, 255), RailMat = M.Neon, Lamp = rgb(255, 80, 220),
@@ -41,7 +41,7 @@ local THEMES = {
 	},
 	SkyIsles = {
 		Board = rgb(40, 70, 120), Frame = rgb(250, 250, 255), FrameMat = M.SmoothPlastic, Trim = rgb(255, 215, 110), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 6,
+		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 8,
 		Float = { Bob = 0.45, Sway = 0.8, Speed = 0.7 },
 		Steps = { rgb(255, 210, 80), rgb(225, 232, 245), rgb(240, 160, 100) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(245, 240, 255), TopMat = M.SmoothPlastic, Under = rgb(255, 255, 255), UnderMat = M.SmoothPlastic, Rim = rgb(255, 215, 110), RimMat = M.Neon, Puffs = true,
@@ -50,7 +50,7 @@ local THEMES = {
 	},
 	FrozenPeaks = {
 		Board = rgb(20, 55, 95), Frame = rgb(170, 225, 255), FrameMat = M.Glacier, Trim = rgb(140, 230, 255), TrimMat = M.Neon,
-		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 6,
+		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 8,
 		Steps = { rgb(255, 215, 110), rgb(210, 235, 255), rgb(235, 165, 120) }, StepMat = M.Ice, StepRim = M.Neon,
 		Top = rgb(245, 250, 255), TopMat = M.Snow, Under = rgb(150, 205, 240), UnderMat = M.Glacier, Rim = rgb(140, 230, 255), RimMat = M.Ice, Icicles = true,
 		Deck = rgb(180, 225, 250), DeckMat = M.Ice, Rail = rgb(245, 250, 255), RailMat = M.Snow, Lamp = rgb(150, 230, 255),
@@ -58,7 +58,7 @@ local THEMES = {
 	},
 	MagmaVolcano = {
 		Board = rgb(28, 18, 18), Frame = rgb(40, 30, 32), FrameMat = M.Basalt, Trim = rgb(255, 110, 30), TrimMat = M.Neon,
-		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 6,
+		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 8,
 		Steps = { rgb(255, 190, 60), rgb(190, 190, 200), rgb(210, 120, 70) }, StepMat = M.Basalt, StepRim = M.Neon,
 		Top = rgb(60, 36, 30), TopMat = M.CrackedLava, Under = rgb(40, 30, 32), UnderMat = M.Basalt, Rim = rgb(255, 110, 30), RimMat = M.Neon, Cracks = rgb(255, 120, 30),
 		Deck = rgb(45, 35, 35), DeckMat = M.Basalt, Rail = rgb(255, 110, 30), RailMat = M.Neon, Lamp = rgb(255, 140, 40),
@@ -66,7 +66,7 @@ local THEMES = {
 	},
 	CosmicGalaxy = {
 		Board = rgb(14, 10, 40), Frame = rgb(60, 50, 110), FrameMat = M.Metal, Trim = rgb(120, 230, 255), TrimMat = M.Neon, Trim2 = rgb(255, 110, 220),
-		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 10, Stardust = rgb(200, 190, 255),
+		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 13, Stardust = rgb(200, 190, 255),
 		Float = { Bob = 1.1, Sway = 2.5, Speed = 0.5 },
 		Steps = { rgb(255, 215, 110), rgb(200, 210, 255), rgb(240, 150, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(20, 16, 50), TopMat = M.Glass, Under = rgb(50, 40, 100), UnderMat = M.Slate, Rim = rgb(120, 230, 255), RimMat = M.Neon, Grid = rgb(255, 110, 220), Asteroids = true,
@@ -440,12 +440,12 @@ local function placeProp(parent, name, size, bottom)
 end
 -- места на острове (в осях острова: −Z — к мосту): {x, z, слот}
 local SLOTS = {
-	{ -27, -17, "A1" }, { 27, -17, "A2" },   -- у входа, по бокам дорожки
-	{ -35, -1, "B1" }, { 35, -1, "B2" },      -- по краям, между входом и досками
-	{ -26, 33, "C1" }, { 26, 33, "C2" },     -- дальние углы за боковыми досками
-	{ -13, -33, "L" }, { 13, -33, "L" },     -- фонари у арки
-	{ -39, -15, "L" }, { 39, -15, "L" },      -- фонари по бокам
-	{ 0, 39, "L" },                          -- фонарь за центральной доской
+	{ -35, -24, "A1" }, { 35, -24, "A2" },   -- у входа, по бокам дорожки
+	{ -46, -2, "B1" }, { 46, -2, "B2" },     -- по краям, между входом и досками
+	{ -45, 27, "C1" }, { 45, 27, "C2" },     -- за боковыми досками
+	{ -16, -44, "L" }, { 16, -44, "L" },     -- фонари у арки
+	{ -50, -22, "L" }, { 50, -22, "L" },     -- фонари по бокам
+	{ 0, 50, "L" },                          -- фонарь за центральной доской
 }
 local DECOR = {
 	Meadow = { A1 = { "MeadowFountain", 9 }, A2 = { "MeadowBench", 5.5 }, B1 = { "MeadowMushroom", 9 }, B2 = { "MeadowMushroom", 7 }, C1 = { "MeadowWindmill", 15 }, C2 = { "MeadowMushroom", 8 }, L = { "MeadowLamp", 8 } },
@@ -479,10 +479,10 @@ local function decorateIsland(island, key, theme, ic, groundY)
 		end
 	end
 	-- дорожка от арки к доскам
-	local walk = part(island, "Walk", Vector3.new(8, 0.12, 30), ic * CFrame.new(0, 0, -22) + Vector3.new(0, groundY - pos.Y + 0.06, 0), theme.Deck, theme.DeckMat, GHOST)
+	local walk = part(island, "Walk", Vector3.new(8, 0.12, 40), ic * CFrame.new(0, 0, -32) + Vector3.new(0, groundY - pos.Y + 0.06, 0), theme.Deck, theme.DeckMat, GHOST)
 	if theme.DeckMat == M.Glass then walk.Transparency = 0.2 end
 	for _, s in { -1, 1 } do
-		local e = part(island, "WalkEdge", Vector3.new(0.4, 0.16, 30), ic * CFrame.new(s * 4.1, 0, -22) + Vector3.new(0, groundY - pos.Y + 0.08, 0), theme.Rail, theme.RailMat, GHOST)
+		local e = part(island, "WalkEdge", Vector3.new(0.4, 0.16, 40), ic * CFrame.new(s * 4.1, 0, -32) + Vector3.new(0, groundY - pos.Y + 0.08, 0), theme.Rail, theme.RailMat, GHOST)
 		if theme.RailMat == M.Neon then CollectionService:AddTag(e, "BoardPulse") end
 	end
 end
@@ -547,11 +547,11 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 		if d:IsA("BaseScript") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored = true end
 	end
 	local mn, mx = cat.mn, cat.mx
-	local k = 13 / (mx.X - mn.X)
+	local k = 17.5 / (mx.X - mn.X)
 	m:PivotTo(CFrame.new())
 	pcall(function() m:ScaleTo(m:GetScale() * k) end)
 	local cx, cz = (mn.X + mx.X) / 2 * k, (mn.Z + mx.Z) / 2 * k
-	local ground = (cf * CFrame.new(0, 0, -9)).Position
+	local ground = (cf * CFrame.new(0, 0, -12)).Position
 	local piv = CFrame.new(ground) * cf.Rotation * CFrame.new(-cx, -mn.Y * k, -cz)
 	m:PivotTo(piv)
 	m.Name = "Podium_" .. name
@@ -584,6 +584,82 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 	return m
 end
 
+
+-- ===== арка входа =====
+-- Две колонны с базами и капителями, полукруглый свод из камней с замковым камнем, гирлянда огоньков
+-- по своду, висящая табличка-«пилюля» TOP PLAYERS и золотой кубок на вершине (во Frozen — снежинка).
+local function trophy(parent, cf, size)
+	local m = Instance.new("Model")
+	m.Name = "Trophy"
+	local gold = rgb(255, 200, 50)
+	local base = cyl(m, "Base", size * 0.18, size * 0.55, cf, rgb(90, 55, 20), M.Wood, GHOST)
+	cyl(m, "Stem", size * 0.3, size * 0.14, cf * CFrame.new(0, size * 0.24, 0), gold, M.Metal, GHOST).Reflectance = 0.2
+	cyl(m, "Knob", size * 0.1, size * 0.3, cf * CFrame.new(0, size * 0.42, 0), gold, M.Metal, GHOST)
+	local cup = cyl(m, "Cup", size * 0.45, size * 0.62, cf * CFrame.new(0, size * 0.7, 0), gold, M.Metal, GHOST)
+	cup.Reflectance = 0.25
+	cyl(m, "Rim", size * 0.06, size * 0.7, cf * CFrame.new(0, size * 0.93, 0), rgb(255, 235, 140), M.Neon, GHOST)
+	for _, s in { -1, 1 } do
+		local h = part(m, "Handle", Vector3.new(size * 0.08, size * 0.32, size * 0.08), cf * CFrame.new(s * size * 0.4, size * 0.72, 0) * CFrame.Angles(0, 0, math.rad(s * 25)), gold, M.Metal, GHOST)
+		h.Reflectance = 0.2
+	end
+	m.PrimaryPart = base
+	emitter(cup, rgb(255, 230, 120), 6, { Speed = NumberRange.new(0.5, 1.5) })
+	light(cup, rgb(255, 220, 120), 16, 1.6)
+	m.Parent = parent
+	m:SetAttribute("Spin", 40)
+	m:SetAttribute("Bob", 0.3)
+	CollectionService:AddTag(m, "BoardEmblem")
+	return m
+end
+local function buildArch(island, theme, gate)
+	local half = BRIDGE_W / 2 + 2.2 -- ось колонны
+	local H = 12 -- высота колонн
+	local glow = theme.ArchGlow or theme.Lamp
+	for _, s in { -1, 1 } do
+		local c = gate * CFrame.new(s * half, 0, 0)
+		part(island, "ArchBase", Vector3.new(3.8, 1.4, 3.8), c * CFrame.new(0, 0.7, 0), theme.Arch:Lerp(Color3.new(0, 0, 0), 0.2), theme.ArchMat)
+		cyl(island, "ArchColumn", H - 2.4, 2.6, c * CFrame.new(0, 1.4 + (H - 2.4) / 2, 0), theme.Arch, theme.ArchMat)
+		part(island, "ArchCapital", Vector3.new(3.6, 1, 3.6), c * CFrame.new(0, H - 0.5, 0), theme.Arch:Lerp(Color3.new(0, 0, 0), 0.2), theme.ArchMat)
+		local ring = cyl(island, "ArchRing", 0.4, 3, c * CFrame.new(0, H - 1.3, 0), glow, M.Neon, GHOST)
+		CollectionService:AddTag(ring, "BoardPulse")
+		local l = ball(island, "ArchLantern", 1.2, (c * CFrame.new(0, 3, -1.6)).Position, glow, M.Neon, GHOST)
+		light(l, glow, 12, 1.2)
+	end
+	-- свод: полукруг из 11 камней поверх колонн
+	local r = half
+	local center = gate * CFrame.new(0, H, 0)
+	local n = 11
+	for i = 0, n - 1 do
+		local th = math.pi * (i + 0.5) / n
+		local p = center * CFrame.new(math.cos(th) * r, math.sin(th) * r, 0)
+		local seg = 2 * r * math.sin(math.pi / n / 2) + 0.35
+		local key = i == math.floor(n / 2)
+		local stone = part(island, key and "ArchKeystone" or "ArchStone", Vector3.new(seg, key and 3.2 or 2.4, key and 2.8 or 2.2), p * CFrame.Angles(0, 0, th - math.pi / 2), key and glow or theme.Arch, key and M.Neon or theme.ArchMat)
+		if key then CollectionService:AddTag(stone, "BoardPulse") end
+		-- огоньки гирлянды по внешнему краю свода
+		local bulb = ball(island, "ArchBulb", 0.7, (center * CFrame.new(math.cos(th) * (r + 1.6), math.sin(th) * (r + 1.6), -0.6)).Position, i % 2 == 0 and glow or theme.Lamp, M.Neon, GHOST)
+		if i % 3 == 0 then light(bulb, bulb.Color, 8, 0.8) end
+	end
+	-- табличка-«пилюля» под сводом на двух цепочках
+	local signCf = gate * CFrame.new(0, H - 0.8, 0)
+	local len, sh = BRIDGE_W - 1, 2.8
+	local body = part(island, "ArchSign", Vector3.new(len, sh, 0.9), signCf, theme.Arch, theme.ArchMat)
+	for _, x in { -len / 2, len / 2 } do
+		part(island, "ArchSignCap", Vector3.new(0.9, sh, sh), signCf * CFrame.new(x, 0, 0) * CFrame.Angles(0, math.rad(90), 0), theme.Arch, theme.ArchMat, { Shape = Enum.PartType.Cylinder })
+	end
+	local edge = part(island, "ArchSignEdge", Vector3.new(len, sh + 0.5, 0.4), signCf * CFrame.new(0, 0, 0.35), glow, M.Neon, GHOST)
+	CollectionService:AddTag(edge, "BoardPulse")
+	for _, x in { -len / 3, len / 3 } do
+		part(island, "ArchChain", Vector3.new(0.18, r * 0.9, 0.18), signCf * CFrame.new(x, sh / 2 + r * 0.45, 0), rgb(200, 190, 160), M.Metal, GHOST)
+	end
+	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		text(body, f, "TOP PLAYERS", theme.ArchInk, Enum.Font.LuckiestGuy, 60)
+	end
+	if not theme.Snow then
+		trophy(island, center * CFrame.new(0, r + 1.6, 0), 4.2)
+	end
+end
+
 -- ===== мост и арка =====
 local function buildBridge(island, theme, from, to, groundY)
 	local a = Vector3.new(from.X, groundY, from.Z)
@@ -607,18 +683,7 @@ local function buildBridge(island, theme, from, to, groundY)
 			ball(island, "BridgePuff", 6, (cf * CFrame.new(0, -2.5, z)).Position, rgb(255, 255, 255), M.SmoothPlastic, GHOST)
 		end
 	end
-	-- арка «TOP PLAYERS» у входа на остров
-	local gate = CFrame.lookAt(b, a) * CFrame.new(0, 0, 3)
-	for _, s in { -1, 1 } do
-		part(island, "ArchPillar", Vector3.new(2, 11, 2), gate * CFrame.new(s * (BRIDGE_W / 2 + 1.5), 5.5, 0), theme.Arch, theme.ArchMat)
-		ball(island, "ArchKnob", 2.6, (gate * CFrame.new(s * (BRIDGE_W / 2 + 1.5), 11.4, 0)).Position, theme.ArchGlow or theme.Lamp, M.Neon, GHOST)
-	end
-	local beam = part(island, "ArchBeam", Vector3.new(BRIDGE_W + 7, 3.2, 1.6), gate * CFrame.new(0, 12.2, 0), theme.Arch, theme.ArchMat)
-	local glow = part(island, "ArchGlow", Vector3.new(BRIDGE_W + 6, 0.35, 1.7), gate * CFrame.new(0, 10.5, 0), theme.ArchGlow or theme.Lamp, M.Neon, GHOST)
-	light(glow, theme.ArchGlow or theme.Lamp, 16, 1.5)
-	for _, f in { Enum.NormalId.Front, Enum.NormalId.Back } do
-		text(beam, f, "🏆 TOP PLAYERS", theme.ArchInk, Enum.Font.LuckiestGuy, 50)
-	end
+	buildArch(island, theme, CFrame.lookAt(b, a) * CFrame.new(0, 0, 4))
 end
 
 
@@ -702,7 +767,7 @@ local function buildGlobe(island, theme, ic, groundY, from, to)
 	emitter(film, rgb(200, 245, 255), 12, { Speed = NumberRange.new(0.5, 2), EmissionDirection = Enum.NormalId.Right })
 	light(film, rgb(150, 230, 255), 18, 2)
 	-- крутящаяся снежинка над аркой
-	local flake = snowflake(island, 7, CFrame.lookAt(b + dir * 3 + Vector3.new(0, 17.5, 0), b + dir * 3 + Vector3.new(0, 17.5, 0) - dir), rgb(170, 235, 255))
+	local flake = snowflake(island, 7, CFrame.lookAt(b + dir * 4 + Vector3.new(0, 25.5, 0), b + dir * 4 + Vector3.new(0, 25.5, 0) - dir), rgb(170, 235, 255))
 	flake:SetAttribute("Spin", 45)
 	flake:SetAttribute("Bob", 0.4)
 	CollectionService:AddTag(flake, "BoardEmblem")
@@ -986,11 +1051,11 @@ function B.Build(world)
 			end
 		end
 		-- доски полукругом, лицом к мосту
-		local focus = ic * CFrame.new(0, 0, -8)
+		local focus = ic * CFrame.new(0, 0, -10)
 		for i, name in ORDER do
-			-- дуга радиуса 34: центры досок в ~21 стаде друг от друга — рамки и пьедесталы не наезжают
+			-- дуга радиуса 46: центры досок в ~30 стадах друг от друга — рамки и пьедесталы не наезжают
 			local ang = math.rad(({ 38, 0, -38 })[i])
-			local cf = focus * CFrame.Angles(0, ang, 0) * CFrame.new(0, 0, 34)
+			local cf = focus * CFrame.Angles(0, ang, 0) * CFrame.new(0, 0, 46)
 			buildBoard(island, theme, name, cf)
 			local tpl = (key == "NeonCity" or key == "CosmicGalaxy") and podiumTpl.Neon or podiumTpl.Meadow
 			if not ((catalog and placeCatalogPodium(island, theme, name, cf, catalog)) or (tpl and placePodium(island, theme, name, cf, tpl))) then
