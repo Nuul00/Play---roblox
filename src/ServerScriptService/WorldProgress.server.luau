@@ -206,19 +206,24 @@ end
 -- Доски есть в обоих мирах: одинаковые таблицы рисуются на каждой найденной доске.
 local city=world:WaitForChild("NeonCity")
 -- Meadow и Neon: доски стоят в плейсе. Sky/Frozen/Volcano/Galaxy: строит LeaderboardBuilder (свой стиль каждого мира).
-local zones={world,city}
+local zones={}
 do
- -- миры строит GameServer, модели Tripo ставит TripoDressing: ждём всё, чтобы место для досок выбиралось по готовому миру
+ -- миры строит GameServer, модели Tripo ставит TripoDressing: ждём всё, чтобы остров выбирался по готовому миру
  local t0=os.clock()
  while not workspace:GetAttribute("TripoDressed") and os.clock()-t0<25 do task.wait(0.5) end
  task.wait(2)
+ -- в каждом мире — отдельный остров лидеров (LeaderboardBuilder). Если в Meadow/Neon острова не вышло — старые доски.
  local ok,extra=pcall(function() return require(script.Parent:WaitForChild("LeaderboardBuilder")).Build(world) end)
- if ok then for _,z in ipairs(extra) do table.insert(zones,z) end else warn("[Leaderboards]",extra) end
+ local has={}
+ if ok then for _,z in ipairs(extra) do table.insert(zones,z);has[z:GetAttribute("WorldKey")]=true end else warn("[Leaderboards]",extra) end
+ if not has.Meadow then table.insert(zones,world) end
+ if not has.NeonCity then table.insert(zones,city) end
 end
 local function zoneBoard(zone,name)
  if zone==world or zone==city then return zone:FindFirstChild(name) end
  return zone:FindFirstChild(name,true)
 end
+local DECOR_KEY={NeonCity="Neon"}
 -- Лёгкая анимация досок Meadow (листики) и Neon (пульс неоновых рамок) — у остальных миров своя из LeaderboardBuilder.
 local function themeOldBoard(zone,board)
  if zone==world then
@@ -244,7 +249,7 @@ for _,def in ipairs(defs) do
  for _,zone in ipairs(zones) do
   local board=zoneBoard(zone,def.Part)
   if board then
-   local neon=zone==city
+   local neon=zone==city or zone:GetAttribute("WorldKey")=="NeonCity"
    local noLight=neon or board:GetAttribute("NoLight")==true
    local titleColor=board:GetAttribute("TitleColor") or (neon and Color3.fromRGB(255,120,230) or Color3.fromRGB(255,220,133))
    local subColor=board:GetAttribute("SubColor") or (neon and Color3.fromRGB(120,235,255) or nil)
@@ -264,7 +269,8 @@ for _,def in ipairs(defs) do
    local list=Instance.new("ScrollingFrame")
    list.Position=UDim2.fromOffset(25,95);list.Size=UDim2.fromOffset(810,250);list.BackgroundTransparency=1;list.BorderSizePixel=0;list.ScrollBarThickness=8;list.Parent=content
    table.insert(def.lists,list)
-   local key=zone==world and "Meadow" or zone==city and "Neon" or zone.Name
+   local wk=zone:GetAttribute("WorldKey")
+   local key=zone==world and "Meadow" or zone==city and "Neon" or DECOR_KEY[wk] or wk or zone.Name
    local ok,err=pcall(Decor.Decorate,board,key,boardTop(board))
    if not ok then warn("[Leaderboards] decor",err) end
   end
