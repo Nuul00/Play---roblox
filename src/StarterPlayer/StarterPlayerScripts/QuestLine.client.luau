@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local Q = require(ReplicatedStorage:WaitForChild("QuestLineConfig"))
+local Skins = require(ReplicatedStorage:WaitForChild("HudSkins"))
 local remote = ReplicatedStorage:WaitForChild(Q.RemoteName)
 local A = Q.Attr
 local rgb = Color3.fromRGB
@@ -93,13 +94,13 @@ rootScale.Parent = root
 local card = frame(root, 0, 0, W, H, WHITE, 16)
 card.Name = "Card"
 local cardGrad = grad(card, rgb(40, 110, 60), rgb(20, 60, 35))
-stroke(card, INK, 3)
+local cardStroke = stroke(card, INK, 3)
 local cardScale = Instance.new("UIScale")
 cardScale.Parent = card
 
 local header = frame(card, 0, 0, W, 34, WHITE, 16)
 local headerGrad = grad(header, rgb(130, 235, 120), rgb(40, 150, 70))
-stroke(header, INK, 3)
+local headerStroke = stroke(header, INK, 3)
 local chapterText = label(header, 10, 4, 150, 26, 17)
 local stepChip = frame(header, W - 106, 6, 62, 22, rgb(30, 30, 40), 11)
 stepChip.BackgroundTransparency = 0.45
@@ -189,7 +190,7 @@ pill.Parent = root
 local pillCorner = round(pill, 20)
 pillCorner.CornerRadius = UDim.new(1, 0)
 local pillGrad = grad(pill, rgb(130, 235, 120), rgb(40, 150, 70))
-stroke(pill, INK, 3)
+local pillStroke = stroke(pill, INK, 3)
 local pillScale = Instance.new("UIScale")
 pillScale.Parent = pill
 local pillText = label(pill, 12, 7, 152, 26, 18, WHITE, Enum.TextXAlignment.Center)
@@ -227,14 +228,26 @@ local function stepIndex(): number?
 	return type(i) == "number" and i or nil
 end
 
+-- Цвета карточки берём из HUD-скина мира, где сейчас игрок (как у плиток и меню), а не из главы:
+-- так трекер везде в одном стиле с остальным интерфейсом. Глава видна по названию и иконке.
+local lastChapter = 1
 local function applyTheme(chapter)
-	local c = Q.Chapters[chapter] or Q.Chapters[1]
-	headerGrad.Color = ColorSequence.new(c.Top, c.Bottom)
-	pillGrad.Color = ColorSequence.new(c.Top, c.Bottom)
-	cardGrad.Color = ColorSequence.new(c.Bottom:Lerp(BLACK, 0.25), c.Bottom:Lerp(BLACK, 0.6))
-	titleText.TextColor3 = c.Accent
-	chapterText.Text = c.Icon .. " " .. string.upper(c.Name)
+	lastChapter = chapter or lastChapter
+	local c = Q.Chapters[lastChapter] or Q.Chapters[1]
+	local skin = Skins[player:GetAttribute("CurrentWorld") or ""]
+	local top = skin and skin.MenuTop or c.Top
+	local bottom = skin and skin.MenuBottom or c.Bottom
+	local rim = skin and skin.RimColor or INK
+	headerGrad.Color = ColorSequence.new(top, bottom)
+	pillGrad.Color = ColorSequence.new(top, bottom)
+	cardGrad.Color = ColorSequence.new(bottom:Lerp(BLACK, 0.3), bottom:Lerp(BLACK, 0.62))
+	cardStroke.Color, headerStroke.Color, pillStroke.Color = rim, rim, rim
+	titleText.TextColor3 = skin and skin.TitleColor or c.Accent
+	chapterText.Text = "CH." .. tostring(lastChapter) .. " " .. string.upper(c.Name) -- номер главы: видно, что это глава квестов, а не текущий мир
 end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
+	applyTheme(nil)
+end)
 
 local function bump(scaleObj, amount)
 	local up = TweenService:Create(scaleObj, TweenInfo.new(0.09, Enum.EasingStyle.Quad), { Scale = amount })

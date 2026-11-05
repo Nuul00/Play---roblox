@@ -18,29 +18,35 @@ if not open then
 	open.Parent = remotes
 end
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "TrailsButtonHUD"
-gui.ResetOnSpawn = false
-gui.DisplayOrder = 12
-gui.Parent = player:WaitForChild("PlayerGui")
+local Skins = require(ReplicatedStorage:WaitForChild("HudSkins"))
+-- Кнопка живёт в том же углу, что и шестерёнка настроек (MenuHUD.TopRight из HudSkin):
+-- ровно под ней, выровнена по правому краю и масштабируется вместе с ней.
+local playerGui = player:WaitForChild("PlayerGui")
+local topRight = playerGui:WaitForChild("MenuHUD", 30) and playerGui.MenuHUD:WaitForChild("TopRight", 30)
+local gui
+if not topRight then
+	gui = Instance.new("ScreenGui")
+	gui.Name = "TrailsButtonHUD"
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 12
+	gui.Parent = playerGui
+end
 
 local btn = Instance.new("TextButton")
 btn.Name = "Trails"
 btn.AnchorPoint = Vector2.new(1, 0)
-btn.Position = UDim2.new(1, -14, 0, 118)
-btn.Size = UDim2.fromOffset(150, 40)
+btn.Position = topRight and UDim2.new(1, 0, 1, 10) or UDim2.new(1, -16, 0, 86)
+btn.Size = UDim2.fromOffset(128, 38)
 btn.AutoButtonColor = false
 btn.Text = ""
 btn.BackgroundColor3 = Color3.new(1, 1, 1)
-btn.Parent = gui
-Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+btn.Parent = topRight or gui
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 14)
 local grad = Instance.new("UIGradient")
-grad.Color = ColorSequence.new(Color3.fromRGB(255, 205, 70), Color3.fromRGB(240, 140, 30))
 grad.Rotation = 90
 grad.Parent = btn
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 3
-stroke.Color = Color3.fromRGB(30, 30, 40)
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = btn
 local label = Instance.new("TextLabel")
@@ -53,11 +59,21 @@ label.TextColor3 = Color3.new(1, 1, 1)
 label.Parent = btn
 local ls = Instance.new("UIStroke")
 ls.Thickness = 2
-ls.Color = Color3.fromRGB(90, 45, 10)
+ls.Color = Color3.fromRGB(30, 30, 40)
 ls.Parent = label
 local scale = Instance.new("UIScale")
 scale.Parent = btn
 
+-- цвета как у меню «≡» текущего мира
+local function theme()
+	local skin = Skins[player:GetAttribute("CurrentWorld") or ""]
+	grad.Color = ColorSequence.new(skin and skin.MenuTop or Color3.fromRGB(255, 205, 70), skin and skin.MenuBottom or Color3.fromRGB(240, 140, 30))
+	stroke.Color = skin and skin.RimColor or Color3.fromRGB(30, 30, 40)
+	label.TextColor3 = skin and skin.TitleColor or Color3.new(1, 1, 1)
+	ls.Color = skin and skin.InkColor or Color3.fromRGB(30, 30, 40)
+end
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(theme)
+theme()
 local function refresh()
 	label.Text = "✨ TRAILS  ⚡" .. tostring(player:GetAttribute("SpeedTokens") or 0)
 end
