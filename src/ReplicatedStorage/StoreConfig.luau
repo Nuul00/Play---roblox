@@ -8,7 +8,7 @@ StoreConfig.Passes = {
 	{ Key = "PetSlots", Id = 2066816547, Name = "+3 Pet Slots", Desc = "Equip 3 more pets at once", Color = Color3.fromRGB(255, 150, 40) },
 	{ Key = "VIP", Id = 2069984395, Name = "VIP", Desc = "+25% coins, golden [VIP] chat tag", Color = Color3.fromRGB(255, 215, 80) },
 	{ Key = "FastHatch", Id = 2068076497, Name = "Fast Hatch", Desc = "Eggs hatch 3x faster", Color = Color3.fromRGB(120, 200, 255) },
-	{ Key = "SuperMagnet", Id = 2070158347, Name = "Super Magnet", Desc = "Your magnet radius is doubled", Color = Color3.fromRGB(110, 140, 255) },
+	{ Key = "SuperMagnet", Id = 2070158347, Name = "Super Magnet", Desc = "2x magnet radius (up to 60 studs)", Color = Color3.fromRGB(110, 140, 255) },
 	{ Key = "SuperLuck", Id = 2067554513, Name = "Super Luck", Desc = "+2 egg rolls · 2x Super Secret chance", Color = Color3.fromRGB(90, 170, 255) },
 	{ Key = "MythicLuck", Id = 2067596576, Name = "Mythic Luck", Desc = "5x Super Secret chance · +1 egg roll", Color = Color3.fromRGB(240, 90, 220) },
 }

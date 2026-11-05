@@ -150,6 +150,7 @@ local function refreshStats()
 	local bonus = (player:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0) * (player:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(player:GetAttribute("Rebirths") or 0)
 	bonus *= (player:GetAttribute("IndexBonus") or 1) * (player:GetAttribute("FriendBonus") or 1)
 	bonus *= player:GetAttribute("Save_QuestLineBonus") or 1
+	bonus *= Config.GetSpeedCoinBonus(speedLevel.Value)
 	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end

@@ -621,7 +621,7 @@ function Frozen.Build(world: Instance)
 
 	-- Страховка: упавшего возвращаем на вход.
 	local net = part(model, "SafetyNet", Vector3.new(900, 2, 900), L(0, -140, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
-	local spawn = L(0, 4, 126)
+	local spawn = L(0, 4, 138) -- не у самого яйца
 	model:SetAttribute("Spawn", spawn)
 	net.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")

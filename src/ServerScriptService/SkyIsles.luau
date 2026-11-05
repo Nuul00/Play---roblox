@@ -1539,7 +1539,7 @@ function Sky.Build(world)
 
 	-- Страховка: упавшего возвращаем на вход.
 	local net = part(model, "SafetyNet", Vector3.new(900, 2, 900), L(0, -110, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
-	local spawn = L(0, 4, 124) -- перед порталом, лицом к острову
+	local spawn = L(0, 4, 134) -- перед порталом, лицом к острову (не у самого яйца: иначе сразу открывалось окно)
 	model:SetAttribute("Spawn", spawn)
 	net.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")

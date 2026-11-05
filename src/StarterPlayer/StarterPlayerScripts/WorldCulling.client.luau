@@ -57,6 +57,10 @@ local function desired(d: Instance): boolean
 	if coin and coin:GetAttribute("Available") == false then
 		return false
 	end
+	-- у монет Frozen/Volcano/Galaxy вместо плоской монеты 3D-модель (TripoCoins): её значки не показываем
+	if coin and d:IsA("LayerCollector") and coin:FindFirstChildWhichIsA("Model") then
+		return false
+	end
 	return owner[d] == current
 end
 local function sync(d: Instance)

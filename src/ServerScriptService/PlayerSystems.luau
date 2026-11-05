@@ -190,6 +190,8 @@ function PlayerSystems.CoinMultiplier(p): number
 	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(p:GetAttribute("Rebirths") or 0)
 	m *= (p:GetAttribute("IndexBonus") or 1) * (p:GetAttribute("FriendBonus") or 1)
 	m *= p:GetAttribute("Save_QuestLineBonus") or 1 -- постоянный бонус за главы квестовой линии
+	local stats = p:FindFirstChild("leaderstats")
+	m *= Config.GetSpeedCoinBonus(stats and stats.SpeedLevel.Value or 0) -- +1% монет за уровень скорости
 	if PlayerSystems.EventActive("Golden") then
 		m *= 2
 	end
@@ -213,6 +215,9 @@ function PlayerSystems.CoinMultiplier(p): number
 end
 
 -- ===== Скорость =====
+PlayerSystems.MaxWalkSpeed = 85
+PlayerSystems.MaxMagnetBase = 40 -- уровень + магнит + питомцы
+PlayerSystems.MaxMagnetTotal = 60 -- с геймпассом Super Magnet
 function PlayerSystems.ApplySpeed(p)
 	local stats = p:FindFirstChild("leaderstats")
 	local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
@@ -221,10 +226,10 @@ function PlayerSystems.ApplySpeed(p)
 	end
 	local speed = Config.GetWalkSpeed(stats.SpeedLevel.Value)
 	if PlayerSystems.PotionActive(p, "Speed") then
-		speed *= 1.5
+		speed *= 1.25
 	end
 	speed *= 1 + (p:GetAttribute("AbilSpeed") or 0) -- способность питомцев
-	speed = math.floor(speed * 10 + 0.5) / 10
+	speed = math.min(math.floor(speed * 10 + 0.5) / 10, PlayerSystems.MaxWalkSpeed) -- выше — уже неуправляемо
 	if math.abs(h.WalkSpeed - speed) > 0.01 then
 		h.WalkSpeed = speed
 	end
@@ -242,10 +247,11 @@ function PlayerSystems.MagnetRadius(p): number
 		r += def and def.Bonus or 0
 	end
 	r += p:GetAttribute("AbilMagnet") or 0 -- способность питомцев
+	r = math.min(r, PlayerSystems.MaxMagnetBase)
 	if p:GetAttribute("Pass_SuperMagnet") then
 		r *= 2 -- геймпасс «Super Magnet»
 	end
-	return math.min(r, 160) -- больше мира не нужно: иначе можно стоять на месте и собирать всё
+	return math.min(r, PlayerSystems.MaxMagnetTotal) -- больше не нужно: иначе можно стоять на месте и собирать весь мир
 
 end
 -- Магнит всегда в руках (панели инструментов Roblox нет): снять или надеть его можно только

@@ -14,8 +14,10 @@ def upc(base, g, l):
     return math.floor(base * gg * tier(l) + .5)
 COST = dict(speed=lambda l: upc(10, 1.34, l), magnet=lambda l: upc(8, 1.34, l),
             income=lambda l: upc(20, 1.36, l), double=lambda l: upc(40, 1.36, l))
-def walk(l): return 16 + 4*min(l, 10) + 2*max(0, min(l-10, 15)) + max(0, min(l-25, 25)) + .4*max(0, min(l-50, 75))
-def mrad(l): return 3 + .4*l
+def walk(l):
+    if P.get('oldspeed'): return 16 + 4*min(l, 10) + 2*max(0, min(l-10, 15)) + max(0, min(l-25, 25)) + .4*max(0, min(l-50, 75))
+    return min(85, 16 + 2*min(l, 10) + .6*max(0, min(l-10, 40)) + .12*max(0, min(l-50, 75)))
+def mrad(l): return 3 + (.4 if P.get('oldspeed') else .12)*l
 def income(l): return 1 + .25*l
 def dbl(l): return .015*l if l <= 50 else min(.9, .75 + .002*(l-50))
 def nice(x):
@@ -31,9 +33,8 @@ WORLDS = [  # id, gate speed, coins, area, avg value, shop cap
 for i, w in enumerate(WORLDS):
     g = P.get('gate%d' % i)
     if g is not None: WORLDS[i] = (w[0], int(g)) + w[2:]
-MAGNETS = [(0, 0), (150, .5), (400, 1), (900, 1.5), (1800, 2), (3500, 2.7), (6000, 3.4), (1e4, 4.2), (16e3, 5), (25e3, 6), (4e4, 7), (6e4, 8.2), (9e4, 9.5),
-           (13e4, 11), (2e5, 12.5), (3e5, 14), (45e4, 16), (65e4, 18), (9e5, 20), (15e5, 23), (25e5, 26), (4e6, 30), (65e5, 34), (1e7, 39), (15e6, 45),
-           (23e6, 52), (35e6, 60), (55e6, 70), (85e6, 82), (15e7, 100)]
+MAGNETS = [(0.0, 0.0), (150.0, 0.07), (400.0, 0.14), (900.0, 0.21), (1800.0, 0.28), (3500.0, 0.38), (6000.0, 0.48), (10000.0, 0.59), (16000.0, 0.7), (25000.0, 0.84), (40000.0, 0.98), (60000.0, 1.15), (90000.0, 1.33), (130000.0, 1.54), (200000.0, 1.75), (300000.0, 1.96), (450000.0, 2.24), (650000.0, 2.52), (900000.0, 2.8), (1500000.0, 3.22), (50000000.0, 3.64), (80000000.0, 4.2), (130000000.0, 4.76), (200000000.0, 5.46), (300000000.0, 6.3), (460000000.0, 7.28), (700000000.0, 8.4), (1100000000.0, 9.8), (1700000000.0, 11.48), (3000000000.0, 14.0), (4350000000, 14.27), (6307500000, 14.54), (9145875000, 14.81), (13261519000, 15.08), (19229202000, 15.35), (27882343000, 15.620000000000001), (40429398000, 15.89), (58622627000, 16.16), (85002808000, 16.43), (123254072000, 16.7), (178718405000, 16.97), (259141687000, 17.240000000000002), (375755446000, 17.51), (544845397000, 17.78), (790025825000, 18.05), (1145537447000, 18.32), (1661029298000, 18.59), (2408492482000, 18.86), (3492314098000, 19.130000000000003), (5063855443000, 19.4), (7342590392000, 19.67), (10646756068000, 19.94), (15437796299000, 20.21), (22384804633000, 20.48), (32457966718000, 20.75), (47064051741000, 21.02), (68242875024000, 21.29), (98952168785000, 21.560000000000002), (143480644738000, 21.83), (208046934870000, 22.1)]
+MAG_WORLD = [0]*21 + [2]*9 + [3]*10 + [4]*10 + [5]*10
 WIDX = {'island':0,'neon':1,'sky':2,'frozen':3,'volcano':4,'galaxy':5}
 for e in CAT:
     m = P.get('em%d' % WIDX[e['World']], 1)
@@ -54,7 +55,31 @@ class S: pass
 s = S()
 s.t = 0; s.coins = 0.0; s.lv = dict(speed=0, magnet=0, income=0, double=0); s.mag = 0; s.pets = []; s.reb = 0; s.eggs = 0
 s.log = []; s.lastrate = 0; s.seen = set(); s.earned = 0.0; s.hatch_ready = 0
-def slots(): return 3 + sum(v for k, v in SLOTS_AT.items() if s.reb >= k)
+def slots(): return 3 + int(P.get('slots',0)) + sum(v for k, v in SLOTS_AT.items() if s.reb >= k)
+VM = [1, 2, 3.5, 6]
+s.inv = {}
+def rebuild():
+    codes = []
+    for m, c in s.inv.items():
+        for t in range(4):
+            codes += [m*VM[t]]*min(c[t], 12)
+    s.pets = sorted(codes, reverse=True)[:12]
+def add_pet(m):
+    s.inv.setdefault(m, [0, 0, 0, 0])[0] += 1
+def fuse():
+    if P.get('nofuse'): return
+    changed = True
+    while changed:
+        changed = False
+        top = sorted(s.pets, reverse=True)[:slots()]
+        weak = top[-1] if len(top) >= slots() else 0
+        for m, c in s.inv.items():
+            for t in range(3):
+                need_unl = [1, 2, 3][t]
+                if c[t] >= 5 and s.unl >= need_unl and m*VM[t+1] > weak:
+                    c[t] -= 5; c[t+1] += 1; changed = True
+                    note('f%d' % (t+1), 'first fuse tier %d (x%g)' % (t+1, m*VM[t+1]))
+        if changed: rebuild()
 def team():
     top = sorted(s.pets, reverse=True)[:slots()]
     return 1 + sum(m - 1 for m in top)
@@ -64,11 +89,11 @@ def access(): return [w for i,w in enumerate(WORLDS) if s.lv['speed'] >= w[1] an
 def cap(): return max(w[5] for w in access())
 def rate(w=None):
     w = w or max(access(), key=lambda w: w[4])
-    v = walk(s.lv['speed']); r = mrad(s.lv['magnet']) + MAGNETS[s.mag][1]
+    v = walk(s.lv['speed']); r = min(40, mrad(s.lv['magnet']) + MAGNETS[s.mag][1]) * P.get('mag2',1); r = min(r, 60)
     d = 0.65*math.sqrt(w[3]/w[2])  # средний путь между монетами
     per = v/max(d - r, 1.5) * P['eff']
     per = min(per, w[2]/8*P.get('cap',.6))
-    return per * w[4] * income(s.lv['income']) * team() * rbonus(s.reb) * (1 + dbl(s.lv['double']))
+    return per * w[4] * income(s.lv['income']) * team() * rbonus(s.reb) * (1 + dbl(s.lv['double'])) * (1 + .01*s.lv['speed']) * P.get('mult',1)
 def note(key, msg):
     if key not in s.seen:
         s.seen.add(key); s.log.append((s.t, msg + ' earned %.2g' % s.earned, s.lastrate))
@@ -105,8 +130,8 @@ while s.t < T:
             useful = egg_gain(eid) > 0.02*team() or need
             if n and useful and (EGGS[eid]['Price']*n <= s.coins*P.get('eggshare',0.6) or need):
                 s.coins -= EGGS[eid]['Price']*n
-                for _ in range(n): s.pets.append(roll(eid))
-                s.pets = sorted(s.pets, reverse=True)[:12]
+                for _ in range(n): add_pet(roll(eid))
+                rebuild(); fuse()
                 s.eggs += n; s.hatch_ready = s.t + 3.5
                 note('e%d' % eid, 'egg %d %s (%g)' % (eid, EGGS[eid]['Name'], EGGS[eid]['Price']))
                 break
@@ -116,7 +141,7 @@ while s.t < T:
         for k in s.lv:
             l = s.lv[k]
             if l < cap(): opts.append((COST[k](l) * (0.5 if k == 'speed' else 1), COST[k](l), 'up', k))
-        if s.mag + 1 < len(MAGNETS): opts.append((MAGNETS[s.mag+1][0], MAGNETS[s.mag+1][0], 'mag', None))
+        if s.mag + 1 < len(MAGNETS) and MAG_WORLD[s.mag+1] < s.unl: opts.append((MAGNETS[s.mag+1][0], MAGNETS[s.mag+1][0], 'mag', None))
         if not opts: break
         o = min(opts)
         if o[1] > s.coins*P.get('upshare',0.5) or (s.eggs >= reggs(s.reb) and s.coins >= rcost(s.reb)*0.4): break

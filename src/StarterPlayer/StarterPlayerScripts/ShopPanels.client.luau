@@ -184,7 +184,7 @@ local spinning = {}
 local upgradeDefs = {
 	speed = { Title = "SPEED", Icon = "⚡", Accent = Color3.fromRGB(80, 170, 255), Global = Config.MaxSpeedLevel,
 		Level = function() return speed.Value end, Cost = Config.GetUpgradeCost,
-		Value = function(l) return tostring(Config.GetWalkSpeed(l)) end, Unit = "walk speed" },
+		Value = function(l) return tostring(Config.GetWalkSpeed(l)) .. " (+" .. l .. "% coins)" end, Unit = "walk speed" },
 	magnet = { Title = "MAGNET", Icon = "🧲", Accent = Color3.fromRGB(230, 80, 90), Global = Config.MaxMagnetLevel,
 		Level = function() return player:GetAttribute("MagnetLevel") or 0 end, Cost = Config.GetMagnetUpgradeCost,
 		Value = function(l) return string.format("%.1f", Config.GetMagnetRadius(l)) end, Unit = "studs radius" },

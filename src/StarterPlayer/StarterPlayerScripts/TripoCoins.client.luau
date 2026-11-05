@@ -181,8 +181,14 @@ local function attach(part: BasePart, worldName: string)
 			table.insert(parts, p)
 		end
 	end
+	m:PivotTo(CFrame.new(part.Position)) -- сразу на место монеты (дальние монеты не двигаются каждый кадр)
 	m.Parent = part
 	part.LocalTransparencyModifier = 1
+	for _, d in ipairs(part:GetChildren()) do
+		if d:IsA("LayerCollector") then
+			d.Enabled = false
+		end
+	end
 	-- значки старой плоской монеты (SurfaceGui) — прячем вместе с ней
 	local guis = {}
 	for _, d in ipairs(part:GetChildren()) do

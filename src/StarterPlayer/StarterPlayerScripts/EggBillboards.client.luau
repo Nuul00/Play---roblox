@@ -343,7 +343,7 @@ local function setupEgg(id, stand)
 	entry.dustFX, entry.rayFX = dust, ray
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "EggTag"
-	tag.Size = UDim2.fromOffset(200, 54)
+	tag.Size = UDim2.new(8, 40, 2.2, 12) -- в студах (+ немного пикселей): издалека таблички соседних яиц не налезают
 	tag.StudsOffsetWorldSpace = Vector3.new(0, entry.height / 2 + 4, 0)
 	tag.AlwaysOnTop = true
 	tag.LightInfluence = 0

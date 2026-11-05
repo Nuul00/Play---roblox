@@ -23,7 +23,7 @@ PetAbilities.Kinds = {
 -- Множитель способности по ступени: обычный, Golden, Diamond, Rainbow.
 PetAbilities.TierScale = { [0] = 1, [1] = 1.35, [2] = 1.7, [3] = 2.2 }
 -- Потолок суммы всей команды (чтобы ребёрс-слоты не ломали баланс).
-PetAbilities.Caps = { Coins = 3, Magnet = 40, Speed = 0.6, Luck = 2, Double = 0.3 }
+PetAbilities.Caps = { Coins = 3, Magnet = 6, Speed = 0.3, Luck = 2, Double = 0.3 }
 
 -- ===== Супер-способности (только Legendary и Secret) =====
 -- Уровень 1 — Legendary, уровень 2 — Secret (сильнее).
@@ -42,8 +42,8 @@ PetAbilities.Supers = {
 		Icon = "🌀",
 		Color = Color3.fromRGB(120, 200, 255),
 		Levels = {
-			{ Name = "Coin Vacuum", Interval = 4, Range = 2.5, MaxExtra = 25 },
-			{ Name = "Black Hole", Interval = 2.5, Range = 3.5, MaxExtra = 40 },
+			{ Name = "Coin Vacuum", Interval = 4, Range = 2.5, MaxExtra = 15 },
+			{ Name = "Black Hole", Interval = 2.5, Range = 3.5, MaxExtra = 25 },
 		},
 	},
 	LuckyAura = {
