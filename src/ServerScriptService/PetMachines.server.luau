@@ -98,25 +98,44 @@ local function build(tier: number)
 	local model = Instance.new("Model")
 	model.Name = "PetMachine" .. tier
 	model:SetAttribute("Tier", tier)
-	-- Каменная площадка под машиной и мостик до дорожки (тем же камнем, что дорожка): машина
-	-- не тонет в траве и к ней видно, как подойти.
+	-- Каменная площадка под машиной и мостик до дорожки. Дорожки в Meadow и Неонграде нарисованы
+	-- брусчаткой Terrain (поверх травы), поэтому и площадку красим так же: машина стоит на камне,
+	-- а не тонет в траве, и к ней видно, как подойти.
 	if path and path:IsA("BasePart") then
-		local top = path.Position.Y + path.Size.Y / 2
-		local edge = path.Position.Z + path.Size.Z / 2
-		local pad = path:Clone()
-		pad.Name = "MachinePad"
-		pad:ClearAllChildren()
-		pad.Size = Vector3.new(17, path.Size.Y, 17)
-		pad.CFrame = CFrame.new(pos.X, path.Position.Y, pos.Z)
-		pad.Parent = model
-		local link = path:Clone()
-		link.Name = "MachinePath"
-		link:ClearAllChildren()
-		local from, to = edge - 0.2, pos.Z - 8.3
-		link.Size = Vector3.new(7, path.Size.Y, math.max(to - from, 0.5))
-		link.CFrame = CFrame.new(pos.X, path.Position.Y, (from + to) / 2)
-		link.Parent = model
-		y = top
+		local terrain = workspace.Terrain
+		local tp = RaycastParams.new()
+		tp.FilterType = Enum.RaycastFilterType.Include
+		tp.FilterDescendantsInstances = { terrain }
+		-- Terrain на сервере догружается в первые секунды: ждём, пока луч найдёт землю
+		local surf
+		for _ = 1, 24 do
+			surf = workspace:Raycast(Vector3.new(pos.X, 60, pos.Z), Vector3.new(0, -120, 0), tp)
+			if surf then
+				break
+			end
+			task.wait(0.5)
+		end
+		-- нет Terrain (Неонград стоит на детали-полу) — там ничего не красим, машина просто на полу
+		if not surf then
+			path = nil
+		end
+		local sy = surf and surf.Position.Y or y
+		local mat = Enum.Material.Cobblestone
+		local onPath = path and workspace:Raycast(Vector3.new(path.Position.X, 60, path.Position.Z), Vector3.new(0, -120, 0), tp)
+		if onPath and onPath.Material ~= Enum.Material.Grass then
+			mat = onPath.Material
+		end
+		local edge = path and (path.Position.Z + path.Size.Z / 2) or pos.Z
+		pcall(function()
+			if not path then
+				return
+			end
+			terrain:FillBlock(CFrame.new(pos.X, sy - 1.5, pos.Z), Vector3.new(16, 3, 16), mat)
+			local from, to = edge - 1, pos.Z - 7
+			terrain:FillBlock(CFrame.new(pos.X, sy - 1.5, (from + to) / 2), Vector3.new(7, 3, math.max(to - from, 1)), mat)
+		end)
+		local after = surf and workspace:Raycast(Vector3.new(pos.X, 60, pos.Z), Vector3.new(0, -120, 0), tp)
+		y = after and after.Position.Y or sy
 	end
 	local origin = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(face.X, y, face.Z))
 

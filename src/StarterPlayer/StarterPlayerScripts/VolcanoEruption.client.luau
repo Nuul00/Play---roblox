@@ -216,19 +216,22 @@ local function build()
 				local b = Instance.new("Beam")
 				b.Name = "LavaFlow"
 				b.Attachment0, b.Attachment1 = atts[i], atts[i + 1]
-				local w = (3 + t * 5) * (layer == 1 and 1 or 0.45)
-				b.Width0, b.Width1 = w, w + 0.25
+				local w = (5 + t * 7) * (layer == 1 and 1 or 0.55)
+				b.Width0, b.Width1 = w, w + 0.4
 				b.FaceCamera = false
 				b.Segments = 4
-				b.Texture = FIRE
-				b.TextureMode = Enum.TextureMode.Wrap
-				b.TextureLength = 6
-				b.TextureSpeed = -0.6 -- течёт вниз, от кратера
+				if layer == 2 then
+					-- верхний слой с бегущей текстурой: лава течёт вниз, от кратера
+					b.Texture = FIRE
+					b.TextureMode = Enum.TextureMode.Stretch
+					b.TextureLength = 1
+					b.TextureSpeed = -0.5
+				end
 				b.LightEmission = 1
 				b.LightInfluence = 0
 				b.Brightness = layer == 1 and 2 or 4
 				b.Color = layer == 1 and ColorSequence.new(LAVA, Color3.fromRGB(220, 60, 15)) or ColorSequence.new(HOT)
-				b.Transparency = NumberSequence.new(layer == 1 and 0.05 or 0.25)
+				b.Transparency = NumberSequence.new(layer == 1 and 0 or 0.2)
 				b.ZOffset = layer
 				b.Parent = atts[i].Parent
 			end
