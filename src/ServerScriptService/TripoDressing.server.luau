@@ -420,7 +420,8 @@ local function landmark(worldModel: Instance?, center: Vector3, name: string, si
 	local light = Instance.new("PointLight")
 	light.Color = glow
 	light.Range = math.clamp(size * 0.9, 16, 50)
-	light.Brightness = 2.2
+	-- большие постройки свет изнутри засвечивает до сплошного пятна — им только лёгкая подсветка
+	light.Brightness = size >= 40 and 0.6 or 2.2
 	light.Parent = core
 	local e = Instance.new("ParticleEmitter")
 	if fx == "ember" then

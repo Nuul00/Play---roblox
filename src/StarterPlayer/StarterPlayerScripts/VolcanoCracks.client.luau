@@ -15,8 +15,8 @@ if not volcano then
 end
 local deck = volcano:WaitForChild("Ground", 30) and volcano.Ground:FindFirstChild("Deck")
 
-local MAX_CRACKS = 22 -- одновременно живущих трещин
-local NEAR, FAR = 14, 90 -- где рождаются (кольцо вокруг игрока)
+local MAX_CRACKS = 12 -- одновременно живущих трещин
+local NEAR, FAR = 14, 70 -- где рождаются (кольцо вокруг игрока)
 local HOT = Color3.fromRGB(225, 75, 15)
 local WARM = Color3.fromRGB(255, 80, 20)
 local COLD = Color3.fromRGB(90, 22, 14)
