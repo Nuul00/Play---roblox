@@ -157,11 +157,41 @@ function Config.GetIncomeUpgradeCost(level) return upCost(20,1.36,level) end
 -- Шанс, что подобранная монета даст двойную награду.
 function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(0.9,0.75+0.002*(level-50)) end
 function Config.GetDoubleUpgradeCost(level) return upCost(40,1.36,level) end
--- Ребёрс: за монеты сбрасывает прокачку, но даёт постоянный множитель монет.
-Config.MaxRebirths=15
+-- Ребёрс: за монеты И яйца, открытые с прошлого ребёрса, сбрасывает прокачку,
+-- но даёт постоянный множитель монет, удачу яиц и награды на вехах (дорога наград).
+Config.MaxRebirths=50
 Config.RebirthStartSpeed=6
-function Config.GetRebirthCost(r) return math.floor(200000*3^r) end
-function Config.GetRebirthBonus(r) return 1+0.75*r end
+-- Округление до двух значащих цифр: цены выглядят «красиво» (250K, 6.6M, 1.2B...).
+local function niceRound(x) if x<100 then return math.floor(x+0.5) end local mag=10^(math.floor(math.log10(x))-1) return math.floor(x/mag+0.5)*mag end
+-- Цена в монетах: плавная кривая, рост за ребёрс от x2.6 в начале до x1.35 к 50-му.
+function Config.GetRebirthCost(r) return niceRound(10^(5.4+0.42*r-0.003*r*r)) end
+-- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
+function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+15*r+1.2*r*r)/5+0.5)*5) end
+-- Множитель монет: первые 10 как раньше (+0.75), дальше ускоряется.
+function Config.GetRebirthBonus(r) return 1+0.75*r+0.05*math.max(0,r-10)^2 end
+-- Вехи: подарки (зелья) выдаются один раз; слоты, удача, титул и аура действуют постоянно.
+Config.RebirthMilestones={
+ {At=1,Icon="🧪",Name="Starter Potions",Desc="1 Coin + 1 Luck potion",Potions={Coins=1,Luck=1}},
+ {At=3,Icon="🐾",Name="Pet Slot",Desc="+1 pet team slot",Slots=1},
+ {At=5,Icon="🍀",Name="Luck Pack",Desc="3 Luck potions",Potions={Luck=3}},
+ {At=7,Icon="🏷️",Name="Title: Reborn",Desc="Title over your head",Title="Reborn"},
+ {At=10,Icon="🐾",Name="Pet Slot",Desc="+1 slot, 2 Coin + 2 Speed potions",Slots=1,Potions={Coins=2,Speed=2}},
+ {At=15,Icon="🔥",Name="Bronze Aura",Desc="Aura + 10% egg luck",Aura=1,Luck=0.10},
+ {At=20,Icon="🎁",Name="Potion Chest",Desc="3 of each potion + title Ascended",Title="Ascended",Potions={Coins=3,Speed=3,Luck=3}},
+ {At=25,Icon="🐾",Name="Pet Slot",Desc="+1 pet team slot",Slots=1},
+ {At=30,Icon="🌟",Name="Golden Aura",Desc="Gold aura + 5 Luck potions",Aura=2,Potions={Luck=5}},
+ {At=35,Icon="🍀",Name="Lucky Star",Desc="+15% egg luck",Luck=0.15},
+ {At=40,Icon="👑",Name="Title: Mythic",Desc="Title + 5 of each potion",Title="Mythic",Potions={Coins=5,Speed=5,Luck=5}},
+ {At=45,Icon="🌈",Name="Rainbow Aura",Desc="Rainbow aura",Aura=3},
+ {At=50,Icon="🌌",Name="Eternal",Desc="Cosmic aura, title, +25% luck, 10 of each potion",Title="Eternal",Aura=4,Luck=0.25,Potions={Coins=10,Speed=10,Luck=10}},
+}
+Config.RebirthAuraNames={"Bronze","Golden","Rainbow","Cosmic"}
+-- Доп. удача яиц (доля): +1% за каждый ребёрс плюс бонусы вех.
+function Config.GetRebirthLuck(r) local l=0.01*r for _,m in ipairs(Config.RebirthMilestones) do if r>=m.At and m.Luck then l=l+m.Luck end end return math.floor(l*1000+0.5)/1000 end
+-- Доп. слоты команды питомцев.
+function Config.GetRebirthSlots(r) local s=0 for _,m in ipairs(Config.RebirthMilestones) do if r>=m.At and m.Slots then s=s+m.Slots end end return s end
+function Config.GetRebirthTitle(r) local t="" for _,m in ipairs(Config.RebirthMilestones) do if r>=m.At and m.Title then t=m.Title end end return t end
+function Config.GetRebirthAura(r) local a=0 for _,m in ipairs(Config.RebirthMilestones) do if r>=m.At and m.Aura then a=math.max(a,m.Aura) end end return a end
 function Config.GetIndexReward(eggId) return Config.Eggs[eggId].Cost*20 end
 function Config.GetPetMultiplier(id) return Config.Pets[id] and Config.Pets[id].Multiplier or 1 end
 function Config.RollEgg(eggId,roll)

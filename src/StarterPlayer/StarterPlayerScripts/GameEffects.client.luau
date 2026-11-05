@@ -93,6 +93,10 @@ end
 -- Позиции трёх мест: слева, позади, справа от хозяина.
 -- Дуга позади-сбоку, чтобы питомцы не закрывали персонажа от камеры.
 local slotOffsets = { Vector3.new(-4.6, 0, 1.2), Vector3.new(4.6, 0, 1.2), Vector3.new(-2.6, 0, 4.4) }
+-- Слоты за ребёрсы (больше 3 питомцев): второй ряд позади игрока.
+for _, offset in ipairs({ Vector3.new(2.6, 0, 4.4), Vector3.new(0, 0, 6.2), Vector3.new(-5.2, 0, 6.6), Vector3.new(5.2, 0, 6.6), Vector3.new(-2.6, 0, 8.6), Vector3.new(2.6, 0, 8.6) }) do
+	table.insert(slotOffsets, offset)
+end
 local hidden = CFrame.new(0, -10000, 0)
 
 -- ===== Кольцо магнита (видно, если включено в статистике) =====

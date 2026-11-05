@@ -41,6 +41,12 @@ local function snapshot(p)
  end
  data.Pity={}
  for _,tier in ipairs(ShopConfig.Pity) do data.Pity[tier.Rarity]=p:GetAttribute("Pity"..tier.Rarity) or 0 end
+ -- Новые системы (квестовая линия, ребёрс-награды, способности) хранят состояние в атрибутах
+ -- с префиксом Save_: они сохраняются и загружаются автоматически.
+ data.Extra={}
+ for k,v in pairs(p:GetAttributes()) do
+  if string.sub(k,1,5)=="Save_" and (type(v)=="number" or type(v)=="string" or type(v)=="boolean") then data.Extra[k]=v end
+ end
  return data
 end
 local function load(p)
@@ -101,6 +107,11 @@ local function load(p)
  PlayerSystems.RefreshIndexBonus(p)
  for _,tier in ipairs(ShopConfig.Pity) do
   p:SetAttribute("Pity"..tier.Rarity,math.clamp(math.floor(number(type(loaded.Pity)=="table" and loaded.Pity[tier.Rarity])),0,tier.Threshold))
+ end
+ if type(loaded.Extra)=="table" then
+  for k,v in pairs(loaded.Extra) do
+   if type(k)=="string" and string.sub(k,1,5)=="Save_" and (type(v)=="string" and #v<4000 or type(v)=="boolean" or type(v)=="number" and v==v and math.abs(v)<1e15) then p:SetAttribute(k,v) end
+  end
  end
  local h=p.Character and p.Character:FindFirstChildOfClass("Humanoid")
  if h then h.WalkSpeed=Config.GetWalkSpeed(stats.SpeedLevel.Value) end

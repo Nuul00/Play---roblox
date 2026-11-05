@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local MagnetVisuals = require(ReplicatedStorage:WaitForChild("MagnetVisuals"))
+local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 
 local PlayerSystems = {}
 local notifyFn = function(_p, _text, _ok) end
@@ -32,10 +33,26 @@ PlayerSystems.CodeMultiplier = mult
 function PlayerSystems.GetEquipped(p): { number }
 	return ShopConfig.ParseEquipped(p:GetAttribute("Equipped"))
 end
+-- Размер команды: базовые 3 + слоты за ребёрсы (атрибут RebirthSlots ставит система ребёрсов).
+function PlayerSystems.MaxEquipped(p): number
+	local extra = math.clamp(math.floor(tonumber(p:GetAttribute("RebirthSlots")) or 0), 0, 20)
+	return ShopConfig.MaxEquipped + extra
+end
+-- Последний запрошенный список команды: если слоты за ребёрсы придут позже сохранённой
+-- команды, лишние питомцы не потеряются — список применится заново.
+local wantedTeam = {}
+Players.PlayerRemoving:Connect(function(p)
+	wantedTeam[p] = nil
+end)
 function PlayerSystems.SetEquipped(p, list: { number })
+	wantedTeam[p] = table.clone(list)
+	local maxEquipped = PlayerSystems.MaxEquipped(p)
+	if p:GetAttribute("MaxEquipped") ~= maxEquipped then
+		p:SetAttribute("MaxEquipped", maxEquipped)
+	end
 	local counts, clean = {}, {}
 	for _, code in ipairs(list) do
-		if owned(p, code) > 0 and #clean < ShopConfig.MaxEquipped then
+		if owned(p, code) > 0 and #clean < maxEquipped then
 			counts[code] = (counts[code] or 0) + 1
 			if counts[code] <= owned(p, code) then
 				table.insert(clean, code)
@@ -53,13 +70,21 @@ function PlayerSystems.SetEquipped(p, list: { number })
 	p:SetAttribute("Equipped", table.concat(text, ","))
 	p:SetAttribute("PetBonus", ShopConfig.TeamBonus(mults))
 	p:SetAttribute("PetLevel", clean[1] and (ShopConfig.SplitPet(clean[1])) or 0) -- самый сильный, для статистики
+	-- Способности команды: сумма простых и список супер-способностей.
+	local team = PetAbilities.Team(clean)
+	for _, kind in ipairs(PetAbilities.Order) do
+		p:SetAttribute(PetAbilities.Kinds[kind].Attr, team[kind])
+	end
+	p:SetAttribute("PetSupers", team.SuperText)
+	PlayerSystems.ApplySpeed(p)
 end
 function PlayerSystems.EquipBest(p)
+	local maxEquipped = PlayerSystems.MaxEquipped(p)
 	local all = {}
 	for id = 1, #Config.Pets do
 		for tier = 0, #ShopConfig.Variants do
 			local code = ShopConfig.PetCode(id, tier)
-			for _ = 1, math.min(owned(p, code), ShopConfig.MaxEquipped) do
+			for _ = 1, math.min(owned(p, code), maxEquipped) do
 				table.insert(all, code)
 			end
 		end
@@ -67,12 +92,16 @@ function PlayerSystems.EquipBest(p)
 	table.sort(all, function(a, b)
 		return mult(a) > mult(b)
 	end)
-	PlayerSystems.SetEquipped(p, { all[1], all[2], all[3] })
+	local best = {}
+	for i = 1, math.min(#all, maxEquipped) do
+		best[i] = all[i]
+	end
+	PlayerSystems.SetEquipped(p, best)
 end
 -- Новый питомец: занимает свободное место или заменяет самого слабого, если сильнее.
 function PlayerSystems.OnHatched(p, code)
 	local list = PlayerSystems.GetEquipped(p)
-	if #list < ShopConfig.MaxEquipped then
+	if #list < PlayerSystems.MaxEquipped(p) then
 		table.insert(list, code)
 	else
 		local weakest = list[#list]
@@ -153,6 +182,7 @@ end
 function PlayerSystems.CoinMultiplier(p): number
 	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(p:GetAttribute("Rebirths") or 0)
 	m *= (p:GetAttribute("IndexBonus") or 1) * (p:GetAttribute("FriendBonus") or 1)
+	m *= p:GetAttribute("Save_QuestLineBonus") or 1 -- постоянный бонус за главы квестовой линии
 	if PlayerSystems.EventActive("Golden") then
 		m *= 2
 	end
@@ -163,6 +193,8 @@ function PlayerSystems.CoinMultiplier(p): number
 	if PlayerSystems.PotionActive(p, "Coins") then
 		m *= 2
 	end
+	-- Способность питомцев «+% монет» (MainHUD считает так же).
+	m *= 1 + (p:GetAttribute("AbilCoins") or 0)
 	return m
 end
 
@@ -177,7 +209,9 @@ function PlayerSystems.ApplySpeed(p)
 	if PlayerSystems.PotionActive(p, "Speed") then
 		speed *= 1.5
 	end
-	if h.WalkSpeed ~= speed then
+	speed *= 1 + (p:GetAttribute("AbilSpeed") or 0) -- способность питомцев
+	speed = math.floor(speed * 10 + 0.5) / 10
+	if math.abs(h.WalkSpeed - speed) > 0.01 then
 		h.WalkSpeed = speed
 	end
 end
@@ -193,6 +227,7 @@ function PlayerSystems.MagnetRadius(p): number
 		local def = ShopConfig.Magnets[p:GetAttribute("MagnetEquipped") or 1]
 		r += def and def.Bonus or 0
 	end
+	r += p:GetAttribute("AbilMagnet") or 0 -- способность питомцев
 	return r
 end
 -- Магнит всегда в руках (панели инструментов Roblox нет): снять или надеть его можно только
@@ -255,6 +290,15 @@ function PlayerSystems.Setup(p)
 	p:SetAttribute("BadgeBonus", 1)
 	p:SetAttribute("IndexBonus", 1)
 	p:SetAttribute("FriendBonus", 1)
+	for _, kind in ipairs(PetAbilities.Order) do
+		p:SetAttribute(PetAbilities.Kinds[kind].Attr, 0)
+	end
+	p:SetAttribute("PetSupers", "")
+	p:SetAttribute("MaxEquipped", PlayerSystems.MaxEquipped(p))
+	-- Ребёрс дал (или снял) слот команды — применяем последний запрошенный список заново.
+	p:GetAttributeChangedSignal("RebirthSlots"):Connect(function()
+		PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
+	end)
 	for _, tier in ipairs(ShopConfig.Pity) do
 		p:SetAttribute("Pity" .. tier.Rarity, 0)
 	end

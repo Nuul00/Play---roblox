@@ -8,6 +8,7 @@ local player = Players.LocalPlayer
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 local action = ReplicatedStorage:WaitForChild("GameAction")
 
 local rarityColors = {
@@ -135,8 +136,21 @@ local function buildPets()
 	for _, id in ipairs(equipped) do
 		equippedCount[id] = (equippedCount[id] or 0) + 1
 	end
-	local header = label(body, string.format("Equipped %d / %d   ·   Team bonus x%g", #equipped, ShopConfig.MaxEquipped, math.floor((player:GetAttribute("PetBonus") or 1) * 100 + 0.5) / 100), UDim2.fromOffset(0, 0), UDim2.fromOffset(440, 36), 19)
+	-- Размер команды растёт с ребёрсами: сервер пишет его в атрибут MaxEquipped.
+	local maxEquipped = player:GetAttribute("MaxEquipped") or ShopConfig.MaxEquipped
+	local header = label(body, string.format("Equipped %d / %d   ·   Team bonus x%g", #equipped, maxEquipped, math.floor((player:GetAttribute("PetBonus") or 1) * 100 + 0.5) / 100), UDim2.fromOffset(0, 0), UDim2.fromOffset(440, 22), 18)
 	header.TextXAlignment = Enum.TextXAlignment.Left
+	-- Строка способностей команды; при наведении на карточку показывает способность питомца.
+	local teamText = PetAbilities.TeamText(player)
+	if teamText == "" then
+		teamText = "Every pet has an ability · Legendary & Secret pets have a SUPER ability"
+	end
+	local teamLine = label(body, teamText, UDim2.fromOffset(0, 22), UDim2.fromOffset(440, 18), 13, Color3.fromRGB(255, 230, 150))
+	teamLine.TextXAlignment = Enum.TextXAlignment.Left
+	teamLine.TextScaled = true
+	local teamSize = Instance.new("UITextSizeConstraint")
+	teamSize.MaxTextSize = 13
+	teamSize.Parent = teamLine
 	local best = button(body, "⭐ EQUIP BEST", UDim2.fromOffset(450, 0), UDim2.fromOffset(150, 36), Color3.fromRGB(70, 180, 90))
 	local none = button(body, "UNEQUIP ALL", UDim2.fromOffset(608, 0), UDim2.fromOffset(140, 36), Color3.fromRGB(200, 90, 80))
 	best.Activated:Connect(function()
@@ -153,7 +167,7 @@ local function buildPets()
 	list.ScrollBarThickness = 8
 	list.Parent = body
 	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.fromOffset(138, 168)
+	grid.CellSize = UDim2.fromOffset(138, 188)
 	grid.CellPadding = UDim2.fromOffset(10, 10)
 	grid.Parent = list
 	local ids = {}
@@ -182,16 +196,46 @@ local function buildPets()
 		corner(card, 14)
 		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
-		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 22), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
-		label(card, def.Rarity .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 118), UDim2.fromOffset(130, 18), 13, rarityColors[def.Rarity] == rarityColors.Secret and Color3.new(1, 1, 1) or rarityColors[def.Rarity])
-		label(card, "own " .. count(id), UDim2.fromOffset(4, 140), UDim2.fromOffset(60, 20), 13, Color3.fromRGB(210, 210, 220), Enum.Font.GothamMedium)
+		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
+		label(card, def.Rarity .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity] == rarityColors.Secret and Color3.new(1, 1, 1) or rarityColors[def.Rarity])
+		-- Способность питомца и (у Legendary/Secret) значок супер-способности.
+		local ability = PetAbilities.Get(baseId, tier)
+		local abilityLine = label(card, ability.Text, UDim2.fromOffset(6, 133), UDim2.fromOffset(126, 15), 13, Color3.fromRGB(255, 235, 160))
+		abilityLine.TextScaled = true
+		local super = PetAbilities.Super(baseId)
+		if super then
+			local pill = Instance.new("Frame")
+			pill.Position = UDim2.fromOffset(6, 150)
+			pill.Size = UDim2.fromOffset(126, 17)
+			pill.BackgroundColor3 = Color3.new(1, 1, 1)
+			pill.Parent = card
+			corner(pill, 8)
+			stroke(pill, 1.5)
+			local g = Instance.new("UIGradient")
+			g.Color = ColorSequence.new(super.Color, super.Color:Lerp(Color3.new(0, 0, 0), 0.45))
+			g.Rotation = 90
+			g.Parent = pill
+			local superText = label(pill, "⭐ SUPER: " .. super.Name, UDim2.fromOffset(4, 1), UDim2.new(1, -8, 1, -2), 12)
+			superText.TextScaled = true
+			local ts = Instance.new("UIStroke")
+			ts.Thickness = 1.2
+			ts.Color = dark
+			ts.Parent = superText
+		end
+		card.MouseEnter:Connect(function()
+			teamLine.Text = ability.Text .. (super and ("   ·   " .. super.Icon .. " " .. super.Name .. ": " .. super.Text) or "")
+		end)
+		card.MouseLeave:Connect(function()
+			teamLine.Text = teamText
+		end)
+		label(card, "own " .. count(id), UDim2.fromOffset(4, 166), UDim2.fromOffset(60, 20), 13, Color3.fromRGB(210, 210, 220), Enum.Font.GothamMedium)
 		if (equippedCount[id] or 0) > 0 then
-			local tag = label(card, "✔ x" .. equippedCount[id], UDim2.fromOffset(70, 140), UDim2.fromOffset(62, 20), 14, Color3.fromRGB(150, 255, 150))
+			local tag = label(card, "✔ x" .. equippedCount[id], UDim2.fromOffset(70, 166), UDim2.fromOffset(62, 20), 14, Color3.fromRGB(150, 255, 150))
 			tag.TextXAlignment = Enum.TextXAlignment.Right
 		end
 		card.Activated:Connect(function()
 			-- Клик: надеть ещё одного (если есть свободный экземпляр), иначе снять.
-			local canAdd = #equipped < ShopConfig.MaxEquipped and (equippedCount[id] or 0) < count(id)
+			local canAdd = #equipped < maxEquipped and (equippedCount[id] or 0) < count(id)
 			if canAdd then
 				action:FireServer("equip", id)
 			elseif (equippedCount[id] or 0) > 0 then
@@ -201,7 +245,7 @@ local function buildPets()
 			end
 		end)
 	end
-	list.CanvasSize = UDim2.fromOffset(0, math.ceil(#ids / 5) * 178)
+	list.CanvasSize = UDim2.fromOffset(0, math.ceil(#ids / 5) * 198)
 end
 
 -- ===== Зелья =====
@@ -369,7 +413,7 @@ player.AttributeChanged:Connect(function(name)
 	if not window.Visible or pending then
 		return
 	end
-	if name == "Equipped" or name == "PetBonus" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" then
+	if name == "Equipped" or name == "PetBonus" or name == "MaxEquipped" or name == "PetSupers" or name:sub(1, 4) == "Abil" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" then
 		pending = true
 		task.defer(function()
 			pending = false

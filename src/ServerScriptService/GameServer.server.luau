@@ -5,6 +5,7 @@ local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local AvatarPose = require(script.Parent:WaitForChild("AvatarPose"))
 local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
 world:SetAttribute("ServerRunning", true)
@@ -95,6 +96,18 @@ openMenu.Parent = ReplicatedStorage
 local buy = Instance.new("RemoteEvent")
 buy.Name = "GameShopBuy"
 buy.Parent = ReplicatedStorage
+-- Серверные сигналы для других систем (квестовая линия, ребёрс): кто сколько яиц открыл и монет собрал.
+local signals = game:GetService("ServerStorage"):FindFirstChild("ServerSignals") or Instance.new("Folder")
+signals.Name = "ServerSignals"
+signals.Parent = game:GetService("ServerStorage")
+local function signal(name)
+ local e = signals:FindFirstChild(name) or Instance.new("BindableEvent")
+ e.Name = name
+ e.Parent = signals
+ return e
+end
+local eggsSignal = signal("EggsHatched") -- (player, eggId, amount, results)
+local coinSignal = signal("CoinCollected") -- (player, earned, worldName)
 local hatched = Instance.new("RemoteEvent")
 hatched.Name = "GameHatched"
 -- Объявление всем игрокам о редком выпадении (Legendary и выше).
@@ -159,7 +172,8 @@ action.OnServerEvent:Connect(function(p, kind, arg)
  actionCooldown[p] = os.clock()
  if kind == "equip" and type(arg) == "number" then
   local list = PlayerSystems.GetEquipped(p)
-  if #list >= ShopConfig.MaxEquipped then notify(p, "Only 3 pets can follow you. Unequip one first."); return end
+  local maxEquipped = PlayerSystems.MaxEquipped(p)
+  if #list >= maxEquipped then notify(p, "Only " .. maxEquipped .. " pets can follow you. Unequip one first."); return end
   table.insert(list, arg)
   PlayerSystems.SetEquipped(p, list)
  elseif kind == "unequip" and type(arg) == "number" then
@@ -329,12 +343,26 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   UPGRADES[kind].set(p, stats, value + 1) else
   hatchUntil[p] = os.clock()+3.5
   local results={}
+  -- Удача питомцев (AbilLuck) и ребёрсов (RebirthLuck): шанс лишнего броска, остаётся лучший.
+  -- Супер «Lucky Aura» даёт лишний бросок всегда и ещё немного удачи сверху.
+  local extraLuck=(p:GetAttribute("AbilLuck") or 0)+(tonumber(p:GetAttribute("RebirthLuck")) or 0)
+  local aura=PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).LuckyAura
+  if aura then extraLuck+=1+PetAbilities.SuperParams("LuckyAura",aura).Luck end
+  extraLuck=math.clamp(extraLuck,0,3)
   for _=1,amount do
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
   -- Зелье удачи: два броска, остаётся более редкий питомец.
   if PlayerSystems.PotionActive(p, "Luck") or PlayerSystems.EventActive("Lucky") then
    local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
    if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
+  end
+  local luckLeft=extraLuck
+  while luckLeft>0 do
+   if luckLeft>=1 or random:NextNumber()<luckLeft then
+    local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
+    if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
+   end
+   luckLeft-=1
   end
   -- Гарантия: после N питомцев без нужной редкости выдаём её из пула этого яйца.
   local forced
@@ -349,6 +377,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   end
   p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+amount)
   hatched:FireClient(p,results,eggId)
+  eggsSignal:Fire(p,eggId,amount,results)
   -- Лучшее редкое выпадение из пачки видят все на сервере.
   local best
   for _,r in ipairs(results) do
@@ -447,7 +476,7 @@ local records = {}
 for _, zone in ipairs({world, city, sky, frozen, volcano, galaxy}) do
  for _, coin in ipairs(zone:GetChildren()) do
   if coin:IsA("BasePart") and string.match(coin.Name, "^Coin_%d+$") then
-   local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = ZONE_LEVEL[zone] or 0}
+   local record = {part = coin, available = true, value = coin:GetAttribute("Value") or (zone == city and 25 or 5), required = ZONE_LEVEL[zone] or 0, zone = zone}
    table.insert(records, record)
    coin.CanCollide = false
    coin.CanTouch = false
@@ -470,11 +499,13 @@ local function collect(record, p)
  record.part:SetAttribute("Available", false)
  setCoinVisible(record.part, false)
  local earned=record.value*PlayerSystems.CoinMultiplier(p)
- -- Апгрейд «двойная монета»: шанс получить награду x2.
- if random:NextNumber()<Config.GetDoubleChance(p:GetAttribute("DoubleLevel") or 0) then earned*=2 end
+ -- Апгрейд «двойная монета» + способность питомцев: шанс получить награду x2.
+ local doubleChance=Config.GetDoubleChance(p:GetAttribute("DoubleLevel") or 0)+(p:GetAttribute("AbilDouble") or 0)
+ if random:NextNumber()<math.min(doubleChance,0.95) then earned*=2 end
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
+ coinSignal:Fire(p,earned,p:GetAttribute("CurrentWorld"))
  task.delay(Config.CoinRespawnSeconds, function()
   if record.part.Parent then
    setCoinVisible(record.part, true)
@@ -483,6 +514,58 @@ local function collect(record, p)
   end
  end)
 end
+-- ===== Супер-способности питомцев =====
+-- FX для клиентов: (владелец, ключ способности, сумма/число монет, радиус).
+local superFX = Instance.new("RemoteEvent")
+superFX.Name = "PetSuperFX"
+superFX.Parent = ReplicatedStorage
+local nextVacuum, nextRain = {}, {}
+Players.PlayerRemoving:Connect(function(p) nextVacuum[p] = nil; nextRain[p] = nil end)
+-- Средняя ценность монеты в каждом мире — для «дождя монет».
+local ZONE_WORLD = {}
+for _, pair in ipairs({{world, "Meadow Isles"}, {city, "Neon District"}, {sky, "Sky Isles"}, {frozen, "Frozen Peaks"}, {volcano, "Magma Volcano"}, {galaxy, "Cosmic Galaxy"}}) do
+ if pair[1] then ZONE_WORLD[pair[1]] = pair[2] end
+end
+local worldCoinValue = {}
+do
+ local sum, count = {}, {}
+ for _, record in ipairs(records) do
+  local name = ZONE_WORLD[record.zone]
+  if name then
+   sum[name] = (sum[name] or 0) + record.value
+   count[name] = (count[name] or 0) + 1
+  end
+ end
+ for name, total in pairs(sum) do worldCoinValue[name] = total / count[name] end
+end
+-- Coin Rain: раз в Interval секунд игрок получает монеты на Pickups подборов в текущем мире.
+task.spawn(function()
+ while world.Parent do
+  task.wait(1)
+  local now = os.clock()
+  for _, p in ipairs(Players:GetPlayers()) do
+   local level = PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).CoinRain
+   local stats = p:FindFirstChild("leaderstats")
+   if not level or not stats or not p:GetAttribute("ProfileReady") then
+    nextRain[p] = nil
+   else
+    local params = PetAbilities.SuperParams("CoinRain", level)
+    if not nextRain[p] then
+     nextRain[p] = now + params.Interval
+    elseif now >= nextRain[p] and alive(p) then
+     nextRain[p] = now + params.Interval
+     local worldName = p:GetAttribute("CurrentWorld")
+     local earned = params.Pickups * (worldCoinValue[worldName] or 5) * PlayerSystems.CoinMultiplier(p)
+     stats.Coins.Value = stats.Coins.Value + earned
+     p:SetAttribute("LifetimeEarned", (p:GetAttribute("LifetimeEarned") or 0) + earned)
+     coinSignal:Fire(p, earned, worldName)
+     superFX:FireAllClients(p, "CoinRain", earned, level)
+    end
+   end
+  end
+ end
+end)
+
 task.spawn(function()
  while world.Parent do
   local candidates = {}
@@ -490,7 +573,18 @@ task.spawn(function()
    local h, root = alive(p)
    local stats = p:FindFirstChild("leaderstats")
    if h and stats and p:GetAttribute("ProfileReady") then
-    table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=PlayerSystems.MagnetRadius(p)})
+    local radius = PlayerSystems.MagnetRadius(p)
+    -- Супер «Vacuum»: раз в Interval секунд забирает все монеты в Range радиусах магнита.
+    local vacuum = 0
+    local vacuumLevel = PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).Vacuum
+    if vacuumLevel then
+     local params = PetAbilities.SuperParams("Vacuum", vacuumLevel)
+     if os.clock() >= (nextVacuum[p] or 0) then
+      nextVacuum[p] = os.clock() + params.Interval
+      vacuum = math.min(radius * params.Range, radius + params.MaxExtra) -- потолок для огромных магнитов
+     end
+    end
+    table.insert(candidates, {p=p, root=root, level=stats.SpeedLevel.Value, radius=radius, vacuum=vacuum, sucked=0})
     -- Зелёная метка у киоска: зашёл в круг — меню магазина открылось (один раз на вход).
     for id, zonePart in pairs(shopZones) do
      local offset = root.Position - zonePart.Position
@@ -517,15 +611,25 @@ task.spawn(function()
   end
   for _, record in ipairs(records) do
    if record.available and record.part.Parent then
-    local nearest, nearestDistance
+    local nearest, nearestDistance, nearestCandidate
     for _, candidate in ipairs(candidates) do
      local delta = candidate.root.Position - record.part.Position
      local distance = delta.X * delta.X + delta.Z * delta.Z
-     if candidate.level >= record.required and math.abs(delta.Y) <= 6 and distance <= candidate.radius ^ 2 and (not nearestDistance or distance < nearestDistance) then
-      nearest, nearestDistance = candidate.p, distance
+     local inMagnet = math.abs(delta.Y) <= 6 and distance <= candidate.radius ^ 2
+     local inVacuum = candidate.vacuum > 0 and math.abs(delta.Y) <= 12 and distance <= candidate.vacuum ^ 2
+     if candidate.level >= record.required and (inMagnet or inVacuum) and (not nearestDistance or distance < nearestDistance) then
+      nearest, nearestDistance, nearestCandidate = candidate.p, distance, candidate
      end
     end
-    if nearest then collect(record, nearest) end
+    if nearest then
+     if nearestDistance > nearestCandidate.radius ^ 2 then nearestCandidate.sucked += 1 end
+     collect(record, nearest)
+    end
+   end
+  end
+  for _, candidate in ipairs(candidates) do
+   if candidate.sucked > 0 then
+    superFX:FireAllClients(candidate.p, "Vacuum", candidate.sucked, candidate.vacuum)
    end
   end
   task.wait(0.1)

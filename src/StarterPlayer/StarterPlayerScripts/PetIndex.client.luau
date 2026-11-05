@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 local claim = ReplicatedStorage:WaitForChild("GameIndexClaim")
 
 local rarityColors = {
@@ -224,14 +225,14 @@ local function showPage(eggId)
 	local egg = Config.Eggs[eggId]
 	header.Text = egg.Name
 	grid:ClearAllChildren()
-	grid.CanvasSize=UDim2.fromOffset(0,math.ceil(#egg.Pool/3)*106)
+	grid.CanvasSize=UDim2.fromOffset(0,math.ceil(#egg.Pool/3)*136)
 	grid.CanvasPosition=Vector2.zero
 	cards = {}
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local card = Instance.new("Frame")
-		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 106)
-		card.Size = UDim2.fromOffset(112, 101)
+		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 136)
+		card.Size = UDim2.fromOffset(112, 130)
 		card.BackgroundColor3 = Color3.fromRGB(255, 251, 240)
 		card.Parent = grid
 		corner(card, 12)
@@ -250,6 +251,25 @@ local function showPage(eggId)
 			rarity.Text = "SECRET"
 		end
 		text(card, found and string.format("x%g · %g%% · own %d", def.Multiplier, entry.Chance, owned(entry.Pet)) or string.format("%g%%", entry.Chance), UDim2.fromOffset(4, 89), UDim2.fromOffset(104, 12), 9, Color3.fromRGB(120, 95, 70), Enum.Font.GothamMedium)
+		-- Способность питомца (видна, когда он открыт) и значок супер-способности.
+		local ability = text(card, found and PetAbilities.Get(entry.Pet, 0).Text or "🔒 ability: ???", UDim2.fromOffset(5, 101), UDim2.fromOffset(102, 13), 11, Color3.fromRGB(150, 95, 30))
+		ability.TextScaled = true
+		local super = PetAbilities.Super(entry.Pet)
+		if super then
+			local pill = Instance.new("Frame")
+			pill.Position = UDim2.fromOffset(5, 115)
+			pill.Size = UDim2.fromOffset(102, 13)
+			pill.BackgroundColor3 = Color3.new(1, 1, 1)
+			pill.Parent = card
+			corner(pill, 6)
+			stroke(pill, 1.2, Color3.fromRGB(30, 30, 40))
+			local g = Instance.new("UIGradient")
+			g.Color = ColorSequence.new(super.Color, super.Color:Lerp(Color3.new(0, 0, 0), 0.45))
+			g.Rotation = 90
+			g.Parent = pill
+			local label = text(pill, "⭐ SUPER: " .. super.Name, UDim2.fromOffset(3, 0), UDim2.new(1, -6, 1, 0), 10, Color3.new(1, 1, 1))
+			label.TextScaled = true
+		end
 		cards[i] = { model = model, view = view }
 	end
 	local n, max = progress(eggId)
