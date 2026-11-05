@@ -180,7 +180,14 @@ local function attach(part: BasePart, worldName: string)
 	end
 	m.Parent = part
 	part.LocalTransparencyModifier = 1
-	local entry = { part = part, model = m, parts = parts, phase = math.random() * 6, world = worldName }
+	-- значки старой плоской монеты (SurfaceGui) — прячем вместе с ней
+	local guis = {}
+	for _, d in ipairs(part:GetChildren()) do
+		if d:IsA("LayerCollector") then
+			table.insert(guis, d)
+		end
+	end
+	local entry = { part = part, model = m, parts = parts, guis = guis, phase = math.random() * 6, world = worldName }
 	local function sync()
 		local visible = part.Transparency < 1
 		for _, p in ipairs(parts) do
@@ -225,6 +232,18 @@ RunService.Heartbeat:Connect(function(dt)
 	acc = 0
 	local current = player:GetAttribute("CurrentWorld")
 	for _, e in ipairs(coins) do
+		if e.world == current then
+			-- Скрипты миров при входе «проявляют» все детали (LocalTransparencyModifier = 0), а сервер
+			-- включает значки монеты при её появлении — поэтому старую плоскую монету прячем постоянно.
+			if e.part.LocalTransparencyModifier ~= 1 then
+				e.part.LocalTransparencyModifier = 1
+			end
+			for _, g in ipairs(e.guis) do
+				if g.Enabled then
+					g.Enabled = false
+				end
+			end
+		end
 		if e.world == current and e.part.Transparency < 1 then
 			local p = e.part.Position
 			e.model:PivotTo(CFrame.new(p + Vector3.new(0, math.sin(t * 2 + e.phase) * 0.3, 0)) * CFrame.Angles(0, t * 1.8 + e.phase, 0))
