@@ -122,6 +122,10 @@ function PlayerSystems.Fuse(p, tier: number, id: number): boolean
 	if not v or not Config.Pets[id] then
 		return false
 	end
+	if Config.Pets[id].Super then
+		notifyFn(p, "Super Secret pets are already one of a kind!")
+		return false
+	end
 	local fromAttr = ShopConfig.OwnedAttr(id, tier - 1)
 	local have = p:GetAttribute(fromAttr) or 0
 	if have < v.Need then

@@ -181,7 +181,7 @@ game:BindToClose(function()
  local deadline=os.clock()+25
  while next(sessions) and os.clock()<deadline do task.wait(0.2) end
 end)
-local defs={{Part="BoardCoins",Title="TOP 100 · COINS",Stat="LifetimeEarned",Scale=100},{Part="BoardEggs",Title="TOP 100 · EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 · PICKUPS",Stat="CoinsCollected",Scale=1}}
+local defs={{Part="BoardCoins",Title="TOP 100 · COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 · EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 · PICKUPS",Stat="CoinsCollected",Scale=1}}
 local names={}
 local function label(parent,text,pos,size,fontSize,color)
  local x=Instance.new("TextLabel")
@@ -206,16 +206,45 @@ for _,def in ipairs(defs) do
    table.insert(def.lists,list)
   end
  end
- if persistent then def.store=DS:GetOrderedDataStore("CoinSprint_TopV3_"..def.Stat) end
+ -- Монеты к концу игры доходят до 1e20 — больше предела OrderedDataStore (9e18), поэтому храним логарифм.
+ if persistent then def.store=DS:GetOrderedDataStore((def.Log and "CoinSprint_TopV4_" or "CoinSprint_TopV3_")..def.Stat) end
 end
+local function encode(def,v)
+ v=math.max(0,tonumber(v) or 0)
+ if def.Log then return math.floor(math.log10(v+1)*1e15) end
+ return math.floor(math.min(v*def.Scale,9e18))
+end
+local function decode(def,x)
+ if def.Log then return 10^(x/1e15)-1 end
+ return x/def.Scale
+end
+local function shortNum(n)
+ for _,u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do
+  if n>=u[1] then return (string.format("%.2f",n/u[1]):gsub("%.?0+$",""))..u[2] end
+ end
+ return tostring(math.floor(n))
+end
+-- Строки таблицы создаём один раз и потом только меняем текст (раньше ~1200 меток пересоздавались каждые 2 минуты).
 local function render(def,rows)
  for _,list in ipairs(def.lists) do
-  list:ClearAllChildren();list.CanvasSize=UDim2.fromOffset(0,math.max(250,#rows*32))
-  if #rows==0 then label(list,"Be the first on this board!",UDim2.fromOffset(0,50),UDim2.fromOffset(780,40),23)
-  else
-   for i,row in ipairs(rows) do
-    label(list,string.format("#%d   %s",i,row.Name),UDim2.fromOffset(8,(i-1)*32),UDim2.fromOffset(560,30),21).TextXAlignment=Enum.TextXAlignment.Left
-    label(list,string.format("%g",row.Value),UDim2.fromOffset(570,(i-1)*32),UDim2.fromOffset(200,30),21).TextXAlignment=Enum.TextXAlignment.Right
+  list.CanvasSize=UDim2.fromOffset(0,math.max(250,#rows*32))
+  if not list:GetAttribute("Built") then
+   list:SetAttribute("Built",true)
+   local empty=label(list,"Be the first on this board!",UDim2.fromOffset(0,50),UDim2.fromOffset(780,40),23);empty.Name="Empty"
+   for i=1,100 do
+    local n=label(list,"",UDim2.fromOffset(8,(i-1)*32),UDim2.fromOffset(560,30),21);n.Name="N"..i;n.TextXAlignment=Enum.TextXAlignment.Left
+    local v=label(list,"",UDim2.fromOffset(570,(i-1)*32),UDim2.fromOffset(200,30),21);v.Name="V"..i;v.TextXAlignment=Enum.TextXAlignment.Right
+   end
+  end
+  list.Empty.Visible=#rows==0
+  for i=1,100 do
+   local row=rows[i]
+   local n,v=list["N"..i],list["V"..i]
+   n.Visible=row~=nil;v.Visible=row~=nil
+   if row then
+    local t1,t2=string.format("#%d   %s",i,row.Name),shortNum(tonumber(row.Value) or 0)
+    if n.Text~=t1 then n.Text=t1 end
+    if v.Text~=t2 then v.Text=t2 end
    end
   end
  end
@@ -305,7 +334,7 @@ local function refresh()
   local rows={}
   for _,p in ipairs(Players:GetPlayers()) do
    table.insert(rows,{Name=p.DisplayName,UserId=p.UserId,Value=p:GetAttribute(def.Stat) or 0})
-   if def.store and p:GetAttribute("ProfileReady") then pcall(function() def.store:UpdateAsync(tostring(p.UserId),function(old) return math.max(old or 0,math.floor(math.min((p:GetAttribute(def.Stat) or 0)*def.Scale,9e18))) end) end) end
+   if def.store and p:GetAttribute("ProfileReady") then pcall(function() def.store:UpdateAsync(tostring(p.UserId),function(old) return math.max(old or 0,encode(def,p:GetAttribute(def.Stat) or 0)) end) end) end
   end
   table.sort(rows,function(a,b) return a.Value>b.Value end)
   if def.store then
@@ -316,7 +345,7 @@ local function refresh()
      local id=tonumber(entry.key)
      local name=names[id]
      if not name then local success,result=pcall(function() return Players:GetNameFromUserIdAsync(id) end);name=success and result or ("User "..entry.key);names[id]=name end
-     table.insert(rows,{Name=name,UserId=id or 0,Value=entry.value/def.Scale})
+     table.insert(rows,{Name=name,UserId=id or 0,Value=decode(def,entry.value)})
     end
     for _,sub in ipairs(def.subtitles) do sub.Text="GLOBAL · refreshes every 120s" end
    else for _,sub in ipairs(def.subtitles) do sub.Text="THIS SERVER · global service unavailable" end end

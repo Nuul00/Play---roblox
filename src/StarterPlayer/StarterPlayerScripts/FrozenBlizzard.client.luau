@@ -4,6 +4,17 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local CollectionService = game:GetService("CollectionService")
+-- кристаллы метели: список держим по сигналам, а не запрашиваем каждый кадр
+local crystals = {}
+for _, m in ipairs(CollectionService:GetTagged("FrostCrystal")) do
+	crystals[m] = true
+end
+CollectionService:GetInstanceAddedSignal("FrostCrystal"):Connect(function(m)
+	crystals[m] = true
+end)
+CollectionService:GetInstanceRemovedSignal("FrostCrystal"):Connect(function(m)
+	crystals[m] = nil
+end)
 
 local player = Players.LocalPlayer
 local world = workspace:WaitForChild("CoinSpeedWorld")
@@ -132,7 +143,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if storm then
 		sub.Text = string.format("Frost crystals fall! · %d s left", math.ceil(left))
 		stroke.Transparency = 0.2 + 0.3 * math.sin(t * 5)
-		for _, m in ipairs(CollectionService:GetTagged("FrostCrystal")) do
+		for m in pairs(crystals) do
 			local core = m.PrimaryPart
 			if core then
 				local base = m:GetAttribute("BaseCF")

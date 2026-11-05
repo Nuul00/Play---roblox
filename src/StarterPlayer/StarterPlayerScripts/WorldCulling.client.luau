@@ -126,17 +126,18 @@ local function apply(id: string)
 	end
 end
 
+-- подписка раньше обхода: эффекты, созданные пока идёт обход (с паузами), тоже попадут в списки
+world.DescendantAdded:Connect(function(d)
+	if FX[d.ClassName] or d:IsA("SurfaceGui") then
+		task.defer(add, d)
+	end
+end)
 for k, d in ipairs(world:GetDescendants()) do
 	add(d)
 	if k % 4000 == 0 then
 		task.wait()
 	end
 end
-world.DescendantAdded:Connect(function(d)
-	if FX[d.ClassName] or d:IsA("SurfaceGui") then
-		task.defer(add, d)
-	end
-end)
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
 	apply(player:GetAttribute("CurrentWorld") or "Meadow Isles")
 end)

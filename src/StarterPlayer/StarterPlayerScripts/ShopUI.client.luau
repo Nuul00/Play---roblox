@@ -1405,7 +1405,10 @@ RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
 		local size = camera.ViewportSize
-		scale.Scale = currentSkin and math.min(1, (size.X - 28) / 800, (size.Y - 60) / 830) or math.min(1, (size.X - 28) / 660, (size.Y - 60) / 664)
+		-- телефоны (низкий экран): окно крупнее, украшения рамки могут чуть уйти за край — кнопки важнее
+		local small = size.Y < 500
+		local padY = small and 6 or 60
+		scale.Scale = currentSkin and math.min(1, (size.X - 28) / 800, (size.Y - padY) / (small and 680 or 830)) or math.min(1, (size.X - 28) / 660, (size.Y - padY) / (small and 640 or 664))
 		revealScale.Scale = math.min(1, (size.X - 28) / 900, (size.Y - 40) / 520)
 	end
 	scan += dt
