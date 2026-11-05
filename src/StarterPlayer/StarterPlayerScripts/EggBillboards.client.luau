@@ -282,15 +282,58 @@ local function setupEgg(id, stand)
 
 	-- Издалека яйцо видно сразу: мягкий столб света в цвет яйца и надпись с названием и ценой
 	-- (вблизи её сменяет большое табло с питомцами).
+	-- Луч света сверху, как солнце сквозь листву: невидимая деталь-ось, на ней мягкий
+	-- размытый Beam (к земле чуть плотнее, вверху растворяется) и редкие пылинки, плывущие в луче.
+	local H = 44
+	local baseY = entry.base.Position.Y + entry.height / 2
 	local pillar = Instance.new("Part")
 	pillar.Name = "EggPillar"
-	pillar.Shape = Enum.PartType.Cylinder
-	pillar.Material = Enum.Material.Neon
-	pillar.Color = light
-	pillar.Transparency = 0.86
+	pillar.Transparency = 1
 	pillar.Anchored, pillar.CanCollide, pillar.CanQuery, pillar.CanTouch, pillar.CastShadow = true, false, false, false, false
-	pillar.Size = Vector3.new(46, 3.2, 3.2)
-	pillar.CFrame = CFrame.new(entry.base.Position + Vector3.new(0, 23 + entry.height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	pillar.Size = Vector3.new(6, H, 6)
+	pillar.CFrame = CFrame.new(entry.base.Position.X, baseY + H / 2, entry.base.Position.Z)
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, -H / 2, 0)
+	a0.Parent = pillar
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, H / 2, 0)
+	a1.Parent = pillar
+	local ray = Instance.new("Beam")
+	ray.Attachment0, ray.Attachment1 = a0, a1
+	ray.FaceCamera = true
+	ray.Width0, ray.Width1 = 7, 13 -- луч расширяется кверху
+	ray.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	ray.TextureMode = Enum.TextureMode.Stretch
+	ray.TextureLength = 1
+	ray.TextureSpeed = 0.04
+	ray.LightEmission = 1
+	ray.LightInfluence = 0
+	ray.Brightness = 1.5
+	ray.Color = ColorSequence.new(light:Lerp(Color3.fromRGB(255, 245, 210), 0.5), light)
+	ray.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.62),
+		NumberSequenceKeypoint.new(0.5, 0.76),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	ray.Parent = pillar
+	local dust = Instance.new("ParticleEmitter")
+	dust.Name = "Dust"
+	dust.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	dust.Color = ColorSequence.new(Color3.fromRGB(255, 250, 225))
+	dust.LightEmission = 1
+	dust.LightInfluence = 0
+	dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.22), NumberSequenceKeypoint.new(1, 0) })
+	dust.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.2), NumberSequenceKeypoint.new(1, 1) })
+	dust.Lifetime = NumberRange.new(4, 7)
+	dust.Speed = NumberRange.new(0.2, 0.7)
+	dust.SpreadAngle = Vector2.new(180, 180)
+	dust.Acceleration = Vector3.new(0, 0.15, 0)
+	dust.Drag = 1
+	dust.RotSpeed = NumberRange.new(-30, 30)
+	dust.Rate = 5
+	dust.Shape = Enum.ParticleEmitterShape.Box
+	dust.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	dust.Parent = pillar
 	pillar.Parent = fxFolder
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "EggTag"
