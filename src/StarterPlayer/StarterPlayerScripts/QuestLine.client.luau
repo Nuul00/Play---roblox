@@ -139,8 +139,8 @@ local rewardText = label(card, 12, 130, W - 24, 20, 14, rgb(255, 230, 120))
 
 -- Кнопка CLAIM: пульсирует и светится, когда цель выполнена (занимает место полоски).
 local claimBtn = Instance.new("TextButton")
-claimBtn.Position = UDim2.fromOffset(12, 97)
-claimBtn.Size = UDim2.fromOffset(BAR_W, 32)
+claimBtn.Position = UDim2.fromOffset(12, 101) -- ровно на месте полоски прогресса, того же размера
+claimBtn.Size = UDim2.fromOffset(BAR_W, 24)
 claimBtn.BackgroundColor3 = WHITE
 claimBtn.Text = ""
 claimBtn.AutoButtonColor = false
@@ -152,7 +152,7 @@ grad(claimBtn, rgb(255, 235, 110), rgb(255, 150, 30))
 local claimStroke = stroke(claimBtn, WHITE, 2.5)
 local claimScale = Instance.new("UIScale")
 claimScale.Parent = claimBtn
-local shine = frame(claimBtn, 0, 0, BAR_W, 32, WHITE, 12)
+local shine = frame(claimBtn, 0, 0, BAR_W, 24, WHITE, 12)
 shine.ZIndex = 5
 local shineGrad = Instance.new("UIGradient")
 shineGrad.Rotation = 20
@@ -164,11 +164,11 @@ shineGrad.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(1, 1),
 })
 shineGrad.Parent = shine
-local claimLabel = label(claimBtn, 0, 3, BAR_W, 26, 22, WHITE, Enum.TextXAlignment.Center)
+local claimLabel = label(claimBtn, 0, 2, BAR_W, 20, 16, WHITE, Enum.TextXAlignment.Center)
 claimLabel.Text = "🎁 CLAIM!"
 claimLabel.ZIndex = 6
 claimLabel:FindFirstChildOfClass("UIStroke").Color = rgb(120, 60, 10)
-claimLabel:FindFirstChildOfClass("UIStroke").Thickness = 2.5
+claimLabel:FindFirstChildOfClass("UIStroke").Thickness = 2
 
 -- Свечение вокруг карточки, пока награда ждёт.
 -- Прозрачная подложка чуть больше карточки: видна только её рамка. Внутри card — едет вместе с ней.
@@ -576,7 +576,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local t = os.clock()
 	if readyNow and root.Visible then
 		local wave = (math.sin(t * 6) + 1) / 2
-		claimScale.Scale = 1 + 0.05 * wave
+		claimScale.Scale = 1 + 0.02 * wave
 		claimStroke.Thickness = 2 + 2 * wave
 		glowStroke.Transparency = 0.2 + 0.6 * (1 - wave)
 		glowStroke.Thickness = 3 + 3 * wave
