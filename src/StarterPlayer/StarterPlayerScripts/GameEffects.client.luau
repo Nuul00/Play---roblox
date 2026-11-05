@@ -23,29 +23,21 @@ local function clearPets(record)
 	end
 	record.pets = {}
 end
--- Питомцы крупнее прежнего и стоят симметрично дугой позади игрока (центр дуги — за спиной).
--- До 5 питомцев — одна дуга, больше — две (ближняя и дальняя), каждая симметрична.
-local PET_SCALE = 1.35
-local function arc(n: number, radius: number, spread: number): { Vector3 }
-	local out = {}
-	for i = 1, n do
-		local a = n == 1 and 0 or math.rad(-spread + (i - 1) * (2 * spread / (n - 1)))
-		table.insert(out, Vector3.new(math.sin(a) * radius, 0, math.cos(a) * radius))
-	end
-	return out
-end
+-- Расстановка, удобная игроку: камера смотрит из-за спины, поэтому прямо сзади никого нет.
+-- Питомцы идут парами по бокам (следующая пара чуть дальше назад), нечётный — впереди по центру.
+-- Так обзор чистый, и всё симметрично.
+local PET_SCALE = 1.1
 local function formation(n: number): { Vector3 }
-	if n <= 0 then
-		return {}
-	elseif n == 1 then
-		return { Vector3.new(0, 0, 5) }
-	elseif n <= 5 then
-		return arc(n, 5.4, n == 2 and 38 or 62)
+	local list = {}
+	local pairsCount = math.floor(n / 2)
+	for row = 1, pairsCount do
+		local z = 0.6 + (row - 1) * 3.4
+		local x = 4.4 + (row - 1) * 0.6
+		table.insert(list, Vector3.new(-x, 0, z))
+		table.insert(list, Vector3.new(x, 0, z))
 	end
-	local inner = math.ceil(n / 2)
-	local list = arc(inner, 5.2, 62)
-	for _, v in ipairs(arc(n - inner, 9, inner == n - inner and 50 or 36)) do
-		table.insert(list, v)
+	if n % 2 == 1 then
+		table.insert(list, Vector3.new(0, 0, -5.5)) -- впереди, «ведёт» игрока
 	end
 	return list
 end
@@ -67,20 +59,20 @@ local function rebuild(record)
 			local lift = model:GetPivot().Position.Y - (bbox.Position.Y - ext.Y / 2)
 			model.Parent = effects
 			local tag = Instance.new("BillboardGui")
-			tag.Size = UDim2.fromOffset(160, 24)
-			tag.StudsOffset = Vector3.new(0, 3.1, 0) -- питомцы крупнее: подпись выше
-			tag.MaxDistance = 40
+			tag.Size = UDim2.fromOffset(140, 18)
+			tag.StudsOffset = Vector3.new(0, 2.5, 0)
+			tag.MaxDistance = 22
 			tag.LightInfluence = 0
 			tag.Parent = model.PrimaryPart
 			local text = Instance.new("TextLabel")
 			text.Size = UDim2.fromScale(1, 1)
 			text.BackgroundTransparency = 1
 			text.Font = Enum.Font.GothamBold
-			text.TextSize = 13
+			text.TextSize = 11
 			text.TextColor3 = Color3.new(1, 1, 1)
 			text.TextStrokeTransparency = 0.3
 			local variant = ShopConfig.Variants[tier]
-			text.Text = (variant and (variant.Name .. " ") or "") .. def.Name .. "  x" .. string.format("%g", def.Multiplier * ShopConfig.VariantMult(tier))
+			text.Text = (variant and (variant.Name .. " ") or "") .. def.Name -- без множителя: просто имя
 			if variant then
 				text.TextColor3 = variant.Color:Lerp(Color3.new(1, 1, 1), 0.3)
 			end
