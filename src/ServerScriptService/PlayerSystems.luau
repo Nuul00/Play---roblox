@@ -36,6 +36,9 @@ end
 -- Размер команды: базовые 3 + слоты за ребёрсы (атрибут RebirthSlots ставит система ребёрсов).
 function PlayerSystems.MaxEquipped(p): number
 	local extra = math.clamp(math.floor(tonumber(p:GetAttribute("RebirthSlots")) or 0), 0, 20)
+	if p:GetAttribute("Pass_PetSlots") then
+		extra += 3 -- геймпасс «+3 Pet Slots»
+	end
 	return ShopConfig.MaxEquipped + extra
 end
 -- Последний запрошенный список команды: если слоты за ребёрсы придут позже сохранённой
@@ -195,6 +198,13 @@ function PlayerSystems.CoinMultiplier(p): number
 	end
 	-- Способность питомцев «+% монет» (MainHUD считает так же).
 	m *= 1 + (p:GetAttribute("AbilCoins") or 0)
+	-- геймпассы
+	if p:GetAttribute("Pass_Coins2x") then
+		m *= 2
+	end
+	if p:GetAttribute("Pass_VIP") then
+		m *= 1.25
+	end
 	return m
 end
 
@@ -228,6 +238,9 @@ function PlayerSystems.MagnetRadius(p): number
 		r += def and def.Bonus or 0
 	end
 	r += p:GetAttribute("AbilMagnet") or 0 -- способность питомцев
+	if p:GetAttribute("Pass_SuperMagnet") then
+		r *= 2 -- геймпасс «Super Magnet»
+	end
 	return r
 end
 -- Магнит всегда в руках (панели инструментов Roblox нет): снять или надеть его можно только

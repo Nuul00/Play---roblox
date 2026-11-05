@@ -1232,8 +1232,13 @@ function H.stepOpened(e, t, dt, alpha, lift)
 	end
 end
 
+-- Геймпасс Fast Hatch: вся анимация открытия идёт в 3 раза быстрее.
+local function hatchSpeed()
+	return player:GetAttribute("Pass_FastHatch") and 3 or 1
+end
 function H.step(dt)
-	local t = os.clock() - started
+	local t = (os.clock() - started) * hatchSpeed()
+	dt *= hatchSpeed()
 	dt = math.min(dt, 1 / 20)
 	local fadeIn = H.smooth(t / 0.4)
 	local fadeOut = H.smooth((revealLength - t) / 0.5)
@@ -1320,7 +1325,7 @@ RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	H.start(batch, sourceEgg, auto)
 	started = os.clock()
 	finished = false
-	busy = started + revealLength
+	busy = started + revealLength / hatchSpeed()
 	revealTitle.Text = #batch == 3 and "THREE EGGS…" or "OPENING…"
 	revealTitle.TextColor3 = WHITE
 	H.titleScale.Scale = 1

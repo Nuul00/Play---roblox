@@ -341,7 +341,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  stats.Coins.Value = stats.Coins.Value - cost
  if kind ~= "egg" then
   UPGRADES[kind].set(p, stats, value + 1) else
-  hatchUntil[p] = os.clock()+3.5
+  hatchUntil[p] = os.clock()+(p:GetAttribute("Pass_FastHatch") and 1.2 or 3.5) -- Fast Hatch: открытие в 3 раза быстрее
   local results={}
   -- Удача питомцев (AbilLuck) и ребёрсов (RebirthLuck): шанс лишнего броска, остаётся лучший.
   -- Супер «Lucky Aura» даёт лишний бросок всегда и ещё немного удачи сверху.
@@ -355,6 +355,11 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   if PlayerSystems.PotionActive(p, "Luck") or PlayerSystems.EventActive("Lucky") then
    local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
    if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
+  end
+  -- Геймпасс «2x Luck» и буст удачи из магазина: ещё один бросок, остаётся лучший.
+  if p:GetAttribute("Pass_Luck2x") or (p:GetAttribute("Save_LuckBoostEnd") or 0)>os.time() then
+   local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
+   if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
   end
   local luckLeft=extraLuck
   while luckLeft>0 do
