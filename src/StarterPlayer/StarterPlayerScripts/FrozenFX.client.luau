@@ -57,6 +57,16 @@ for _, b in ipairs(frozen:WaitForChild("Aurora", 30):GetDescendants()) do
 	end
 end
 local glows = CollectionService:GetTagged("FrozenGlow")
+local AURORA = {
+	Color3.fromRGB(70, 255, 150), -- зелёный
+	Color3.fromRGB(60, 240, 210), -- бирюзовый
+	Color3.fromRGB(90, 170, 255), -- голубой
+	Color3.fromRGB(170, 100, 255), -- фиолетовый
+	Color3.fromRGB(255, 110, 200), -- розовый
+}
+local auroraAcc = 0
+-- прозрачность слоёв снизу вверх: мягкий низ, яркое зелёное ядро, тающая к верху кайма
+local LAYER_ALPHA = { 0.82, 0.6, 0.62, 0.72, 0.8, 0.88 }
 
 -- Как и в Sky Isles: детали мира иногда приходят на клиент со скрытием LocalTransparencyModifier = 1
 -- (причина в движке не найдена), поэтому на входе в мир снимаем его со всех деталей острова.
@@ -92,19 +102,45 @@ local function step(dt: number)
 		flakes.Acceleration = Vector3.new(wx, 0, wz)
 		soft.Acceleration = Vector3.new(wx * 1.3, math.sin(t * 0.5) * 0.6, wz * 1.3)
 	end
-	for _, b in ipairs(bands) do
-		local k = b.k
-		local h = 0.36 + 0.1 * math.sin(t * 0.2 + k * 0.9)
-		b.beam.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromHSV(h % 1, 0.75, 1)),
-			ColorSequenceKeypoint.new(0.5, Color3.fromHSV((h + 0.1) % 1, 0.7, 1)),
-			ColorSequenceKeypoint.new(1, Color3.fromHSV((h + 0.32) % 1, 0.6, 1)),
-		})
-		local wave = math.sin(t * 0.35 + k * 1.7)
-		b.beam.CurveSize0 = b.c0 * (1 + 0.3 * wave)
-		b.beam.CurveSize1 = b.c1 * (1 - 0.3 * wave)
-		local tr = 0.5 + b.layer * 0.12 + 0.08 * math.sin(t * 0.5 + k)
-		b.beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, tr), NumberSequenceKeypoint.new(0.8, tr), NumberSequenceKeypoint.new(1, 1) })
+	-- Сияние как настоящее: вдоль занавеси цвета перетекают (зелёный → бирюзовый → фиолетовый →
+	-- розовый), по ней бегут вертикальные «лучи» (полосы прозрачности), а сама занавесь колышется.
+	-- Нижний слой — зелёное ядро, верхние — фиолетово-розовая кайма. Обновляем 15 раз в секунду.
+	auroraAcc += dt
+	if auroraAcc >= 0.066 then
+		auroraAcc = 0
+		for _, b in ipairs(bands) do
+			local k, layer = b.k, b.layer
+			local cols = {}
+			for i = 0, 9 do
+				local x = i / 9
+				local flow = 0.5 + 0.5 * math.sin(x * 5.5 - t * 0.45 + k * 1.3)
+				local fringe = (layer - 1) / 5 -- 0 у нижнего края (зелёный), 1 у верхнего (розовый)
+				local mix = math.clamp(fringe * 0.72 + flow * 0.3 - 0.04, 0, 1)
+				local col = AURORA[1]
+				for c = 1, #AURORA - 1 do
+					local a0, a1 = (c - 1) / (#AURORA - 1), c / (#AURORA - 1)
+					if mix >= a0 and mix <= a1 then
+						col = AURORA[c]:Lerp(AURORA[c + 1], (mix - a0) / (a1 - a0))
+						break
+					end
+				end
+				cols[i + 1] = ColorSequenceKeypoint.new(x, col)
+			end
+			b.beam.Color = ColorSequence.new(cols)
+			local base = LAYER_ALPHA[layer] or 0.7
+			local tr = {}
+			for i = 0, 15 do
+				local x = i / 15
+				local edge = math.min(x, 1 - x) * 5 -- затухание к концам
+				local rays = 0.22 * math.sin(x * 38 + t * 1.3 + k * 2) + 0.12 * math.sin(x * 91 - t * 2.1 + layer)
+				local shimmer = 0.1 * math.sin(t * 0.8 + k + x * 4)
+				tr[i + 1] = NumberSequenceKeypoint.new(x, math.clamp(base + rays + shimmer + (1 - math.min(edge, 1)), 0, 1))
+			end
+			b.beam.Transparency = NumberSequence.new(tr)
+			local wave = math.sin(t * 0.35 + k * 1.7)
+			b.beam.CurveSize0 = b.c0 * (1 + 0.35 * wave)
+			b.beam.CurveSize1 = b.c1 * (1 - 0.35 * wave)
+		end
 	end
 	local pulse = 0.25 + 0.15 * math.sin(t * 1.6)
 	for i, g in ipairs(glows) do

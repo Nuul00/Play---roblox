@@ -251,7 +251,7 @@ function Frozen.BuildGlobe(parent: Instance)
 			local b = math.rad(28 + j * 9)
 			local dir = Vector3.new(math.cos(b) * math.cos(a), math.sin(b), math.cos(b) * math.sin(a))
 			local pos = L(0, GLOBE_Y, 0) + dir * (GLOBE_R - 1.5)
-			part(m, "Shine", Vector3.new(44, 11, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(255, 255, 255), M.Neon, { Transparency = 0.7, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false })
+			part(m, "Shine", Vector3.new(44, 11, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(220, 240, 255), M.Neon, { Transparency = 0.95, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false }) -- изнутри шара еле заметный блик, а не серые плашки
 		end
 	end
 	-- Подставка: снежная «насыпь», красное дерево, золотые кольца, снежинки и сосульки.
@@ -500,26 +500,33 @@ function Frozen.Build(world: Instance)
 		local ang, dist, y, span = c[1], c[2], c[3], c[4]
 		local center = Vector3.new(math.cos(ang) * dist, y, math.sin(ang) * dist)
 		local tangent = Vector3.new(-math.sin(ang), 0, math.cos(ang))
-		local p0 = L(0, 0, 0) + center - tangent * span + Vector3.new(0, -10, 0)
-		local p1 = L(0, 0, 0) + center + tangent * span + Vector3.new(0, 6, 0)
-		local a0 = Instance.new("Attachment")
-		a0.Parent = anchor
-		a0.WorldCFrame = CFrame.lookAt(p0, p0 - tangent)
-		local a1 = Instance.new("Attachment")
-		a1.Parent = anchor
-		a1.WorldCFrame = CFrame.lookAt(p1, p1 - tangent)
-		for layer, w in ipairs({ 16, 30, 46 }) do
+		local radial = -center.Unit -- к центру мира: нормаль занавеси горизонтальна
+		radial = Vector3.new(radial.X, 0, radial.Z).Unit
+		-- Занавесь вертикальная, как у настоящего сияния: ширина луча идёт вверх.
+		-- Ось X вложения — вверх (CurveSize колышет ленту), ось Y — нормаль плоскости.
+		-- Слои стоят друг над другом: зелёное ядро внизу, бирюза/синь выше, фиолетово-розовая кайма сверху.
+		-- 6 слоёв внахлёст ровно вдвое (ширина = 2 шага): яркость по высоте ровная, без полос.
+		for layer, spec in ipairs({ { -18, 36 }, { 0, 36 }, { 18, 36 }, { 36, 36 }, { 54, 36 }, { 72, 36 } }) do
+			local up, w = spec[1], spec[2]
+			local p0 = L(0, 0, 0) + center - tangent * span + Vector3.new(0, up - 10, 0)
+			local p1 = L(0, 0, 0) + center + tangent * span + Vector3.new(0, up + 6, 0)
+			local a0 = Instance.new("Attachment")
+			a0.Parent = anchor
+			a0.WorldCFrame = CFrame.fromMatrix(p0, Vector3.yAxis, radial)
+			local a1 = Instance.new("Attachment")
+			a1.Parent = anchor
+			a1.WorldCFrame = CFrame.fromMatrix(p1, Vector3.yAxis, radial)
 			local beam = Instance.new("Beam")
 			beam.Name = "AuroraBeam"
 			beam.Attachment0, beam.Attachment1 = a0, a1
-			beam.Width0, beam.Width1 = w, w * 0.8
-			beam.CurveSize0, beam.CurveSize1 = 40 * (k % 2 == 0 and 1 or -1), -35 * (k % 2 == 0 and 1 or -1)
-			beam.Segments = 40
+			beam.Width0, beam.Width1 = w, w
+			beam.CurveSize0, beam.CurveSize1 = 28 * (k % 2 == 0 and 1 or -1), -22 * (k % 2 == 0 and 1 or -1)
+			beam.Segments = 48
 			beam.FaceCamera = false
 			beam.LightEmission = 1
 			beam.LightInfluence = 0
 			beam.Brightness = 2
-			beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.55 + layer * 0.12), NumberSequenceKeypoint.new(0.8, 0.55 + layer * 0.12), NumberSequenceKeypoint.new(1, 1) })
+			beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.6), NumberSequenceKeypoint.new(0.8, 0.6), NumberSequenceKeypoint.new(1, 1) })
 			beam:SetAttribute("Band", k)
 			beam:SetAttribute("Layer", layer)
 			beam.Parent = anchor
