@@ -794,9 +794,9 @@ end
 -- Каждый следующий остров выше и щедрее.
 -- Награду и перезарядку сундука выдаёт SkyChests.server (тег "SkyChest", атрибуты ChestId и Reward).
 local TREASURE = {
-	{ Id = 1, At = Vector3.new(195, 32, -91), Size = 30, Reward = 3000, Seed = 31 },
-	{ Id = 2, At = Vector3.new(129, 52, -184), Size = 32, Reward = 8000, Seed = 47 },
-	{ Id = 3, At = Vector3.new(19, 74, -219), Size = 36, Reward = 20000, Seed = 59 },
+	{ Id = 1, At = Vector3.new(195, 32, -91), Size = 30, Reward = 200e6, Seed = 31 },
+	{ Id = 2, At = Vector3.new(129, 52, -184), Size = 32, Reward = 600e6, Seed = 47 },
+	{ Id = 3, At = Vector3.new(19, 74, -219), Size = 36, Reward = 2e9, Seed = 59 },
 }
 -- Откуда начинается подъём к первому острову (на площадке, ближе к краю, по направлению к острову).
 local TREASURE_START = Vector3.new(91, 0, -42)
@@ -808,6 +808,11 @@ local MARBLE = rgb(250, 244, 255)
 local ROCK = rgb(206, 160, 182)
 
 local function comma(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
 	local s = tostring(math.floor(n))
 	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
 end

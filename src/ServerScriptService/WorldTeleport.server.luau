@@ -5,6 +5,45 @@ local Worlds = require(RS:WaitForChild("WorldsConfig"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 local city = world:WaitForChild("NeonCity")
 local feedback = RS:WaitForChild("GameFeedback")
+local Config = require(RS:WaitForChild("GameConfig"))
+local CONFIG_WORLD = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
+local function short(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
+	return tostring(math.floor(n))
+end
+-- Старые профили: если у игрока уже есть питомцы из яиц мира, мир считается открытым.
+local function grandfather(p)
+	for _, def in ipairs(Worlds.Worlds) do
+		local key = Worlds.UnlockKey(def.Id)
+		if (def.Cost or 0) > 0 and not p:GetAttribute(key) then
+			local cw = CONFIG_WORLD[def.Id]
+			for id, pet in pairs(Config.Pets) do
+				local egg = Config.Eggs[pet.EggId]
+				if egg and egg.World == cw and not pet.Super and (p:GetAttribute("PetOwned" .. id) or 0) > 0 then
+					p:SetAttribute(key, true)
+					break
+				end
+			end
+		end
+	end
+end
+local function onPlayer(p)
+	if p:GetAttribute("ProfileReady") then
+		grandfather(p)
+	else
+		p:GetAttributeChangedSignal("ProfileReady"):Once(function()
+			grandfather(p)
+		end)
+	end
+end
+Players.PlayerAdded:Connect(onPlayer)
+for _, p in ipairs(Players:GetPlayers()) do
+	task.spawn(onPlayer, p)
+end
 
 local remote = Instance.new("RemoteFunction")
 remote.Name = "WorldTeleport"
@@ -36,7 +75,7 @@ Players.PlayerRemoving:Connect(function(p)
 	last[p] = nil
 end)
 
-local function teleport(p, id)
+local function teleport(p, id, buy)
 	if type(id) ~= "string" then
 		return { Ok = false, Message = "Unknown world" }
 	end
@@ -60,6 +99,20 @@ local function teleport(p, id)
 	if stats.SpeedLevel.Value < def.Speed then
 		return { Ok = false, Message = "Requires speed level " .. def.Speed }
 	end
+	-- Разовая покупка мира: только из окна TELEPORT (buy = true), портал лишь подсказывает цену.
+	local cost = def.Cost or 0
+	local key = Worlds.UnlockKey(id)
+	if cost > 0 and not p:GetAttribute(key) then
+		if buy ~= true then
+			return { Ok = false, Message = "Requires unlock: open TELEPORT (" .. short(cost) .. " coins)" }
+		end
+		if stats.Coins.Value < cost then
+			return { Ok = false, Message = "Need " .. short(cost - stats.Coins.Value) .. " more coins to unlock " .. def.Name }
+		end
+		stats.Coins.Value -= cost
+		p:SetAttribute(key, true)
+		feedback:FireClient(p, "🔓 " .. def.Name .. " unlocked!", true)
+	end
 	local now = os.clock()
 	if last[p] and now - last[p] < 3 then
 		return { Ok = false, Message = "Wait a moment before teleporting again" }
@@ -76,7 +129,13 @@ local function teleport(p, id)
 	return { Ok = true, Message = "Teleported to " .. id }
 end
 
-remote.OnServerInvoke = teleport
+remote.OnServerInvoke = function(p, id)
+	local result = teleport(p, id, true)
+	if result and not result.Ok and result.Message ~= "You are already here" then
+		feedback:FireClient(p, result.Message, false)
+	end
+	return result
+end
 
 -- Порталы срабатывают, когда игрок входит в проём: без кнопки E, с той же проверкой уровня скорости.
 -- Подсказки EnterWorld выключаем, чтобы не путали. Отказ («Requires speed level N») — не чаще раза в 2 с.

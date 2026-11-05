@@ -194,6 +194,14 @@ for i, def in ipairs(Worlds.Worlds) do
 	cards[i] = { def = def, go = go, info = info, stroke = cs }
 end
 
+local function short(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
+	return tostring(math.floor(n))
+end
 local busy = false
 local function refresh()
 	local current = player:GetAttribute("CurrentWorld")
@@ -219,6 +227,13 @@ local function refresh()
 			c.go.Text = "LOCKED"
 			c.go.BackgroundColor3 = rgb(120, 115, 140)
 			c.go.Active = false
+		elseif (d.Cost or 0) > 0 and not player:GetAttribute(Worlds.UnlockKey(d.Id)) then
+			-- мир ещё не куплен: цена на карточке, кнопка покупает и сразу переносит
+			local enough = stats.Coins.Value >= d.Cost
+			c.info.Text = "🔒 Unlock for 🪙 " .. short(d.Cost)
+			c.go.Text = busy and "..." or "UNLOCK"
+			c.go.BackgroundColor3 = enough and rgb(255, 170, 40) or rgb(150, 120, 90)
+			c.go.Active = not busy
 		else
 			c.info.Text = "Unlocked"
 			c.go.Text = busy and "..." or "GO!"
@@ -262,6 +277,16 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 end)
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(refresh)
 stats.SpeedLevel.Changed:Connect(refresh)
+stats.Coins.Changed:Connect(function()
+	if panel.Visible then
+		refresh()
+	end
+end)
+player.AttributeChanged:Connect(function(name)
+	if string.sub(name, 1, 12) == "Save_Unlock_" then
+		refresh()
+	end
+end)
 RunService.RenderStepped:Connect(function()
 	local camera = workspace.CurrentCamera
 	if camera then

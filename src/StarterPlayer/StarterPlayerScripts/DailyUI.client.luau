@@ -108,11 +108,11 @@ for day, reward in ipairs(D.Rewards) do
 	icon.Text = ICONS[reward.Icon] or "🎁"
 	icon.TextSize = 46
 	icon.Parent = c
-	text(c, reward.Name, 4, 98, CW - 8, 44, 14)
+	local nameLabel = text(c, reward.Name, 4, 98, CW - 8, 44, 14)
 	local status = text(c, "", 4, 146, CW - 8, 36, 15)
 	local tick = text(c, "✓", 0, 38, CW, 60, 54, rgb(120, 255, 120))
 	tick.Visible = false
-	cells[day] = { frame = c, grad = g, stroke = cs, status = status, icon = icon, tick = tick }
+	cells[day] = { frame = c, grad = g, stroke = cs, status = status, icon = icon, tick = tick, name = nameLabel, reward = reward }
 end
 
 local note = text(panel, "", 20, 292, 820, 26, 15, rgb(225, 210, 255))
@@ -138,6 +138,14 @@ claim.MouseLeave:Connect(function()
 	Tween:Create(claimScale, TweenInfo.new(0.1), { Scale = 1 }):Play()
 end)
 
+local function shortNum(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
+	return tostring(math.floor(n))
+end
 local busy = false
 local function refresh()
 	local now = workspace:GetServerTimeNow()
@@ -145,6 +153,12 @@ local function refresh()
 	local state = D.State(day, p:GetAttribute("DailyClaimedAt"), now)
 	local ready = state.Ready and p:GetAttribute("ProfileReady")
 	for i, c in ipairs(cells) do
+		-- монеты награды растут вместе с игроком: показываем настоящую сумму
+		if c.reward.Coins then
+			local amount = D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned"))
+			local extra = c.reward.Potions and "\n+ 3 potions" or ""
+			c.name.Text = shortNum(amount) .. " coins" .. extra
+		end
 		local current = i == state.Day
 		local claimed = i <= day and not (current and state.Ready)
 		c.tick.Visible = claimed

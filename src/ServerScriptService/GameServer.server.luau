@@ -309,7 +309,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   else
    local def = type(eggId) == "string" and ShopConfig.Potions[eggId]
    if not def then return end
-   cost, name = def.Price, def.Name
+   cost, name = ShopConfig.PotionCost(eggId, p:GetAttribute("LifetimeEarned")), def.Name
   end
   if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
   stats.Coins.Value = stats.Coins.Value - cost
@@ -611,7 +611,12 @@ local function collect(record, p)
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
  coinSignal:Fire(p,earned,p:GetAttribute("CurrentWorld"))
- task.delay(Config.CoinRespawnSeconds, function()
+ -- Чем больше игроков в мире, тем быстрее монеты возвращаются: каждому хватает монет и в полном сервере.
+ local here, worldName = 0, ZONE_NAME[record.zone]
+ for _, other in ipairs(Players:GetPlayers()) do
+  if other:GetAttribute("CurrentWorld") == worldName then here += 1 end
+ end
+ task.delay(math.max(2, Config.CoinRespawnSeconds / math.max(1, here) ^ 0.8), function()
   if record.part.Parent then
    setCoinVisible(record.part, true)
    record.available = true

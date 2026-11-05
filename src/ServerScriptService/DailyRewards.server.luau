@@ -12,7 +12,7 @@ remote.OnServerInvoke=function(p)
  -- No yields between eligibility check, timestamp and reward, so parallel claims cannot duplicate it.
  local reward=D.Rewards[state.Day]
  p:SetAttribute("DailyDay",state.Day);p:SetAttribute("DailyClaimedAt",now)
- stats.Coins.Value+=reward.Coins or 0
+ stats.Coins.Value+=D.CoinsFor(reward,p:GetAttribute("LifetimeEarned"))
  for name,count in pairs(reward.Potions or {}) do p:SetAttribute("Potion"..name,(p:GetAttribute("Potion"..name) or 0)+count) end
  return {Ok=true,Day=state.Day,Message="Claimed: "..reward.Name}
 end

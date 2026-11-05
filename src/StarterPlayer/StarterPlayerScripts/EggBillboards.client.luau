@@ -31,6 +31,11 @@ local rarityColors = {
 }
 
 local function fmt(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
 	local s = tostring(math.floor(n))
 	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
 end

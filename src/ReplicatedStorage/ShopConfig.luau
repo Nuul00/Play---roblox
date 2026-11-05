@@ -49,9 +49,9 @@ ShopConfig.Magnets = {
 		Light = rgb(255, 255, 255),
 	}),
 	-- Магниты Sky Isles (21-30): продаются только в облачном мире (SkyOnly), по арту пользователя.
-	magnet(21, "Cotton Candy", 2500000, 26, { SkyOnly = true, Body = rgb(255, 185, 215), Material = M.SmoothPlastic, Tip = rgb(255, 245, 250), Puffs = rgb(255, 170, 210), Bow = rgb(255, 120, 175), Light = rgb(255, 190, 225) }),
-	magnet(22, "Bubblegum Pop", 4000000, 30, { SkyOnly = true, Body = rgb(255, 140, 200), Material = M.Glass, Tip = rgb(255, 230, 245), Bubbles = rgb(255, 200, 235), Bow = rgb(120, 190, 255), Sparkles = rgb(255, 255, 255) }),
-	magnet(23, "Rainbow Star", 6500000, 34, {
+	magnet(21, "Cotton Candy", 50000000, 26, { SkyOnly = true, Body = rgb(255, 185, 215), Material = M.SmoothPlastic, Tip = rgb(255, 245, 250), Puffs = rgb(255, 170, 210), Bow = rgb(255, 120, 175), Light = rgb(255, 190, 225) }),
+	magnet(22, "Bubblegum Pop", 80000000, 30, { SkyOnly = true, Body = rgb(255, 140, 200), Material = M.Glass, Tip = rgb(255, 230, 245), Bubbles = rgb(255, 200, 235), Bow = rgb(120, 190, 255), Sparkles = rgb(255, 255, 255) }),
+	magnet(23, "Rainbow Star", 130000000, 34, {
 		SkyOnly = true,
 		Body = rgb(255, 255, 255),
 		Material = M.SmoothPlastic,
@@ -63,10 +63,10 @@ ShopConfig.Magnets = {
 		Puffs = rgb(255, 255, 255),
 		Light = rgb(255, 240, 220),
 	}),
-	magnet(24, "Angel Wings", 10000000, 39, { SkyOnly = true, Body = rgb(255, 252, 240), Material = M.Marble, Tip = rgb(255, 215, 100), TipMaterial = M.Foil, Wings = rgb(255, 255, 255), Halo = rgb(255, 225, 120), Star = rgb(255, 235, 150), Light = rgb(255, 240, 190) }),
-	magnet(25, "Crystal Frost", 15000000, 45, { SkyOnly = true, Body = rgb(165, 215, 255), Material = M.Glass, Tip = rgb(235, 250, 255), Crystals = rgb(190, 235, 255), CrystalCount = 10, Gem = rgb(210, 245, 255), Puffs = rgb(235, 245, 255), Light = rgb(170, 225, 255) }),
-	magnet(26, "Sundae Swirl", 23000000, 52, { SkyOnly = true, Body = rgb(255, 235, 215), Material = M.SmoothPlastic, Tip = rgb(255, 150, 190), Puffs = rgb(255, 205, 225), Cherry = rgb(220, 30, 60), Bow = rgb(150, 100, 70) }),
-	magnet(27, "Heart Nebula", 35000000, 60, {
+	magnet(24, "Angel Wings", 200000000, 39, { SkyOnly = true, Body = rgb(255, 252, 240), Material = M.Marble, Tip = rgb(255, 215, 100), TipMaterial = M.Foil, Wings = rgb(255, 255, 255), Halo = rgb(255, 225, 120), Star = rgb(255, 235, 150), Light = rgb(255, 240, 190) }),
+	magnet(25, "Crystal Frost", 300000000, 45, { SkyOnly = true, Body = rgb(165, 215, 255), Material = M.Glass, Tip = rgb(235, 250, 255), Crystals = rgb(190, 235, 255), CrystalCount = 10, Gem = rgb(210, 245, 255), Puffs = rgb(235, 245, 255), Light = rgb(170, 225, 255) }),
+	magnet(26, "Sundae Swirl", 460000000, 52, { SkyOnly = true, Body = rgb(255, 235, 215), Material = M.SmoothPlastic, Tip = rgb(255, 150, 190), Puffs = rgb(255, 205, 225), Cherry = rgb(220, 30, 60), Bow = rgb(150, 100, 70) }),
+	magnet(27, "Heart Nebula", 700000000, 60, {
 		SkyOnly = true,
 		Body = rgb(150, 180, 255),
 		Material = M.Glass,
@@ -79,9 +79,9 @@ ShopConfig.Magnets = {
 		Sparkles = rgb(255, 255, 255),
 		Light = rgb(200, 170, 255),
 	}),
-	magnet(28, "Midnight Wish", 55000000, 70, { SkyOnly = true, Body = rgb(60, 40, 130), Material = M.SmoothPlastic, Tip = rgb(255, 225, 130), TipMaterial = M.Foil, Moon = rgb(255, 225, 130), Sparkles = rgb(255, 245, 190), Star = rgb(255, 225, 130), Light = rgb(180, 160, 255) }),
-	magnet(29, "Comet Tail", 85000000, 82, { SkyOnly = true, Body = rgb(70, 50, 150), Material = M.Glass, Tip = rgb(150, 235, 255), TipMaterial = M.Neon, Swirl = rgb(190, 150, 255), Ring = rgb(255, 215, 120), Sparkles = rgb(255, 255, 255), Orb = rgb(160, 235, 255), Light = rgb(170, 220, 255) }),
-	magnet(30, "Lollipop Crown", 150000000, 100, { SkyOnly = true, Body = rgb(255, 160, 205), Material = M.SmoothPlastic, Tip = rgb(255, 220, 120), TipMaterial = M.Foil, Crown = rgb(255, 205, 80), CrownGem = rgb(255, 90, 160), Lollipops = rgb(255, 120, 180), Bow = rgb(255, 255, 255), Sparkles = rgb(255, 245, 200), Light = rgb(255, 200, 235) }),
+	magnet(28, "Midnight Wish", 1.1e9, 70, { SkyOnly = true, Body = rgb(60, 40, 130), Material = M.SmoothPlastic, Tip = rgb(255, 225, 130), TipMaterial = M.Foil, Moon = rgb(255, 225, 130), Sparkles = rgb(255, 245, 190), Star = rgb(255, 225, 130), Light = rgb(180, 160, 255) }),
+	magnet(29, "Comet Tail", 1.7e9, 82, { SkyOnly = true, Body = rgb(70, 50, 150), Material = M.Glass, Tip = rgb(150, 235, 255), TipMaterial = M.Neon, Swirl = rgb(190, 150, 255), Ring = rgb(255, 215, 120), Sparkles = rgb(255, 255, 255), Orb = rgb(160, 235, 255), Light = rgb(170, 220, 255) }),
+	magnet(30, "Lollipop Crown", 3e9, 100, { SkyOnly = true, Body = rgb(255, 160, 205), Material = M.SmoothPlastic, Tip = rgb(255, 220, 120), TipMaterial = M.Foil, Crown = rgb(255, 205, 80), CrownGem = rgb(255, 90, 160), Lollipops = rgb(255, 120, 180), Bow = rgb(255, 255, 255), Sparkles = rgb(255, 245, 200), Light = rgb(255, 200, 235) }),
 }
 
 -- Магниты 31–60: Frozen Peaks, Magma Volcano и Cosmic Galaxy (по 10 на мир). Модели — из Tripo
@@ -147,10 +147,19 @@ end
 -- Зелья действуют 5 минут, повторное использование продлевает время.
 ShopConfig.PotionOrder = { "Coins", "Speed", "Luck" }
 ShopConfig.Potions = {
-	Coins = { Name = "Coin Potion", Icon = "💰", Effect = "x2 coins", Price = 400, Duration = 300, Color = Color3.fromRGB(255, 200, 50) },
-	Speed = { Name = "Speed Potion", Icon = "⚡", Effect = "x1.5 walk speed", Price = 300, Duration = 300, Color = Color3.fromRGB(80, 180, 255) },
-	Luck = { Name = "Luck Potion", Icon = "🍀", Effect = "x2 egg luck", Price = 600, Duration = 300, Color = Color3.fromRGB(90, 220, 110) },
+	Coins = { Name = "Coin Potion", Icon = "💰", Effect = "x2 coins", Price = 400, Share = 0.02, Duration = 300, Color = Color3.fromRGB(255, 200, 50) },
+	Speed = { Name = "Speed Potion", Icon = "⚡", Effect = "x1.5 walk speed", Price = 300, Share = 0.01, Duration = 300, Color = Color3.fromRGB(80, 180, 255) },
+	Luck = { Name = "Luck Potion", Icon = "🍀", Effect = "x2 egg luck", Price = 600, Share = 0.03, Duration = 300, Color = Color3.fromRGB(90, 220, 110) },
 }
+
+-- Цена зелья растёт с игроком: не меньше Price и не меньше доли Share от всего заработанного.
+function ShopConfig.PotionCost(name: string, lifetime: number?): number
+	local def = ShopConfig.Potions[name]
+	if not def then
+		return math.huge
+	end
+	return math.floor(math.max(def.Price, (def.Share or 0) * (tonumber(lifetime) or 0)))
+end
 
 -- Достижения: цепочки с уровнями (I, II, III…) по каждой статистике. Каждое открытое достижение
 -- навсегда даёт x1.03 к монетам (умножается на остальные бонусы). Первые шесть Id остались
@@ -177,10 +186,10 @@ do
 	local CHAINS = {
 		{ "CoinsCollected", "🪙", "Coin Collector", "Pick up %s coins", { 100, 1000, 10000, 50000, 250000, 1000000, 5000000 }, { "Pickup100", "Pickup1000" } },
 		{ "EggsOpened", "🥚", "Egg Master", "Open %s eggs", { 10, 100, 500, 2500, 10000, 50000 }, { "Eggs10", "Eggs100" } },
-		{ "LifetimeEarned", "💎", "Rich", "Earn %s coins in total", { 100000, 10000000, 1000000000, 100000000000, 10000000000000, 1000000000000000 }, { "Rich" } },
+		{ "LifetimeEarned", "💎", "Rich", "Earn %s coins in total", { 100000, 1e8, 1e10, 1e12, 1e14, 1e16, 1e18 }, { "Rich" } },
 		{ "PetsDiscovered", "📖", "Explorer", "Discover %s pets", { 12, 25, 40, 60, 80, 100 }, { "Index12" } },
-		{ "Rebirths", "🔄", "Reborn", "Rebirth %s times", { 1, 3, 5, 10, 15 }, {} },
-		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 20, 30, 40, 50, 60 }, {} },
+		{ "Rebirths", "🔄", "Reborn", "Rebirth %s times", { 1, 3, 5, 10, 15, 25, 35, 50 }, {} },
+		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 15, 20, 25, 30 }, {} },
 	}
 	for _, c in ipairs(CHAINS) do
 		for i, goal in ipairs(c[5]) do
