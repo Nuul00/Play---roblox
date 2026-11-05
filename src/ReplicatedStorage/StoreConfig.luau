@@ -14,11 +14,11 @@ StoreConfig.Passes = {
 -- Монеты в паках считаются от прогресса игрока: доля от всех заработанных монет (не меньше Min),
 -- чтобы пак был полезен и новичку, и тому, кто уже далеко.
 StoreConfig.Products = {
-	{ Key = "CoinsSmall", Id = 0, Name = "Coin Pack", Desc = "Coins = 10% of all you've earned", Kind = "coins", Share = 0.10, Min = 2500, Color = Color3.fromRGB(255, 200, 60) },
-	{ Key = "CoinsMedium", Id = 0, Name = "Big Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Min = 10000, Color = Color3.fromRGB(255, 170, 40) },
-	{ Key = "CoinsHuge", Id = 0, Name = "Huge Coin Pack", Desc = "Coins = 100% of all you've earned", Kind = "coins", Share = 1.0, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
-	{ Key = "Potions", Id = 0, Name = "Potion Pack", Desc = "3 Coin, 3 Speed and 3 Luck potions", Kind = "potions", Count = 3, Color = Color3.fromRGB(180, 120, 255) },
-	{ Key = "LuckBoost", Id = 0, Name = "Luck Boost", Desc = "x2 egg luck for 15 minutes", Kind = "luck", Seconds = 900, Color = Color3.fromRGB(90, 220, 110) },
+	{ Key = "CoinsSmall", Id = 3728499048, Name = "Coin Pack", Desc = "Coins = 10% of all you've earned", Kind = "coins", Share = 0.10, Min = 2500, Color = Color3.fromRGB(255, 200, 60) },
+	{ Key = "CoinsMedium", Id = 3728499058, Name = "Big Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Min = 10000, Color = Color3.fromRGB(255, 170, 40) },
+	{ Key = "CoinsHuge", Id = 3728499068, Name = "Huge Coin Pack", Desc = "Coins = 100% of all you've earned", Kind = "coins", Share = 1.0, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
+	{ Key = "Potions", Id = 3728499075, Name = "Potion Pack", Desc = "3 Coin, 3 Speed and 3 Luck potions", Kind = "potions", Count = 3, Color = Color3.fromRGB(180, 120, 255) },
+	{ Key = "LuckBoost", Id = 3728499085, Name = "Luck Boost", Desc = "x2 egg luck for 15 minutes", Kind = "luck", Seconds = 900, Color = Color3.fromRGB(90, 220, 110) },
 }
 
 function StoreConfig.PassByKey(key: string)

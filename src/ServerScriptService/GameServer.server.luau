@@ -270,7 +270,7 @@ local UPGRADES = {
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if kind == "egg" then
   amount = amount == nil and 1 or amount
-  if amount ~= 1 and amount ~= 3 then return end
+  if amount ~= 1 and amount ~= 3 and amount ~= 9 then return end -- ×1 [E], ×3 [R], ×9 [T]
  end
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind == "magnettool" or kind == "potion" then

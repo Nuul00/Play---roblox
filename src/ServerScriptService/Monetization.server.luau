@@ -92,14 +92,16 @@ MarketplaceService.ProcessReceipt = function(info)
 	-- уже выдавали эту покупку?
 	if receipts then
 		local ok, done = pcall(receipts.GetAsync, receipts, info.PurchaseId)
-		if not ok then
+		-- в Studio без доступа к API хранилище недоступно: тестовую покупку выдаём сразу
+		if not ok and not game:GetService("RunService"):IsStudio() then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
-		if done then
+		if ok and done then
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
 	if not grant(p, def) then
+		warn("[Store] grant failed", def.Key)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receipts then

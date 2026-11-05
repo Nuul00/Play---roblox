@@ -304,7 +304,7 @@ local function refresh()
 	for _, pair in ipairs({ { single, 1 }, { triple, 3 } }) do
 		local b, n = pair[1], pair[2]
 		local affordable = coins.Value >= egg.Cost * n
-		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d\n💰 %s", n, fmt(egg.Cost * n))
+		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d  [%s]\n💰 %s", n, n == 1 and "E" or "R", fmt(egg.Cost * n))
 		b.Active = affordable and not waiting and not autoEgg
 		b.AutoButtonColor = b.Active and not currentSkin
 		if currentSkin then
@@ -342,6 +342,19 @@ end)
 triple.Activated:Connect(function()
 	hatch(3)
 end)
+-- Клавиши, пока открыто окно яйца: E — ×1, R — ×3, T — ×9.
+local KEYS = { [Enum.KeyCode.E] = 1, [Enum.KeyCode.R] = 3, [Enum.KeyCode.T] = 9 }
+game:GetService("UserInputService").InputBegan:Connect(function(input, processed)
+	local n = KEYS[input.KeyCode]
+	if processed or not n or mode ~= "egg" or not panel.Visible or autoEgg then
+		return
+	end
+	if not hatch(n) and eggId and coins.Value < Config.Eggs[eggId].Cost * n then
+		subtitle.Text = "Not enough coins for ×" .. n
+	end
+end)
+-- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
+hint.Text = "⌨ E — ×1   R — ×3   T — ×9      ·      Tap ✓ KEEP on a pet to auto-delete its copies"
 auto.Activated:Connect(function()
 	if autoEgg == eggId then
 		stopAuto()
@@ -883,7 +896,7 @@ function H.makeEgg(i, result, ctx)
 		end
 	end
 	-- Вьюпорт шире колонки, чтобы осколки не обрезались; камера дальше — размер яйца тот же.
-	local vw, vh = ctx.width + 140, 440
+	local vw, vh = ctx.width + (ctx.small and 40 or 140), 440
 	local wm = viewport(revealArea, cx - vw / 2, cy - vh / 2, vw, vh)
 	local vp = wm.Parent
 	-- Вьюпорт поверх ореола и лучей; свет нейтральный, чтобы текстура Tripo не выцветала.
@@ -892,7 +905,7 @@ function H.makeEgg(i, result, ctx)
 	vp.ImageColor3 = WHITE
 	vp.Ambient = Color3.fromRGB(200, 200, 215)
 	vp.LightColor = Color3.fromRGB(255, 245, 235)
-	vp.CurrentCamera.CFrame = CFrame.lookAt(H.CAM_DIR * (6.774 * vh / 330), Vector3.zero)
+	vp.CurrentCamera.CFrame = CFrame.lookAt(H.CAM_DIR * (6.774 * vh / 330 * (ctx.zoom or 1)), Vector3.zero)
 	e.vp, e.wm, e.ambient, e.light = vp, wm, vp.Ambient, vp.LightColor
 	e.egg = H.prepEgg(ctx.disp, wm, ctx.eggCfg.Color)
 	if e.egg then
@@ -955,7 +968,7 @@ function H.makeEgg(i, result, ctx)
 			flip = rng:NextNumber(6, 14),
 		})
 	end
-	e.label = label(revealArea, "", x + 5, 334, ctx.width - 10, 100, 20, WHITE, Enum.Font.FredokaOne)
+	e.label = label(revealArea, "", x + 2, ctx.small and 250 or 334, ctx.width - 4, 100, ctx.small and 12 or 20, WHITE, Enum.Font.FredokaOne)
 	e.label.TextTransparency = 1
 	e.label.ZIndex = 6
 	e.labelScale = Instance.new("UIScale")
@@ -998,7 +1011,7 @@ function H.start(batch, sourceEgg, auto)
 	crackAt = (auto and 1.5 or 2.6) + extra * (auto and 0.5 or 1)
 	local stagger = n > 1 and (auto and 0.1 or 0.16) or 0
 	revealLength = crackAt + stagger * (n - 1) + (auto and 1.8 or 2.4) + (H.bestIdx >= 6 and (auto and 0.5 or 0.9) or 0)
-	local ctx = { width = 900 / n, auto = auto, stagger = stagger, eggCfg = eggCfg, disp = displays[sourceEgg], sky = eggCfg.World == "sky" }
+	local ctx = { width = 900 / n, auto = auto, stagger = stagger, eggCfg = eggCfg, disp = displays[sourceEgg], sky = eggCfg.World == "sky" and n < 9, zoom = n >= 9 and 2.5 or 1, small = n >= 9 }
 	for i, result in ipairs(batch) do
 		H.eggs[i] = H.makeEgg(i, result, ctx)
 	end
@@ -1287,7 +1300,7 @@ end
 
 RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	-- Без анимации RareFX показывает свой эффект сразу (defer — чтобы он успел подписаться).
-	if type(batch) ~= "table" or #batch < 1 or #batch > 3 or not displays[sourceEgg] then
+	if type(batch) ~= "table" or #batch < 1 or #batch > 9 or not displays[sourceEgg] then
 		task.defer(H.burstEvent.Fire, H.burstEvent)
 		return
 	end
@@ -1326,7 +1339,7 @@ RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	started = os.clock()
 	finished = false
 	busy = started + revealLength / hatchSpeed()
-	revealTitle.Text = #batch == 3 and "THREE EGGS…" or "OPENING…"
+	revealTitle.Text = #batch == 9 and "NINE EGGS…" or #batch == 3 and "THREE EGGS…" or "OPENING…"
 	revealTitle.TextColor3 = WHITE
 	H.titleScale.Scale = 1
 	reveal.Visible = true
