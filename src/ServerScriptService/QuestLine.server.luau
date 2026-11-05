@@ -147,6 +147,16 @@ local function grant(p, s, index: number)
 		local bonus = p:GetAttribute(A.Bonus)
 		p:SetAttribute(A.Bonus, (type(bonus) == "number" and bonus or 1) + r.Bonus)
 	end
+	-- ⚡ жетоны для магазина трейлов (раньше давались ежедневными заданиями, теперь — квестовой
+	-- линией): 1 за шаг, +3 за конец главы. Хранятся в QuestService (места, сделано партнёром).
+	pcall(function()
+		local qs = script.Parent:FindFirstChild("QuestService")
+		local st = qs and require(qs).GetState(p)
+		if st then
+			st.tokens = (st.tokens or 0) + 1 + (r.Bonus and 3 or 0)
+			require(qs).Commit(p)
+		end
+	end)
 	local pet = r.Hatch and freeHatch(p, r.Hatch) or nil
 	remote:FireClient(p, "claimed", index, pet)
 	local nextStep = Q.Steps[index + 1]
