@@ -12,7 +12,7 @@ local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
 do
 	local tripo = ReplicatedStorage:WaitForChild("TripoPets", 10)
 	local t0 = os.clock()
-	while tripo and #tripo:GetChildren() < 75 and os.clock() - t0 < 15 do
+	while tripo and #tripo:GetChildren() < 150 and os.clock() - t0 < 20 do
 		task.wait(0.25)
 	end
 end
@@ -160,6 +160,20 @@ local function buildBoard(id, stand)
 		local ok, model = pcall(PetVisuals.Build, entry.Pet)
 		if ok and model then
 			model.Parent = scene
+		end
+		-- 3D-модель питомца могла ещё не дойти до клиента: дождёмся её и перерисуем ячейку.
+		local tripoPets = ReplicatedStorage:FindFirstChild("TripoPets")
+		if tripoPets and not tripoPets:FindFirstChild("Pet" .. entry.Pet) then
+			task.spawn(function()
+				if tripoPets:WaitForChild("Pet" .. entry.Pet, 120) and scene.Parent then
+					task.wait(0.5)
+					scene:ClearAllChildren()
+					local ok2, m2 = pcall(PetVisuals.Build, entry.Pet)
+					if ok2 and m2 then
+						m2.Parent = scene
+					end
+				end
+			end)
 		end
 		if many then
 			-- 9 питомцев: шанс, имя и редкость под моделькой.
