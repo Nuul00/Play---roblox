@@ -177,7 +177,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	for _, s in ipairs(strips) do
 		local pos = s.adornee and s.adornee.Parent and (s.adornee:IsA("Attachment") and s.adornee.WorldPosition or s.adornee.Position)
-		local near = root ~= nil and pos ~= nil and (root.Position - pos).Magnitude < NEAR
+		-- у яйца видно только окно яйца: гарантия показана в его подзаголовке (ShopUI)
+		local near = false and root ~= nil and pos ~= nil and (root.Position - pos).Magnitude < NEAR
 		if near ~= s.shown then
 			s.shown = near
 			if near then

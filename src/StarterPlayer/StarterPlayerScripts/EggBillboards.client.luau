@@ -456,7 +456,8 @@ RunService.RenderStepped:Connect(function(dt)
 		for _, b in ipairs(boards) do
 			local a = b.anchor
 			local pos = a and a.Parent and (a:IsA("Attachment") and a.WorldPosition or a.Position)
-			local near = r ~= nil and pos ~= nil and (r.Position - pos).Magnitude < BOARD_NEAR
+			-- Табличку с шансами над яйцом не показываем: у яйца открывается окно с теми же питомцами.
+			local near = false and r ~= nil and pos ~= nil and (r.Position - pos).Magnitude < BOARD_NEAR
 			if near ~= b.shown then
 				b.shown = near
 				if near then

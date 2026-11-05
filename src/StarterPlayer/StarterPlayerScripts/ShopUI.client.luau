@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local Config = require(RS:WaitForChild("GameConfig"))
+local ShopConfig = require(RS:WaitForChild("ShopConfig"))
 local PetVisuals = require(RS:WaitForChild("PetVisuals"))
 local Skins = require(RS:WaitForChild("HudSkins"))
 local coins = player:WaitForChild("leaderstats"):WaitForChild("Coins")
@@ -125,6 +126,12 @@ local title = label(header, "", 20, 10, 470, 38, 30, WHITE, Enum.Font.FredokaOne
 title.TextXAlignment = Enum.TextXAlignment.Left
 stroke(title, INK, 2.5, 0)
 local subtitle = label(header, "", 20, 52, 470, 26, 15, WHITE)
+subtitle.TextScaled = true -- строка с гарантией бывает длинной
+do
+	local c = Instance.new("UITextSizeConstraint")
+	c.MaxTextSize = 15
+	c.Parent = subtitle
+end
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
 stroke(subtitle, INK, 1.5, 0.2)
 local wallet = label(header, "", 430, 16, 150, 30, 20, Color3.fromRGB(255, 230, 100), Enum.Font.FredokaOne)
@@ -298,7 +305,13 @@ local function refresh()
 	end
 	local egg = Config.Eggs[eggId]
 	title.Text = string.upper(egg.Name)
-	subtitle.Text = string.format("%d PETS  ·  💰 %s EACH", #egg.Pool, fmt(egg.Cost))
+	-- гарантия (pity): сколько яиц осталось до Legendary / Secret
+	local pity = {}
+	for _, tier in ipairs(ShopConfig.Pity) do
+		local left = math.max(tier.Threshold - (player:GetAttribute("Pity" .. tier.Rarity) or 0), 1)
+		table.insert(pity, string.format("%s in %d", tier.Rarity, left))
+	end
+	subtitle.Text = string.format("%d PETS  ·  💰 %s EACH  ·  🎯 %s", #egg.Pool, fmt(egg.Cost), table.concat(pity, " · "))
 	for _, cell in ipairs(cells) do
 		local deleting = player:GetAttribute("AutoDelete" .. cell.id) == true
 		cell.toggle.Text = deleting and "✕ AUTO-DELETE" or "✓ KEEP"
