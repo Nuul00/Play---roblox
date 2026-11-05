@@ -404,6 +404,34 @@ function Frozen.Build(world: Instance)
 		local a = rand:NextNumber(0, math.pi * 2)
 		part(model, "LakeCrack", Vector3.new(rand:NextNumber(8, 20), 0.05, 0.25), CFrame.new(L(75 + math.cos(a) * 12, 0.45, 20 + math.sin(a) * 12)) * CFrame.Angles(0, a, 0), rgb(240, 250, 255), M.SmoothPlastic, { CanCollide = false })
 	end
+	-- Бортики катка в зимнем стиле: ледяные блоки со снежной шапкой и деревянными столбиками,
+	-- по кругу у кромки озера; два прохода — к площади (запад) и на восток. Бортики твёрдые.
+	do
+		local rink = Instance.new("Model")
+		rink.Name = "RinkBoards"
+		rink.Parent = model
+		local R = 36.2
+		local n = 40
+		for k = 0, n - 1 do
+			local a = k / n * math.pi * 2
+			local gap = math.abs(math.atan2(math.sin(a - math.pi), math.cos(a - math.pi))) < 0.2 or math.abs(math.atan2(math.sin(a), math.cos(a))) < 0.2
+			if not gap then
+				local pos = L(75 + math.cos(a) * R, 0, 20 + math.sin(a) * R)
+				local cf = CFrame.lookAt(pos, L(75, 0, 20)) -- лицом к центру катка
+				local len = 2 * math.pi * R / n + 0.3
+				part(rink, "Board", Vector3.new(len, 2.6, 0.8), cf * CFrame.new(0, 1.5, 0), ICE:Lerp(SNOW, 0.25), M.Ice, { Transparency = 0.1 })
+				part(rink, "BoardSnow", Vector3.new(len + 0.1, 0.5, 1.2), cf * CFrame.new(0, 3, 0), SNOW, M.Snow, { CanCollide = false })
+				if k % 2 == 0 then
+					part(rink, "BoardPost", Vector3.new(0.7, 3.6, 0.7), cf * CFrame.new(len / 2, 1.8, 0.2), rgb(150, 100, 70), M.Wood)
+					ball(rink, "PostCap", 1.1, (cf * CFrame.new(len / 2, 3.8, 0.2)).Position, SNOW, M.Snow, { CanCollide = false })
+				end
+			end
+		end
+		-- у проходов — ледяные фонарики-кристаллы
+		for _, a in ipairs({ math.pi - 0.28, math.pi + 0.28, -0.28, 0.28 }) do
+			crystal(rink, L(75 + math.cos(a) * (R + 1.5), 0, 20 + math.sin(a) * (R + 1.5)), 0.32, rgb(160, 220, 255))
+		end
+	end
 	igloo(model, L(-70, 0, -55), math.rad(30))
 	snowman(model, L(30, 0, 95), math.rad(160))
 	snowman(model, L(-30, 0, 90), math.rad(200))

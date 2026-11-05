@@ -86,9 +86,28 @@ local skins = {
 	},
 }
 
--- Frozen Peaks: картинки Sky Isles, окрашенные в ледяной цвет, и свои цвета меню.
+-- Frozen Peaks: свой набор картинок (ChatGPT, лёд, снег и сосульки), загружен в Roblox 2026-11-05.
+-- Bar_Menu и Pill_Eggs не рисовались — берутся от Sky Isles (в HUD сейчас не используются).
 local frozen = table.clone(skins["Sky Isles"])
-frozen.Tint = Color3.fromRGB(185, 225, 255)
+frozen.Tint = nil
+frozen.Btn_Index = id(107370243126362)
+frozen.Btn_Items = id(79406721375040)
+frozen.Btn_Stats = id(99072477546100)
+frozen.Btn_Teleport = id(85995903967187)
+frozen.Btn_Daily = id(82646809918693)
+frozen.Btn_Rebirth = id(87662679715570)
+frozen.Btn_Settings = id(122530385723295)
+frozen.Dot_Notify = id(128756062016842)
+frozen.Icon_Coin = id(133698805903440)
+frozen.Icon_Speed = id(108113205269345)
+frozen.Icon_Multiplier = id(133954336011118)
+frozen.Icon_Magnet = id(139303004504268)
+frozen.Tile_Gold = id(110588006003113)
+frozen.Tile_Blue = id(74708583980603)
+frozen.Tile_Pink = id(109048754757766)
+frozen.Tile_Purple = id(97296391273449)
+frozen.Plate_Title = id(126446608965462)
+frozen.Frame_Window = id(116818797753961)
 frozen.MenuTop = Color3.fromRGB(140, 210, 255)
 frozen.MenuBottom = Color3.fromRGB(60, 120, 220)
 frozen.RimColor = Color3.fromRGB(230, 248, 255)

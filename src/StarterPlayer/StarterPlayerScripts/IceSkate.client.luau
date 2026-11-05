@@ -53,7 +53,8 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		return
 	end
-	local want = hum.MoveDirection * hum.WalkSpeed * 1.15
+	-- на катке своя скорость: не больше 26, сколько бы ни было прокачано (иначе вылетаешь за бортик)
+	local want = hum.MoveDirection * math.min(hum.WalkSpeed, 26)
 	-- разгон медленный, торможение ещё медленнее: лёд
 	local k = want.Magnitude > 0.1 and 2.2 or 0.55
 	vel = vel:Lerp(want, math.clamp(k * dt, 0, 1))
