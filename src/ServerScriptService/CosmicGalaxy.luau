@@ -461,7 +461,7 @@ function Galaxy.Build(world: Instance): Model
 	path("PathMonument", Vector3.new(18, 0.3, 52), L(0, 0.15, -40), CYAN)
 	-- Перекрёстки боковых дорожек с главной: неяркие светящиеся круги.
 	for _, j in ipairs({ { -9, 40, PINK }, { -9, 100, PINK }, { 9, 70, GOLD }, { 0, -14, CYAN } }) do
-		disc(paths, "JunctionGlow", 16, 0.34, L(j[1], 0.17, j[2]), j[3], M.Neon, { CanCollide = false, Transparency = 0.72 })
+		disc(paths, "JunctionGlow", 12, 0.34, L(j[1], 0.17, j[2]), j[3], M.Neon, { CanCollide = false, Transparency = 0.9 })
 		local lamp = part(paths, "JunctionLight", Vector3.new(1, 1, 1), L(j[1], 1.5, j[2]), j[3], M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		local pl = Instance.new("PointLight")
 		pl.Color = j[3]
