@@ -121,7 +121,7 @@ RunService.RenderStepped:Connect(function(dt)
 					base = e.Rate
 					e:SetAttribute("BaseRate", base)
 				end
-				e.Rate = storm and base * 3.2 or base
+				e.Rate = storm and base * 1.8 or base
 				if storm then
 					local acc = e.Acceleration
 					e.Acceleration = Vector3.new(14 * math.sin(t * 0.4), acc.Y, 10 * math.cos(t * 0.33))

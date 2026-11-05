@@ -136,6 +136,7 @@ local function fixCoins()
 		local hit = workspace:Raycast(y0 + Vector3.new(0, 6, 0), Vector3.new(0, -50, 0), rp)
 		if hit and isGround(hit) and y0.Y - hit.Position.Y < LIFT - 0.4 then
 			c.Position = Vector3.new(y0.X, hit.Position.Y + LIFT, y0.Z)
+			c:SetAttribute("Home", c.Position) -- клиент крутит монету вокруг этой точки
 			raised += 1
 		end
 		-- внутри скалы, дерева, постройки — ищем рядом открытую землю
@@ -148,6 +149,7 @@ local function fixCoins()
 				if g and isGround(g) and math.abs(g.Position.Y - (home.Y - LIFT)) < 10 then
 					c.Position = g.Position + Vector3.new(0, LIFT, 0)
 					if not blocked(c) then
+						c:SetAttribute("Home", c.Position)
 						moved += 1
 						break
 					end

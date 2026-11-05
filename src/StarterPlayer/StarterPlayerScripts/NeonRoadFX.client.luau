@@ -177,9 +177,10 @@ local portalDisc = city:FindFirstChild("PortalToIsland")
 
 -- Работает, когда камера рядом с Неонградом (как бы игрок туда ни попал).
 local cityCenter = city:WaitForChild("Floor").Position
+local player = game:GetService("Players").LocalPlayer
 local function active()
-	local camera = workspace.CurrentCamera
-	return camera ~= nil and (camera.CFrame.Position - cityCenter).Magnitude < 400
+	-- только когда игрок в Неонграде (раньше — по расстоянию камеры, работало и из других миров)
+	return player:GetAttribute("CurrentWorld") == "Neon District"
 end
 local function setVisible(visible)
 	for _, g in ipairs(guis) do
@@ -193,6 +194,7 @@ end
 local shown = nil
 
 local t = 0
+local acc, tileClock = 0, 1
 RunService.RenderStepped:Connect(function(dt)
 	local now = active()
 	if now ~= shown then
@@ -202,7 +204,18 @@ RunService.RenderStepped:Connect(function(dt)
 	if not now then
 		return
 	end
-	t += dt
+	-- 20 раз в секунду хватает для плавной разметки, а сотни деталей не двигаются каждый кадр
+	acc += dt
+	if acc < 1 / 20 then
+		return
+	end
+	t += acc
+	tileClock += acc
+	acc = 0
+	local tilesNow = tileClock >= 0.2
+	if tilesNow then
+		tileClock = 0
+	end
 
 	-- Разметка едет к порталу и пульсирует волной.
 	local shift = (t * 10) % dashStep
@@ -212,7 +225,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	-- Покрытие дорог: цветные волны плывут и меняют оттенок.
-	for _, r in ipairs(roadTiles) do
+	for _, r in ipairs(tilesNow and roadTiles or {}) do
 		local off = (t * 14) % (TILE * 2)
 		if r.k == 0 then
 			r.holder.Position = r.alongY and UDim2.fromOffset(0, off) or UDim2.fromOffset(off, 0)

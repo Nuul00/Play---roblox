@@ -150,11 +150,26 @@ rayParams.IgnoreWater = true
 local coins = {}
 local world = Workspace:WaitForChild("CoinSpeedWorld")
 local skyWorld = world:WaitForChild("SkyIsles", 30)
--- Frozen Peaks свои монеты-модели оживляет сам (TripoCoins), здесь — Volcano и Galaxy.
-for _, zone in ipairs({ world, world:WaitForChild("NeonCity"), skyWorld, world:WaitForChild("MagmaVolcano", 30), world:WaitForChild("CosmicGalaxy", 30) }) do
-	for _, coin in ipairs(zone:GetChildren()) do
+-- Frozen, Volcano и Galaxy свои монеты-модели оживляет TripoCoins, здесь — Meadow, Неон и Sky.
+-- Крутим только монеты мира, где сейчас игрок (остальные не видно), и только рядом с камерой.
+local COIN_ZONES = { { world, "Meadow Isles" }, { world:WaitForChild("NeonCity"), "Neon District" }, { skyWorld, "Sky Isles" } }
+for _, entry in ipairs(COIN_ZONES) do
+	local zone, zoneWorld = entry[1], entry[2]
+	for _, coin in ipairs(zone and zone:GetChildren() or {}) do
 		if coin:IsA("BasePart") and coin.Name:match("^Coin_%d+$") then
-			table.insert(coins, { part = coin, base = coin.CFrame, phase = #coins * 0.7 })
+			local rec = { part = coin, base = coin.CFrame, phase = #coins * 0.7, world = zoneWorld }
+			table.insert(coins, rec)
+			-- сервер может переставить монету (WorldPolish поднимает из земли): берём новый «дом»
+			coin:GetAttributeChangedSignal("Home"):Connect(function()
+				local home = coin:GetAttribute("Home")
+				if typeof(home) == "Vector3" then
+					rec.base = CFrame.new(home) * rec.base.Rotation
+				end
+			end)
+			local home = coin:GetAttribute("Home")
+			if typeof(home) == "Vector3" then
+				rec.base = CFrame.new(home) * rec.base.Rotation
+			end
 			for _, d in ipairs(coin:GetDescendants()) do
 				if d:IsA("BillboardGui") then
 					d.Enabled = false
@@ -168,6 +183,7 @@ end
 -- (CoinTypes.Worlds[...].Theme). Редкие монеты дают больше искр; в Неонграде ещё расходится неоновое кольцо.
 local TweenService = game:GetService("TweenService")
 local CoinTypes = require(game:GetService("ReplicatedStorage"):WaitForChild("CoinTypes"))
+local burstsLive = 0
 local function collectBurst(coin)
 	-- у монет с 3D-моделью (TripoCoins) свой эффект сбора
 	if coin:FindFirstChildWhichIsA("Model") then
@@ -176,10 +192,16 @@ local function collectBurst(coin)
 	local worldId = coin:GetAttribute("CoinWorld") or "Sky"
 	local theme = (CoinTypes.Worlds[worldId] or CoinTypes.Worlds.Sky).Theme
 	local rarity = coin:GetAttribute("Rarity") or 1
-	local camera = Workspace.CurrentCamera
-	if not camera or (camera.CFrame.Position - coin.Position).Magnitude > 140 then
+	-- вспышка только у своих монет (рядом с собой) и не больше 6 сразу — иначе Vacuum и чужие
+	-- сборы плодят десятки клонов и частиц
+	local me = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not me or (me.Position - coin.Position).Magnitude > 45 or burstsLive >= 6 then
 		return
 	end
+	burstsLive += 1
+	task.delay(0.9, function()
+		burstsLive -= 1
+	end)
 	local ghost = coin:Clone()
 	for _, d in ipairs(ghost:GetChildren()) do
 		if not d:IsA("SurfaceAppearance") then
@@ -204,12 +226,7 @@ local function collectBurst(coin)
 	burst.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
 	burst.Rate = 0
 	burst.Parent = ghost
-	burst:Emit(16 + rarity * 10)
-	local light = Instance.new("PointLight")
-	light.Color = theme[1]
-	light.Range = 10
-	light.Brightness = 3
-	light.Parent = ghost
+	burst:Emit(10 + rarity * 6)
 	-- Летит вверх и к игроку, если он рядом, уменьшаясь и растворяясь.
 	local character = localPlayer.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -219,7 +236,6 @@ local function collectBurst(coin)
 	end
 	local info = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 	TweenService:Create(ghost, info, { CFrame = CFrame.new(target) * ghost.CFrame.Rotation * CFrame.Angles(0, math.pi, 0), Size = ghost.Size * 0.3, Transparency = 1 }):Play()
-	TweenService:Create(light, TweenInfo.new(0.4), { Brightness = 0 }):Play()
 	if worldId == "Neon" then
 		local ring = Instance.new("Part")
 		ring.Shape = Enum.PartType.Cylinder
@@ -283,6 +299,7 @@ localPlayer:GetAttributeChangedSignal("CoinsCollected"):Connect(function()
 end)
 
 local t = 0
+local coinClock, coinParts, coinFrames = 0, {}, {}
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
 	local camera = Workspace.CurrentCamera
@@ -328,10 +345,22 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
-	for _, c in ipairs(coins) do
-		if c.part.Parent and (eye - c.base.Position).Magnitude < 170 then
-			local a = t + c.phase
-			c.part.CFrame = CFrame.new(c.base.Position + Vector3.new(0, math.sin(a * 2) * 0.35, 0)) * CFrame.Angles(0, a * 1.8, 0) * c.base.Rotation
+	-- монеты: 30 раз в секунду, только своего мира и в 110 стадах, одним пакетом BulkMoveTo
+	coinClock += dt
+	if coinClock >= 1 / 30 then
+		coinClock = 0
+		local here = localPlayer:GetAttribute("CurrentWorld") or "Meadow Isles"
+		table.clear(coinParts)
+		table.clear(coinFrames)
+		for _, c in ipairs(coins) do
+			if c.world == here and c.part.Parent and (eye - c.base.Position).Magnitude < 110 then
+				local a = t + c.phase
+				table.insert(coinParts, c.part)
+				table.insert(coinFrames, CFrame.new(c.base.Position + Vector3.new(0, math.sin(a * 2) * 0.35, 0)) * CFrame.Angles(0, a * 1.8, 0) * c.base.Rotation)
+			end
+		end
+		if #coinParts > 0 then
+			Workspace:BulkMoveTo(coinParts, coinFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		end
 	end
 

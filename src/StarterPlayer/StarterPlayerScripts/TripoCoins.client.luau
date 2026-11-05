@@ -45,12 +45,18 @@ local function short(n)
 	end
 	return tostring(math.floor(n))
 end
+local fxLive = 0
 collectFX = function(e)
-	local cam = workspace.CurrentCamera
 	local from = e.model:GetPivot()
-	if not cam or (cam.CFrame.Position - from.Position).Magnitude > 140 then
+	-- только свои сборы рядом с собой и не больше 6 одновременно (Vacuum собирает десятки)
+	local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not me or (me.Position - from.Position).Magnitude > 45 or fxLive >= 6 then
 		return
 	end
+	fxLive += 1
+	task.delay(0.8, function()
+		fxLive -= 1
+	end)
 	local ghost = e.model:Clone()
 	for _, p in ipairs(ghost:GetDescendants()) do
 		if p:IsA("BasePart") then
@@ -78,13 +84,7 @@ collectFX = function(e)
 	flakes.RotSpeed = NumberRange.new(-200, 200)
 	flakes.Rate = 0
 	flakes.Parent = anchor
-	flakes:Emit(28)
-	local light = Instance.new("PointLight")
-	light.Color = fxc[2]
-	light.Range = 12
-	light.Brightness = 4
-	light.Parent = anchor
-	TweenService:Create(light, TweenInfo.new(0.6), { Brightness = 0 }):Play()
+	flakes:Emit(18)
 	-- ледяное кольцо по земле
 	local ring = Instance.new("Part")
 	ring.Shape = Enum.PartType.Cylinder
@@ -144,7 +144,10 @@ collectFX = function(e)
 			pos = up:Lerp(target, ((k - 0.45) / 0.55) ^ 2)
 		end
 		ghost:PivotTo(CFrame.new(pos) * CFrame.Angles(0, k * math.pi * 6, 0))
-		ghost:ScaleTo(scale * math.max(0.05, 1 - math.max(0, k - 0.45) * 1.6))
+		-- уменьшаем только на подлёте и не каждый кадр: ScaleTo пересчитывает всю модель
+		if k > 0.45 and math.floor(k * 20) % 2 == 0 then
+			ghost:ScaleTo(scale * math.max(0.05, 1 - (k - 0.45) * 1.6))
+		end
 		task.wait()
 	end
 	ghost:Destroy()

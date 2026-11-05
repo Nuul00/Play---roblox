@@ -335,6 +335,7 @@ local function setupEgg(id, stand)
 	dust.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
 	dust.Parent = pillar
 	pillar.Parent = fxFolder
+	entry.dustFX, entry.rayFX = dust, ray
 	local tag = Instance.new("BillboardGui")
 	tag.Name = "EggTag"
 	tag.Size = UDim2.fromOffset(200, 54)
@@ -470,10 +471,21 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, e in pairs(eggs) do
 		local center = e.base.Position
 		local camDist = (center - camPos).Magnitude
-		local active = camDist < 160
-		e.sparks.Enabled = active
-		if e.pillar and not active then
-			e.pillar.Enabled = false
+		-- яйца других миров и далёкие: всё выключено (свет, луч, пыль, искры)
+		local active = camDist < 120
+		if e.wasActive ~= active then
+			e.wasActive = active
+			e.sparks.Enabled = active
+			e.glow.Enabled = active
+			if e.dustFX then
+				e.dustFX.Enabled = active
+			end
+			if e.rayFX then
+				e.rayFX.Enabled = active
+			end
+			if e.pillar and not active then
+				e.pillar.Enabled = false
+			end
 		end
 		if active and e.model.Parent then
 			local dist = root and (root.Position - center).Magnitude or 999
@@ -517,20 +529,13 @@ RunService.RenderStepped:Connect(function(dt)
 				* CFrame.new(0, h / 2, 0)
 			e.model:PivotTo(pivot)
 
-			-- «дыхание»: чуть сжимается и вытягивается (только вблизи, чтобы не тратить кадры)
-			if camDist < 80 then
-				local squash = 1 + math.sin(t * 2.4 + e.phase) * 0.025 + (pop < 0.15 and -0.12 or 0)
-				if math.abs(squash - e.applied) > 0.003 then
-					e.applied = squash
-					e.model:ScaleTo(e.scale * squash)
-				end
-			end
+			-- «дыхание» через ScaleTo убрано: пересчитывать всю модель каждый кадр слишком дорого
 
 			local flash = pop < 0.5 and (1 - pop / 0.5) * 6 or 0
 			local shake = w < 0.9 and (1 - w / 0.9) * 1.5 or 0
 			e.anchor.CFrame = CFrame.new(center + Vector3.new(0, 0.35 + bob + hop + popH, 0))
 			e.glow.Brightness = (e.neon and 1.6 or 0.8) + 0.35 * math.sin(t * 2 + e.phase) + x * 1.6 + shake + flash
-			e.glow.Range = 11 + x * 7 + flash * 2
+			-- Range не меняем каждый кадр (дорого для освещения): только яркость
 			e.sparks.Rate = 2 + e.tier + x * 18
 
 			local r = math.max(3.4, e.radius + 1.6)

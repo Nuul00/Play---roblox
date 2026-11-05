@@ -166,7 +166,7 @@ local guard = 0
 local moveAcc, colorAcc = 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
-	local near = camera ~= nil and (camera.CFrame.Position - center).Magnitude < 420
+	local near = camera ~= nil and game:GetService("Players").LocalPlayer:GetAttribute("CurrentWorld") == "Sky Isles" and (camera.CFrame.Position - center).Magnitude < 420
 	if near ~= active then
 		active = near
 		setActive(near)
@@ -176,7 +176,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	t += dt
 	guard += dt
-	if guard > 2 then
+	if guard > 8 then
 		guard = 0
 		showSkyParts()
 	end

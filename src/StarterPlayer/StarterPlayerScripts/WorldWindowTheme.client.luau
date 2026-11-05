@@ -315,11 +315,16 @@ theme = THEMES[player:GetAttribute("CurrentWorld") or ""]
 for _, g in ipairs(playerGui:GetChildren()) do
 	hook(g)
 end
--- Некоторые окна пересобирают кнопки при открытии: раз в пару секунд докрашиваем.
-while true do
-	task.wait(2)
-	if theme then
-		paintAll()
-	end
-	decorAll()
+-- Некоторые окна пересобирают кнопки при открытии: докрашиваем, когда окно открылось или сменился мир
+-- (раньше — раз в 2 секунды обходом всех окон, это давало подлагивания на телефонах).
+local function refreshSoon()
+	task.delay(0.25, function()
+		if theme then
+			paintAll()
+		end
+		decorAll()
+	end)
 end
+player:GetAttributeChangedSignal("UIScreen"):Connect(refreshSoon)
+player:GetAttributeChangedSignal("CurrentWorld"):Connect(refreshSoon)
+refreshSoon()

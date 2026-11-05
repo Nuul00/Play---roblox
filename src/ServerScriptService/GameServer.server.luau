@@ -539,12 +539,43 @@ for _, zone in ipairs({world, city, sky, frozen, volcano, galaxy}) do
   end
  end
 end
+-- Монеты по мирам: каждый игрок проверяется только с монетами своего мира (было: все ~800 × все игроки).
+local ZONE_NAME = {}
+for _, pair in ipairs({{world, "Meadow Isles"}, {city, "Neon District"}, {sky, "Sky Isles"}, {frozen, "Frozen Peaks"}, {volcano, "Magma Volcano"}, {galaxy, "Cosmic Galaxy"}}) do
+ if pair[1] then ZONE_NAME[pair[1]] = pair[2] end
+end
+local recordsByWorld = {}
+for _, record in ipairs(records) do
+ local name = ZONE_NAME[record.zone] or "Meadow Isles"
+ recordsByWorld[name] = recordsByWorld[name] or {}
+ table.insert(recordsByWorld[name], record)
+end
+-- Супер-способности питомцев приходят строкой: разбираем один раз на каждую новую строку.
+local superMemo = {}
+local function supersOf(p)
+ local raw = p:GetAttribute("PetSupers")
+ local key = tostring(raw)
+ local parsed = superMemo[key]
+ if not parsed then
+  parsed = PetAbilities.ParseSupers(raw)
+  superMemo[key] = parsed
+ end
+ return parsed
+end
 -- Монета состоит из детали и её украшений (SurfaceGui, свет): прячем и показываем всё вместе.
+-- Список украшений собираем один раз на монету, а не обходим потомков при каждом сборе.
+local coinFX = setmetatable({}, {__mode = "k"})
 local function setCoinVisible(part, visible)
  part.Transparency = visible and 0 or 1
- for _, d in ipairs(part:GetDescendants()) do
-  if d:IsA("LayerCollector") or d:IsA("Light") or d:IsA("ParticleEmitter") then d.Enabled = visible end
+ local list = coinFX[part]
+ if not list then
+  list = {}
+  for _, d in ipairs(part:GetDescendants()) do
+   if d:IsA("LayerCollector") or d:IsA("Light") or d:IsA("ParticleEmitter") then table.insert(list, d) end
+  end
+  coinFX[part] = list
  end
+ for _, d in ipairs(list) do d.Enabled = visible end
 end
 local function collect(record, p)
  if not record.available then return end
@@ -599,7 +630,7 @@ task.spawn(function()
   task.wait(1)
   local now = os.clock()
   for _, p in ipairs(Players:GetPlayers()) do
-   local level = PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).CoinRain
+   local level = supersOf(p).CoinRain
    local stats = p:FindFirstChild("leaderstats")
    if not level or not stats or not p:GetAttribute("ProfileReady") then
     nextRain[p] = nil
@@ -631,7 +662,7 @@ task.spawn(function()
     local radius = PlayerSystems.MagnetRadius(p)
     -- Супер «Vacuum»: раз в Interval секунд забирает все монеты в Range радиусах магнита.
     local vacuum = 0
-    local vacuumLevel = PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).Vacuum
+    local vacuumLevel = supersOf(p).Vacuum
     if vacuumLevel then
      local params = PetAbilities.SuperParams("Vacuum", vacuumLevel)
      if os.clock() >= (nextVacuum[p] or 0) then
@@ -664,10 +695,17 @@ task.spawn(function()
     end
    end
   end
-  for _, record in ipairs(records) do
+  local byWorld = {}
+  for _, candidate in ipairs(candidates) do
+   local w = candidate.p:GetAttribute("CurrentWorld") or "Meadow Isles"
+   byWorld[w] = byWorld[w] or {}
+   table.insert(byWorld[w], candidate)
+  end
+  for worldName, here in pairs(byWorld) do
+  for _, record in ipairs(recordsByWorld[worldName] or {}) do
    if record.available and record.part.Parent then
     local nearest, nearestDistance, nearestCandidate
-    for _, candidate in ipairs(candidates) do
+    for _, candidate in ipairs(here) do
      local delta = candidate.root.Position - record.part.Position
      local distance = delta.X * delta.X + delta.Z * delta.Z
      local inMagnet = math.abs(delta.Y) <= 6 and distance <= candidate.radius ^ 2
@@ -681,6 +719,7 @@ task.spawn(function()
      collect(record, nearest)
     end
    end
+  end
   end
   for _, candidate in ipairs(candidates) do
    if candidate.sucked > 0 then

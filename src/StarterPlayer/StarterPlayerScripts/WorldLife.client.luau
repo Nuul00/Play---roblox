@@ -173,7 +173,8 @@ RunService.RenderStepped:Connect(function(dt)
 
 	for _, l in ipairs(lights) do
 		local light = l.light
-		if light.Parent and (l.part.Position - camPos).Magnitude < NEAR then
+		-- мерцаем только светом рядом (60 студов): изменение света заставляет пересчитывать освещение
+		if light.Parent and light.Enabled and (l.part.Position - camPos).Magnitude < 60 then
 			local k
 			if l.style == "Meadow" then
 				-- тёплое пламя свечи: мелкое неровное мерцание
