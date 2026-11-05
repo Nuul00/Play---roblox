@@ -553,3 +553,4 @@ if sky then
 	end
 end
 print("[TripoDressing] eggs, shops and Frozen decor dressed")
+workspace:SetAttribute("TripoDressed", true) -- LeaderboardBuilder ждёт, чтобы видеть все модели при выборе места

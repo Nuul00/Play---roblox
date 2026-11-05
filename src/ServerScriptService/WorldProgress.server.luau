@@ -181,89 +181,37 @@ game:BindToClose(function()
  local deadline=os.clock()+25
  while next(sessions) and os.clock()<deadline do task.wait(0.2) end
 end)
-local defs={{Part="BoardCoins",Title="TOP 100 · COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 · EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 · PICKUPS",Stat="CoinsCollected",Scale=1}}
+local defs={{Part="BoardCoins",Title="TOP 100 COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 PICKUPS",Stat="CoinsCollected",Scale=1}}
 local names={}
-local function label(parent,text,pos,size,fontSize,color)
+local function label(parent,text,pos,size,fontSize,color,font)
  local x=Instance.new("TextLabel")
  x.BackgroundTransparency=1;x.Position=pos;x.Size=size;x.Text=text
- x.Font=Enum.Font.GothamBold;x.TextSize=fontSize;x.TextColor3=color or Color3.fromRGB(239,245,232);x.Parent=parent;return x
+ x.Font=font or Enum.Font.FredokaOne;x.TextSize=fontSize;x.TextColor3=color or Color3.fromRGB(239,245,232);x.Parent=parent;return x
 end
--- 3D-оформление досок: объёмная табличка-заголовок сверху и крутящаяся эмблема над ней
--- (монета / яйцо / кристалл). Вращение и покачивание делает клиент (LeaderboardFX) по тегу BoardEmblem.
-local CollectionService=game:GetService("CollectionService")
-local EMBLEM={
- BoardCoins={Text="🪙 COINS",Plate=Color3.fromRGB(255,196,60),Ink=Color3.fromRGB(120,70,0)},
- BoardEggs={Text="🥚 EGGS",Plate=Color3.fromRGB(120,220,255),Ink=Color3.fromRGB(20,70,130)},
- BoardPickups={Text="✨ PICKUPS",Plate=Color3.fromRGB(200,130,255),Ink=Color3.fromRGB(70,20,120)},
-}
-local function dpart(parent,name,size,cf,color,mat,shape)
- local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.CanCollide=false;p.CanQuery=false;p.CanTouch=false;p.CastShadow=false
- p.Size=size;p.CFrame=cf;p.Color=color;p.Material=mat or Enum.Material.SmoothPlastic;p.TopSurface=Enum.SurfaceType.Smooth;p.BottomSurface=Enum.SurfaceType.Smooth
- if shape then p.Shape=shape end
- p.Parent=parent;return p
-end
-local function decorate(board,neon)
- local e=EMBLEM[board.Name]
- if not e or board.Parent:FindFirstChild(board.Name.."_3D") then return end
- local m=Instance.new("Model");m.Name=board.Name.."_3D";m.Parent=board.Parent
+-- 3D-оформление досок (табличка-«пилюля» и модели монет/яиц) — LeaderboardDecor.
+local Decor=require(script.Parent:WaitForChild("LeaderboardDecor"))
+-- верх рамки над доской: самая высокая деталь прямо над ней (рамки бывают выше самой доски)
+local function boardTop(board)
  local cf=board.CFrame
- local w=board.Size.X
- -- верх рамки доски (балка над доской выше самой доски): ищем самую высокую деталь прямо над ней
  local topY=board.Position.Y+board.Size.Y/2
- local op=OverlapParams.new();op.FilterType=Enum.RaycastFilterType.Exclude;op.FilterDescendantsInstances={board,m}
- for _,q in ipairs(workspace:GetPartBoundsInBox(cf*CFrame.new(0,board.Size.Y/2+3,0),Vector3.new(w,8,4),op)) do
+ local op=OverlapParams.new();op.FilterType=Enum.RaycastFilterType.Exclude;op.FilterDescendantsInstances={board}
+ for _,q in ipairs(workspace:GetPartBoundsInBox(cf*CFrame.new(0,board.Size.Y/2+3,0),Vector3.new(board.Size.X,8,4),op)) do
   if q.Transparency<1 then topY=math.max(topY,q.Position.Y+q.Size.Y/2) end
  end
- local top=cf*CFrame.new(0,topY-board.Position.Y,0)
- -- объёмная табличка: основа + светящийся кант + текст спереди и сзади
- local plateCf=top*CFrame.new(0,2.6,0)
- local plate=dpart(m,"TitlePlate",Vector3.new(math.min(w*0.55,24),4.4,1.6),plateCf,e.Plate,Enum.Material.SmoothPlastic)
- dpart(m,"TitleRim",plate.Size+Vector3.new(0.6,0.6,-0.4),plateCf*CFrame.new(0,0,0.1),board:GetAttribute("TrimColor") or (neon and Color3.fromRGB(255,90,220) or Color3.new(1,1,1)),Enum.Material.Neon)
- for _,face in ipairs({Enum.NormalId.Front,Enum.NormalId.Back}) do
-  local g=Instance.new("SurfaceGui");g.Face=face;g.CanvasSize=Vector2.new(500,82);g.LightInfluence=0;g.Brightness=1.4;g.MaxDistance=160;g.Parent=plate
-  local t=Instance.new("TextLabel");t.BackgroundTransparency=1;t.Size=UDim2.fromScale(1,1);t.Font=Enum.Font.FredokaOne;t.TextScaled=true
-  t.Text=e.Text;t.TextColor3=Color3.new(1,1,1);t.Parent=g
-  local st=Instance.new("UIStroke");st.Thickness=5;st.Color=e.Ink;st.Parent=t
+ for _,q in ipairs(board.Parent:GetChildren()) do -- рамки из LeaderboardBuilder не видны запросам (CanQuery=false)
+  if q:IsA("BasePart") and (string.sub(q.Name,1,5)=="Frame" or q.Name=="SnowCap") then topY=math.max(topY,q.Position.Y+q.Size.Y/2) end
  end
- -- эмблема над табличкой
- local base=plateCf*CFrame.new(0,6.4,0)
- local emb
- if board.Name=="BoardCoins" then
-  emb=dpart(m,"Emblem",Vector3.new(1.1,6.5,6.5),base*CFrame.Angles(0,math.rad(90),0),Color3.fromRGB(255,200,40),Enum.Material.Metal,Enum.PartType.Cylinder)
-  emb.Reflectance=0.15
-  for _,face in ipairs({Enum.NormalId.Left,Enum.NormalId.Right}) do
-   local g=Instance.new("SurfaceGui");g.Face=face;g.CanvasSize=Vector2.new(200,200);g.LightInfluence=0;g.Parent=emb
-   local t=Instance.new("TextLabel");t.BackgroundTransparency=1;t.Size=UDim2.fromScale(1,1);t.Font=Enum.Font.FredokaOne;t.TextScaled=true
-   t.Text="$";t.TextColor3=Color3.fromRGB(255,245,190);t.Parent=g
-   local st=Instance.new("UIStroke");st.Thickness=6;st.Color=Color3.fromRGB(170,100,0);st.Parent=t
-  end
-  emb:SetAttribute("Spin",90)
- elseif board.Name=="BoardEggs" then
-  emb=dpart(m,"Emblem",Vector3.new(4.6,5.8,4.6),base,Color3.fromRGB(150,225,255),Enum.Material.SmoothPlastic,Enum.PartType.Ball)
-  local mesh=Instance.new("SpecialMesh");mesh.MeshType=Enum.MeshType.Sphere;mesh.Parent=emb
-  local band=dpart(m,"EmblemBand",Vector3.new(4.7,1,4.7),base*CFrame.new(0,-0.4,0),Color3.fromRGB(255,240,120),Enum.Material.Neon,Enum.PartType.Ball)
-  local bm=Instance.new("SpecialMesh");bm.MeshType=Enum.MeshType.Sphere;bm.Scale=Vector3.new(1,0.25,1);bm.Parent=band
-  band:SetAttribute("Bob",0.6);CollectionService:AddTag(band,"BoardEmblem")
-  emb:SetAttribute("Bob",0.6)
- else
-  emb=dpart(m,"Emblem",Vector3.new(4.2,4.2,4.2),base*CFrame.Angles(math.rad(45),0,math.rad(35.26)),Color3.fromRGB(190,110,255),Enum.Material.Glass)
-  emb.Transparency=0.15
-  local core=dpart(m,"EmblemCore",Vector3.new(2,2,2),emb.CFrame,Color3.fromRGB(230,180,255),Enum.Material.Neon)
-  core:SetAttribute("Spin",-70);CollectionService:AddTag(core,"BoardEmblem")
-  emb:SetAttribute("Spin",60)
- end
- local l=Instance.new("PointLight");l.Color=emb.Color;l.Range=14;l.Brightness=1.6;l.Parent=emb
- local sp=Instance.new("ParticleEmitter");sp.Texture="rbxasset://textures/particles/sparkles_main.dds";sp.Color=ColorSequence.new(emb.Color,Color3.new(1,1,1))
- sp.LightEmission=1;sp.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,0.4),NumberSequenceKeypoint.new(1,0)});sp.Lifetime=NumberRange.new(0.8,1.5)
- sp.Speed=NumberRange.new(0.5,1.5);sp.SpreadAngle=Vector2.new(180,180);sp.Rate=6;sp.Parent=emb
- CollectionService:AddTag(emb,"BoardEmblem")
+ return topY
 end
 -- Доски есть в обоих мирах: одинаковые таблицы рисуются на каждой найденной доске.
 local city=world:WaitForChild("NeonCity")
 -- Meadow и Neon: доски стоят в плейсе. Sky/Frozen/Volcano/Galaxy: строит LeaderboardBuilder (свой стиль каждого мира).
 local zones={world,city}
 do
- task.wait(2) -- миры строит GameServer на старте; даём монетам и декору появиться, чтобы место нашлось честно
+ -- миры строит GameServer, модели Tripo ставит TripoDressing: ждём всё, чтобы место для досок выбиралось по готовому миру
+ local t0=os.clock()
+ while not workspace:GetAttribute("TripoDressed") and os.clock()-t0<25 do task.wait(0.5) end
+ task.wait(2)
  local ok,extra=pcall(function() return require(script.Parent:WaitForChild("LeaderboardBuilder")).Build(world) end)
  if ok then for _,z in ipairs(extra) do table.insert(zones,z) end else warn("[Leaderboards]",extra) end
 end
@@ -300,16 +248,25 @@ for _,def in ipairs(defs) do
    local noLight=neon or board:GetAttribute("NoLight")==true
    local titleColor=board:GetAttribute("TitleColor") or (neon and Color3.fromRGB(255,120,230) or Color3.fromRGB(255,220,133))
    local subColor=board:GetAttribute("SubColor") or (neon and Color3.fromRGB(120,235,255) or nil)
+   -- холст по пропорциям доски: таблица 860x360 по центру, ничего не растягивается
    local gui=Instance.new("SurfaceGui")
-   gui.Name="Rankings";gui.Face=Enum.NormalId.Front;gui.CanvasSize=Vector2.new(860,360);gui.MaxDistance=130;gui.Active=true;gui.Parent=board
+   gui.Name="Rankings";gui.Face=Enum.NormalId.Front;gui.MaxDistance=130;gui.Active=true
+   local aspect=board.Size.X/board.Size.Y
+   gui.CanvasSize=aspect>=860/360 and Vector2.new(360*aspect,360) or Vector2.new(860,860/aspect)
+   gui.Parent=board
    if noLight then gui.LightInfluence=0 end
-   label(gui,def.Title,UDim2.fromOffset(0,8),UDim2.fromOffset(860,45),32,titleColor)
-   table.insert(def.subtitles,label(gui,persistent and "GLOBAL · refreshes every 120s" or "THIS SERVER · publish for global rankings",UDim2.fromOffset(0,55),UDim2.fromOffset(860,30),18,subColor))
+   local content=Instance.new("Frame");content.Name="Content";content.BackgroundTransparency=1
+   content.AnchorPoint=Vector2.new(0.5,0.5);content.Position=UDim2.fromScale(0.5,0.5);content.Size=UDim2.fromOffset(860,360);content.Parent=gui
+   local title=label(content,def.Title,UDim2.fromOffset(0,6),UDim2.fromOffset(860,48),38,titleColor,Decor.TITLE_FONT)
+   local ts=Instance.new("UIStroke");ts.Thickness=3;ts.Color=Color3.new(0,0,0);ts.Transparency=0.35;ts.Parent=title
+   table.insert(def.subtitles,label(content,persistent and "GLOBAL · refreshes every 120s" or "THIS SERVER · publish for global rankings",UDim2.fromOffset(0,56),UDim2.fromOffset(860,28),19,subColor))
    pcall(themeOldBoard,zone,board)
    local list=Instance.new("ScrollingFrame")
-   list.Position=UDim2.fromOffset(25,95);list.Size=UDim2.fromOffset(810,250);list.BackgroundTransparency=1;list.BorderSizePixel=0;list.ScrollBarThickness=8;list.Parent=gui
+   list.Position=UDim2.fromOffset(25,95);list.Size=UDim2.fromOffset(810,250);list.BackgroundTransparency=1;list.BorderSizePixel=0;list.ScrollBarThickness=8;list.Parent=content
    table.insert(def.lists,list)
-   pcall(decorate,board,neon)
+   local key=zone==world and "Meadow" or zone==city and "Neon" or zone.Name
+   local ok,err=pcall(Decor.Decorate,board,key,boardTop(board))
+   if not ok then warn("[Leaderboards] decor",err) end
   end
  end
  -- Монеты к концу игры доходят до 1e20 — больше предела OrderedDataStore (9e18), поэтому храним логарифм.
@@ -338,8 +295,8 @@ local function render(def,rows)
    list:SetAttribute("Built",true)
    local empty=label(list,"Be the first on this board!",UDim2.fromOffset(0,50),UDim2.fromOffset(780,40),23);empty.Name="Empty"
    for i=1,100 do
-    local n=label(list,"",UDim2.fromOffset(8,(i-1)*32),UDim2.fromOffset(560,30),21);n.Name="N"..i;n.TextXAlignment=Enum.TextXAlignment.Left
-    local v=label(list,"",UDim2.fromOffset(570,(i-1)*32),UDim2.fromOffset(200,30),21);v.Name="V"..i;v.TextXAlignment=Enum.TextXAlignment.Right
+    local n=label(list,"",UDim2.fromOffset(8,(i-1)*32),UDim2.fromOffset(560,30),26);n.Name="N"..i;n.TextXAlignment=Enum.TextXAlignment.Left
+    local v=label(list,"",UDim2.fromOffset(570,(i-1)*32),UDim2.fromOffset(200,30),26);v.Name="V"..i;v.TextXAlignment=Enum.TextXAlignment.Right
    end
   end
   list.Empty.Visible=#rows==0

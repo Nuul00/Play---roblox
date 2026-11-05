@@ -111,8 +111,29 @@ local function groundAt(pos, ignore)
 	end
 	return hit
 end
+-- Важные объекты (их не трогаем и к ним не подходим вплотную) и мелкий декор (ёлки, кристаллы,
+-- фонари, камни): декор, попавший на площадку досок, просто убираем — его в мире расставлено случайно.
+local IMPORTANT = { "Portal", "EggStand", "Shop", "Machine", "Chest", "Statue", "Podium", "Board", "Spawn", "Start",
+	"Mountain", "Volcano", "Pond", "Lake", "Bridge", "Igloo", "Rink", "Observatory", "Monument", "Fountain", "Windmill",
+	"Tower", "House", "Arch", "Gate", "Wall", "Lava", "River", "Planet", "Island", "Balloon", "Rainbow", "Sign", "Leaderboard" }
+local function isImportant(full)
+	for _, k in IMPORTANT do
+		if string.find(full, k, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+local function decorRoot(q, model)
+	local r = q
+	-- поднимаемся до отдельной вещи (фонарь, ёлка), но не до общего контейнера декора с десятками детей
+	while r.Parent and r.Parent ~= model and r.Parent ~= workspace and not r.Parent:IsA("Folder") and #r.Parent:GetChildren() <= 12 do
+		r = r.Parent
+	end
+	return r
+end
 local allParts -- все детали workspace (один раз на все миры)
-local function collectObstacles(spawn, groundY)
+local function collectObstacles(model, spawn, groundY, pad)
 	if not allParts then
 		allParts = {}
 		for i, q in workspace:GetDescendants() do
@@ -123,46 +144,62 @@ local function collectObstacles(spawn, groundY)
 		end
 	end
 	local list = {}
+	local rootBig = {}
 	for i, q in allParts do
 		if i % 4000 == 0 then task.wait() end
 		if q.Parent and (q.Position - spawn).Magnitude < 260 and not isCoin(q) and not (q.Parent and isCoin(q.Parent)) and not q.Parent:FindFirstChildOfClass("Humanoid") then
 			local h = q.Size.Y
 			local top, bottom = q.Position.Y + h / 2, q.Position.Y - h / 2
-			local big = math.max(q.Size.X, q.Size.Z) > 120 -- пол, небо, стены-границы
-			local flat = top < groundY + 0.8
+			local big = math.max(q.Size.X, q.Size.Z) > 300 -- пол мира, небо, кольцо-граница
+			-- низкие площадки (плаза, ступенька, дорожка) — это пол, по нему ходят
+			local flat = top < groundY + 0.8 or (q.Size.Y < 6 and top < groundY + 2.6 and math.max(q.Size.X, q.Size.Z) > 6)
 			local away = bottom > groundY + 30 or top < groundY - 20
 			local invisible = q.Transparency >= 0.99 and not q.CanCollide
-			-- реки лавы, пруды, каток: плоские, но доски на них ставить нельзя
-			if flat and not away and not invisible and not big and badGround(q) then flat = false end
+			if flat and not away and not invisible and not big and badGround(q) then flat = false end -- реки лавы, пруды, каток
 			if not big and not flat and not away and not invisible then
-				local r = math.min(math.max(q.Size.X, q.Size.Z) / 2, 14)
-				-- вход в портал держим свободным
-				-- вход в портал, яйца, магазины и автоматы держим свободными: там толпятся игроки
+				-- имя считаем относительно мира: «MagmaVolcano» в пути есть у всего мира, это не «вулкан»
 				local full = q:GetFullName()
-				for _, k in { "Portal", "EggStand", "Shop", "Machine", "Chest" } do
-					if string.find(full, k, 1, true) then
-						r += 14
-						break
+				local mf = model:GetFullName()
+				if string.sub(full, 1, #mf) == mf then full = string.sub(full, #mf + 1) end
+				-- крупное (острова, скалы, дома) тоже не трогаем, даже если оно без «важного» имени
+				local important = isImportant(full) or not q:IsDescendantOf(model) or math.max(q.Size.X, q.Size.Z) > 25
+				if not important then
+					local root = decorRoot(q, model)
+					if root:IsA("Model") then
+						if rootBig[root] == nil then
+							local _, ext = root:GetBoundingBox()
+							rootBig[root] = math.max(ext.X, ext.Z) > 30
+						end
+						important = rootBig[root]
 					end
 				end
-				table.insert(list, { q.Position, r })
+				local r = math.min(math.max(q.Size.X, q.Size.Z) / 2, important and 40 or 6)
+				if important and (string.find(full, "Portal", 1, true) or string.find(full, "EggStand", 1, true) or string.find(full, "Shop", 1, true) or string.find(full, "Machine", 1, true)) then
+					r += pad -- там толпятся игроки и к ним подходят
+				end
+				table.insert(list, { q.Position, r, top - groundY, important, (not important) and decorRoot(q, model) or nil, full })
 			end
 		end
 	end
 	return list
 end
-local function findSpot(model, spawn, groundY, ignore, relaxed)
+local function findSpot(model, spawn, groundY, ignore, relaxed, pad)
 	local width = #ORDER * BOARD_W + (#ORDER - 1) * GAP + 6
-	local depth = 18
-	local obstacles = collectObstacles(spawn, groundY)
-	local op = OverlapParams.new()
-	op.FilterType = Enum.RaycastFilterType.Exclude
-	op.FilterDescendantsInstances = ignore
-	local best, bestScore
+	local depth = 24 -- доска + пьедестал + проход перед ним
+	local obstacles = collectObstacles(model, spawn, groundY, pad)
+	local best, bestScore, bestClear
 	local tried, passed, gfail, ofail = 0, 0, 0, 0
-	for r = 36, 176, 10 do
+	local blockers = {}
+	-- точки проверки пола: сетка каждые ~6 стадов по всей площадке (дорожка 18 шириной не проскочит)
+	local samples = {}
+	for x = -width / 2, width / 2 + 0.01, width / 10 do
+		for _, z in { -depth / 2 - 4, -4, depth / 2 - 4 } do
+			table.insert(samples, Vector3.new(x, 0, z))
+		end
+	end
+	for r = 36, 150, 8 do
 		task.wait() -- не держим сервер одним длинным циклом
-		for deg = 0, 345, 15 do
+		for deg = 0, 350, 10 do
 			tried += 1
 			local a = math.rad(deg)
 			local c = Vector3.new(spawn.X + math.cos(a) * r, groundY, spawn.Z + math.sin(a) * r)
@@ -170,7 +207,7 @@ local function findSpot(model, spawn, groundY, ignore, relaxed)
 			local cf = CFrame.lookAt(c, c + look)
 			-- пол везде под площадкой и на одной высоте
 			local ok = true
-			for _, off in { Vector3.new(0, 0, 0), Vector3.new(width / 2, 0, 0), Vector3.new(-width / 2, 0, 0), Vector3.new(width / 2, 0, depth / 2), Vector3.new(-width / 2, 0, depth / 2), Vector3.new(width / 2, 0, -depth / 2), Vector3.new(-width / 2, 0, -depth / 2) } do
+			for _, off in samples do
 				local hit = groundAt(cf:PointToWorldSpace(off), ignore)
 				if not hit or math.abs(hit.Position.Y - groundY) > 2.5 or (not relaxed and (string.find(hit.Instance.Name, "Path", 1, true) or string.find(hit.Instance.Name, "Plaza", 1, true))) or badGround(hit.Instance) then
 					ok = false
@@ -178,29 +215,49 @@ local function findSpot(model, spawn, groundY, ignore, relaxed)
 					break
 				end
 			end
+			local clear = {}
 			if ok then
-				-- ничего не стоит в объёме досок. Пространственные запросы не видят детали с CanQuery=false
-				-- (декор, арки порталов), поэтому проверяем по списку всех деталей мира вручную.
+				-- пространственные запросы не видят детали с CanQuery=false (декор, арки), поэтому проверяем по списку
 				for _, o in obstacles do
-					local lp = cf:PointToObjectSpace(o[1])
-					if math.abs(lp.X) < width / 2 + o[2] and math.abs(lp.Z) < depth / 2 + o[2] then
-						ok = false
-						ofail += 1
-						break
+					local lp = cf:PointToObjectSpace(o[1]) + Vector3.new(0, 0, 4) -- центр площадки сдвинут к пьедесталам
+					local inside = math.abs(lp.X) < width / 2 + o[2] and math.abs(lp.Z) < depth / 2 + o[2]
+					-- перед досками (к спавну) — «коридор обзора»: высокое там закрывало бы доски
+					local view = o[3] > 4 and math.abs(lp.X) < width / 2 and lp.Z < 0 and lp.Z > -(depth / 2 + 26)
+					if inside or view then
+						if o[4] then
+							ok = false
+							ofail += 1
+							blockers[o[6]] = (blockers[o[6]] or 0) + 1
+							break
+						end
+						clear[o[5]] = true
 					end
 				end
 			end
 			if ok then
 				passed += 1
-				-- ближе к спавну лучше, но не в лоб на портал за спиной игрока: предпочитаем «впереди» по ходу (−Z от спавна)
-				local score = r + (math.sin(a) > 0.3 and 80 or 0)
+				local n = 0
+				for _ in clear do n += 1 end
+				-- ближе к спавну и меньше убирать декора — лучше; за спиной игрока (к порталу, +Z) — хуже
+				local score = r + n * 4 + (math.sin(a) > 0.3 and 70 or 0)
 				if not bestScore or score < bestScore then
-					best, bestScore = cf, score
+					best, bestScore, bestClear = cf, score, clear
 				end
 			end
 		end
 	end
-	model:SetAttribute(relaxed and "LeaderboardSpotRelaxed" or "LeaderboardSpot", string.format("tried %d ok %d ground-fail %d obj-fail %d obstacles %d", tried, passed, gfail, ofail, #obstacles))
+	local top = {}
+	for k, v in blockers do table.insert(top, { k, v }) end
+	table.sort(top, function(x, y) return x[2] > y[2] end)
+	local names = {}
+	for i = 1, math.min(6, #top) do table.insert(names, top[i][1] .. "=" .. top[i][2]) end
+	model:SetAttribute("LeaderboardBlockers", table.concat(names, " ; "))
+	model:SetAttribute("LeaderboardSpot", string.format("tried %d ok %d ground-fail %d obj-fail %d obstacles %d", tried, passed, gfail, ofail, #obstacles))
+	if best then
+		for root in bestClear do
+			if root.Parent then root:Destroy() end
+		end
+	end
 	return best
 end
 
@@ -357,7 +414,10 @@ function B.Build(world)
 		local hit = groundAt(spawn, players)
 		local groundY = hit and hit.Position.Y or spawn.Y - 4
 		-- сначала ищем место вне дорожек; если мир плотный (Volcano) — разрешаем стоять у дорожки
-		local cf = findSpot(model, spawn, groundY, players, false) or findSpot(model, spawn, groundY, players, true)
+		-- сначала с большим отступом от магазинов/яиц/порталов, потом поскромнее, потом и у дорожки
+		local cf = findSpot(model, spawn, groundY, players, false, 22)
+			or findSpot(model, spawn, groundY, players, false, 12)
+			or findSpot(model, spawn, groundY, players, true, 12)
 		if not cf then
 			warn("[Leaderboards] no free spot in " .. key)
 			continue
@@ -371,12 +431,15 @@ function B.Build(world)
 		end
 		-- монеты, что лежали на месте досок/пьедесталов, переносим вперёд, к спавну (иначе они внутри досок)
 		local footprint = cf * CFrame.new(0, 12, -2)
+		local rng = Random.new(#key)
 		local size = Vector3.new(#ORDER * width + 6, 30, 24)
 		for _, c in model:GetChildren() do
 			if c:IsA("BasePart") and isCoin(c) then
 				local lp = footprint:PointToObjectSpace(c.Position)
 				if math.abs(lp.X) < size.X / 2 and math.abs(lp.Y) < size.Y / 2 and math.abs(lp.Z) < size.Z / 2 then
-					c.Position = c.Position + cf.LookVector * (lp.Z + size.Z / 2 + 4)
+					-- вперёд за площадку и чуть врассыпную, чтобы монеты не слиплись кучкой
+					local jitter = rng:NextNumber(-10, 10)
+					c.Position = c.Position + cf.LookVector * (lp.Z + size.Z / 2 + rng:NextNumber(4, 14)) + cf.RightVector * jitter
 				end
 			end
 		end

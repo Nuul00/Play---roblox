@@ -23,12 +23,19 @@ local function addRig(m)
 		rigs[m] = { base = nil, bob = m:GetAttribute("Bob") or 0.6, sway = math.rad(m:GetAttribute("Sway") or 1), speed = m:GetAttribute("Speed") or 0.6, phase = m:GetAttribute("Phase") or 0 }
 	end
 end
+local function getCF(p) return p:IsA("Model") and p:GetPivot() or p.CFrame end
+local function setCF(p, cf) if p:IsA("Model") then p:PivotTo(cf) else p.CFrame = cf end end
 local function addEmblem(p)
-	if not p:IsA("BasePart") then return end
+	if not (p:IsA("BasePart") or p:IsA("Model")) then return end
+	if p:IsA("Model") and not p:FindFirstChildWhichIsA("BasePart", true) then
+		-- модель пришла раньше деталей: ждём их
+		task.delay(0.5, addEmblem, p)
+		return
+	end
 	local rig = rigOf(p)
 	if rig and not rigs[rig] then addRig(rig) end
 	-- для эмблем на парящих досках смещение относительно доски считаем в первом кадре (rel)
-	emblems[p] = { spin = p:GetAttribute("Spin") or 0, bob = p:GetAttribute("Bob") or 0.35, rig = rig, base = (not rig) and p.CFrame or nil }
+	emblems[p] = { spin = p:GetAttribute("Spin") or 0, bob = p:GetAttribute("Bob") or 0.35, rig = rig, base = (not rig) and getCF(p) or nil }
 end
 local function addPulse(p)
 	if p:IsA("BasePart") then pulses[p] = { t0 = p.Transparency, phase = math.random() * 6 } end
@@ -73,14 +80,14 @@ RunService.RenderStepped:Connect(function(dt)
 			local r = rigs[d.rig]
 			local rc = current[d.rig] or (r and r.base)
 			if not rc then continue end
-			if not d.rel then d.rel = rc:ToObjectSpace(p.CFrame) end
+			if not d.rel then d.rel = rc:ToObjectSpace(getCF(p)) end
 			anchor = rc * d.rel
 		else
 			anchor = d.base
 		end
 		if anchor and (anchor.Position - cp).Magnitude < RANGE then
 			local y = math.sin(t * 2) * d.bob
-			p.CFrame = CFrame.new(anchor.Position + Vector3.new(0, y, 0)) * CFrame.Angles(0, math.rad(d.spin * t), 0) * anchor.Rotation
+			setCF(p, CFrame.new(anchor.Position + Vector3.new(0, y, 0)) * CFrame.Angles(0, math.rad(d.spin * t), 0) * anchor.Rotation)
 		end
 	end
 	for p, d in pulses do

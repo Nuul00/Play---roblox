@@ -34,6 +34,15 @@ local function groundAt(x: number, z: number): Vector3?
 	if not hit or hit.Instance:FindFirstAncestor("TripoModel") or hit.Position.Y > CENTER.Y + 8 then
 		return nil
 	end
+	-- не у досок лидеров и их пьедесталов
+	for _, c in frozen:GetChildren() do
+		if c:IsA("Model") and (string.sub(c.Name, 1, 4) == "Rig_" or string.sub(c.Name, 1, 7) == "Podium_") then
+			local d = c:GetPivot().Position - hit.Position
+			if Vector2.new(d.X, d.Z).Magnitude < 16 then
+				return nil
+			end
+		end
+	end
 	return hit.Position
 end
 
