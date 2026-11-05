@@ -96,7 +96,17 @@ local function addPlayer(player)
 	local record = { player = player, pets = {}, connections = {} }
 	records[player] = record
 	table.insert(record.connections, player:GetAttributeChangedSignal("Equipped"):Connect(function()
-		rebuild(record)
+		-- пачка из 9 яиц меняет команду до 9 раз: пересобираем питомцев один раз
+		if record.pending then
+			return
+		end
+		record.pending = true
+		task.defer(function()
+			record.pending = false
+			if records[player] == record then
+				rebuild(record)
+			end
+		end)
 	end))
 	rebuild(record)
 end

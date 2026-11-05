@@ -157,8 +157,15 @@ end)
 local function update()
  local pet=Config.Pets[player:GetAttribute("PetLevel") or 0]
  local owned=0
- for i=1,#Config.Pets do if (player:GetAttribute("PetOwned"..i) or 0)>0 then owned=owned+1 end end
- content.Text=string.format("Coins                  %g\nSpeed                  %d  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%g\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",stats.Coins.Value,Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",Config.GetPetMultiplier(player:GetAttribute("PetLevel") or 0),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,#Config.Pets,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
+ local total=0
+ for i=1,#Config.Pets do
+  if not Config.Pets[i].Super then
+   total+=1
+   for _,k in ipairs({"PetOwned","PetGold","PetDiamond","PetRainbow"}) do if (player:GetAttribute(k..i) or 0)>0 then owned=owned+1 break end end
+  end
+ end
+ local function ab(n) for _,u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do if n>=u[1] then return (string.format("%.2f",n/u[1]):gsub("%.?0+$",""))..u[2] end end return tostring(math.floor(n)) end
+ content.Text=string.format("Coins                  %s\nSpeed                  %d  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%s\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",ab(stats.Coins.Value),Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",ab(player:GetAttribute("PetBonus") or 1),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,total,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
 end
 -- Панель статистики пересобираем, только когда она открыта (монеты меняются десятки раз в секунду).
 local statsPanel=screens and screens.stats

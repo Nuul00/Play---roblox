@@ -6,6 +6,7 @@ local world = workspace:WaitForChild("CoinSpeedWorld")
 local city = world:WaitForChild("NeonCity")
 local feedback = RS:WaitForChild("GameFeedback")
 local Config = require(RS:WaitForChild("GameConfig"))
+local ShopConfig = require(RS:WaitForChild("ShopConfig"))
 local CONFIG_WORLD = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
 local function short(n)
 	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
@@ -23,7 +24,7 @@ local function grandfather(p)
 			local cw = CONFIG_WORLD[def.Id]
 			for id, pet in pairs(Config.Pets) do
 				local egg = Config.Eggs[pet.EggId]
-				if egg and egg.World == cw and not pet.Super and (p:GetAttribute("PetOwned" .. id) or 0) > 0 then
+				if egg and egg.World == cw and not pet.Super and ShopConfig.Discovered(p, id) then
 					p:SetAttribute(key, true)
 					break
 				end
@@ -35,8 +36,13 @@ local function onPlayer(p)
 	if p:GetAttribute("ProfileReady") then
 		grandfather(p)
 	else
-		p:GetAttributeChangedSignal("ProfileReady"):Once(function()
-			grandfather(p)
+		-- ProfileReady сначала ставится в false — ждём именно true
+		local conn
+		conn = p:GetAttributeChangedSignal("ProfileReady"):Connect(function()
+			if p:GetAttribute("ProfileReady") then
+				conn:Disconnect()
+				grandfather(p)
+			end
 		end)
 	end
 end
@@ -99,6 +105,14 @@ local function teleport(p, id, buy)
 	if stats.SpeedLevel.Value < def.Speed then
 		return { Ok = false, Message = "Requires speed level " .. def.Speed }
 	end
+	local now = os.clock()
+	if last[p] and now - last[p] < 3 then
+		return { Ok = false, Message = "Wait a moment before teleporting again" }
+	end
+	local target = destination(id)
+	if not target then
+		return { Ok = false, Message = "Destination is not ready" }
+	end
 	-- Разовая покупка мира: только из окна TELEPORT (buy = true), портал лишь подсказывает цену.
 	local cost = def.Cost or 0
 	local key = Worlds.UnlockKey(id)
@@ -112,14 +126,6 @@ local function teleport(p, id, buy)
 		stats.Coins.Value -= cost
 		p:SetAttribute(key, true)
 		feedback:FireClient(p, "🔓 " .. def.Name .. " unlocked!", true)
-	end
-	local now = os.clock()
-	if last[p] and now - last[p] < 3 then
-		return { Ok = false, Message = "Wait a moment before teleporting again" }
-	end
-	local target = destination(id)
-	if not target then
-		return { Ok = false, Message = "Destination is not ready" }
 	end
 	last[p] = now
 	char:PivotTo(CFrame.new(target))

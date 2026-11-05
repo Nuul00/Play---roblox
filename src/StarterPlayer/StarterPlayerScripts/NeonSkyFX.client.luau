@@ -160,7 +160,7 @@ end
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
-	local now = camera ~= nil and (camera.CFrame.Position - cityCenter).Magnitude < 450
+	local now = camera ~= nil and game:GetService("Players").LocalPlayer:GetAttribute("CurrentWorld") == "Neon District"
 	if now ~= shown then
 		shown = now
 		setVisible(now)

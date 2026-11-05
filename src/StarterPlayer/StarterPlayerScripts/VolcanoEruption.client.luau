@@ -270,6 +270,7 @@ if not ok then
 end
 
 local inside = false
+local gen = 0
 local function onWorld()
 	local now = player:GetAttribute("CurrentWorld") == "Magma Volcano"
 	if now == inside then
@@ -277,11 +278,13 @@ local function onWorld()
 	end
 	inside = now
 	folder.Parent = inside and workspace or nil
+	gen += 1
+	local my = gen
 	if inside then
 		task.spawn(function()
-			while inside do
+			while inside and gen == my do -- быстрый выход/вход не запускает второй цикл
 				task.wait(math.random(9, 16))
-				if not inside then
+				if not inside or gen ~= my then
 					break
 				end
 				-- извержение

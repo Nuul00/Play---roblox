@@ -204,12 +204,21 @@ for tier in ipairs(ShopConfig.Variants) do
 	end)
 end
 
+local Worlds = require(game:GetService("ReplicatedStorage"):WaitForChild("WorldsConfig"))
+local function unlocked(p, name)
+	local def = Worlds.Find(name)
+	return not def or (def.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(name)) == true
+end
 local cooldown = {}
 fuse.OnServerEvent:Connect(function(p, tier, id)
 	if type(tier) ~= "number" or type(id) ~= "number" or tier ~= math.floor(tier) or id ~= math.floor(id) then
 		return
 	end
 	if not p:GetAttribute("ProfileReady") then
+		return
+	end
+	local variant = ShopConfig.Variants[tier]
+	if not variant or not unlocked(p, variant.World) then
 		return
 	end
 	local machine = machines[tier]

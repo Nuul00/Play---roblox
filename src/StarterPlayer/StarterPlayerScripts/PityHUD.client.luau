@@ -134,7 +134,12 @@ local function refresh()
 			local n = math.clamp(player:GetAttribute("Pity" .. rarity) or 0, 0, r.tier.Threshold)
 			local left = math.max(r.tier.Threshold - n, 1)
 			r.text.Text = string.format("%s %s in %d eggs", r.icon, string.upper(rarity), left)
-			TweenService:Create(r.fill, TweenInfo.new(0.3), { Size = UDim2.fromScale(math.max(n / r.tier.Threshold, 0.05), 1) }):Play()
+			local size = UDim2.fromScale(math.max(n / r.tier.Threshold, 0.05), 1)
+			if s.shown then
+				TweenService:Create(r.fill, TweenInfo.new(0.3), { Size = size }):Play()
+			else
+				r.fill.Size = size
+			end
 		end
 	end
 end
@@ -154,9 +159,14 @@ end
 playerGui.ChildAdded:Connect(function(child)
 	task.defer(consider, child)
 end)
+local pendingPity = false
 player.AttributeChanged:Connect(function(name)
-	if string.sub(name, 1, 4) == "Pity" then
-		refresh()
+	if string.sub(name, 1, 4) == "Pity" and not pendingPity then
+		pendingPity = true -- пачка яиц меняет счётчики много раз: обновляем один раз
+		task.defer(function()
+			pendingPity = false
+			refresh()
+		end)
 	end
 end)
 

@@ -25,12 +25,12 @@ local function areFriends(p: Player, other: Player): boolean
 	return cache[k]
 end
 
-local function refresh()
+local function refresh(leaving: Player?)
 	local list = Players:GetPlayers()
 	for _, p in ipairs(list) do
 		local friends = 0
 		for _, other in ipairs(list) do
-			if other ~= p and other.Parent == Players and areFriends(p, other) then
+			if other ~= p and other ~= leaving and other.Parent == Players and areFriends(p, other) then
 				friends += 1
 			end
 		end
@@ -49,7 +49,7 @@ Players.PlayerAdded:Connect(function()
 	refresh()
 end)
 Players.PlayerRemoving:Connect(function(p)
-	task.defer(refresh)
+	task.defer(refresh, p)
 	for k in pairs(cache) do
 		if string.find(k, tostring(p.UserId), 1, true) then
 			cache[k] = nil

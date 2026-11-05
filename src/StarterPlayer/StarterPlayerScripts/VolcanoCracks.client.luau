@@ -32,6 +32,7 @@ rayParams.FilterDescendantsInstances = deck and { deck } or { volcano }
 local rng = Random.new()
 local active = 0
 local inside = false
+local gen = 0
 
 local function part(size: Vector3, cf: CFrame, color: Color3, material: Enum.Material, parent: Instance)
 	local p = Instance.new("Part")
@@ -262,6 +263,8 @@ local function onWorld()
 		return
 	end
 	inside = now
+	gen += 1
+	local my = gen
 	folder.Parent = inside and workspace or nil
 	if inside then
 		if deck and baseColor then
@@ -271,7 +274,7 @@ local function onWorld()
 			end)
 		end
 		task.spawn(function()
-			while inside do
+			while inside and gen == my do
 				if active < MAX_CRACKS then
 					local p, a = spot()
 					if p then

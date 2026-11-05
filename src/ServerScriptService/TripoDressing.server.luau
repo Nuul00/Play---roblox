@@ -355,7 +355,7 @@ local galaxyW = world:WaitForChild("CosmicGalaxy", 30)
 -- Вулкан: процедурную гору и мёртвые деревья меняем на 3D-модели Tripo.
 if volcanoW then
 	local mountain = volcanoW:FindFirstChild("Volcano", true)
-	local vt = props:FindFirstChild("VolcanoMountain")
+	local vt = props and props:FindFirstChild("VolcanoMountain")
 	if mountain and mountain:IsA("Model") and vt and not mountain:GetAttribute("Tripo") then
 		local cf, ext = mountain:GetBoundingBox()
 		mountain:SetAttribute("Tripo", true)
@@ -368,7 +368,7 @@ if volcanoW then
 		end
 		fit(vt, math.max(ext.X, ext.Y, ext.Z) * 1.25, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)), mountain, "TripoModel")
 	end
-	local trees = { props:FindFirstChild("LavaTree1"), props:FindFirstChild("LavaTree2") }
+	local trees = props and { props:FindFirstChild("LavaTree1"), props:FindFirstChild("LavaTree2") } or {}
 	if trees[1] and trees[2] then
 		local k = 0
 		for _, m in ipairs(volcanoW:GetDescendants()) do
@@ -490,7 +490,7 @@ if frozen then
 	pcall(swapAll, frozen, "CrystalCluster", "IceCrystals", 1.1)
 	-- Горы: блочные пирамиды меняем на 3D-горы Tripo (три вида по кругу, разный поворот).
 	local peaks = frozen:FindFirstChild("Peaks")
-	if peaks and props:FindFirstChild("FrozenMountain1") then
+	if peaks and props and props:FindFirstChild("FrozenMountain1") then
 		for k, m in ipairs(peaks:GetChildren()) do
 			local t = props:FindFirstChild("FrozenMountain" .. ((k - 1) % 3 + 1))
 			if m:IsA("Model") and t then

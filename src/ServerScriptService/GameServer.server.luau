@@ -6,6 +6,18 @@ local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local AvatarPose = require(script.Parent:WaitForChild("AvatarPose"))
 local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))
+-- Мир куплен? (разовая покупка в окне TELEPORT; Meadow и неизвестные миры открыты всегда)
+local function unlocked(p, worldName)
+ local def = worldName and Worlds.Find(worldName)
+ return not def or (def.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(worldName)) == true
+end
+local function short(n)
+ for _, u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do
+  if n >= u[1] then return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2] end
+ end
+ return tostring(math.floor(n + 0.5))
+end
 local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
@@ -174,7 +186,7 @@ action.OnServerEvent:Connect(function(p, kind, arg)
  if type(kind) ~= "string" or not p:GetAttribute("ProfileReady") then return end
  if os.clock() - (actionCooldown[p] or 0) < 0.15 then return end
  actionCooldown[p] = os.clock()
- if kind == "equip" and type(arg) == "number" then
+ if kind == "equip" and type(arg) == "number" and arg == math.floor(arg) and arg > 0 then
   local list = PlayerSystems.GetEquipped(p)
   local maxEquipped = PlayerSystems.MaxEquipped(p)
   if #list >= maxEquipped then notify(p, "Only " .. maxEquipped .. " pets can follow you. Unequip one first."); return end
@@ -208,7 +220,7 @@ claimIndex.OnServerEvent:Connect(function(p, eggId)
  if os.clock() - (claimCooldown[p] or 0) < 1 then return end
  claimCooldown[p] = os.clock()
  for _, entry in ipairs(Config.Eggs[eggId].Pool) do
-  if (p:GetAttribute("PetOwned" .. entry.Pet) or 0) <= 0 then notify(p, "Collect every pet from this egg first!"); return end
+  if not ShopConfig.Discovered(p, entry.Pet) then notify(p, "Collect every pet from this egg first!"); return end
  end
  local stats = p:FindFirstChild("leaderstats")
  if not stats then return end
@@ -216,9 +228,10 @@ claimIndex.OnServerEvent:Connect(function(p, eggId)
  p:SetAttribute("IndexClaimed" .. eggId, true)
  PlayerSystems.RefreshIndexBonus(p)
  stats.Coins.Value = stats.Coins.Value + reward
- notify(p, "Index reward: +" .. reward .. " coins and +" .. math.floor(ShopConfig.IndexBonusPerPage * 100 + 0.5) .. "% coins forever!", true)
+ notify(p, "Index reward: +" .. short(reward) .. " coins and +" .. math.floor(ShopConfig.IndexBonusPerPage * 100 + 0.5) .. "% coins forever!", true)
 end)
 Players.PlayerRemoving:Connect(function(p) claimCooldown[p] = nil end)
+local ZONE_WORLD_NAME = {}
 local function interact(p, part, prompt, minLevel)
  -- У яиц нет подсказки E: меню открывается касанием, поэтому prompt может быть nil.
  if p.Parent ~= Players or (prompt and not prompt.Enabled) then return end
@@ -227,8 +240,13 @@ local function interact(p, part, prompt, minLevel)
  if not h or (root.Position - part.Position).Magnitude > Config.ShopDistance then return end
  local stats = p:FindFirstChild("leaderstats")
  if not stats then return end
- local need = type(minLevel) == "number" and minLevel or (minLevel and 3 or 0)
- if stats.SpeedLevel.Value < need then return end
+ -- minLevel может быть зоной мира: тогда мир должен быть куплен (иначе — подошёл телепорт-читом)
+ if typeof(minLevel) == "Instance" then
+  if not unlocked(p, ZONE_WORLD_NAME[minLevel]) then return end
+ else
+  local need = type(minLevel) == "number" and minLevel or (minLevel and 3 or 0)
+  if stats.SpeedLevel.Value < need then return end
+ end
  local now = os.clock()
  if now - (cooldown[p] or -math.huge) < Config.PurchaseCooldown then return end
  cooldown[p] = now
@@ -236,7 +254,11 @@ local function interact(p, part, prompt, minLevel)
 end
 -- Открытие меню не списывает деньги. Каждая покупка снова проверяет расстояние.
 local zones = {island=world, neon=city, sky=sky, frozen=frozen, volcano=volcano, galaxy=galaxy}
-local ZONE_LEVEL = {[city]=3, [sky]=6, [frozen]=10, [volcano]=13, [galaxy]=16}
+-- Скорость больше не открывает миры: их покупают за монеты (WorldsConfig.Cost), поэтому уровни 0.
+local ZONE_LEVEL = {[city]=0, [sky]=0, [frozen]=0, [volcano]=0, [galaxy]=0}
+for _, pair in ipairs({{world, "Meadow Isles"}, {city, "Neon District"}, {sky, "Sky Isles"}, {frozen, "Frozen Peaks"}, {volcano, "Magma Volcano"}, {galaxy, "Cosmic Galaxy"}}) do
+ if pair[1] then ZONE_WORLD_NAME[pair[1]] = pair[2] end
+end
 local function shopPart(zone, mode, eggId)
  if mode == "egg" then
   local egg=Config.Eggs[eggId]
@@ -252,7 +274,7 @@ end
 for id,zone in pairs(zones) do
  local part,prompt=shopPart(zone,"upgrades")
  if prompt then prompt.Triggered:Connect(function(p)
-  if interact(p,part,prompt,ZONE_LEVEL[zone]) then openMenu:FireClient(p,"upgrades",id) end
+  if interact(p,part,prompt,zone) then openMenu:FireClient(p,"upgrades",id) end
  end) end
 end
 -- Меню яйца открывает клиент, когда персонаж касается яйца (ShopUI); покупку проверяет сервер ниже.
@@ -281,7 +303,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
   -- Какой магазин магнитов рядом: от него зависит, какие магниты можно купить (def.World).
   local stats, shopWorld
-  for _, candidate in ipairs({{world, 0, "Meadow Isles"}, {sky, 6, "Sky Isles"}, {frozen, 10, "Frozen Peaks"}, {volcano, 13, "Magma Volcano"}, {galaxy, 16, "Cosmic Galaxy"}}) do
+  for _, candidate in ipairs({{world, world, "Meadow Isles"}, {sky, sky, "Sky Isles"}, {frozen, frozen, "Frozen Peaks"}, {volcano, volcano, "Magma Volcano"}, {galaxy, galaxy, "Cosmic Galaxy"}}) do
    local shop = candidate[1] and candidate[1]:FindFirstChild("MagnetShop")
    local zonePart = shop and shop:FindFirstChild("ShopZone")
    if zonePart then
@@ -311,7 +333,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
    if not def then return end
    cost, name = ShopConfig.PotionCost(eggId, p:GetAttribute("LifetimeEarned")), def.Name
   end
-  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
+  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. short(cost-stats.Coins.Value) .. " more"); return end
   stats.Coins.Value = stats.Coins.Value - cost
   if kind == "magnettool" then
    p:SetAttribute("MagnetTier", eggId)
@@ -328,7 +350,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if kind=="egg" and (type(eggId)~="number" or eggId~=math.floor(eggId)) then return end
  local part, prompt = shopPart(zone, kind == "egg" and "egg" or "upgrades",eggId)
  if not part then return end
- local stats, h = interact(p, part, prompt, ZONE_LEVEL[zone])
+ local stats, h = interact(p, part, prompt, zone)
  if not stats then return end
  local value, cost
  if kind == "egg" then
@@ -341,7 +363,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   if value >= (Config.ZoneMax[zoneId] or Config.BaseMaxLevel) then notify(p, "Higher levels are sold in the next world"); return end
   cost = up.cost(value)
  end
- if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. string.format("%g",cost-stats.Coins.Value)); return end
+ if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. short(cost-stats.Coins.Value) .. " more"); return end
  stats.Coins.Value = stats.Coins.Value - cost
  if kind ~= "egg" then
   UPGRADES[kind].set(p, stats, value + 1) else
@@ -363,15 +385,14 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   local result=Config.RollEgg(eggId,random:NextInteger(1,100000))
   local superPet=Config.RollSuper(eggId,random:NextNumber(),superMult)
   -- Зелье удачи: два броска, остаётся более редкий питомец.
-  if PlayerSystems.PotionActive(p, "Luck") or PlayerSystems.EventActive("Lucky") then
-   local second=Config.RollEgg(eggId,random:NextInteger(1,100000))
-   if Config.GetPetMultiplier(second)>Config.GetPetMultiplier(result) then result=second end
+  -- Каждый источник удачи — свой лишний бросок (зелье, событие, геймпасс, буст складываются).
+  for _, on in ipairs({PlayerSystems.PotionActive(p, "Luck"), PlayerSystems.EventActive("Lucky"), p:GetAttribute("Pass_Luck2x") == true, p:GetAttribute("LuckBoostActive") == true}) do
+   if on then
+    local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
+    if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
+   end
   end
   -- Геймпасс «2x Luck» и буст удачи из магазина: ещё один бросок, остаётся лучший.
-  if p:GetAttribute("Pass_Luck2x") or p:GetAttribute("LuckBoostActive") then
-   local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
-   if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
-  end
   local luckLeft=extraLuck
   while luckLeft>0 do
    if luckLeft>=1 or random:NextNumber()<luckLeft then
@@ -382,6 +403,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   end
   -- Гарантия: после N питомцев без нужной редкости выдаём её из пула этого яйца.
   local forced
+  if superPet then result=superPet end -- супер-секретка сбрасывает счётчики гарантии как Secret
   result, forced = PlayerSystems.ApplyPity(p, eggId, result)
   if superPet then result=superPet; forced=false; table.insert(superHits,superPet) end
   local attribute = "PetOwned" .. result
@@ -434,15 +456,8 @@ end)
 local function portal(zone, name, target, needsLevel, destination)
  local part = zone:WaitForChild(name)
  local prompt = part:WaitForChild("EnterWorld")
- prompt.Triggered:Connect(function(p)
-  local stats, _, root = interact(p, part, prompt, false)
-  if not stats then return end
-  if stats.SpeedLevel.Value < needsLevel then notify(p, "Requires speed 28 · buy 3 speed upgrades."); return end
-  p.Character:PivotTo(CFrame.new(target))
-  root.AssemblyLinearVelocity = Vector3.zero
-  p:SetAttribute("CurrentWorld", destination)
-  notify(p, "World: " .. destination, true)
- end)
+ -- Порталы обслуживает WorldTeleport (там же проверка покупки мира); старую кнопку E выключаем.
+ prompt.Enabled = false
 end
 -- Неонград можно передвигать в Studio: координаты берём с его пола, а не из кода.
 local neonX = city.Floor.Position.X
@@ -471,7 +486,7 @@ do
   if z then shopZones[key] = z end
  end
 end
-local SHOP_LEVEL = {neon = 3, sky = 6, skymagnets = 6, frozen = 10, frozenmagnets = 10, volcano = 13, volcanomagnets = 13, galaxy = 16, galaxymagnets = 16}
+local SHOP_LEVEL = {}
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
@@ -594,7 +609,8 @@ local function setCoinVisible(part, visible)
   end
   coinFX[part] = list
  end
- for _, d in ipairs(list) do d.Enabled = visible end
+ -- Эффекты (искры, свет, значки) включает клиент сам (WorldCulling): свой мир + Available.
+ -- Раньше сервер включал их у всех — и это ломало отсечение эффектов чужих миров.
 end
 local function collect(record, p)
  if not record.available then return end
@@ -676,6 +692,8 @@ task.spawn(function()
  end
 end)
 
+local lastPos, blockedUntil = {}, {}
+Players.PlayerRemoving:Connect(function(p) lastPos[p] = nil; blockedUntil[p] = nil end)
 task.spawn(function()
  while world.Parent do
   local candidates = {}
@@ -705,25 +723,49 @@ task.spawn(function()
      end
      insideZone[key] = inside or nil
     end
+    local pw
     if root.Position.Y > 200 then
-     p:SetAttribute("CurrentWorld", "Sky Isles")
+     pw = "Sky Isles"
     elseif math.abs(root.Position.X - FrozenPeaks.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
-     p:SetAttribute("CurrentWorld", "Frozen Peaks")
+     pw = "Frozen Peaks"
     elseif math.abs(root.Position.X - MagmaVolcano.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
-     p:SetAttribute("CurrentWorld", "Magma Volcano")
+     pw = "Magma Volcano"
     elseif math.abs(root.Position.X - CosmicGalaxy.Center.X) <= 240 and math.abs(root.Position.Z) <= 240 then
-     p:SetAttribute("CurrentWorld", "Cosmic Galaxy")
+     pw = "Cosmic Galaxy"
     elseif math.abs(root.Position.Z) <= 230 then
-     if math.abs(root.Position.X) <= 150 then p:SetAttribute("CurrentWorld", "Meadow Isles")
-     elseif math.abs(root.Position.X - neonX) <= 150 then p:SetAttribute("CurrentWorld", "Neon District") end
+     if math.abs(root.Position.X) <= 150 then pw = "Meadow Isles"
+     elseif math.abs(root.Position.X - neonX) <= 150 then pw = "Neon District" end
     end
+    local me = candidates[#candidates]
+    if pw and not unlocked(p, pw) then
+     -- в некупленный мир попадают только читом: возвращаем на спавн Meadow, монеты не собираем
+     p.Character:PivotTo(CFrame.new(0, 3 + groundY, 180))
+     root.AssemblyLinearVelocity = Vector3.zero
+     p:SetAttribute("CurrentWorld", "Meadow Isles")
+     me.blocked = true
+    elseif pw and p:GetAttribute("CurrentWorld") ~= pw then
+     p:SetAttribute("CurrentWorld", pw)
+    end
+    -- Проверка движения: слишком большой скачок за тик (телепорт-сбор, спидхак) — монеты
+    -- 1 секунду не собираются. Телепорты сервера (меню, ребёрс) дают ту же паузу — это незаметно.
+    local now = os.clock()
+    local prev = lastPos[p]
+    if prev then
+     local d = root.Position - prev.pos
+     local allowed = (h.WalkSpeed * 2 + 60) * math.max(now - prev.t, 0.1)
+     if Vector2.new(d.X, d.Z).Magnitude > allowed then blockedUntil[p] = now + 1 end
+    end
+    lastPos[p] = {pos = root.Position, t = now}
+    if (blockedUntil[p] or 0) > now then me.blocked = true end
    end
   end
   local byWorld = {}
   for _, candidate in ipairs(candidates) do
-   local w = candidate.p:GetAttribute("CurrentWorld") or "Meadow Isles"
-   byWorld[w] = byWorld[w] or {}
-   table.insert(byWorld[w], candidate)
+   if not candidate.blocked then
+    local w = candidate.p:GetAttribute("CurrentWorld") or "Meadow Isles"
+    byWorld[w] = byWorld[w] or {}
+    table.insert(byWorld[w], candidate)
+   end
   end
   for worldName, here in pairs(byWorld) do
   for _, record in ipairs(recordsByWorld[worldName] or {}) do

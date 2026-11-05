@@ -353,14 +353,19 @@ btn.Activated:Connect(function()
 	bscale.Scale = 0.9
 	player:SetAttribute("UIScreen", player:GetAttribute("UIScreen") == "store" and "" or "store")
 end)
+local storeOpenedAt = 0
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	local s = player:GetAttribute("UIScreen")
 	panel.Visible = s == "store"
 	btn.Visible = s == nil or s == "" or s == "store"
 	if panel.Visible then
 		refresh()
-		pScale.Scale = 0.7
-		TweenService:Create(pScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		local cam = workspace.CurrentCamera
+		local v = cam and cam.ViewportSize or Vector2.new(1000, 600)
+		local base = math.min(1, (v.X - 30) / 900, (v.Y - 90) / 480)
+		pScale.Scale = base * 0.7
+		TweenService:Create(pScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = base }):Play()
+		storeOpenedAt = os.clock()
 	end
 end)
 player.AttributeChanged:Connect(function(n)
@@ -377,8 +382,8 @@ RunService.RenderStepped:Connect(function()
 	if cam then
 		local v = cam.ViewportSize
 		local base = math.min(1, (v.X - 30) / 900, (v.Y - 90) / 480)
-		if pScale.Scale > 0.98 or pScale.Scale < base then
-			pScale.Scale = math.min(pScale.Scale, base)
+		if os.clock() - storeOpenedAt > 0.3 then
+			pScale.Scale = base -- подстраиваемся под поворот/размер экрана
 		end
 	end
 end)

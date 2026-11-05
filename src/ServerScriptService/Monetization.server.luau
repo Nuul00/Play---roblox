@@ -36,6 +36,17 @@ local function checkPasses(p: Player)
 					break
 				end
 				task.wait(attempt * 2)
+				if attempt == 3 and p.Parent == Players then
+					-- Roblox не ответил: проверим этот геймпасс ещё раз через минуту
+					task.delay(60, function()
+						if p.Parent == Players and not p:GetAttribute("Pass_" .. def.Key) then
+							local ok2, owns2 = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, p.UserId, def.Id)
+							if ok2 and owns2 then
+								applyPass(p, def)
+							end
+						end
+					end)
+				end
 			end
 		end
 	end
@@ -113,9 +124,20 @@ MarketplaceService.ProcessReceipt = function(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	-- уже выдавали эту покупку? (сначала смотрим в профиле игрока — он сохраняется вместе с выданным)
-	local recent = p:GetAttribute("Save_Receipts") or ""
-	if string.find("," .. recent .. ",", "," .. info.PurchaseId .. ",", 1, true) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+	local function seen()
+		return string.find("," .. (p:GetAttribute("Save_Receipts") or "") .. ",", "," .. info.PurchaseId .. ",", 1, true) ~= nil
+	end
+	local saveNow = game:GetService("ServerStorage"):FindFirstChild("SaveProfileNow")
+	local function saved()
+		if not saveNow then
+			return true
+		end
+		local ok, res = pcall(saveNow.Invoke, saveNow, p)
+		return ok and res == true
+	end
+	if seen() then
+		-- уже выдано в этой сессии: «готово» только когда это реально сохранено
+		return saved() and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receipts then
 		local ok, done = pcall(receipts.GetAsync, receipts, info.PurchaseId)
@@ -127,24 +149,24 @@ MarketplaceService.ProcessReceipt = function(info)
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
+	-- пока ждали хранилище, эту же покупку могла выдать параллельная обработка
+	if seen() then
+		return saved() and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	if not grant(p, def) then
 		warn("[Store] grant failed", def.Key)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	-- запоминаем покупку в профиле (последние 30) и сразу сохраняем профиль
-	local list = string.split(recent, ",")
+	local list = string.split(p:GetAttribute("Save_Receipts") or "", ",") -- свежий список: без потери параллельных покупок
 	table.insert(list, info.PurchaseId)
 	while #list > 30 do
 		table.remove(list, 1)
 	end
 	p:SetAttribute("Save_Receipts", table.concat(list, ","))
-	local saveNow = game:GetService("ServerStorage"):FindFirstChild("SaveProfileNow")
-	if saveNow then
-		local ok, saved = pcall(saveNow.Invoke, saveNow, p)
-		if not (ok and saved) then
-			-- выдано в памяти и отмечено в профиле: при повторе Roblox второй раз не выдадим
-			return Enum.ProductPurchaseDecision.NotProcessedYet
-		end
+	if not saved() then
+		-- выдано в памяти и отмечено в профиле: при повторе Roblox второй раз не выдадим
+		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receipts then
 		pcall(receipts.SetAsync, receipts, info.PurchaseId, true)

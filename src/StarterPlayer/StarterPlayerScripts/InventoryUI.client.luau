@@ -18,7 +18,7 @@ local rarityColors = {
 	Epic = Color3.fromRGB(180, 90, 255),
 	Legendary = Color3.fromRGB(255, 190, 40),
 	Mythic = Color3.fromRGB(255, 80, 160),
-	Secret = Color3.fromRGB(30, 30, 30),
+	Secret = Color3.fromRGB(190, 120, 255),
 }
 local dark = Color3.fromRGB(30, 30, 42)
 
@@ -197,7 +197,7 @@ local function buildPets()
 		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
 		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
-		label(card, def.Rarity .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity] == rarityColors.Secret and Color3.new(1, 1, 1) or rarityColors[def.Rarity])
+		label(card, (def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
 		-- Способность питомца и (у Legendary/Secret) значок супер-способности.
 		local ability = PetAbilities.Get(baseId, tier)
 		local abilityLine = label(card, ability.Text, UDim2.fromOffset(6, 133), UDim2.fromOffset(126, 15), 13, Color3.fromRGB(255, 235, 160))
@@ -284,16 +284,11 @@ end
 
 -- ===== Достижения =====
 local function short(n: number): string
-	if n >= 1e15 then
-		return string.format("%.3gQa", n / 1e15)
-	elseif n >= 1e12 then
-		return string.format("%.3gT", n / 1e12)
-	elseif n >= 1e9 then
-		return string.format("%.3gB", n / 1e9)
-	elseif n >= 1e6 then
-		return string.format("%.3gM", n / 1e6)
-	elseif n >= 1e4 then
-		return string.format("%.3gK", n / 1e3)
+	for _, u in ipairs({ { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e4, "K" } }) do
+		if n >= u[1] then
+			local unit = u[1] == 1e4 and 1e3 or u[1]
+			return (string.format("%.2f", n / unit):gsub("%.?0+$", "")) .. u[2]
+		end
 	end
 	return tostring(math.floor(n))
 end
@@ -440,7 +435,7 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	for name, l in pairs(potionTimers) do
-		local left = (player:GetAttribute("PotionEnd" .. name) or 0) - os.time()
+		local left = (player:GetAttribute("PotionEnd" .. name) or 0) - workspace:GetServerTimeNow()
 		l.Text = left > 0 and string.format("Active %d:%02d", left // 60, left % 60) or ""
 	end
 end)

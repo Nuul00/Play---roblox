@@ -42,12 +42,17 @@ local function popLid(base: BasePart)
 	lid:SetAttribute("Popping", nil)
 end
 
+local Worlds = require(game:GetService("ReplicatedStorage"):WaitForChild("WorldsConfig"))
+local function unlocked(p, name)
+	local def = Worlds.Find(name)
+	return not def or (def.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(name)) == true
+end
 local function open(p: Player, base: BasePart)
 	local id, reward = base:GetAttribute("ChestId"), base:GetAttribute("Reward")
 	if type(id) ~= "number" or type(reward) ~= "number" then
 		return
 	end
-	if not p:GetAttribute("ProfileReady") then
+	if not p:GetAttribute("ProfileReady") or not unlocked(p, "Sky Isles") then
 		return
 	end
 	local stats = p:FindFirstChild("leaderstats")

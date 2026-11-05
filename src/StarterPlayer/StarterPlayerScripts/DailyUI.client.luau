@@ -160,7 +160,9 @@ local function refresh()
 			c.name.Text = shortNum(amount) .. " coins" .. extra
 		end
 		local current = i == state.Day
-		local claimed = i <= day and not (current and state.Ready)
+		-- новая неделя (готов день 1): галочки прошлой недели не показываем
+		local shownDay = (state.Ready and state.Day == 1) and 0 or day
+		local claimed = i <= shownDay and not (current and state.Ready)
 		c.tick.Visible = claimed
 		c.icon.TextTransparency = claimed and 0.55 or 0
 		if current and state.Ready then

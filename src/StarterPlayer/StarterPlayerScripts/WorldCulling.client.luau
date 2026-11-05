@@ -22,7 +22,10 @@ for _, id in pairs(GROUPS) do
 end
 lists["Meadow Isles"] = {}
 local owner: { [Instance]: string } = setmetatable({}, { __mode = "k" }) :: any
-local was: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any -- исходный Enabled выключенных
+local orig: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any -- исходный Enabled
+-- Эффекты монет: сервер больше не включает/выключает их сам, видимость решает клиент
+-- (свой мир + монета доступна). Так собранные и чужие монеты не тратят кадры.
+local coinOf: { [Instance]: BasePart } = setmetatable({}, { __mode = "k" }) :: any
 local current = player:GetAttribute("CurrentWorld") or "Meadow Isles"
 
 local function worldOf(d: Instance): string
@@ -32,31 +35,65 @@ local function worldOf(d: Instance): string
 	end
 	return node and GROUPS[node.Name] or "Meadow Isles"
 end
+local function findCoin(d: Instance): BasePart?
+	local node = d.Parent
+	for _ = 1, 4 do
+		if not node then
+			return nil
+		end
+		if node:IsA("BasePart") and string.match(node.Name, "^Coin_%d+$") then
+			return node
+		end
+		node = node.Parent
+	end
+	return nil
+end
 
-local function off(d: Instance)
-	if was[d] == nil then
-		was[d] = (d :: any).Enabled;
-		(d :: any).Enabled = false
+local function desired(d: Instance): boolean
+	if not orig[d] then
+		return false
+	end
+	local coin = coinOf[d]
+	if coin and coin:GetAttribute("Available") == false then
+		return false
+	end
+	return owner[d] == current
+end
+local function sync(d: Instance)
+	local want = desired(d)
+	if (d :: any).Enabled ~= want then
+		(d :: any).Enabled = want
 	end
 end
-local function on(d: Instance)
-	local v = was[d]
-	if v ~= nil then
-		was[d] = nil;
-		(d :: any).Enabled = v
-	end
-end
 
+local coinFx: { [BasePart]: { Instance } } = setmetatable({}, { __mode = "k" }) :: any
 local function add(d: Instance)
-	if not FX[d.ClassName] or owner[d] then
+	local coin = findCoin(d)
+	local isFx = FX[d.ClassName] or (coin ~= nil and d:IsA("SurfaceGui"))
+	if not isFx or owner[d] then
 		return
 	end
 	local id = worldOf(d)
 	owner[d] = id
+	orig[d] = (d :: any).Enabled
 	table.insert(lists[id], d)
-	if id ~= current then
-		off(d)
+	if coin then
+		coinOf[d] = coin
+		local list = coinFx[coin]
+		if not list then
+			list = {}
+			coinFx[coin] = list
+			coin:GetAttributeChangedSignal("Available"):Connect(function()
+				for _, x in ipairs(list) do
+					if x.Parent then
+						sync(x)
+					end
+				end
+			end)
+		end
+		table.insert(list, d)
 	end
+	sync(d)
 end
 
 local function apply(id: string)
@@ -65,18 +102,14 @@ local function apply(id: string)
 	end
 	local old = current
 	current = id
-	for k, d in ipairs(lists[id] or {}) do
-		on(d)
-		if k % 3000 == 0 then
-			task.wait()
-		end
-	end
-	for k, d in ipairs(lists[old] or {}) do
-		if d.Parent then
-			off(d)
-		end
-		if k % 3000 == 0 then
-			task.wait()
+	for _, wid in ipairs({ id, old }) do
+		for k, d in ipairs(lists[wid] or {}) do
+			if d.Parent then
+				sync(d)
+			end
+			if k % 3000 == 0 then
+				task.wait()
+			end
 		end
 	end
 	-- чистим удалённые
@@ -96,7 +129,7 @@ for k, d in ipairs(world:GetDescendants()) do
 	end
 end
 world.DescendantAdded:Connect(function(d)
-	if FX[d.ClassName] then
+	if FX[d.ClassName] or d:IsA("SurfaceGui") then
 		task.defer(add, d)
 	end
 end)

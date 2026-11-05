@@ -15,12 +15,12 @@ local token=game.JobId~="" and game.JobId or game:GetService("HttpService"):Gene
 -- Числа из сохранения: отбрасываем только NaN и бесконечность (раньше всё ≥1e15 обнулялось — поздняя игра теряла монеты).
 local function number(v) return type(v)=="number" and v==v and v~=math.huge and v~=-math.huge and math.clamp(v,0,1e300) or 0 end
 local function snapshot(p)
- local data={Coins=p.leaderstats.Coins.Value,Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
+ local data={Version=1,Coins=number(p.leaderstats.Coins.Value),Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
  data.DailyDay=p:GetAttribute("DailyDay") or 0
  data.DailyClaimedAt=p:GetAttribute("DailyClaimedAt") or 0
  data.QuestState=p:GetAttribute("QuestState") or ""
  for i=1,#Config.Pets do data.AutoDelete[tostring(i)]=p:GetAttribute("AutoDelete"..i)==true end
- for _,name in ipairs({"MagnetLevel","IncomeLevel","DoubleLevel","Rebirths","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=p:GetAttribute(name) or 0 end
+ for _,name in ipairs({"MagnetLevel","IncomeLevel","DoubleLevel","Rebirths","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=number(p:GetAttribute(name)) end
  for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
  data.Equipped=p:GetAttribute("Equipped") or ""
  data.Potions={};data.PotionLeft={}
@@ -55,26 +55,29 @@ local function load(p)
  if not stats then return end
  if not persistent then p:SetAttribute("ProfileReady",true);p:SetAttribute("SaveStatus","SESSION ONLY");return end
  local loaded
- for attempt=1,4 do
+ -- Замок профиля — на сессию игрока, а не на сервер: быстрый перезаход на тот же сервер
+ -- ждёт, пока старая сессия сохранится и снимет замок (иначе сохранения новой молча отбрасывались).
+ local myToken=token..":"..game:GetService("HttpService"):GenerateGUID(false)
+ for attempt=1,6 do
   local ok,data=pcall(function()
    return store:UpdateAsync(tostring(p.UserId),function(old)
     old=type(old)=="table" and old or {}
-    if old.Session and old.Session~=token and os.time()-(old.Lease or 0)<180 then return nil end
-    old.Session=token;old.Lease=os.time();return old
+    if old.Session and old.Session~=myToken and os.time()-(old.Lease or 0)<180 then return nil end
+    old.Session=myToken;old.Lease=os.time();return old
    end)
   end)
-  if ok and data and data.Session==token then loaded=data;break end
+  if ok and data and data.Session==myToken then loaded=data;break end
   if p.Parent~=Players then break end
   task.wait(attempt*2)
  end
  -- игрок ушёл, пока профиль грузился: сразу снимаем замок, иначе он висел бы до конца жизни сервера
  if loaded and p.Parent~=Players then
-  pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==token then old.Session=nil;return old end;return nil end) end)
+  pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==myToken then old.Session=nil;return old end;return nil end) end)
   return
  end
  if p.Parent~=Players then return end
  if not loaded then p:Kick("Your profile is unavailable or still open on another server. Please rejoin shortly.");return end
- sessions[p]={busy=false,release=false}
+ sessions[p]={busy=false,release=false,token=myToken}
  stats.Coins.Value=number(loaded.Coins)
  p:SetAttribute("DailyDay",math.clamp(math.floor(number(loaded.DailyDay)),0,7))
  p:SetAttribute("DailyClaimedAt",math.floor(number(loaded.DailyClaimedAt)))
@@ -133,17 +136,20 @@ local function save(p,release)
  session.busy=true
  local okSnap,data=pcall(snapshot,p)
  if not okSnap then session.busy=false;warn("[Profiles] Snapshot failed: "..tostring(data));return false end
- if session.release then data.Session=nil else data.Session=token end
+ if session.release then data.Session=nil else data.Session=session.token end
  data.Lease=os.time()
  -- при выходе и выключении сервера пробуем несколько раз с паузой: прогресс не должен теряться
  local ok,err
  for attempt=1,(session.release and 4 or 1) do
+  local rejected=false
   ok,err=pcall(function()
    store:UpdateAsync(tostring(p.UserId),function(old)
-    if type(old)~="table" or old.Session~=token then return nil end
-    return data
+    if type(old)~="table" or old.Session~=session.token then rejected=true;return nil end
+    rejected=false;return data
    end)
   end)
+  -- замок забрала другая сессия: это не «успех», дальше сохранять нельзя
+  if ok and rejected then ok=false;err="session lock lost";break end
   if ok then break end
   task.wait(attempt*1.5)
  end
@@ -161,6 +167,7 @@ saveNow.OnInvoke=function(p)
  if not session then return false end
  local t0=os.clock()
  while session.busy and os.clock()-t0<10 do task.wait(0.1) end
+ if sessions[p]~=session then return false end -- профиль уже выгружен (выход/выключение)
  return save(p,false)
 end
 saveNow.Parent=game:GetService("ServerStorage")

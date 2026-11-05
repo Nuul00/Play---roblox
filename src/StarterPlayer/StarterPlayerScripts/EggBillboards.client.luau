@@ -193,7 +193,7 @@ local function buildBoard(id, stand)
 			label(cell, def.Rarity, UDim2.fromScale(0.04, 0.83), UDim2.fromScale(0.92, 0.14), color, Enum.Font.GothamBold)
 		end
 	end
-	label(panel, "Touch the egg · OPEN ×1 / ×3 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), sky and Color3.fromRGB(150, 110, 220) or Color3.fromRGB(200, 205, 225), sky and Enum.Font.FredokaOne or Enum.Font.GothamMedium)
+	label(panel, "Touch the egg · OPEN ×1 / ×3 / ×9 / AUTO", UDim2.fromScale(0.1, many and 0.94 or 0.915), UDim2.fromScale(0.8, many and 0.05 or 0.07), sky and Color3.fromRGB(150, 110, 220) or Color3.fromRGB(200, 205, 225), sky and Enum.Font.FredokaOne or Enum.Font.GothamMedium)
 	table.insert(boards, { gui = gui, anchor = anchor, pop = pop, shown = false })
 end
 

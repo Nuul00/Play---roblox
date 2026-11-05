@@ -19,7 +19,7 @@ end
 -- В списке надетых лежат «коды»: id + ступень * 1000 (см. ShopConfig.Variants).
 local function owned(p, code)
 	local id, tier = ShopConfig.SplitPet(code)
-	if not Config.Pets[id] or (tier > 0 and not ShopConfig.Variants[tier]) then
+	if id ~= math.floor(id) or tier < 0 or not Config.Pets[id] or (tier > 0 and not ShopConfig.Variants[tier]) then
 		return 0
 	end
 	return p:GetAttribute(ShopConfig.OwnedAttr(id, tier)) or 0
@@ -133,6 +133,10 @@ function PlayerSystems.Fuse(p, tier: number, id: number): boolean
 	p:SetAttribute(toAttr, (p:GetAttribute(toAttr) or 0) + 1)
 	PlayerSystems.SetEquipped(p, PlayerSystems.GetEquipped(p)) -- снимет потраченных питомцев
 	PlayerSystems.OnHatched(p, ShopConfig.PetCode(id, tier))
+	-- потраченные копии могли освободить места в команде — заполняем лучшими
+	if #PlayerSystems.GetEquipped(p) < PlayerSystems.MaxEquipped(p) then
+		PlayerSystems.EquipBest(p)
+	end
 	notifyFn(p, v.Icon .. " " .. v.Name .. " " .. Config.Pets[id].Name .. " created! x" .. string.format("%g", mult(ShopConfig.PetCode(id, tier))), true)
 	return true
 end
@@ -162,7 +166,7 @@ end
 function PlayerSystems.CheckBadges(p)
 	local discovered = 0
 	for id = 1, #Config.Pets do
-		if owned(p, id) > 0 then
+		if not Config.Pets[id].Super and ShopConfig.Discovered(p, id) then
 			discovered += 1
 		end
 	end
@@ -241,7 +245,8 @@ function PlayerSystems.MagnetRadius(p): number
 	if p:GetAttribute("Pass_SuperMagnet") then
 		r *= 2 -- геймпасс «Super Magnet»
 	end
-	return r
+	return math.min(r, 160) -- больше мира не нужно: иначе можно стоять на месте и собирать всё
+
 end
 -- Магнит всегда в руках (панели инструментов Roblox нет): снять или надеть его можно только
 -- в магазине магнитов. Атрибут MagnetOff = true — игрок снял магнит, бонус радиуса не действует.

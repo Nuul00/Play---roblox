@@ -234,6 +234,8 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	acc = 0
 	local current = player:GetAttribute("CurrentWorld")
+	local cam = workspace.CurrentCamera
+	local camPos = cam and cam.CFrame.Position
 	for _, e in ipairs(coins) do
 		if e.world == current then
 			-- Скрипты миров при входе «проявляют» все детали (LocalTransparencyModifier = 0), а сервер
@@ -247,7 +249,7 @@ RunService.Heartbeat:Connect(function(dt)
 				end
 			end
 		end
-		if e.world == current and e.part.Transparency < 1 then
+		if e.world == current and e.part.Transparency < 1 and camPos and (e.part.Position - camPos).Magnitude < 110 then
 			local p = e.part.Position
 			e.model:PivotTo(CFrame.new(p + Vector3.new(0, math.sin(t * 2 + e.phase) * 0.3, 0)) * CFrame.Angles(0, t * 1.8 + e.phase, 0))
 		end

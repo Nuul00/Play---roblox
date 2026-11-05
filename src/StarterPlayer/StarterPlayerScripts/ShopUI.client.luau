@@ -143,9 +143,11 @@ gallery.Position = UDim2.fromOffset(18, 112)
 gallery.Size = UDim2.fromOffset(624, 456)
 gallery.Parent = panel
 local hint = label(panel, "Tap ✓ KEEP on a pet to auto-delete future copies of it (owned pets stay).", 18, 572, 624, 18, 12, Color3.fromRGB(205, 190, 225), Enum.Font.GothamMedium)
-local single = button(panel, "", 18, 598, 198, 52, Color3.fromRGB(130, 90, 220))
-local triple = button(panel, "", 226, 598, 210, 52, Color3.fromRGB(240, 140, 70))
-local auto = button(panel, "", 446, 598, 196, 52, Color3.fromRGB(70, 170, 110))
+-- ×1, ×3, ×9 и автооткрытие: кнопка ×9 нужна телефонам и геймпадам (клавиша T есть только на ПК)
+local single = button(panel, "", 18, 598, 146, 52, Color3.fromRGB(130, 90, 220))
+local triple = button(panel, "", 172, 598, 146, 52, Color3.fromRGB(240, 140, 70))
+local nine = button(panel, "", 326, 598, 146, 52, Color3.fromRGB(230, 80, 160))
+local auto = button(panel, "", 480, 598, 162, 52, Color3.fromRGB(70, 170, 110))
 
 -- Облачный пастельный стиль окна для яиц Sky Isles: светлый фон с градиентом розовый → небесный,
 -- белая обводка, пастельные кнопки и ячейки. Для остальных миров окно остаётся тёмным.
@@ -156,8 +158,8 @@ panelGrad.Color = PASTEL_BG
 panelGrad.Enabled = false
 local DARK_PANEL = panel.BackgroundColor3
 local BUTTON_COLORS = {
-	dark = { single = Color3.fromRGB(130, 90, 220), triple = Color3.fromRGB(240, 140, 70), auto = Color3.fromRGB(70, 170, 110) },
-	sky = { single = Color3.fromRGB(165, 140, 255), triple = Color3.fromRGB(255, 140, 200), auto = Color3.fromRGB(95, 195, 255) },
+	dark = { single = Color3.fromRGB(130, 90, 220), triple = Color3.fromRGB(240, 140, 70), nine = Color3.fromRGB(230, 80, 160), auto = Color3.fromRGB(70, 170, 110) },
+	sky = { single = Color3.fromRGB(165, 140, 255), triple = Color3.fromRGB(255, 140, 200), nine = Color3.fromRGB(255, 120, 170), auto = Color3.fromRGB(95, 195, 255) },
 }
 -- ===== Стиль мира (картинки HUD-скина) =====
 -- Рамка окна мира поверх краёв панели, фон и шапка в цветах мира, кнопки OPEN/AUTO — на
@@ -186,7 +188,7 @@ local function skinButton(b)
 	b.ZIndex = 4
 	return img
 end
-local tiles = { single = skinButton(single), triple = skinButton(triple), auto = skinButton(auto) }
+local tiles = { single = skinButton(single), triple = skinButton(triple), nine = skinButton(nine), auto = skinButton(auto) }
 header.ZIndex = 3 -- шапка (название, монеты, крестик) поверх рамки мира
 local currentSkin = nil
 local function applySkin(world)
@@ -204,11 +206,11 @@ local function applySkin(world)
 		headerGrad.Color = ColorSequence.new(skin.MenuTop, skin.MenuBottom)
 		title.TextColor3 = skin.TitleColor or WHITE
 		for key, img in pairs(tiles) do
-			img.Image = skin[key == "triple" and "Tile_Gold" or key == "single" and "Tile_Blue" or "Tile_Pink"] or ""
+			img.Image = skin[key == "triple" and "Tile_Gold" or key == "single" and "Tile_Blue" or key == "nine" and "Tile_Purple" or "Tile_Pink"] or ""
 			img.ImageColor3 = skin.Tint or WHITE
 			img.Visible = true
 		end
-		for _, b in ipairs({ single, triple, auto }) do
+		for _, b in ipairs({ single, triple, nine, auto }) do
 			b.BackgroundTransparency = 1
 			b:FindFirstChildOfClass("UIStroke").Enabled = false
 			b.TextColor3 = WHITE
@@ -221,7 +223,7 @@ local function applySkin(world)
 		for _, img in pairs(tiles) do
 			img.Visible = false
 		end
-		for _, b in ipairs({ single, triple, auto }) do
+		for _, b in ipairs({ single, triple, nine, auto }) do
 			b:FindFirstChildOfClass("UIStroke").Enabled = true
 			b.TextStrokeTransparency = 1
 		end
@@ -238,6 +240,7 @@ local function applyTheme(sky)
 	local set = sky and BUTTON_COLORS.sky or BUTTON_COLORS.dark
 	single.BackgroundColor3 = set.single
 	triple.BackgroundColor3 = set.triple
+	nine.BackgroundColor3 = set.nine
 	auto.BackgroundColor3 = set.auto
 	gallery.ScrollBarImageColor3 = sky and Color3.fromRGB(170, 140, 255) or Color3.fromRGB(205, 150, 255)
 end
@@ -245,7 +248,7 @@ end
 -- Плашка автооткрытия: видна, пока режим включён, даже когда окно скрыто анимацией.
 local autoChip = box(gui, 0, 0, 300, 46, Color3.fromRGB(40, 140, 90))
 autoChip.AnchorPoint = Vector2.new(0.5, 0)
-autoChip.Position = UDim2.new(0.5, 0, 0, 6)
+autoChip.Position = UDim2.new(0.5, 0, 0, 72) -- под плашкой событий (EventHUD)
 autoChip.ZIndex = 20
 autoChip.Visible = false
 stroke(autoChip, INK, 2.5, 0)
@@ -306,15 +309,15 @@ local function refresh()
 		cell.owned.TextColor3 = owned > 0 and (skyTheme and Color3.fromRGB(130, 110, 190) or Color3.fromRGB(205, 195, 225)) or (skyTheme and Color3.fromRGB(240, 120, 60) or Color3.fromRGB(255, 225, 90))
 	end
 	local waiting = os.clock() < busy
-	for _, pair in ipairs({ { single, 1 }, { triple, 3 } }) do
+	for _, pair in ipairs({ { single, 1 }, { triple, 3 }, { nine, 9 } }) do
 		local b, n = pair[1], pair[2]
 		local affordable = coins.Value >= egg.Cost * n
-		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d  [%s]\n💰 %s", n, n == 1 and "E" or "R", fmt(egg.Cost * n))
+		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d [%s]\n💰 %s", n, n == 1 and "E" or n == 3 and "R" or "T", fmt(egg.Cost * n))
 		b.Active = affordable and not waiting and not autoEgg
 		b.AutoButtonColor = b.Active and not currentSkin
 		if currentSkin then
 			b.BackgroundTransparency = 1
-			local img = tiles[b == single and "single" or "triple"]
+			local img = tiles[b == single and "single" or b == triple and "triple" or "nine"]
 			if img then
 				img.ImageTransparency = b.Active and 0 or 0.5
 			end
@@ -346,6 +349,9 @@ single.Activated:Connect(function()
 end)
 triple.Activated:Connect(function()
 	hatch(3)
+end)
+nine.Activated:Connect(function()
+	hatch(9)
 end)
 -- Клавиши, пока открыто окно яйца: E — ×1, R — ×3, T — ×9.
 local KEYS = { [Enum.KeyCode.E] = 1, [Enum.KeyCode.R] = 3, [Enum.KeyCode.T] = 9 }
@@ -1323,7 +1329,10 @@ function H.step(dt)
 		revealTitle.TextTransparency = 0
 		H.titleScale.Scale = 1
 		H.cleanup()
-		player:SetAttribute("UIScreen", "")
+		-- не закрываем окно, которое игрок открыл во время анимации
+		if player:GetAttribute("UIScreen") == "hatch" then
+			player:SetAttribute("UIScreen", "")
+		end
 	end
 end
 

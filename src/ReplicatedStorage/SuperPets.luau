@@ -8,6 +8,9 @@ local TIERS = {
 	{ Key = "Infinity", Odds = 30_000_000, Mult = 12, Scale = 1.32, Look = 3, Icon = "🌌" },
 }
 local WORLD_ORDER = { "island", "neon", "sky", "volcano", "galaxy", "frozen" }
+-- Id супер-питомцев ЗАКРЕПЛЕНЫ (они хранятся в профилях): 154 + (номер мира − 1) * 3 + (ступень − 1).
+-- Новых обычных питомцев добавлять с id 172 и дальше, порядок WORLD_ORDER не менять.
+local SUPER_BASE = 154
 
 return function(Config)
 	Config.SuperTiers = TIERS
@@ -17,13 +20,7 @@ return function(Config)
 		worlds[egg.World] = worlds[egg.World] or {}
 		table.insert(worlds[egg.World], egg)
 	end
-	local order = table.clone(WORLD_ORDER)
-	for w in pairs(worlds) do
-		if not table.find(order, w) then
-			table.insert(order, w)
-		end
-	end
-	for _, world in ipairs(order) do
+	for worldIndex, world in ipairs(WORLD_ORDER) do
 		local eggs = worlds[world]
 		if eggs then
 			-- Основа — самый сильный Secret-питомец мира (из последнего яйца).
@@ -40,7 +37,8 @@ return function(Config)
 				local b = Config.Pets[base]
 				local list = {}
 				for tierIndex, tier in ipairs(TIERS) do
-					local id = #Config.Pets + 1
+					local id = SUPER_BASE + (worldIndex - 1) * #TIERS + (tierIndex - 1)
+					assert(Config.Pets[id] == nil, "SuperPets: id " .. id .. " is taken")
 					Config.Pets[id] = {
 						Name = tier.Key .. " " .. b.Name,
 						Rarity = "Secret",

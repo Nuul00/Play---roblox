@@ -30,9 +30,18 @@ ray.FilterType = Enum.RaycastFilterType.Include
 local function groundAt(x: number, z: number): Vector3?
 	ray.FilterDescendantsInstances = { frozen }
 	local hit = workspace:Raycast(Vector3.new(x, CENTER.Y + 80, z), Vector3.new(0, -140, 0), ray)
-	return hit and hit.Position
+	-- не на горах и не внутри скал (Tripo-горы твёрдые): только земля у подножия
+	if not hit or hit.Instance:FindFirstAncestor("TripoModel") or hit.Position.Y > CENTER.Y + 8 then
+		return nil
+	end
+	return hit.Position
 end
 
+local Worlds = require(game:GetService("ReplicatedStorage"):WaitForChild("WorldsConfig"))
+local function unlocked(p, name)
+	local def = Worlds.Find(name)
+	return not def or (def.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(name)) == true
+end
 local function makeCrystal(pos: Vector3)
 	local m = Instance.new("Model")
 	m.Name = "FrostCrystal"
@@ -82,6 +91,9 @@ local function makeCrystal(pos: Vector3)
 		local stats = p and p:FindFirstChild("leaderstats")
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		if not (stats and root) or (root.Position - core.Position).Magnitude > 12 then
+			return
+		end
+		if not p:GetAttribute("ProfileReady") or not unlocked(p, "Frozen Peaks") then
 			return
 		end
 		taken = true

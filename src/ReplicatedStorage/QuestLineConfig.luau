@@ -62,7 +62,7 @@ Q.Steps = {
 	step(1, "Meadow Master", "Finish the chapter for a big prize!", { Type = "earn", N = 10000 }, { Coins = 3000, Hatch = 3, Bonus = 0.05 }),
 
 	-- ===== Глава 2: Neon District (яйца 4, 5, 6; прокачка до 25) =====
-	step(2, "Into the Neon", "Use the portal or the Teleport menu.", { Type = "world", World = "Neon District" }, { Coins = 1800 }),
+	step(2, "Into the Neon", "Unlock it in the TELEPORT menu (2K coins).", { Type = "world", World = "Neon District" }, { Coins = 1800 }),
 	step(2, "Neon Runner", "Neon kiosks sell higher levels.", { Type = "speed", N = 15 }, { Coins = 5000 }),
 	step(2, "Disco Fever", "Neon pets are way stronger!", { Type = "eggs", N = 5, Egg = 4 }, { Coins = 14000, Potion = "Luck" }),
 	step(2, "Double Trouble", "A chance for every coin to count twice.", { Type = "double", N = 5 }, { Coins = 40000 }),
@@ -74,12 +74,12 @@ Q.Steps = {
 	step(2, "Neon Tycoon", "Finish the chapter for a big prize!", { Type = "earn", N = 3e7 }, { Coins = 1.8e7, Hatch = 6, Bonus = 0.05 }),
 
 	-- ===== Глава 3: Sky Isles (яйца 7, 8, 9; прокачка до 50; первый ребёрс) =====
-	step(3, "Above the Clouds", "Travel up to the Sky Isles.", { Type = "world", World = "Sky Isles" }, { Coins = 9e7 }),
+	step(3, "Above the Clouds", "Unlock Sky Isles in TELEPORT (100M coins).", { Type = "world", World = "Sky Isles" }, { Coins = 9e7 }),
 	step(3, "Cloud Walker", "Sky kiosks go up to level 50.", { Type = "speed", N = 30 }, { Coins = 1.2e8 }),
 	step(3, "Cloud Egg", "Fluffy pets from the clouds!", { Type = "eggs", N = 5, Egg = 7 }, { Coins = 1.6e8, Potion = "Luck" }),
 	step(3, "Sky Magnet", "Pull in coins across the islands.", { Type = "magnet", N = 35 }, { Coins = 2.2e8 }),
 	step(3, "Celestial Call", "Celestial pets shine bright.", { Type = "eggs", N = 5, Egg = 8 }, { Coins = 3e8, Potion = "Coins" }),
-	step(3, "Magnet Collector", "Stronger magnets in the magnet shop.", { Type = "magnetTier", N = 15 }, { Coins = 4e8 }),
+	step(3, "Magnet Collector", "Buy Bubblegum Pop in the Sky magnet shop.", { Type = "magnetTier", N = 22 }, { Coins = 4e8 }),
 	step(3, "Fresh Start", "Rebirth for a permanent coin bonus!", { Type = "rebirth", N = 1 }, { Coins = 6e8, Potion = "Speed" }),
 	step(3, "Egg Frenzy", "Open any eggs you like!", { Type = "eggs", N = 50 }, { Coins = 7e8 }),
 	step(3, "Rainbow Dream", "Fuse 5 diamond pets in the Sky machine.", { Type = "variant", N = 1, Key = "Rainbow" }, { Coins = 1e9, Potion = "Luck" }),
@@ -87,34 +87,34 @@ Q.Steps = {
 	step(3, "Sky Baron", "Finish the chapter for a big prize!", { Type = "earn", N = 5e9 }, { Coins = 1.8e9, Hatch = 9, Bonus = 0.05 }),
 
 	-- ===== Глава 4: Frozen Peaks (яйца 16, 17, 18; прокачка до 75) =====
-	step(4, "Frozen Frontier", "Travel to the icy peaks.", { Type = "world", World = "Frozen Peaks" }, { Coins = 3e9 }),
+	step(4, "Frozen Frontier", "Unlock Frozen Peaks in TELEPORT (5B coins).", { Type = "world", World = "Frozen Peaks" }, { Coins = 3e9 }),
 	step(4, "Snowflake Hunt", "Snowy pets love the cold.", { Type = "eggs", N = 10, Egg = 16 }, { Coins = 5e9, Potion = "Luck" }),
 	step(4, "Ice Skater", "Frozen kiosks go up to level 75.", { Type = "speed", N = 55 }, { Coins = 1e10 }),
 	step(4, "Aurora Lights", "Pets glowing like the northern sky.", { Type = "eggs", N = 10, Egg = 17 }, { Coins = 1.7e10, Potion = "Coins" }),
-	step(4, "Prism Power", "Buy the Prism Diamond magnet.", { Type = "magnetTier", N = 20 }, { Coins = 2.9e10 }),
+	step(4, "Prism Power", "Buy Aurora Wave in the Frozen magnet shop.", { Type = "magnetTier", N = 35 }, { Coins = 2.9e10 }),
 	step(4, "Double Chill", "Double coins, double fun.", { Type = "double", N = 60 }, { Coins = 5e10 }),
 	step(4, "Pet Professor", "Your Pet Index keeps growing!", { Type = "discover", N = 60 }, { Coins = 9e10 }),
 	step(4, "Glacier Giant", "The mightiest egg of the peaks.", { Type = "eggs", N = 10, Egg = 18 }, { Coins = 1.5e11, Potion = "Luck" }),
 	step(4, "Frozen Fortune", "Finish the chapter for a big prize!", { Type = "earn", N = 3e11 }, { Coins = 2.7e11, Hatch = 18, Bonus = 0.05 }),
 
 	-- ===== Глава 5: Magma Volcano (яйца 10, 11, 12; прокачка до 100) =====
-	step(5, "Heat Wave", "Travel to the Magma Volcano.", { Type = "world", World = "Magma Volcano" }, { Coins = 6e11 }),
+	step(5, "Heat Wave", "Unlock Magma Volcano in TELEPORT (400B coins).", { Type = "world", World = "Magma Volcano" }, { Coins = 6e11 }),
 	step(5, "Ember Awakening", "Fire pets burn with power.", { Type = "eggs", N = 10, Egg = 10 }, { Coins = 9e11, Potion = "Luck" }),
 	step(5, "Lava Sprinter", "Volcano kiosks go up to level 100.", { Type = "speed", N = 80 }, { Coins = 1.3e12 }),
-	step(5, "Molten Magnet", "Bigger magnets, bigger hauls.", { Type = "magnetTier", N = 25 }, { Coins = 1.9e12 }),
+	step(5, "Molten Magnet", "Buy Magma Core in the Volcano magnet shop.", { Type = "magnetTier", N = 45 }, { Coins = 1.9e12 }),
 	step(5, "Magma Core", "Hatch pets forged in lava.", { Type = "eggs", N = 10, Egg = 11 }, { Coins = 2.8e12, Potion = "Coins" }),
 	step(5, "Reborn in Fire", "Rebirth twice to grow even stronger.", { Type = "rebirth", N = 2 }, { Coins = 4e12, Potion = "Speed" }),
-	step(5, "Income Inferno", "Max out your income power.", { Type = "income", N = 90 }, { Coins = 6e12 }),
+	step(5, "Income Inferno", "Push your income to level 90.", { Type = "income", N = 90 }, { Coins = 6e12 }),
 	step(5, "Lava Hunter", "Collect coins among the lava rivers.", { Type = "collect", N = 3000 }, { Coins = 9e12 }),
 	step(5, "Obsidian Secret", "The darkest egg hides a dragon.", { Type = "eggs", N = 10, Egg = 12 }, { Coins = 1.3e13, Potion = "Luck" }),
 	step(5, "Volcano Lord", "Finish the chapter for a big prize!", { Type = "earn", N = 3e13 }, { Coins = 1.9e13, Hatch = 12, Bonus = 0.05 }),
 
 	-- ===== Глава 6: Cosmic Galaxy (яйца 13, 14, 15; прокачка до 125) =====
-	step(6, "Lift Off", "Blast off to the Cosmic Galaxy!", { Type = "world", World = "Cosmic Galaxy" }, { Coins = 4e13 }),
+	step(6, "Lift Off", "Unlock Cosmic Galaxy in TELEPORT (25T coins)!", { Type = "world", World = "Cosmic Galaxy" }, { Coins = 4e13 }),
 	step(6, "Rocket Science", "Space pets from another world.", { Type = "eggs", N = 10, Egg = 13 }, { Coins = 6e13, Potion = "Luck" }),
 	step(6, "Star Speed", "Galaxy kiosks go up to level 125.", { Type = "speed", N = 110 }, { Coins = 1.2e14 }),
 	step(6, "Nebula Drift", "Pets born in the stars.", { Type = "eggs", N = 10, Egg = 14 }, { Coins = 2.1e14, Potion = "Coins" }),
-	step(6, "Cosmic Magnet", "The sweetest magnet of the skies.", { Type = "magnetTier", N = 30 }, { Coins = 4e14 }),
+	step(6, "Cosmic Magnet", "Buy Nebula Swirl in the Galaxy magnet shop.", { Type = "magnetTier", N = 55 }, { Coins = 4e14 }),
 	step(6, "Egg Legend", "Open any eggs you like!", { Type = "eggs", N = 500 }, { Coins = 7e14, Potion = "Luck" }),
 	step(6, "Supernova", "The ultimate egg of the universe!", { Type = "eggs", N = 10, Egg = 15 }, { Coins = 1.2e15, Potion = "Luck" }),
 	step(6, "Master of the Universe", "The final quest. Become a legend!", { Type = "earn", N = 2e16 }, { Coins = 2.2e15, Hatch = 15, Bonus = 0.10 }),

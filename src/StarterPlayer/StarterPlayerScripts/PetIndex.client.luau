@@ -17,7 +17,7 @@ local rarityColors = {
 	Epic = Color3.fromRGB(180, 90, 255),
 	Legendary = Color3.fromRGB(255, 190, 40),
 	Mythic = Color3.fromRGB(255, 80, 160),
-	Secret = Color3.fromRGB(20, 20, 20),
+	Secret = Color3.fromRGB(190, 120, 255),
 }
 local paper = Color3.fromRGB(250, 238, 210)
 local ink = Color3.fromRGB(80, 55, 35)
@@ -126,10 +126,13 @@ list.BorderSizePixel = 0
 list.ScrollBarThickness = 5
 list.CanvasSize = UDim2.fromOffset(0, #Config.Eggs * 58 + 8)
 list.Parent = left
-for id, egg in ipairs(Config.Eggs) do
+-- Порядок миров как в игре: Frozen (16-18) идёт после Sky, до Volcano.
+local EGG_ORDER = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 18, 10, 11, 12, 13, 14, 15 }
+for pos, id in ipairs(EGG_ORDER) do
+	local egg = Config.Eggs[id]
 	local b = Instance.new("TextButton")
 	b.Text = ""
-	b.Position = UDim2.fromOffset(18, 4 + (id - 1) * 58)
+	b.Position = UDim2.fromOffset(18, 4 + (pos - 1) * 58)
 	b.Size = UDim2.fromOffset(352, 50)
 	b.BackgroundColor3 = Color3.fromRGB(255, 250, 235)
 	b.Parent = list
@@ -185,8 +188,22 @@ stroke(rewardButton, 3, ink)
 local selected = 1
 local cards = {}
 
+-- Считаем все ступени (обычный + Golden/Diamond/Rainbow): слияние не «закрывает» питомца.
+local VARIANT_KEYS = { "", "Gold", "Diamond", "Rainbow" }
 local function owned(petId)
-	return player:GetAttribute("PetOwned" .. petId) or 0
+	local n = 0
+	for _, key in ipairs(VARIANT_KEYS) do
+		n += player:GetAttribute((key == "" and "PetOwned" or ("Pet" .. key)) .. petId) or 0
+	end
+	return n
+end
+local function short(n)
+	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+		if n >= u[1] then
+			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
+		end
+	end
+	return tostring(math.floor(n))
 end
 local function progress(eggId)
 	local n = 0
@@ -279,11 +296,11 @@ local function showPage(eggId)
 		rewardButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 		rewardButton.AutoButtonColor = false
 	elseif n >= max then
-		rewardButton.Text = "🎁 CLAIM +" .. reward .. " COINS"
+		rewardButton.Text = "🎁 CLAIM +" .. short(reward) .. " COINS"
 		rewardButton.BackgroundColor3 = Color3.fromRGB(70, 190, 90)
 		rewardButton.AutoButtonColor = true
 	else
-		rewardButton.Text = string.format("Collect all %d pets → +%d coins", max, reward)
+		rewardButton.Text = string.format("Collect all %d pets → +%s coins", max, short(reward))
 		rewardButton.BackgroundColor3 = Color3.fromRGB(190, 150, 100)
 		rewardButton.AutoButtonColor = false
 	end
@@ -342,10 +359,16 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 		book.Visible = false
 	end
 end)
+local pendingPage = false
 player.AttributeChanged:Connect(function(name)
-	if book.Visible and (name:sub(1, 8) == "PetOwned" or name:sub(1, 12) == "IndexClaimed") then
-		refreshTabs()
-		showPage(selected)
+	if book.Visible and (name:sub(1, 3) == "Pet" or name:sub(1, 12) == "IndexClaimed") and not pendingPage then
+		-- пачка из 9 яиц меняет много атрибутов: перерисовываем страницу один раз
+		pendingPage = true
+		task.defer(function()
+			pendingPage = false
+			refreshTabs()
+			showPage(selected)
+		end)
 	end
 end)
 

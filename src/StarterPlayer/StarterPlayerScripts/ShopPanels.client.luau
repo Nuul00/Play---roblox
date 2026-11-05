@@ -137,19 +137,19 @@ local function juicyIcon(parent, icon, color, ringColor, size, pos)
 	return holder, ring
 end
 
+-- Цены, показанные в окне: окно перерисовываем, только когда монеты пересекают одну из них.
+local shownPrices = {}
+local recording = false
 local function fmt(n)
-	if n >= 1e15 then
-		return string.format("%.1fQa", n / 1e15)
-	elseif n >= 1e12 then
-		return string.format("%.1fT", n / 1e12)
-	elseif n >= 1e9 then
-		return string.format("%.1fB", n / 1e9)
-	elseif n >= 1e6 then
-		return string.format("%.1fM", n / 1e6)
-	elseif n >= 1e3 then
-		return string.format("%.1fK", n / 1e3):gsub("%.0K", "K")
+	if recording then
+		table.insert(shownPrices, n)
 	end
-	return string.format("%g", n)
+	for _, u in ipairs({ { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+		if n >= u[1] then
+			return (string.format("%.1f", n / u[1]):gsub("%.0$", "")) .. u[2]
+		end
+	end
+	return string.format("%g", math.floor(n))
 end
 
 local window = Instance.new("Frame")
@@ -449,7 +449,17 @@ local function renderMagnets()
 	end
 end
 
+local renderInner
 local function render()
+	table.clear(shownPrices)
+	recording = true
+	local ok, err = pcall(renderInner)
+	recording = false
+	if not ok then
+		warn("[ShopPanels] " .. tostring(err))
+	end
+end
+function renderInner()
 	-- Панель магнитов не удаляем (кэш), всё остальное пересобираем.
 	for _, c in ipairs(body:GetChildren()) do
 		if c ~= magnetPanel then
@@ -517,7 +527,17 @@ local function dirty()
 		window:SetAttribute("Dirty", true)
 	end
 end
-coins.Changed:Connect(dirty)
+local lastCoins = coins.Value
+coins.Changed:Connect(function(v)
+	local lo, hi = math.min(lastCoins, v), math.max(lastCoins, v)
+	lastCoins = v
+	for _, price in ipairs(shownPrices) do
+		if price > lo and price <= hi then
+			dirty()
+			return
+		end
+	end
+end)
 speed.Changed:Connect(dirty)
 player.AttributeChanged:Connect(function(name)
 	if name == "MagnetLevel" or name == "IncomeLevel" or name == "DoubleLevel" or name == "MagnetTier" or name == "MagnetEquipped" or name == "MagnetOff" or name:sub(1, 6) == "Potion" or name == "MagnetRadius" then

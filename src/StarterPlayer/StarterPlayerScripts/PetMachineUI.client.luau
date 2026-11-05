@@ -547,9 +547,11 @@ end)
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
-	for _, model in ipairs(spinning) do
-		if model.Parent then
-			model:PivotTo(CFrame.Angles(0, t * 0.8, 0))
+	if window.Visible then -- скрытое окно не крутит модели
+		for _, model in ipairs(spinning) do
+			if model.Parent then
+				model:PivotTo(CFrame.Angles(0, t * 0.8, 0))
+			end
 		end
 	end
 	if window.Visible then

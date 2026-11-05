@@ -119,7 +119,7 @@ end
 task.defer(function()
 	task.wait(3)
 	scanTrees(world)
-	scanIslets()
+	-- островки Sky Isles анимирует SkyIslesFX (два скрипта давали дрожание)
 	for _, d in ipairs(world:GetDescendants()) do
 		addLight(d)
 	end

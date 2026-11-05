@@ -130,8 +130,9 @@ do
 		for _, m in ipairs(w[2]) do
 			id += 1
 			local k = id - 30
-			local price = math.floor(150000000 * 1.6 ^ k / 1000 + 0.5) * 1000
-			ShopConfig.Magnets[id] = magnet(id, m[1], price, 100 + 6 * k, {
+			-- Баланс 2026-11: дороже #30 (3B) и в тон ценам яиц мира; радиус растёт мягче.
+			local price = math.floor(3e9 * 1.45 ^ k / 1000 + 0.5) * 1000
+			ShopConfig.Magnets[id] = magnet(id, m[1], price, 100 + 2.5 * k, {
 				World = w[1],
 				Body = m[2],
 				Material = M.SmoothPlastic,
@@ -169,7 +170,9 @@ ShopConfig.Badges = {}
 do
 	local ROMAN = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" }
 	local function short(n)
-		if n >= 1e15 then
+		if n >= 1e18 then
+			return (n / 1e18) .. "Qi"
+		elseif n >= 1e15 then
 			return (n / 1e15) .. "Qa"
 		elseif n >= 1e12 then
 			return (n / 1e12) .. "T"
@@ -189,7 +192,7 @@ do
 		{ "LifetimeEarned", "💎", "Rich", "Earn %s coins in total", { 100000, 1e8, 1e10, 1e12, 1e14, 1e16, 1e18 }, { "Rich" } },
 		{ "PetsDiscovered", "📖", "Explorer", "Discover %s pets", { 12, 25, 40, 60, 80, 100 }, { "Index12" } },
 		{ "Rebirths", "🔄", "Reborn", "Rebirth %s times", { 1, 3, 5, 10, 15, 25, 35, 50 }, {} },
-		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 15, 20, 25, 30 }, {} },
+		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 20, 30, 40, 50, 60 }, {} },
 	}
 	for _, c in ipairs(CHAINS) do
 		for i, goal in ipairs(c[5]) do
@@ -278,6 +281,16 @@ function ShopConfig.OwnedAttr(id: number, tier: number): string
 		return "PetOwned" .. id
 	end
 	return "Pet" .. ShopConfig.Variants[tier].Key .. id
+end
+-- Питомец открыт в индексе, если есть хоть одна его ступень (обычный, Golden, Diamond, Rainbow):
+-- слияние в машине не должно «закрывать» питомца обратно.
+function ShopConfig.Discovered(p: Player, id: number): boolean
+	for tier = 0, #ShopConfig.Variants do
+		if (p:GetAttribute(ShopConfig.OwnedAttr(id, tier)) or 0) > 0 then
+			return true
+		end
+	end
+	return false
 end
 function ShopConfig.VariantMult(tier: number): number
 	local v = ShopConfig.Variants[tier]
