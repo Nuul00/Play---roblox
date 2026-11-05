@@ -139,7 +139,7 @@ claim.MouseLeave:Connect(function()
 end)
 
 local function shortNum(n)
-	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
+	for _, u in ipairs({ { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
 		if n >= u[1] then
 			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
 		end

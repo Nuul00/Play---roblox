@@ -33,7 +33,7 @@ local WHITE = Color3.new(1, 1, 1)
 local INK = Color3.fromRGB(28, 20, 44)
 
 local function fmt(n)
-	for _, u in ipairs({ { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" } }) do
+	for _, u in ipairs({ { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" } }) do
 		if n >= u[1] then
 			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
 		end
@@ -197,6 +197,22 @@ local function skinButton(b)
 end
 local tiles = { single = skinButton(single), triple = skinButton(triple), nine = skinButton(nine), auto = skinButton(auto) }
 header.ZIndex = 3 -- шапка (название, монеты, крестик) поверх рамки мира
+-- Компактное окно для телефонов: галерея ниже (она прокручивается), кнопки выше — окно влезает в низкий экран.
+local compact = false
+local function setCompact(on)
+	if on == compact then
+		return
+	end
+	compact = on
+	local dy = on and 156 or 0
+	panel.Size = UDim2.fromOffset(660, 664 - dy)
+	gallery.Size = UDim2.fromOffset(624, 456 - dy)
+	hint.Position = UDim2.fromOffset(18, 572 - dy)
+	for key, b in pairs({ single = single, triple = triple, nine = nine, auto = auto }) do
+		b.Position = UDim2.fromOffset(b.Position.X.Offset, 598 - dy)
+		tiles[key].Position = b.Position - UDim2.fromOffset(8, 7)
+	end
+end
 local currentSkin = nil
 local function applySkin(world)
 	local skin = Skins[WORLD_OF[world] or ""]
@@ -378,7 +394,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, processed
 	end
 end)
 -- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
-hint.Text = "⌨ E ×1  R ×3  T ×9   ·   ✓ KEEP = auto-delete copies   ·   🌌 Super Secrets in every egg: 1 in 3M · 10M · 30M"
+hint.Text = "⌨ E ×1  R ×3  T ×9   ·   ✓ KEEP = auto-delete copies   ·   🌌 Super Secrets: 1 in 3M · 10M · 30M · 🔮 Mythic 1 in 15M · 🌠 Cosmic 1 in 50M"
 hint.TextScaled = true
 do
 	local c = Instance.new("UITextSizeConstraint")
@@ -1406,9 +1422,10 @@ RunService.RenderStepped:Connect(function(dt)
 	if camera then
 		local size = camera.ViewportSize
 		-- телефоны (низкий экран): окно крупнее, украшения рамки могут чуть уйти за край — кнопки важнее
-		local small = size.Y < 500
+		local small = size.Y < 520
+		setCompact(small)
 		local padY = small and 6 or 60
-		scale.Scale = currentSkin and math.min(1, (size.X - 28) / 800, (size.Y - padY) / (small and 680 or 830)) or math.min(1, (size.X - 28) / 660, (size.Y - padY) / (small and 640 or 664))
+		scale.Scale = currentSkin and math.min(1, (size.X - 28) / 800, (size.Y - padY) / (small and 560 or 830)) or math.min(1, (size.X - 28) / 660, (size.Y - padY) / (small and 512 or 664))
 		revealScale.Scale = math.min(1, (size.X - 28) / 900, (size.Y - 40) / 520)
 	end
 	scan += dt

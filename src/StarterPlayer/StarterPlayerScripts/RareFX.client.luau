@@ -114,7 +114,7 @@ ReplicatedStorage:WaitForChild("SuperSecretAnnounce").OnClientEvent:Connect(func
 		local channels = game:GetService("TextChatService"):FindFirstChild("TextChannels")
 		local general = channels and channels:FindFirstChild("RBXGeneral")
 		if general then
-			local hex = ({ "#9BE8FF", "#FFD34A", "#FF7AF2" })[def.Super] or "#FFFFFF"
+			local hex = ({ "#9BE8FF", "#FFD34A", "#FF7AF2", "#B98CFF", "#7DF9FF" })[def.Super] or "#FFFFFF"
 			general:DisplaySystemMessage(string.format('<font color="%s"><b>%s %s hatched %s! (%s)</b></font>', hex, Config.SuperTiers[def.Super].Icon, name, def.Name, Config.FormatOdds(def.Odds)))
 		end
 	end)

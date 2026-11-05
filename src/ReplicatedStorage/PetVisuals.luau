@@ -35,7 +35,7 @@ function PetVisuals.Build(id)
   local model,parts=PetVisuals.Build(def.Base)
   model.Name=def.Name
   pcall(function() model:ScaleTo(model:GetScale()*(def.Scale or 1.4)) end)
-  PetVisuals.ApplyVariant(model,def.Look or 3,true)
+  if type(def.Look)=="string" then PetVisuals.ApplyLook(model,def.Look) else PetVisuals.ApplyVariant(model,def.Look or 3,true) end
   model:SetAttribute("SuperSecret",def.Super)
   if type(parts)=="table" then
    for _,e in ipairs(parts) do if type(e)=="table" and e.part and e.transparency and e.transparency<0.95 then e.transparency=e.part.Transparency end end
@@ -187,6 +187,80 @@ function PetVisuals.ApplyVariant(model: Model, tier: number, withParticles: bool
 		sparkle.Parent = model.PrimaryPart
 	end
 end
+-- ===== Облики мифических секреток (SuperPets.SPECIALS) =====
+local LOOKS = {
+	hologram = { material = Enum.Material.ForceField, color = Color3.fromRGB(90, 230, 255), sparkle = Color3.fromRGB(150, 245, 255) },
+	void = { material = Enum.Material.Glass, color = Color3.fromRGB(25, 10, 45), transparency = 0.05, sparkle = Color3.fromRGB(190, 80, 255) },
+	starlight = { material = Enum.Material.Neon, color = Color3.fromRGB(210, 230, 255), sparkle = Color3.fromRGB(255, 255, 255) },
+	frost = { material = Enum.Material.Ice, color = Color3.fromRGB(170, 225, 255), sparkle = Color3.fromRGB(230, 250, 255) },
+	molten = { material = Enum.Material.CrackedLava, color = Color3.fromRGB(255, 110, 30), sparkle = Color3.fromRGB(255, 190, 70), fire = true },
+	shadow = { material = Enum.Material.Slate, color = Color3.fromRGB(28, 22, 40), sparkle = Color3.fromRGB(120, 90, 255) },
+	prism = { material = Enum.Material.Glass, transparency = 0.1, sparkle = Color3.fromRGB(255, 255, 255), rainbow = true },
+	blossom = { material = Enum.Material.Foil, color = Color3.fromRGB(255, 160, 215), sparkle = Color3.fromRGB(255, 220, 240) },
+}
+function PetVisuals.ApplyLook(model: Model, key: string)
+	local v = LOOKS[key]
+	if not v then
+		return
+	end
+	local parts = {}
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") then
+			table.insert(parts, d)
+		elseif d:IsA("SurfaceAppearance") or d:IsA("Decal") or d:IsA("Texture") then
+			d:Destroy()
+		end
+	end
+	for k, part in ipairs(parts) do
+		if part:IsA("MeshPart") then
+			part.TextureID = ""
+		end
+		if part.Transparency < 0.95 then
+			part.Material = v.material
+			if v.color then
+				part.Color = v.color:Lerp(Color3.new(1, 1, 1), (k % 3) * 0.06)
+			else
+				part.Color = Color3.fromHSV((k * 0.13) % 1, 0.6, 1)
+			end
+			if v.transparency then
+				part.Transparency = math.max(part.Transparency, v.transparency)
+			end
+		end
+	end
+	if v.rainbow then
+		model:SetAttribute("Rainbow", true)
+	end
+	model:SetAttribute("SpecialLook", key)
+	local root = model.PrimaryPart
+	if root then
+		local sparkle = Instance.new("ParticleEmitter")
+		sparkle.Name = "SpecialSparkle"
+		sparkle.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sparkle.Color = ColorSequence.new(v.sparkle)
+		sparkle.LightEmission = 1
+		sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
+		sparkle.Transparency = NumberSequence.new(0.1, 1)
+		sparkle.Lifetime = NumberRange.new(0.8, 1.6)
+		sparkle.Rate = 14
+		sparkle.Speed = NumberRange.new(0.5, 1.5)
+		sparkle.SpreadAngle = Vector2.new(180, 180)
+		sparkle.Parent = root
+		if v.fire then
+			local fire = sparkle:Clone()
+			fire.Name = "SpecialFire"
+			fire.Texture = "rbxasset://textures/particles/fire_main.dds"
+			fire.Color = ColorSequence.new(Color3.fromRGB(255, 200, 80), Color3.fromRGB(255, 70, 20))
+			fire.Acceleration = Vector3.new(0, 3, 0)
+			fire.Parent = root
+		end
+		local light = Instance.new("PointLight")
+		light.Color = v.sparkle
+		light.Range = 8
+		light.Brightness = 1.5
+		light.Parent = root
+	end
+end
+
 -- Код питомца (id + ступень*1000) → модель с нужным видом.
 function PetVisuals.BuildCode(code: number, withParticles: boolean?)
 	local id = code % 1000

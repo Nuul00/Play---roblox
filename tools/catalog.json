@@ -1167,7 +1167,7 @@
         "Visual": "VolcanoPup",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 160,
+        "Multiplier": 480,
         "Color": [
           255,
           120,
@@ -1180,7 +1180,7 @@
         "Visual": "VolcanoBunny",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 185,
+        "Multiplier": 555,
         "Color": [
           255,
           120,
@@ -1193,7 +1193,7 @@
         "Visual": "VolcanoKitty",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 215,
+        "Multiplier": 645,
         "Color": [
           255,
           120,
@@ -1206,7 +1206,7 @@
         "Visual": "VolcanoFox",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 255,
+        "Multiplier": 765,
         "Color": [
           255,
           120,
@@ -1219,7 +1219,7 @@
         "Visual": "VolcanoSalamander",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 320,
+        "Multiplier": 960,
         "Color": [
           255,
           120,
@@ -1232,7 +1232,7 @@
         "Visual": "VolcanoWolf",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 420,
+        "Multiplier": 1260,
         "Color": [
           255,
           120,
@@ -1245,7 +1245,7 @@
         "Visual": "VolcanoDragon",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 900,
+        "Multiplier": 2700,
         "Color": [
           255,
           120,
@@ -1258,7 +1258,7 @@
         "Visual": "VolcanoPhoenix",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 2200,
+        "Multiplier": 6600,
         "Color": [
           255,
           120,
@@ -1286,7 +1286,7 @@
         "Visual": "VolcanoBear",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 250,
+        "Multiplier": 750,
         "Color": [
           230,
           60,
@@ -1299,7 +1299,7 @@
         "Visual": "VolcanoGolem",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 290,
+        "Multiplier": 870,
         "Color": [
           230,
           60,
@@ -1312,7 +1312,7 @@
         "Visual": "VolcanoOwl",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 340,
+        "Multiplier": 1020,
         "Color": [
           230,
           60,
@@ -1325,7 +1325,7 @@
         "Visual": "VolcanoTurtle",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 400,
+        "Multiplier": 1200,
         "Color": [
           230,
           60,
@@ -1338,7 +1338,7 @@
         "Visual": "VolcanoCrab",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 500,
+        "Multiplier": 1500,
         "Color": [
           230,
           60,
@@ -1351,7 +1351,7 @@
         "Visual": "VolcanoLion",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 650,
+        "Multiplier": 1950,
         "Color": [
           230,
           60,
@@ -1364,7 +1364,7 @@
         "Visual": "VolcanoHydra",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 1400,
+        "Multiplier": 4200,
         "Color": [
           230,
           60,
@@ -1377,7 +1377,7 @@
         "Visual": "VolcanoTitan",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 3500,
+        "Multiplier": 10500,
         "Color": [
           230,
           60,
@@ -1405,7 +1405,7 @@
         "Visual": "VolcanoPanther",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 400,
+        "Multiplier": 1200,
         "Color": [
           130,
           60,
@@ -1418,7 +1418,7 @@
         "Visual": "VolcanoImp",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 460,
+        "Multiplier": 1380,
         "Color": [
           130,
           60,
@@ -1431,7 +1431,7 @@
         "Visual": "VolcanoBat",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 540,
+        "Multiplier": 1620,
         "Color": [
           130,
           60,
@@ -1444,7 +1444,7 @@
         "Visual": "VolcanoUnicorn",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 640,
+        "Multiplier": 1920,
         "Color": [
           130,
           60,
@@ -1457,7 +1457,7 @@
         "Visual": "VolcanoSerpent",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 800,
+        "Multiplier": 2400,
         "Color": [
           130,
           60,
@@ -1470,7 +1470,7 @@
         "Visual": "VolcanoGriffin",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 1050,
+        "Multiplier": 3150,
         "Color": [
           130,
           60,
@@ -1483,7 +1483,7 @@
         "Visual": "VolcanoSpirit",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 2200,
+        "Multiplier": 6600,
         "Color": [
           130,
           60,
@@ -1496,7 +1496,7 @@
         "Visual": "VolcanoEclipseDragon",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 5500,
+        "Multiplier": 16500,
         "Color": [
           130,
           60,
@@ -1524,7 +1524,7 @@
         "Visual": "GalaxyPup",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 650,
+        "Multiplier": 1950,
         "Color": [
           120,
           170,
@@ -1537,7 +1537,7 @@
         "Visual": "GalaxyCat",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 750,
+        "Multiplier": 2250,
         "Color": [
           120,
           170,
@@ -1550,7 +1550,7 @@
         "Visual": "GalaxyBunny",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 880,
+        "Multiplier": 2640,
         "Color": [
           120,
           170,
@@ -1563,7 +1563,7 @@
         "Visual": "GalaxyBlob",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 1040,
+        "Multiplier": 3120,
         "Color": [
           120,
           170,
@@ -1576,7 +1576,7 @@
         "Visual": "GalaxyHamster",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 1300,
+        "Multiplier": 3900,
         "Color": [
           120,
           170,
@@ -1589,7 +1589,7 @@
         "Visual": "GalaxyFox",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 1700,
+        "Multiplier": 5100,
         "Color": [
           120,
           170,
@@ -1602,7 +1602,7 @@
         "Visual": "GalaxyRobot",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 3600,
+        "Multiplier": 10800,
         "Color": [
           120,
           170,
@@ -1615,7 +1615,7 @@
         "Visual": "GalaxyWhale",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 9000,
+        "Multiplier": 27000,
         "Color": [
           120,
           170,
@@ -1643,7 +1643,7 @@
         "Visual": "GalaxyKitty",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 1000,
+        "Multiplier": 3000,
         "Color": [
           220,
           110,
@@ -1656,7 +1656,7 @@
         "Visual": "GalaxyTurtle",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 1150,
+        "Multiplier": 3450,
         "Color": [
           220,
           110,
@@ -1669,7 +1669,7 @@
         "Visual": "GalaxyOwl",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 1350,
+        "Multiplier": 4050,
         "Color": [
           220,
           110,
@@ -1682,7 +1682,7 @@
         "Visual": "GalaxyJelly",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 1600,
+        "Multiplier": 4800,
         "Color": [
           220,
           110,
@@ -1695,7 +1695,7 @@
         "Visual": "GalaxyBear",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 2000,
+        "Multiplier": 6000,
         "Color": [
           220,
           110,
@@ -1708,7 +1708,7 @@
         "Visual": "GalaxyWolf",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 2600,
+        "Multiplier": 7800,
         "Color": [
           220,
           110,
@@ -1721,7 +1721,7 @@
         "Visual": "GalaxyDragon",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 5500,
+        "Multiplier": 16500,
         "Color": [
           220,
           110,
@@ -1734,7 +1734,7 @@
         "Visual": "GalaxyPhoenix",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 14000,
+        "Multiplier": 42000,
         "Color": [
           220,
           110,
@@ -1762,7 +1762,7 @@
         "Visual": "GalaxyCat",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 1600,
+        "Multiplier": 4800,
         "Color": [
           255,
           215,
@@ -1775,7 +1775,7 @@
         "Visual": "GalaxyLion",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 1850,
+        "Multiplier": 5550,
         "Color": [
           255,
           215,
@@ -1788,7 +1788,7 @@
         "Visual": "GalaxyPegasus",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 2150,
+        "Multiplier": 6450,
         "Color": [
           255,
           215,
@@ -1801,7 +1801,7 @@
         "Visual": "GalaxyKraken",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 2550,
+        "Multiplier": 7650,
         "Color": [
           255,
           215,
@@ -1814,7 +1814,7 @@
         "Visual": "GalaxyGuardian",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 3200,
+        "Multiplier": 9600,
         "Color": [
           255,
           215,
@@ -1827,7 +1827,7 @@
         "Visual": "GalaxyUnicorn",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 4200,
+        "Multiplier": 12600,
         "Color": [
           255,
           215,
@@ -1840,7 +1840,7 @@
         "Visual": "GalaxyDragon",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 9000,
+        "Multiplier": 27000,
         "Color": [
           255,
           215,
@@ -1853,7 +1853,7 @@
         "Visual": "GalaxySpirit",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 22000,
+        "Multiplier": 66000,
         "Color": [
           255,
           215,
@@ -1881,7 +1881,7 @@
         "Visual": "FrozenBunny",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 110,
+        "Multiplier": 143,
         "Color": [
           200,
           235,
@@ -1894,7 +1894,7 @@
         "Visual": "FrozenPenguin",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 125,
+        "Multiplier": 162,
         "Color": [
           200,
           235,
@@ -1907,7 +1907,7 @@
         "Visual": "FrozenFox",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 145,
+        "Multiplier": 188,
         "Color": [
           200,
           235,
@@ -1920,7 +1920,7 @@
         "Visual": "FrozenOwl",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 175,
+        "Multiplier": 228,
         "Color": [
           200,
           235,
@@ -1933,7 +1933,7 @@
         "Visual": "FrozenPolarCub",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 220,
+        "Multiplier": 286,
         "Color": [
           200,
           235,
@@ -1946,7 +1946,7 @@
         "Visual": "FrozenKitten",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 285,
+        "Multiplier": 370,
         "Color": [
           200,
           235,
@@ -1959,7 +1959,7 @@
         "Visual": "FrozenFairy",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 610,
+        "Multiplier": 793,
         "Color": [
           200,
           235,
@@ -1972,7 +1972,7 @@
         "Visual": "FrozenSpirit",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 1500,
+        "Multiplier": 1950,
         "Color": [
           200,
           235,
@@ -2000,7 +2000,7 @@
         "Visual": "FrozenAuroraFox",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 130,
+        "Multiplier": 247,
         "Color": [
           110,
           230,
@@ -2013,7 +2013,7 @@
         "Visual": "FrozenHusky",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 150,
+        "Multiplier": 285,
         "Color": [
           110,
           230,
@@ -2026,7 +2026,7 @@
         "Visual": "FrozenSeal",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 175,
+        "Multiplier": 332,
         "Color": [
           110,
           230,
@@ -2039,7 +2039,7 @@
         "Visual": "FrozenReindeer",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 210,
+        "Multiplier": 399,
         "Color": [
           110,
           230,
@@ -2052,7 +2052,7 @@
         "Visual": "FrozenNarwhal",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 260,
+        "Multiplier": 494,
         "Color": [
           110,
           230,
@@ -2065,7 +2065,7 @@
         "Visual": "FrozenWolf",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 340,
+        "Multiplier": 646,
         "Color": [
           110,
           230,
@@ -2078,7 +2078,7 @@
         "Visual": "FrozenPhoenix",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 730,
+        "Multiplier": 1387,
         "Color": [
           110,
           230,
@@ -2091,7 +2091,7 @@
         "Visual": "FrozenAuroraDragon",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 1800,
+        "Multiplier": 3420,
         "Color": [
           110,
           230,
@@ -2119,7 +2119,7 @@
         "Visual": "FrozenYeti",
         "Rarity": "Common",
         "Chance": 30,
-        "Multiplier": 145,
+        "Multiplier": 377,
         "Color": [
           90,
           170,
@@ -2132,7 +2132,7 @@
         "Visual": "FrozenGolem",
         "Rarity": "Common",
         "Chance": 25,
-        "Multiplier": 170,
+        "Multiplier": 442,
         "Color": [
           90,
           170,
@@ -2145,7 +2145,7 @@
         "Visual": "FrozenTiger",
         "Rarity": "Uncommon",
         "Chance": 18,
-        "Multiplier": 195,
+        "Multiplier": 507,
         "Color": [
           90,
           170,
@@ -2158,7 +2158,7 @@
         "Visual": "FrozenMammoth",
         "Rarity": "Uncommon",
         "Chance": 12,
-        "Multiplier": 235,
+        "Multiplier": 611,
         "Color": [
           90,
           170,
@@ -2171,7 +2171,7 @@
         "Visual": "FrozenPenguinKing",
         "Rarity": "Rare",
         "Chance": 8,
-        "Multiplier": 290,
+        "Multiplier": 754,
         "Color": [
           90,
           170,
@@ -2184,7 +2184,7 @@
         "Visual": "FrozenGriffin",
         "Rarity": "Epic",
         "Chance": 5,
-        "Multiplier": 380,
+        "Multiplier": 988,
         "Color": [
           90,
           170,
@@ -2197,7 +2197,7 @@
         "Visual": "FrozenDragon",
         "Rarity": "Legendary",
         "Chance": 1.9,
-        "Multiplier": 820,
+        "Multiplier": 2132,
         "Color": [
           90,
           170,
@@ -2210,7 +2210,7 @@
         "Visual": "FrozenQueen",
         "Rarity": "Secret",
         "Chance": 0.1,
-        "Multiplier": 2000,
+        "Multiplier": 5200,
         "Color": [
           90,
           170,

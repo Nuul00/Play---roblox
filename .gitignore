@@ -10,3 +10,8 @@ roblox.yml
 Thumbs.db
 .DS_Store
 _to_delete/
+
+# Исходники моделей Tripo (тяжёлые, в git не храним)
+assets/source_glb/
+.idea/
+tools/backups/

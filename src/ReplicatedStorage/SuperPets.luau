@@ -12,6 +12,20 @@ local WORLD_ORDER = { "island", "neon", "sky", "volcano", "galaxy", "frozen" }
 -- Новых обычных питомцев добавлять с id 172 и дальше, порядок WORLD_ORDER не менять.
 local SUPER_BASE = 154
 
+-- Мифические секретки (id 172-179, закреплены): 8 уникальных питомцев с собственным обликом.
+-- Шесть — по одному на мир (1 на 15 млн), две «космические» — из любого яйца (1 на 50 млн).
+-- Base — чья модель берётся, Look — особый облик (PetVisuals.ApplyLook), Mult — от силы основы.
+local SPECIALS = {
+	{ Id = 172, Name = "Blossom Hologram", Base = 42, Look = "hologram", World = "island", Odds = 15_000_000, Mult = 25 },
+	{ Id = 173, Name = "Glitch Core", Base = 53, Look = "void", World = "neon", Odds = 15_000_000, Mult = 25 },
+	{ Id = 174, Name = "Starlight Leviathan", Base = 73, Look = "starlight", World = "sky", Odds = 15_000_000, Mult = 25 },
+	{ Id = 175, Name = "Frostbite Wyvern", Base = 145, Look = "frost", World = "frozen", Odds = 15_000_000, Mult = 25 },
+	{ Id = 176, Name = "Molten Colossus", Base = 97, Look = "molten", World = "volcano", Odds = 15_000_000, Mult = 25 },
+	{ Id = 177, Name = "Void Phoenix", Base = 121, Look = "shadow", World = "galaxy", Odds = 15_000_000, Mult = 25 },
+	{ Id = 178, Name = "Prism Phoenix King", Base = 89, Look = "prism", World = nil, Odds = 50_000_000, Mult = 120 },
+	{ Id = 179, Name = "Empress of Eternity", Base = 81, Look = "blossom", World = nil, Odds = 50_000_000, Mult = 600 },
+}
+
 return function(Config)
 	Config.SuperTiers = TIERS
 	Config.SuperByWorld = {}
@@ -61,6 +75,32 @@ return function(Config)
 		end
 	end
 	-- Бросок супер-питомца: luckMult умножает шансы (геймпассы удачи). Возвращает id или nil.
+	-- Мифические и космические секретки.
+	Config.SuperTiers = table.clone(TIERS)
+	Config.SuperTiers[4] = { Key = "Mythic", Icon = "🔮" }
+	Config.SuperTiers[5] = { Key = "Cosmic", Icon = "🌠" }
+	Config.Specials = {}
+	for _, sp in ipairs(SPECIALS) do
+		local b = Config.Pets[sp.Base]
+		assert(b and Config.Pets[sp.Id] == nil, "SuperPets: special id " .. sp.Id)
+		Config.Pets[sp.Id] = {
+			Name = sp.Name,
+			Rarity = "Secret",
+			Multiplier = b.Multiplier * sp.Mult,
+			Visual = b.Visual,
+			Color = b.Color,
+			EggId = b.EggId,
+			Base = sp.Base,
+			Super = sp.World and 4 or 5,
+			SuperKey = sp.World and "Mythic" or "Cosmic",
+			Odds = sp.Odds,
+			Scale = sp.World and 1.3 or 1.45,
+			Look = sp.Look,
+			World = sp.World,
+			Special = true,
+		}
+		table.insert(Config.Specials, sp.Id)
+	end
 	function Config.RollSuper(eggId, r01, luckMult)
 		local egg = Config.Eggs[eggId]
 		local list = egg and Config.SuperByWorld[egg.World]
@@ -68,6 +108,16 @@ return function(Config)
 			return nil
 		end
 		local acc = 0
+		-- сначала самые редкие: мифическая секретка мира и две космические (из любого яйца)
+		for _, id in ipairs(Config.Specials) do
+			local def = Config.Pets[id]
+			if def.World == nil or def.World == egg.World then
+				acc += (luckMult or 1) / def.Odds
+				if r01 < acc then
+					return id
+				end
+			end
+		end
 		for tierIndex = #TIERS, 1, -1 do
 			acc += (luckMult or 1) / TIERS[tierIndex].Odds
 			if r01 < acc then

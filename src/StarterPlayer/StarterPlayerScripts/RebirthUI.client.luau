@@ -79,7 +79,7 @@ local function tseq(points)
 end
 local function fmt(n)
 	n = tonumber(n) or 0
-	local units = { { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
+	local units = { { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
 	for _, u in ipairs(units) do
 		if n >= u[1] then
 			local v = n / u[1]
