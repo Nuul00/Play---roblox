@@ -208,6 +208,26 @@ ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(bat
 		end
 	end
 	if best >= ShopConfig.RarityRank.Legendary then
-		cinematic(best, bestRarity)
+		-- Ждём момента, когда яйцо в окне ShopUI лопается (сигнал HatchBurst), чтобы вспышка
+		-- и тряска совпали с раскалыванием. Если сигнала нет — показываем через несколько секунд.
+		local ui = player.PlayerGui:FindFirstChild("WorkshopUI")
+		local signal = ui and ui:FindFirstChild("HatchBurst")
+		local done, conn = false, nil
+		local function go()
+			if done then
+				return
+			end
+			done = true
+			if conn then
+				conn:Disconnect()
+			end
+			cinematic(best, bestRarity)
+		end
+		if signal and signal:IsA("BindableEvent") then
+			conn = signal.Event:Connect(go)
+			task.delay(9, go)
+		else
+			go()
+		end
 	end
 end)

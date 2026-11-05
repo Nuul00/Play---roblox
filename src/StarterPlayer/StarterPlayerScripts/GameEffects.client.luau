@@ -270,14 +270,30 @@ RunService.RenderStepped:Connect(function(dt)
 			if root and humanoid and humanoid.Health > 0 and (root.Position - eye).Magnitude < 220 then
 				local _, yaw = root.CFrame:ToOrientation()
 				local offset = slotOffsets[pet.slot] or slotOffsets[2]
-				local bob = math.sin(t * 3 + pet.slot * 1.3) * 0.2
-				local target = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0) * CFrame.new(offset.X, -1.1 + bob, offset.Z)
+				local target = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0) * CFrame.new(offset.X, -1.1, offset.Z)
 				if not pet.frame or (pet.frame.Position - target.Position).Magnitude > 50 then
 					pet.frame = target
 				else
 					pet.frame = pet.frame:Lerp(target, 1 - math.exp(-9 * dt))
 				end
-				pet.model:PivotTo(pet.frame)
+				-- «Живое» движение без костей: на бегу питомец скачет (частота от скорости), наклоняется
+				-- вперёд и переваливается с боку на бок, при приземлении чуть кивает; стоя — плавно
+				-- покачивается и иногда оглядывается. Переход между режимами плавный (pet.move 0..1).
+				local v = root.AssemblyLinearVelocity
+				local speed = Vector2.new(v.X, v.Z).Magnitude
+				local moving = speed > 2 and 1 or 0
+				pet.move = (pet.move or 0) + (moving - (pet.move or 0)) * (1 - math.exp(-6 * dt))
+				pet.phase = (pet.phase or pet.slot * 1.1) + dt * math.clamp(speed * 0.55, 7, 15) * pet.move
+				local m = pet.move
+				local s = math.sin(pet.phase)
+				local hop = math.abs(s) * 0.85 * m
+				local land = (1 - math.abs(s)) ^ 4 -- 1 в момент касания земли
+				local idle = 1 - m
+				local bob = math.sin(t * 2.2 + pet.slot * 1.3) * 0.18 * idle
+				local pitch = (-0.16 + 0.14 * land) * m + math.sin(t * 1.7 + pet.slot) * 0.04 * idle
+				local roll = s * 0.16 * m -- знак меняется на каждом прыжке: вперевалку
+				local look = math.sin(t * 0.45 + pet.slot * 2.1) ^ 3 * 0.55 * idle
+				pet.model:PivotTo(pet.frame * CFrame.new(0, hop + bob, 0) * CFrame.Angles(pitch, look, roll))
 			else
 				pet.frame = nil
 				pet.model:PivotTo(hidden)
