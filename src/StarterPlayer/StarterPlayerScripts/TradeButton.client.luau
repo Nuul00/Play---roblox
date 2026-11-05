@@ -40,14 +40,78 @@ gloss.Size = UDim2.fromScale(0.8, 0.3)
 gloss.Parent = btn
 Instance.new("UICorner", gloss).CornerRadius = UDim.new(0, 10)
 
-local icon = Instance.new("TextLabel")
-icon.BackgroundTransparency = 1
-icon.AnchorPoint = Vector2.new(0.5, 0)
-icon.Position = UDim2.new(0.5, 0, 0, 4)
-icon.Size = UDim2.fromOffset(46, 46)
-icon.Text = "🤝"
-icon.TextScaled = true
-icon.Parent = btn
+-- 3D-иконка: два питомца текущего мира меняются местами по кругу (ViewportFrame).
+local Config = require(game:GetService("ReplicatedStorage"):WaitForChild("GameConfig"))
+local PetVisuals = require(game:GetService("ReplicatedStorage"):WaitForChild("PetVisuals"))
+local RunService = game:GetService("RunService")
+local WORLD_KEY = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
+
+local view = Instance.new("ViewportFrame")
+view.BackgroundTransparency = 1
+view.AnchorPoint = Vector2.new(0.5, 0)
+view.Position = UDim2.new(0.5, 0, 0, 0)
+view.Size = UDim2.fromOffset(76, 56)
+view.Ambient = Color3.fromRGB(210, 210, 220)
+view.LightColor = Color3.new(1, 1, 1)
+view.LightDirection = Vector3.new(-1, -1.5, -2)
+view.Parent = btn
+local vworld = Instance.new("WorldModel")
+vworld.Parent = view
+local vcam = Instance.new("Camera")
+vcam.FieldOfView = 34
+vcam.Parent = view
+view.CurrentCamera = vcam
+local fallbackIcon = Instance.new("TextLabel") -- если модели не собрались
+fallbackIcon.BackgroundTransparency = 1
+fallbackIcon.Size = UDim2.fromScale(1, 1)
+fallbackIcon.Text = "🤝"
+fallbackIcon.TextScaled = true
+fallbackIcon.Visible = false
+fallbackIcon.Parent = view
+
+local pets = {} -- { model, size }
+local function petsFor(worldName)
+	local key = WORLD_KEY[worldName or ""] or "island"
+	local first
+	for id = 1, 30 do
+		local e = Config.Eggs[id]
+		if e and e.World == key then first = e break end
+	end
+	if not first then return { 1, 6 } end
+	local pool = first.Pool
+	return { pool[1].Pet, pool[math.max(1, #pool - 2)].Pet }
+end
+local function buildPets(worldName)
+	vworld:ClearAllChildren()
+	table.clear(pets)
+	for _, id in petsFor(worldName) do
+		local ok, model = pcall(PetVisuals.Build, id)
+		if ok and model then
+			for _, d in model:GetDescendants() do
+				if d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Script") or d:IsA("LocalScript") or d:IsA("BillboardGui") then d:Destroy() end
+			end
+			local _, size = model:GetBoundingBox()
+			local k = 2.4 / math.max(size.X, size.Y, size.Z, 0.1)
+			pcall(function() model:ScaleTo(model:GetScale() * k) end)
+			model.Parent = vworld
+			table.insert(pets, model)
+		end
+	end
+	fallbackIcon.Visible = #pets == 0
+	vcam.CFrame = CFrame.lookAt(Vector3.new(0, 1.3, -5.6), Vector3.new(0, 0.2, 0))
+end
+
+local t = 0
+RunService.RenderStepped:Connect(function(dt)
+	if #pets == 0 or not btn.Visible then return end
+	t += dt
+	-- питомцы ходят по кругу друг напротив друга: один уходит назад, другой выходит вперёд
+	for i, m in pets do
+		local a = t * 1.1 + (i - 1) * math.pi
+		local pos = Vector3.new(math.cos(a) * 1.55, 0.1 * math.sin(t * 6 + i), math.sin(a) * 1.1)
+		m:PivotTo(CFrame.new(pos) * CFrame.Angles(0, math.cos(a) > 0 and 0.5 or -0.5, 0))
+	end
+end)
 
 local label = Instance.new("TextLabel")
 label.BackgroundTransparency = 1
@@ -112,6 +176,7 @@ st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 st.Parent = tip
 
 local function refresh()
+	buildPets(player:GetAttribute("CurrentWorld"))
 	local skin = Skins[player:GetAttribute("CurrentWorld") or ""]
 	grad.Color = ColorSequence.new(skin and skin.MenuTop or Color3.fromRGB(90, 110, 140), skin and skin.MenuBottom or Color3.fromRGB(45, 60, 85))
 	rim.Color = skin and skin.RimColor or Color3.fromRGB(30, 30, 40)
