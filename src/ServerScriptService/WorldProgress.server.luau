@@ -218,7 +218,7 @@ local function decorate(board,neon)
  -- объёмная табличка: основа + светящийся кант + текст спереди и сзади
  local plateCf=top*CFrame.new(0,2.6,0)
  local plate=dpart(m,"TitlePlate",Vector3.new(math.min(w*0.55,24),4.4,1.6),plateCf,e.Plate,Enum.Material.SmoothPlastic)
- dpart(m,"TitleRim",plate.Size+Vector3.new(0.6,0.6,-0.4),plateCf*CFrame.new(0,0,0.1),neon and Color3.fromRGB(255,90,220) or Color3.new(1,1,1),Enum.Material.Neon)
+ dpart(m,"TitleRim",plate.Size+Vector3.new(0.6,0.6,-0.4),plateCf*CFrame.new(0,0,0.1),board:GetAttribute("TrimColor") or (neon and Color3.fromRGB(255,90,220) or Color3.new(1,1,1)),Enum.Material.Neon)
  for _,face in ipairs({Enum.NormalId.Front,Enum.NormalId.Back}) do
   local g=Instance.new("SurfaceGui");g.Face=face;g.CanvasSize=Vector2.new(500,82);g.LightInfluence=0;g.Brightness=1.4;g.MaxDistance=160;g.Parent=plate
   local t=Instance.new("TextLabel");t.BackgroundTransparency=1;t.Size=UDim2.fromScale(1,1);t.Font=Enum.Font.FredokaOne;t.TextScaled=true
@@ -260,17 +260,52 @@ local function decorate(board,neon)
 end
 -- Доски есть в обоих мирах: одинаковые таблицы рисуются на каждой найденной доске.
 local city=world:WaitForChild("NeonCity")
+-- Meadow и Neon: доски стоят в плейсе. Sky/Frozen/Volcano/Galaxy: строит LeaderboardBuilder (свой стиль каждого мира).
+local zones={world,city}
+do
+ task.wait(2) -- миры строит GameServer на старте; даём монетам и декору появиться, чтобы место нашлось честно
+ local ok,extra=pcall(function() return require(script.Parent:WaitForChild("LeaderboardBuilder")).Build(world) end)
+ if ok then for _,z in ipairs(extra) do table.insert(zones,z) end else warn("[Leaderboards]",extra) end
+end
+local function zoneBoard(zone,name)
+ if zone==world or zone==city then return zone:FindFirstChild(name) end
+ return zone:FindFirstChild(name,true)
+end
+-- Лёгкая анимация досок Meadow (листики) и Neon (пульс неоновых рамок) — у остальных миров своя из LeaderboardBuilder.
+local function themeOldBoard(zone,board)
+ if zone==world then
+  local src=Instance.new("Part");src.Name="LeafFX";src.Anchored=true;src.CanCollide=false;src.CanQuery=false;src.CanTouch=false;src.Transparency=1
+  src.Size=Vector3.new(board.Size.X,0.2,2);src.CFrame=board.CFrame*CFrame.new(0,board.Size.Y/2+1.5,-1);src.Parent=board.Parent
+  local e=Instance.new("ParticleEmitter");e.Texture="rbxasset://textures/particles/sparkles_main.dds"
+  e.Color=ColorSequence.new(Color3.fromRGB(150,230,110),Color3.fromRGB(255,200,90));e.LightEmission=0.4;e.Rate=2.5
+  e.Lifetime=NumberRange.new(3,5);e.Speed=NumberRange.new(0.3,0.8);e.SpreadAngle=Vector2.new(60,60);e.EmissionDirection=Enum.NormalId.Bottom
+  e.Acceleration=Vector3.new(0.4,-0.5,0);e.RotSpeed=NumberRange.new(-90,90);e.Rotation=NumberRange.new(0,360)
+  e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,0.35),NumberSequenceKeypoint.new(1,0.2)})
+  e.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.1),NumberSequenceKeypoint.new(0.85,0.2),NumberSequenceKeypoint.new(1,1)});e.Parent=src
+ elseif zone==city then
+  -- неоновые детали рамки этой доски (BoardCoinsFrame и т.п.) мягко пульсируют на клиенте
+  local frame=zone:FindFirstChild(board.Name.."Frame")
+  for _,d in ipairs(frame and frame:GetDescendants() or {}) do
+   if d:IsA("BasePart") and d.Material==Enum.Material.Neon then game:GetService("CollectionService"):AddTag(d,"BoardPulse") end
+  end
+  if frame and frame:IsA("BasePart") and frame.Material==Enum.Material.Neon then game:GetService("CollectionService"):AddTag(frame,"BoardPulse") end
+ end
+end
 for _,def in ipairs(defs) do
  def.lists={};def.subtitles={}
- for _,zone in ipairs({world,city}) do
-  local board=zone:FindFirstChild(def.Part)
+ for _,zone in ipairs(zones) do
+  local board=zoneBoard(zone,def.Part)
   if board then
    local neon=zone==city
+   local noLight=neon or board:GetAttribute("NoLight")==true
+   local titleColor=board:GetAttribute("TitleColor") or (neon and Color3.fromRGB(255,120,230) or Color3.fromRGB(255,220,133))
+   local subColor=board:GetAttribute("SubColor") or (neon and Color3.fromRGB(120,235,255) or nil)
    local gui=Instance.new("SurfaceGui")
    gui.Name="Rankings";gui.Face=Enum.NormalId.Front;gui.CanvasSize=Vector2.new(860,360);gui.MaxDistance=130;gui.Active=true;gui.Parent=board
-   if neon then gui.LightInfluence=0 end
-   label(gui,def.Title,UDim2.fromOffset(0,8),UDim2.fromOffset(860,45),32,neon and Color3.fromRGB(255,120,230) or Color3.fromRGB(255,220,133))
-   table.insert(def.subtitles,label(gui,persistent and "GLOBAL · refreshes every 120s" or "THIS SERVER · publish for global rankings",UDim2.fromOffset(0,55),UDim2.fromOffset(860,30),18,neon and Color3.fromRGB(120,235,255) or nil))
+   if noLight then gui.LightInfluence=0 end
+   label(gui,def.Title,UDim2.fromOffset(0,8),UDim2.fromOffset(860,45),32,titleColor)
+   table.insert(def.subtitles,label(gui,persistent and "GLOBAL · refreshes every 120s" or "THIS SERVER · publish for global rankings",UDim2.fromOffset(0,55),UDim2.fromOffset(860,30),18,subColor))
+   pcall(themeOldBoard,zone,board)
    local list=Instance.new("ScrollingFrame")
    list.Position=UDim2.fromOffset(25,95);list.Size=UDim2.fromOffset(810,250);list.BackgroundTransparency=1;list.BorderSizePixel=0;list.ScrollBarThickness=8;list.Parent=gui
    table.insert(def.lists,list)
@@ -369,7 +404,7 @@ local function brighten(podium)
 end
 -- Под каждой доской свой пьедестал (Podium_BoardCoins и т.д.) с топ-3 именно этой доски.
 local function updatePodiums(def,rows)
- for _,zone in ipairs({world,city}) do
+ for _,zone in ipairs(zones) do
   local podium=zone:FindFirstChild("Podium_"..def.Part)
   if podium then
    pcall(brighten,podium)
@@ -394,7 +429,7 @@ local function updatePodiums(def,rows)
       npc.Parent=podium
       local top=step.Position+Vector3.new(0,step.Size.Y/2,0)
       if step:IsA("Part") and step.Shape==Enum.PartType.Cylinder then top=step.Position+Vector3.new(0,step.Size.X/2,0) end
-      AvatarPose.Place(npc,top,CFrame.Angles(0,0,0),top.Y,false)
+      AvatarPose.Place(npc,top,CFrame.Angles(0,podium:GetAttribute("Yaw") or 0,0),top.Y,false)
       pcall(AvatarPose.Emote,npc,EMOTES[place])
      end
     end

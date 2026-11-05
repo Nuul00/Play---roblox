@@ -1,29 +1,92 @@
--- Крутит и покачивает 3D-эмблемы над досками лидеров (тег BoardEmblem, атрибуты Spin °/с и Bob studs).
--- Только вблизи камеры, чтобы не тратить кадр на далёкие миры.
+-- Лёгкие анимации досок лидеров. Всё считается только вблизи камеры.
+--   BoardFloat (Model): доска парит — покачивание вверх-вниз (Bob), наклон (Sway, °), скорость (Speed). Sky, Galaxy.
+--   BoardEmblem (Part): эмблема над доской крутится (Spin °/с) и покачивается (Bob). Если она внутри
+--                       парящей доски — движется вместе с ней.
+--   BoardPulse (Part):  неоновый кант мягко «дышит» (Neon-рамки, лава в Volcano).
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
-local items = {}
-local function add(p)
-	if p:IsA("BasePart") then
-		items[p] = { base = p.CFrame, spin = p:GetAttribute("Spin") or 0, bob = p:GetAttribute("Bob") or 0.35 }
+local RANGE = 180
+local rigs, emblems, pulses = {}, {}, {}
+
+local function rigOf(p)
+	local m = p:FindFirstAncestorOfClass("Model")
+	while m do
+		if CollectionService:HasTag(m, "BoardFloat") then return m end
+		m = m.Parent and m.Parent:FindFirstAncestorOfClass("Model")
+	end
+	return nil
+end
+local function addRig(m)
+	if m:IsA("Model") then
+		-- base берём позже, когда доска (PrimaryPart) уже пришла с сервера: модель реплицируется раньше деталей
+		rigs[m] = { base = nil, bob = m:GetAttribute("Bob") or 0.6, sway = math.rad(m:GetAttribute("Sway") or 1), speed = m:GetAttribute("Speed") or 0.6, phase = m:GetAttribute("Phase") or 0 }
 	end
 end
-for _, p in CollectionService:GetTagged("BoardEmblem") do add(p) end
-CollectionService:GetInstanceAddedSignal("BoardEmblem"):Connect(add)
-CollectionService:GetInstanceRemovedSignal("BoardEmblem"):Connect(function(p) items[p] = nil end)
+local function addEmblem(p)
+	if not p:IsA("BasePart") then return end
+	local rig = rigOf(p)
+	if rig and not rigs[rig] then addRig(rig) end
+	-- для эмблем на парящих досках смещение относительно доски считаем в первом кадре (rel)
+	emblems[p] = { spin = p:GetAttribute("Spin") or 0, bob = p:GetAttribute("Bob") or 0.35, rig = rig, base = (not rig) and p.CFrame or nil }
+end
+local function addPulse(p)
+	if p:IsA("BasePart") then pulses[p] = { t0 = p.Transparency, phase = math.random() * 6 } end
+end
+
+for _, m in CollectionService:GetTagged("BoardFloat") do addRig(m) end
+for _, p in CollectionService:GetTagged("BoardEmblem") do addEmblem(p) end
+for _, p in CollectionService:GetTagged("BoardPulse") do addPulse(p) end
+CollectionService:GetInstanceAddedSignal("BoardFloat"):Connect(addRig)
+CollectionService:GetInstanceAddedSignal("BoardEmblem"):Connect(function(p) task.defer(addEmblem, p) end)
+CollectionService:GetInstanceAddedSignal("BoardPulse"):Connect(addPulse)
+CollectionService:GetInstanceRemovedSignal("BoardFloat"):Connect(function(m) rigs[m] = nil end)
+CollectionService:GetInstanceRemovedSignal("BoardEmblem"):Connect(function(p) emblems[p] = nil end)
+CollectionService:GetInstanceRemovedSignal("BoardPulse"):Connect(function(p) pulses[p] = nil end)
 
 local t = 0
+local current = {} -- текущая поза парящих досок в этом кадре
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
 	local cam = workspace.CurrentCamera
 	if not cam then return end
 	local cp = cam.CFrame.Position
-	for p, d in items do
-		if not p.Parent then items[p] = nil continue end
-		if (d.base.Position - cp).Magnitude < 180 then
+	for m, d in rigs do
+		if not m.Parent then rigs[m] = nil continue end
+		if not d.base then
+			if not m.PrimaryPart then continue end
+			d.base = m:GetPivot()
+		end
+		if (d.base.Position - cp).Magnitude < RANGE then
+			local w = t * d.speed + d.phase
+			local cf = d.base * CFrame.new(0, math.sin(w * 2) * d.bob, 0) * CFrame.Angles(math.sin(w * 1.3) * d.sway * 0.5, 0, math.sin(w) * d.sway)
+			m:PivotTo(cf)
+			current[m] = cf
+		else
+			current[m] = nil
+		end
+	end
+	for p, d in emblems do
+		if not p.Parent then emblems[p] = nil continue end
+		local anchor
+		if d.rig then
+			local r = rigs[d.rig]
+			local rc = current[d.rig] or (r and r.base)
+			if not rc then continue end
+			if not d.rel then d.rel = rc:ToObjectSpace(p.CFrame) end
+			anchor = rc * d.rel
+		else
+			anchor = d.base
+		end
+		if anchor and (anchor.Position - cp).Magnitude < RANGE then
 			local y = math.sin(t * 2) * d.bob
-			p.CFrame = CFrame.new(d.base.Position + Vector3.new(0, y, 0)) * CFrame.Angles(0, math.rad(d.spin * t), 0) * d.base.Rotation
+			p.CFrame = CFrame.new(anchor.Position + Vector3.new(0, y, 0)) * CFrame.Angles(0, math.rad(d.spin * t), 0) * anchor.Rotation
+		end
+	end
+	for p, d in pulses do
+		if not p.Parent then pulses[p] = nil continue end
+		if (p.Position - cp).Magnitude < RANGE then
+			p.Transparency = math.clamp(d.t0 + 0.18 + math.sin(t * 2.2 + d.phase) * 0.18, 0, 0.9)
 		end
 	end
 end)
