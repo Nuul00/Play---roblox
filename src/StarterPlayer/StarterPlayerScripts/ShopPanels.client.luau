@@ -392,6 +392,8 @@ local function renderPotions()
 end
 
 local lastTier = nil
+local ZONE_WORLD = { island = "Meadow Isles", sky = "Sky Isles", frozen = "Frozen Peaks", volcano = "Magma Volcano", galaxy = "Cosmic Galaxy" }
+local lastShopWorld = nil
 local function renderMagnets()
 	title.Text = MAGNET_TITLES[magnetZone or ""] or "🧲 MAGNET SHOP"
 	if not magnetPanel then
@@ -410,8 +412,15 @@ local function renderMagnets()
 	local ownedTier = player:GetAttribute("MagnetTier") or 1
 	local equipped = player:GetAttribute("MagnetOff") and 0 or (player:GetAttribute("MagnetEquipped") or 1)
 	table.clear(spinning)
+	-- Каждый магазин показывает только магниты своего мира (+ надетый, чтобы его можно было снять).
+	local shopWorld = ZONE_WORLD[magnetZone or "island"] or "Meadow Isles"
+	if lastShopWorld ~= shopWorld then
+		lastShopWorld = shopWorld
+		magnetArea.CanvasPosition = Vector2.zero
+	end
 	for i, def in ipairs(ShopConfig.Magnets) do
 		local c = magnetCards[i]
+		c.card.Visible = (def.World or "Meadow Isles") == shopWorld or i == equipped
 		c.card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
 		local text, color
 		if i == equipped then
