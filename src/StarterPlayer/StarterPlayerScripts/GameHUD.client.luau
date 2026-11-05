@@ -122,6 +122,7 @@ end
 for i,m in ipairs(modes) do
  local b=button(settings,m[2],UDim2.fromOffset(120,70),UDim2.fromOffset(20+(i-1)*130,110));b.BackgroundColor3=m[3];b.TextSize=17
  modeStrokes[m[1]]=b:FindFirstChildOfClass("UIStroke")
+ if modeStrokes[m[1]] then modeStrokes[m[1]].ApplyStrokeMode=Enum.ApplyStrokeMode.Border end -- рамка выбранного режима — по краю кнопки, а не вокруг букв
  modeButtons[m[1]]=b
  b.Activated:Connect(function() applyTime(m[1]) end)
 end
@@ -165,7 +166,7 @@ local function update()
   end
  end
  local function ab(n) for _,u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do if n>=u[1] then return (string.format("%.2f",n/u[1]):gsub("%.?0+$",""))..u[2] end end return tostring(math.floor(n)) end
- content.Text=string.format("Coins                  %s\nSpeed                  %d  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%s\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",ab(stats.Coins.Value),Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",ab(player:GetAttribute("PetBonus") or 1),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,total,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
+ content.Text=string.format("Coins                  %s\nSpeed                  %g  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%s\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",ab(stats.Coins.Value),Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,(player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0)),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",ab(player:GetAttribute("PetBonus") or 1),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,total,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
 end
 -- Панель статистики пересобираем, только когда она открыта (монеты меняются десятки раз в секунду).
 local statsPanel=screens and screens.stats

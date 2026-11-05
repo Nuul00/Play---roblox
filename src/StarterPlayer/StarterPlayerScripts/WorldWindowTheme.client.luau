@@ -215,7 +215,8 @@ local function decorate(f: Frame, set)
 	else
 		for key, c in pairs(CORNER) do
 			local emoji = set[key]
-			if emoji then
+			-- в правом верхнем углу у всех окон кнопка закрытия — украшение её закрывало
+			if emoji and key ~= "tr" then
 				local l = Instance.new("TextLabel")
 				l.Name = "Deco"
 				l.BackgroundTransparency = 1

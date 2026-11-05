@@ -198,7 +198,8 @@ local function attach(part: BasePart, worldName: string)
 	end
 	local entry = { part = part, model = m, parts = parts, guis = guis, phase = math.random() * 6, world = worldName }
 	local function sync()
-		local visible = part.Transparency < 1
+		-- монета видна только в своём мире (иначе 3D-монеты висят в пустоте, пока мир скрыт)
+		local visible = part.Transparency < 1 and game:GetService("Players").LocalPlayer:GetAttribute("CurrentWorld") == worldName
 		for _, p in ipairs(parts) do
 			p.LocalTransparencyModifier = visible and 0 or 1
 		end
@@ -210,6 +211,7 @@ local function attach(part: BasePart, worldName: string)
 		end
 	end)
 	sync()
+	entry.sync = sync
 	table.insert(coins, entry)
 end
 
@@ -228,6 +230,11 @@ task.defer(function()
 end)
 
 local t = 0
+game:GetService("Players").LocalPlayer:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
+	for _, e in ipairs(coins) do
+		e.sync()
+	end
+end)
 
 -- Вращение и лёгкое парение — только в Frozen Peaks и 20 раз в секунду.
 local acc = 0
