@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local Config = require(RS:WaitForChild("GameConfig"))
 local PetVisuals = require(RS:WaitForChild("PetVisuals"))
+local Skins = require(RS:WaitForChild("HudSkins"))
 local coins = player:WaitForChild("leaderstats"):WaitForChild("Coins")
 local buy = RS:WaitForChild("GameShopBuy")
 local action = RS:WaitForChild("GameAction")
@@ -153,6 +154,75 @@ local BUTTON_COLORS = {
 	dark = { single = Color3.fromRGB(130, 90, 220), triple = Color3.fromRGB(240, 140, 70), auto = Color3.fromRGB(70, 170, 110) },
 	sky = { single = Color3.fromRGB(165, 140, 255), triple = Color3.fromRGB(255, 140, 200), auto = Color3.fromRGB(95, 195, 255) },
 }
+-- ===== Стиль мира (картинки HUD-скина) =====
+-- Рамка окна мира поверх краёв панели, фон и шапка в цветах мира, кнопки OPEN/AUTO — на
+-- плашках-плитках того же HUD (как плитки монет/скорости). Без скина остаётся старый вид.
+local WORLD_OF = { island = "Meadow Isles", neon = "Neon District", sky = "Sky Isles", frozen = "Frozen Peaks", volcano = "Magma Volcano", galaxy = "Cosmic Galaxy" }
+local frameImg = Instance.new("ImageLabel")
+frameImg.Name = "SkinFrame"
+frameImg.BackgroundTransparency = 1
+-- рамка вынесена наружу: её декор (цветы, лава, планеты) не закрывает содержимое окна
+frameImg.Position = UDim2.fromOffset(-58, -70)
+frameImg.Size = UDim2.new(1, 116, 1, 140)
+frameImg.ScaleType = Enum.ScaleType.Stretch -- картинки рамок у миров разного размера: тянем целиком
+frameImg.ZIndex = 2
+frameImg.Visible = false
+frameImg.Parent = panel
+local function skinButton(b)
+	local img = Instance.new("ImageLabel")
+	img.Name = "SkinTile"
+	img.BackgroundTransparency = 1
+	-- плитка — соседка кнопки в панели (а не её ребёнок): иначе она рисуется поверх текста кнопки
+	img.Size = b.Size + UDim2.fromOffset(16, 14)
+	img.Position = b.Position - UDim2.fromOffset(8, 7)
+	img.ZIndex = 3
+	img.Visible = false
+	img.Parent = panel
+	b.ZIndex = 4
+	return img
+end
+local tiles = { single = skinButton(single), triple = skinButton(triple), auto = skinButton(auto) }
+header.ZIndex = 3 -- шапка (название, монеты, крестик) поверх рамки мира
+local currentSkin = nil
+local function applySkin(world)
+	local skin = Skins[WORLD_OF[world] or ""]
+	currentSkin = skin and skin.Frame_Window and skin or nil
+	local on = currentSkin ~= nil
+	frameImg.Visible = on
+	panelStroke.Enabled = not on
+	if on then
+		frameImg.Image = skin.Frame_Window
+		frameImg.ImageColor3 = skin.Tint or WHITE
+		panelGrad.Enabled = true
+		panel.BackgroundColor3 = WHITE
+		panelGrad.Color = ColorSequence.new(skin.MenuBottom:Lerp(Color3.new(0, 0, 0), 0.45), skin.MenuBottom:Lerp(Color3.new(0, 0, 0), 0.7))
+		headerGrad.Color = ColorSequence.new(skin.MenuTop, skin.MenuBottom)
+		title.TextColor3 = skin.TitleColor or WHITE
+		for key, img in pairs(tiles) do
+			img.Image = skin[key == "triple" and "Tile_Gold" or key == "single" and "Tile_Blue" or "Tile_Pink"] or ""
+			img.ImageColor3 = skin.Tint or WHITE
+			img.Visible = true
+		end
+		for _, b in ipairs({ single, triple, auto }) do
+			b.BackgroundTransparency = 1
+			b:FindFirstChildOfClass("UIStroke").Enabled = false
+			b.TextColor3 = WHITE
+			b.TextStrokeColor3 = skin.InkColor or INK
+			b.TextStrokeTransparency = 0
+		end
+		gallery.ScrollBarImageColor3 = skin.RimColor or gallery.ScrollBarImageColor3
+	else
+		title.TextColor3 = WHITE
+		for _, img in pairs(tiles) do
+			img.Visible = false
+		end
+		for _, b in ipairs({ single, triple, auto }) do
+			b:FindFirstChildOfClass("UIStroke").Enabled = true
+			b.TextStrokeTransparency = 1
+		end
+	end
+end
+
 local skyTheme = false
 local function applyTheme(sky)
 	skyTheme = sky
@@ -236,12 +306,25 @@ local function refresh()
 		local affordable = coins.Value >= egg.Cost * n
 		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d\n💰 %s", n, fmt(egg.Cost * n))
 		b.Active = affordable and not waiting and not autoEgg
-		b.AutoButtonColor = b.Active
-		b.BackgroundTransparency = b.Active and 0 or 0.45
+		b.AutoButtonColor = b.Active and not currentSkin
+		if currentSkin then
+			b.BackgroundTransparency = 1
+			local img = tiles[b == single and "single" or "triple"]
+			if img then
+				img.ImageTransparency = b.Active and 0 or 0.5
+			end
+			b.TextTransparency = b.Active and 0 or 0.35
+		else
+			b.BackgroundTransparency = b.Active and 0 or 0.45
+		end
 	end
 	local on = autoEgg == eggId
 	auto.Text = on and "AUTO: ON\ntap to stop" or "AUTO OPEN\n×3 when possible"
 	auto.BackgroundColor3 = on and Color3.fromRGB(220, 70, 90) or (skyTheme and BUTTON_COLORS.sky.auto or BUTTON_COLORS.dark.auto)
+	if currentSkin then
+		auto.BackgroundTransparency = 1
+		tiles.auto.Image = currentSkin[on and "Tile_Purple" or "Tile_Pink"] or tiles.auto.Image
+	end
 end
 
 local function hatch(n)
@@ -284,6 +367,7 @@ local function showEgg(id)
 	applyTheme(sky)
 	headerGrad.Color = sky and ColorSequence.new(egg.Color:Lerp(WHITE, 0.45), egg.Color:Lerp(WHITE, 0.05)) or ColorSequence.new(egg.Color:Lerp(WHITE, 0.15), egg.Color:Lerp(Color3.new(0, 0, 0), 0.35))
 	panelStroke.Color = sky and WHITE or egg.Color
+	applySkin(egg.World)
 	gallery:ClearAllChildren()
 	cells = {}
 	local count = #egg.Pool
@@ -407,18 +491,18 @@ for id, egg in ipairs(Config.Eggs) do
 		end
 		local display = stand:WaitForChild("EggDisplay")
 		local size = display:GetExtentsSize()
-		displays[id] = { model = display, base = display:GetPivot(), radius = math.max(size.X, size.Z) / 2 }
+		displays[id] = { model = display, base = display:GetPivot(), radius = math.max(size.X, size.Z) / 2, stand = stand }
 		-- Модель яйца из Tripo подставляется сервером чуть позже (TripoDressing): берём новую.
 		stand.ChildAdded:Connect(function(c)
 			if c.Name == "EggDisplay" and c:IsA("Model") then
 				local s2 = c:GetExtentsSize()
-				displays[id] = { model = c, base = c:GetPivot(), radius = math.max(s2.X, s2.Z) / 2 }
+				displays[id] = { model = c, base = c:GetPivot(), radius = math.max(s2.X, s2.Z) / 2, stand = stand }
 			end
 		end)
 		local newer = stand:FindFirstChild("EggDisplay")
 		if newer and newer ~= display then
 			local s2 = newer:GetExtentsSize()
-			displays[id] = { model = newer, base = newer:GetPivot(), radius = math.max(s2.X, s2.Z) / 2 }
+			displays[id] = { model = newer, base = newer:GetPivot(), radius = math.max(s2.X, s2.Z) / 2, stand = stand }
 		end
 	end)
 end
@@ -1252,7 +1336,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
 		local size = camera.ViewportSize
-		scale.Scale = math.min(1, (size.X - 28) / 660, (size.Y - 60) / 664)
+		scale.Scale = currentSkin and math.min(1, (size.X - 28) / 800, (size.Y - 60) / 830) or math.min(1, (size.X - 28) / 660, (size.Y - 60) / 664)
 		revealScale.Scale = math.min(1, (size.X - 28) / 900, (size.Y - 40) / 520)
 	end
 	scan += dt
@@ -1266,7 +1350,21 @@ RunService.RenderStepped:Connect(function(dt)
 				local offset = root.Position - entry.base.Position
 				local d = Vector2.new(offset.X, offset.Z).Magnitude - entry.radius
 				local reach = (mode == "egg" and eggId == id or autoEgg == id) and 6 or 2.2
-				if d < reach and math.abs(offset.Y) < entry.radius * 2 + 4 and (not distance or d < distance) then
+				local heightOk = math.abs(offset.Y) < entry.radius * 2 + 4
+				-- Яйцо на широком/высоком постаменте (вулкан, космос, Frozen): до самого яйца не дотянуться,
+				-- поэтому считаем расстояние от края постамента и разрешаем стоять у его подножия.
+				local stand = entry.stand
+				if stand and stand.Parent then
+					local cf, sz = stand:GetBoundingBox()
+					local standR = math.min(math.max(sz.X, sz.Z) / 2, 14)
+					local ds = Vector2.new(root.Position.X - cf.Position.X, root.Position.Z - cf.Position.Z).Magnitude - standR
+					if ds < d then
+						d = ds
+					end
+					local bottom = cf.Position.Y - sz.Y / 2
+					heightOk = heightOk or (root.Position.Y > bottom - 2 and root.Position.Y < bottom + 10)
+				end
+				if d < reach and heightOk and (not distance or d < distance) then
 					nearest, distance = id, d
 				end
 			end
