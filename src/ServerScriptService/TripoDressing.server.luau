@@ -259,7 +259,7 @@ local function dressMachine(tier: number)
 end
 
 ------------------------------------------------------------------ магазины
-local function dressShop(shop: Instance?, propName: string)
+local function dressShop(shop: Instance?, propName: string, faceTo: Vector3?)
 	local template = props and props:FindFirstChild(propName)
 	if not (shop and template) or shop:GetAttribute("Tripo") then
 		return
@@ -275,7 +275,7 @@ local function dressShop(shop: Instance?, propName: string)
 	-- Лицом туда же, куда смотрел прилавок: берём поворот зоны или самой модели.
 	local zone = shop:FindFirstChild("ShopZone")
 	local facing = shop:IsA("Model") and shop:GetPivot() or CFrame.new()
-	local look = zone and (zone.Position - center) or facing.LookVector
+	local look = faceTo and (faceTo - center) or (zone and (zone.Position - center)) or facing.LookVector
 	look = Vector3.new(look.X, 0, look.Z)
 	if look.Magnitude < 0.1 then
 		look = Vector3.new(0, 0, 1)
@@ -351,10 +351,42 @@ pcall(dressShop, sky and sky:FindFirstChild("MagnetShop"), "SkyMagnetShop")
 pcall(dressShop, frozen and frozen:FindFirstChild("UpgradeShop"), "FrozenShop")
 local volcanoW = world:WaitForChild("MagmaVolcano", 30)
 local galaxyW = world:WaitForChild("CosmicGalaxy", 30)
-pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop")
-pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop")
-pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop")
-pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop")
+-- Вулкан: процедурную гору и мёртвые деревья меняем на 3D-модели Tripo.
+if volcanoW then
+	local mountain = volcanoW:FindFirstChild("Volcano", true)
+	local vt = props:FindFirstChild("VolcanoMountain")
+	if mountain and mountain:IsA("Model") and vt and not mountain:GetAttribute("Tripo") then
+		local cf, ext = mountain:GetBoundingBox()
+		mountain:SetAttribute("Tripo", true)
+		hide(mountain)
+		-- чуть шире и выше прежней горы; частицы дыма и свет кратера остаются (их не трогаем)
+		for _, d in ipairs(mountain:GetDescendants()) do
+			if d:IsA("ParticleEmitter") or d:IsA("Light") then
+				(d :: any).Enabled = true
+			end
+		end
+		fit(vt, math.max(ext.X, ext.Y, ext.Z) * 1.25, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)), mountain, "TripoModel")
+	end
+	local trees = { props:FindFirstChild("LavaTree1"), props:FindFirstChild("LavaTree2") }
+	if trees[1] and trees[2] then
+		local k = 0
+		for _, m in ipairs(volcanoW:GetDescendants()) do
+			if m:IsA("Model") and m.Name == "DeadTree" and not m:GetAttribute("Tripo") then
+				k += 1
+				local cf, ext = m:GetBoundingBox()
+				m:SetAttribute("Tripo", true)
+				hide(m)
+				fit(trees[k % 2 + 1], ext.Y * 1.1, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)) * CFrame.Angles(0, k * 1.7, 0), m, "TripoModel")
+			end
+		end
+	end
+end
+-- магазины Вулкана и Галактики стоят слева от главной дороги: лицом к центру мира
+local VC, GC = Vector3.new(6000, 60, 75), Vector3.new(7500, 60, 75)
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop", VC)
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop", VC)
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop", GC)
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop", GC)
 
 if frozen then
 	pcall(swapAll, frozen, "Snowman", "Snowman", 1.15)

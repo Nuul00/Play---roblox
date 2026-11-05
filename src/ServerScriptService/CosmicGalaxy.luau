@@ -425,8 +425,25 @@ function Galaxy.Build(world: Instance): Model
 	local paths = Instance.new("Model")
 	paths.Name = "Paths"
 	paths.Parent = model
+	-- Мягкий свет вдоль дорожки (не как в Неонграде — тускло, просто чтобы путь «светился»).
+	local function softLights(size: Vector3, pos: Vector3, edge: Color3)
+		local long = math.max(size.X, size.Z)
+		local n = math.max(1, math.floor(long / 26))
+		for i = 1, n do
+			local t = (i - 0.5) / n - 0.5
+			local at = size.Z > size.X and pos + Vector3.new(0, 0.6, t * size.Z) or pos + Vector3.new(t * size.X, 0.6, 0)
+			local lamp = part(paths, "PathGlow", Vector3.new(1, 1, 1), at, edge, M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+			local pl = Instance.new("PointLight")
+			pl.Color = edge
+			pl.Range = 13
+			pl.Brightness = 0.55
+			pl.Shadows = false
+			pl.Parent = lamp
+		end
+	end
 	local function path(name, size: Vector3, pos: Vector3, edge: Color3)
 		part(paths, name, size, pos, PATH, M.Glass, { Reflectance = 0.15 })
+		softLights(size, pos, edge)
 		if size.Z > size.X then
 			for _, s in ipairs({ -1, 1 }) do
 				part(paths, name .. "Edge", Vector3.new(0.5, size.Y + 0.04, size.Z), pos + Vector3.new(s * (size.X / 2 - 0.25), 0, 0), edge, M.Neon, { CanCollide = false })
@@ -442,6 +459,17 @@ function Galaxy.Build(world: Instance): Model
 	path("PathMagnets", Vector3.new(76, 0.3, 14), L(-46, 0.16, 100), PINK)
 	path("PathEggs", Vector3.new(156, 0.3, 14), L(82, 0.16, 70), GOLD)
 	path("PathMonument", Vector3.new(18, 0.3, 52), L(0, 0.15, -40), CYAN)
+	-- Перекрёстки боковых дорожек с главной: неяркие светящиеся круги.
+	for _, j in ipairs({ { -9, 40, PINK }, { -9, 100, PINK }, { 9, 70, GOLD }, { 0, -14, CYAN } }) do
+		disc(paths, "JunctionGlow", 16, 0.34, L(j[1], 0.17, j[2]), j[3], M.Neon, { CanCollide = false, Transparency = 0.72 })
+		local lamp = part(paths, "JunctionLight", Vector3.new(1, 1, 1), L(j[1], 1.5, j[2]), j[3], M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+		local pl = Instance.new("PointLight")
+		pl.Color = j[3]
+		pl.Range = 18
+		pl.Brightness = 0.8
+		pl.Shadows = false
+		pl.Parent = lamp
+	end
 	disc(paths, "Plaza", 54, 0.32, L(0, 0.16, 10), PATH, M.Glass, { Reflectance = 0.2 })
 	disc(paths, "PlazaRing", 56, 0.2, L(0, 0.1, 10), PINK, M.Neon, { CanCollide = false })
 	disc(paths, "PlazaStar", 18, 0.34, L(0, 0.17, 10), GOLD, M.Neon, { CanCollide = false, Transparency = 0.3 })

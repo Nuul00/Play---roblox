@@ -139,6 +139,10 @@ end
 local TweenService = game:GetService("TweenService")
 local CoinTypes = require(game:GetService("ReplicatedStorage"):WaitForChild("CoinTypes"))
 local function collectBurst(coin)
+	-- у монет с 3D-моделью (TripoCoins) свой эффект сбора
+	if coin:FindFirstChildWhichIsA("Model") then
+		return
+	end
 	local worldId = coin:GetAttribute("CoinWorld") or "Sky"
 	local theme = (CoinTypes.Worlds[worldId] or CoinTypes.Worlds.Sky).Theme
 	local rarity = coin:GetAttribute("Rarity") or 1

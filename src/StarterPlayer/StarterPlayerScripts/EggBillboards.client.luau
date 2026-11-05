@@ -247,8 +247,8 @@ local function setupEgg(id, stand)
 	anchor.Parent = fxFolder
 	local glow = Instance.new("PointLight")
 	glow.Color = light
-	glow.Range = 12
-	glow.Brightness = 1
+	glow.Range = 16
+	glow.Brightness = 1.6
 	glow.Shadows = false
 	glow.Parent = anchor
 	local sparks = Instance.new("ParticleEmitter")
@@ -265,6 +265,47 @@ local function setupEgg(id, stand)
 	sparks.Rate = 3
 	sparks.Parent = anchor
 	entry.anchor, entry.glow, entry.sparks = anchor, glow, sparks
+
+	-- Издалека яйцо видно сразу: мягкий столб света в цвет яйца и надпись с названием и ценой
+	-- (вблизи её сменяет большое табло с питомцами).
+	local pillar = Instance.new("Part")
+	pillar.Name = "EggPillar"
+	pillar.Shape = Enum.PartType.Cylinder
+	pillar.Material = Enum.Material.Neon
+	pillar.Color = light
+	pillar.Transparency = 0.86
+	pillar.Anchored, pillar.CanCollide, pillar.CanQuery, pillar.CanTouch, pillar.CastShadow = true, false, false, false, false
+	pillar.Size = Vector3.new(46, 3.2, 3.2)
+	pillar.CFrame = CFrame.new(entry.base.Position + Vector3.new(0, 23 + entry.height / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+	pillar.Parent = fxFolder
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "EggTag"
+	tag.Size = UDim2.fromOffset(200, 54)
+	tag.StudsOffsetWorldSpace = Vector3.new(0, entry.height / 2 + 4, 0)
+	tag.AlwaysOnTop = true
+	tag.LightInfluence = 0
+	tag.MaxDistance = 260
+	tag.Adornee = anchor
+	local tName = Instance.new("TextLabel")
+	tName.BackgroundTransparency = 1
+	tName.Size = UDim2.new(1, 0, 0.6, 0)
+	tName.Font = Enum.Font.FredokaOne
+	tName.TextScaled = true
+	tName.Text = "🥚 " .. string.upper(egg.Name)
+	tName.TextColor3 = Color3.new(1, 1, 1)
+	local s1 = Instance.new("UIStroke")
+	s1.Thickness = 2.5
+	s1.Color = color:Lerp(Color3.new(0, 0, 0), 0.55)
+	s1.Parent = tName
+	tName.Parent = tag
+	local tPrice = tName:Clone()
+	tPrice.Position = UDim2.fromScale(0, 0.6)
+	tPrice.Size = UDim2.new(1, 0, 0.4, 0)
+	tPrice.Text = "💰 " .. fmt(egg.Cost)
+	tPrice.TextColor3 = Color3.fromRGB(255, 225, 90)
+	tPrice.Parent = tag
+	tag.Parent = anchor
+	entry.tag = tag
 
 	-- Огоньки по орбите: чем дороже яйцо, тем их больше; у каждого светящийся хвост.
 	for k = 1, 2 + tier do
@@ -380,6 +421,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if active and e.model.Parent then
 			local dist = root and (root.Position - center).Magnitude or 999
 			local target = math.clamp(1 - (dist - 10) / 22, 0, 1)
+			e.tag.Enabled = dist > 24
 			e.excite += (target - e.excite) * math.min(1, dt * 3)
 			local x = e.excite
 			local h = e.height

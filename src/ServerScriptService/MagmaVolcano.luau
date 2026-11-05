@@ -469,7 +469,8 @@ function Volcano.Build(world: Instance): Model
 	local ground = Instance.new("Model")
 	ground.Name = "Ground"
 	ground.Parent = model
-	disc(ground, "Deck", 440, 8, L(0, -4, 0), BASALT, M.Basalt)
+	-- «Склизкая» красная лавовая земля (дорожки остаются из базальта).
+	disc(ground, "Deck", 440, 8, L(0, -4, 0), rgb(110, 30, 24), M.CrackedLava, { Reflectance = 0.08 })
 	disc(ground, "Rim", 452, 6, L(0, -6, 0), rgb(70, 34, 26), M.CrackedLava)
 	disc(ground, "RimGlow", 458, 1, L(0, -9, 0), LAVA, M.Neon, { CanCollide = false })
 	disc(ground, "LavaSea", 1100, 2, L(0, -60, 0), LAVA_DARK, M.Neon, { CanCollide = false, CanQuery = false, CanTouch = false })

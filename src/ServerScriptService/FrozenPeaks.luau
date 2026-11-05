@@ -411,7 +411,7 @@ function Frozen.Build(world: Instance)
 	local peaks = Instance.new("Model")
 	peaks.Name = "Peaks"
 	peaks.Parent = model
-	for _, p in ipairs({ { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { 95, -165, 45, 55 }, { -150, -30, 50, 55 }, { 160, -10, 40, 45 } }) do -- справа от площади — сад яиц, там гор нет
+	for _, p in ipairs({ { -120, -110, 70, 85 }, { -40, -140, 90, 120 }, { -150, -30, 50, 55 }, { 160, -10, 40, 45 } }) do -- справа от площади — сад яиц, там гор нет
 		mountain(peaks, L(p[1], 0, p[2]), p[3], p[4])
 	end
 
@@ -452,11 +452,6 @@ function Frozen.Build(world: Instance)
 	end
 	table.insert(placedSpots, { GX, GZ, 62 })
 	table.insert(placedSpots, { 50, -40, 10 })
-	-- ряд «замороженных» аватаров за садом
-	part(paths, "StatueWalk", Vector3.new(130, 0.3, 18), L(GX, 0.2, GZ - 36), ICE:Lerp(SNOW, 0.4), M.Ice, { Transparency = 0.05 })
-	for k = -3, 3 do
-		table.insert(placedSpots, { GX + k * 18, GZ - 36, 10 })
-	end
 	local trees = 0
 	for _ = 1, 400 do
 		if trees >= 34 then
@@ -490,14 +485,29 @@ function Frozen.Build(world: Instance)
 	aurora.Name = "Aurora"
 	aurora.Parent = model
 	local anchor = part(aurora, "AuroraAnchor", Vector3.new(1, 1, 1), L(0, 150, -250), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false })
-	for k = 1, 3 do
-		local y, z, span = 80 + k * 20, -150 - k * 40, 170 + k * 40
+	-- Семь занавесей сияния по всему небу: три позади (как было), по одной слева, справа,
+	-- спереди и одна высоко над головой. { угол, расстояние, высота, полуразмах }
+	local CURTAINS = {
+		{ -math.pi / 2, 190, 100, 210 },
+		{ -math.pi / 2, 230, 120, 250 },
+		{ -math.pi / 2, 270, 140, 290 },
+		{ 0, 265, 115, 210 },
+		{ math.pi, 265, 105, 210 },
+		{ math.pi / 2, 285, 135, 240 },
+		{ -math.pi / 4, 120, 195, 230 },
+	}
+	for k, c in ipairs(CURTAINS) do
+		local ang, dist, y, span = c[1], c[2], c[3], c[4]
+		local center = Vector3.new(math.cos(ang) * dist, y, math.sin(ang) * dist)
+		local tangent = Vector3.new(-math.sin(ang), 0, math.cos(ang))
+		local p0 = L(0, 0, 0) + center - tangent * span + Vector3.new(0, -10, 0)
+		local p1 = L(0, 0, 0) + center + tangent * span + Vector3.new(0, 6, 0)
 		local a0 = Instance.new("Attachment")
 		a0.Parent = anchor
-		a0.WorldCFrame = CFrame.new(L(-span, y - 10, z + 30)) * CFrame.Angles(0, math.pi / 2, 0)
+		a0.WorldCFrame = CFrame.lookAt(p0, p0 - tangent)
 		local a1 = Instance.new("Attachment")
 		a1.Parent = anchor
-		a1.WorldCFrame = CFrame.new(L(span, y + 6, z - 20)) * CFrame.Angles(0, math.pi / 2, 0)
+		a1.WorldCFrame = CFrame.lookAt(p1, p1 - tangent)
 		for layer, w in ipairs({ 16, 30, 46 }) do
 			local beam = Instance.new("Beam")
 			beam.Name = "AuroraBeam"

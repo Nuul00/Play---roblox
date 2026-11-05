@@ -11,7 +11,18 @@ if not (props and frozen) then
 	return
 end
 
-local KIND = { Ice = "CoinIce", Crystal = "CoinCrystal", Aurora = "CoinAurora" }
+-- Монеты Frozen, Вулкана и Галактики — модели Tripo по виду монеты (атрибут Kind).
+local KIND = {
+	Ice = "CoinIce", Crystal = "CoinCrystal", Aurora = "CoinAurora",
+	Ember = "CoinEmber", Magma = "CoinMagma", Obsidian = "CoinObsidian",
+	Stardust = "CoinStardust", Nebula = "CoinNebula", Cosmic = "CoinCosmic",
+}
+-- цвета вспышки при подборе
+local FX = {
+	["Frozen Peaks"] = { Color3.fromRGB(200, 240, 255), Color3.fromRGB(150, 220, 255), Color3.fromRGB(30, 80, 160) },
+	["Magma Volcano"] = { Color3.fromRGB(255, 200, 90), Color3.fromRGB(255, 110, 40), Color3.fromRGB(120, 30, 10) },
+	["Cosmic Galaxy"] = { Color3.fromRGB(220, 200, 255), Color3.fromRGB(170, 120, 255), Color3.fromRGB(40, 20, 110) },
+}
 local coins = {}
 
 local collectFX
@@ -56,7 +67,8 @@ collectFX = function(e)
 	anchor.Parent = fxFolder
 	local flakes = Instance.new("ParticleEmitter")
 	flakes.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	flakes.Color = ColorSequence.new(Color3.fromRGB(200, 240, 255), Color3.fromRGB(255, 255, 255))
+	local fxc = FX[e.world] or FX["Frozen Peaks"]
+	flakes.Color = ColorSequence.new(fxc[1], Color3.fromRGB(255, 255, 255))
 	flakes.LightEmission = 0.8
 	flakes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
 	flakes.Lifetime = NumberRange.new(0.6, 1.1)
@@ -68,7 +80,7 @@ collectFX = function(e)
 	flakes.Parent = anchor
 	flakes:Emit(28)
 	local light = Instance.new("PointLight")
-	light.Color = Color3.fromRGB(170, 225, 255)
+	light.Color = fxc[2]
 	light.Range = 12
 	light.Brightness = 4
 	light.Parent = anchor
@@ -77,7 +89,7 @@ collectFX = function(e)
 	local ring = Instance.new("Part")
 	ring.Shape = Enum.PartType.Cylinder
 	ring.Material = Enum.Material.Neon
-	ring.Color = Color3.fromRGB(150, 220, 255)
+	ring.Color = fxc[2]
 	ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
 	ring.Size = Vector3.new(0.1, 1, 1)
 	ring.Transparency = 0.2
@@ -103,10 +115,10 @@ collectFX = function(e)
 		t.Font = Enum.Font.FredokaOne
 		t.TextScaled = true
 		t.Text = "+" .. short(delta)
-		t.TextColor3 = Color3.fromRGB(220, 245, 255)
+		t.TextColor3 = fxc[1]
 		local st = Instance.new("UIStroke")
 		st.Thickness = 2.5
-		st.Color = Color3.fromRGB(30, 80, 160)
+		st.Color = fxc[3]
 		st.Parent = t
 		t.Parent = gui
 		gui.Parent = anchor
@@ -148,7 +160,7 @@ coinsValue.Changed:Connect(function(v)
 	end)
 end)
 
-local function attach(part: BasePart)
+local function attach(part: BasePart, worldName: string)
 	local template = props:FindFirstChild(KIND[part:GetAttribute("Kind") or ""] or "")
 	if not template then
 		return
@@ -168,7 +180,7 @@ local function attach(part: BasePart)
 	end
 	m.Parent = part
 	part.LocalTransparencyModifier = 1
-	local entry = { part = part, model = m, parts = parts, phase = math.random() * 6 }
+	local entry = { part = part, model = m, parts = parts, phase = math.random() * 6, world = worldName }
 	local function sync()
 		local visible = part.Transparency < 1
 		for _, p in ipairs(parts) do
@@ -187,9 +199,14 @@ end
 
 task.defer(function()
 	task.wait(2)
-	for _, c in ipairs(frozen:GetChildren()) do
-		if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then
-			attach(c)
+	for holder, worldName in pairs({ FrozenPeaks = "Frozen Peaks", MagmaVolcano = "Magma Volcano", CosmicGalaxy = "Cosmic Galaxy" }) do
+		local zone = world:WaitForChild(holder, 30)
+		if zone then
+			for _, c in ipairs(zone:GetChildren()) do
+				if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then
+					attach(c, worldName)
+				end
+			end
 		end
 	end
 end)
@@ -202,12 +219,13 @@ local player = game:GetService("Players").LocalPlayer
 RunService.Heartbeat:Connect(function(dt)
 	t += dt
 	acc += dt
-	if acc < 0.05 or player:GetAttribute("CurrentWorld") ~= "Frozen Peaks" then
+	if acc < 0.05 then
 		return
 	end
 	acc = 0
+	local current = player:GetAttribute("CurrentWorld")
 	for _, e in ipairs(coins) do
-		if e.part.Transparency < 1 then
+		if e.world == current and e.part.Transparency < 1 then
 			local p = e.part.Position
 			e.model:PivotTo(CFrame.new(p + Vector3.new(0, math.sin(t * 2 + e.phase) * 0.3, 0)) * CFrame.Angles(0, t * 1.8 + e.phase, 0))
 		end
