@@ -251,7 +251,7 @@ function Frozen.BuildGlobe(parent: Instance)
 			local b = math.rad(28 + j * 9)
 			local dir = Vector3.new(math.cos(b) * math.cos(a), math.sin(b), math.cos(b) * math.sin(a))
 			local pos = L(0, GLOBE_Y, 0) + dir * (GLOBE_R - 1.5)
-			part(m, "Shine", Vector3.new(44, 11, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(220, 240, 255), M.Neon, { Transparency = 0.95, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false }) -- изнутри шара еле заметный блик, а не серые плашки
+			part(m, "Shine", Vector3.new(44, 11, 0.3), CFrame.lookAt(pos, L(0, GLOBE_Y, 0)), rgb(220, 240, 255), M.Neon, { Transparency = 1, CanCollide = false, CanTouch = false, CanQuery = false, CastShadow = false }) -- блики убраны: изнутри шара выглядели серыми плашками
 		end
 	end
 	-- Подставка: снежная «насыпь», красное дерево, золотые кольца, снежинки и сосульки.
@@ -506,7 +506,7 @@ function Frozen.Build(world: Instance)
 		-- Ось X вложения — вверх (CurveSize колышет ленту), ось Y — нормаль плоскости.
 		-- Слои стоят друг над другом: зелёное ядро внизу, бирюза/синь выше, фиолетово-розовая кайма сверху.
 		-- 6 слоёв внахлёст ровно вдвое (ширина = 2 шага): яркость по высоте ровная, без полос.
-		for layer, spec in ipairs({ { -18, 36 }, { 0, 36 }, { 18, 36 }, { 36, 36 }, { 54, 36 }, { 72, 36 } }) do
+		for layer, spec in ipairs({ { -18, 64 }, { 0, 64 }, { 18, 64 }, { 36, 64 }, { 54, 64 }, { 72, 64 } }) do
 			local up, w = spec[1], spec[2]
 			local p0 = L(0, 0, 0) + center - tangent * span + Vector3.new(0, up - 10, 0)
 			local p1 = L(0, 0, 0) + center + tangent * span + Vector3.new(0, up + 6, 0)
@@ -525,7 +525,11 @@ function Frozen.Build(world: Instance)
 			beam.FaceCamera = false
 			beam.LightEmission = 1
 			beam.LightInfluence = 0
-			beam.Brightness = 2
+			beam.Brightness = 5
+			-- мягкая «дымная» текстура растянута на всю ленту: края размыты, как у настоящего сияния
+			beam.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			beam.TextureMode = Enum.TextureMode.Stretch
+			beam.TextureLength = 1
 			beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.6), NumberSequenceKeypoint.new(0.8, 0.6), NumberSequenceKeypoint.new(1, 1) })
 			beam:SetAttribute("Band", k)
 			beam:SetAttribute("Layer", layer)
