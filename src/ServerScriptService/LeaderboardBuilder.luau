@@ -16,8 +16,8 @@ local rgb = Color3.fromRGB
 local M = Enum.Material
 local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 
-local BOARD_W, BOARD_H = 23, 9.7 -- на 35% крупнее прежних 17x7.2
-local R = 54 -- радиус острова (под крупные доски)
+local BOARD_W, BOARD_H = 32, 14 -- крупные доски: строчки видно из-за пьедестала
+local R = 62 -- радиус острова (под крупные доски)
 local GAP = 22 -- пролёт моста над пустотой
 local BRIDGE_W = 10
 local ORDER = { "BoardPickups", "BoardEggs", "BoardCoins" } -- слева направо для того, кто пришёл по мосту
@@ -25,7 +25,7 @@ local ORDER = { "BoardPickups", "BoardEggs", "BoardCoins" } -- слева нап
 local THEMES = {
 	Meadow = {
 		Board = rgb(30, 70, 45), Frame = rgb(120, 80, 45), FrameMat = M.Wood, Trim = rgb(255, 220, 120), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 8,
+		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 5,
 		Steps = { rgb(255, 205, 60), rgb(220, 225, 235), rgb(220, 140, 80) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(110, 200, 90), TopMat = M.Grass, Under = rgb(120, 95, 70), UnderMat = M.Slate, Rim = rgb(90, 160, 70), RimMat = M.Grass,
 		Deck = rgb(150, 100, 60), DeckMat = M.WoodPlanks, Rail = rgb(110, 72, 40), RailMat = M.Wood, Lamp = rgb(255, 210, 120),
@@ -33,7 +33,7 @@ local THEMES = {
 	},
 	NeonCity = {
 		Board = rgb(12, 10, 30), Frame = rgb(30, 26, 60), FrameMat = M.Metal, Trim = rgb(255, 80, 220), TrimMat = M.Neon, Trim2 = rgb(80, 230, 255),
-		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 8,
+		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 5,
 		Steps = { rgb(255, 215, 90), rgb(200, 210, 255), rgb(255, 140, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(22, 18, 44), TopMat = M.Metal, Under = rgb(30, 26, 60), UnderMat = M.Metal, Rim = rgb(255, 80, 220), RimMat = M.Neon, Grid = rgb(80, 230, 255),
 		Deck = rgb(26, 22, 50), DeckMat = M.Metal, Rail = rgb(80, 230, 255), RailMat = M.Neon, Lamp = rgb(255, 80, 220),
@@ -41,7 +41,7 @@ local THEMES = {
 	},
 	SkyIsles = {
 		Board = rgb(40, 70, 120), Frame = rgb(250, 250, 255), FrameMat = M.SmoothPlastic, Trim = rgb(255, 215, 110), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 8,
+		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 5,
 		Float = { Bob = 0.45, Sway = 0.8, Speed = 0.7 },
 		Steps = { rgb(255, 210, 80), rgb(225, 232, 245), rgb(240, 160, 100) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(245, 240, 255), TopMat = M.SmoothPlastic, Under = rgb(255, 255, 255), UnderMat = M.SmoothPlastic, Rim = rgb(255, 215, 110), RimMat = M.Neon, Puffs = true,
@@ -50,7 +50,7 @@ local THEMES = {
 	},
 	FrozenPeaks = {
 		Board = rgb(20, 55, 95), Frame = rgb(170, 225, 255), FrameMat = M.Glacier, Trim = rgb(140, 230, 255), TrimMat = M.Neon,
-		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 8,
+		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 5,
 		Steps = { rgb(255, 215, 110), rgb(210, 235, 255), rgb(235, 165, 120) }, StepMat = M.Ice, StepRim = M.Neon,
 		Top = rgb(245, 250, 255), TopMat = M.Snow, Under = rgb(150, 205, 240), UnderMat = M.Glacier, Rim = rgb(140, 230, 255), RimMat = M.Ice, Icicles = true,
 		Deck = rgb(180, 225, 250), DeckMat = M.Ice, Rail = rgb(245, 250, 255), RailMat = M.Snow, Lamp = rgb(150, 230, 255),
@@ -58,7 +58,7 @@ local THEMES = {
 	},
 	MagmaVolcano = {
 		Board = rgb(28, 18, 18), Frame = rgb(40, 30, 32), FrameMat = M.Basalt, Trim = rgb(255, 110, 30), TrimMat = M.Neon,
-		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 8,
+		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 5,
 		Steps = { rgb(255, 190, 60), rgb(190, 190, 200), rgb(210, 120, 70) }, StepMat = M.Basalt, StepRim = M.Neon,
 		Top = rgb(60, 36, 30), TopMat = M.CrackedLava, Under = rgb(40, 30, 32), UnderMat = M.Basalt, Rim = rgb(255, 110, 30), RimMat = M.Neon, Cracks = rgb(255, 120, 30),
 		Deck = rgb(45, 35, 35), DeckMat = M.Basalt, Rail = rgb(255, 110, 30), RailMat = M.Neon, Lamp = rgb(255, 140, 40),
@@ -66,7 +66,7 @@ local THEMES = {
 	},
 	CosmicGalaxy = {
 		Board = rgb(14, 10, 40), Frame = rgb(60, 50, 110), FrameMat = M.Metal, Trim = rgb(120, 230, 255), TrimMat = M.Neon, Trim2 = rgb(255, 110, 220),
-		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 13, Stardust = rgb(200, 190, 255),
+		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 9, Stardust = rgb(200, 190, 255),
 		Float = { Bob = 1.1, Sway = 2.5, Speed = 0.5 },
 		Steps = { rgb(255, 215, 110), rgb(200, 210, 255), rgb(240, 150, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(20, 16, 50), TopMat = M.Glass, Under = rgb(50, 40, 100), UnderMat = M.Slate, Rim = rgb(120, 230, 255), RimMat = M.Neon, Grid = rgb(255, 110, 220), Asteroids = true,
@@ -440,12 +440,12 @@ local function placeProp(parent, name, size, bottom)
 end
 -- места на острове (в осях острова: −Z — к мосту): {x, z, слот}
 local SLOTS = {
-	{ -35, -24, "A1" }, { 35, -24, "A2" },   -- у входа, по бокам дорожки
-	{ -46, -2, "B1" }, { 46, -2, "B2" },     -- по краям, между входом и досками
-	{ -45, 27, "C1" }, { 45, 27, "C2" },     -- за боковыми досками
-	{ -16, -44, "L" }, { 16, -44, "L" },     -- фонари у арки
-	{ -50, -22, "L" }, { 50, -22, "L" },     -- фонари по бокам
-	{ 0, 50, "L" },                          -- фонарь за центральной доской
+	{ -40, -30, "A1" }, { 40, -30, "A2" },   -- у входа, по бокам дорожки
+	{ -55, -4, "B1" }, { 55, -4, "B2" },     -- по краям, между входом и досками
+	{ -30, 53, "C1" }, { 30, 53, "C2" },     -- позади, между досками
+	{ -17, -53, "L" }, { 17, -53, "L" },     -- фонари у арки
+	{ -58, -26, "L" }, { 58, -26, "L" },     -- фонари по бокам
+	{ 0, 58, "L" },                          -- фонарь за центральной доской
 }
 local DECOR = {
 	Meadow = { A1 = { "MeadowFountain", 9 }, A2 = { "MeadowBench", 5.5 }, B1 = { "MeadowMushroom", 9 }, B2 = { "MeadowMushroom", 7 }, C1 = { "MeadowWindmill", 15 }, C2 = { "MeadowMushroom", 8 }, L = { "MeadowLamp", 8 } },
@@ -479,10 +479,10 @@ local function decorateIsland(island, key, theme, ic, groundY)
 		end
 	end
 	-- дорожка от арки к доскам
-	local walk = part(island, "Walk", Vector3.new(8, 0.12, 40), ic * CFrame.new(0, 0, -32) + Vector3.new(0, groundY - pos.Y + 0.06, 0), theme.Deck, theme.DeckMat, GHOST)
+	local walk = part(island, "Walk", Vector3.new(8, 0.12, 44), ic * CFrame.new(0, 0, -36) + Vector3.new(0, groundY - pos.Y + 0.06, 0), theme.Deck, theme.DeckMat, GHOST)
 	if theme.DeckMat == M.Glass then walk.Transparency = 0.2 end
 	for _, s in { -1, 1 } do
-		local e = part(island, "WalkEdge", Vector3.new(0.4, 0.16, 40), ic * CFrame.new(s * 4.1, 0, -32) + Vector3.new(0, groundY - pos.Y + 0.08, 0), theme.Rail, theme.RailMat, GHOST)
+		local e = part(island, "WalkEdge", Vector3.new(0.4, 0.16, 44), ic * CFrame.new(s * 4.1, 0, -36) + Vector3.new(0, groundY - pos.Y + 0.08, 0), theme.Rail, theme.RailMat, GHOST)
 		if theme.RailMat == M.Neon then CollectionService:AddTag(e, "BoardPulse") end
 	end
 end
@@ -547,7 +547,7 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 		if d:IsA("BaseScript") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored = true end
 	end
 	local mn, mx = cat.mn, cat.mx
-	local k = 17.5 / (mx.X - mn.X)
+	local k = 15 / (mx.X - mn.X)
 	m:PivotTo(CFrame.new())
 	pcall(function() m:ScaleTo(m:GetScale() * k) end)
 	local cx, cz = (mn.X + mx.X) / 2 * k, (mn.Z + mx.Z) / 2 * k
@@ -1054,8 +1054,8 @@ function B.Build(world)
 		local focus = ic * CFrame.new(0, 0, -10)
 		for i, name in ORDER do
 			-- дуга радиуса 46: центры досок в ~30 стадах друг от друга — рамки и пьедесталы не наезжают
-			local ang = math.rad(({ 38, 0, -38 })[i])
-			local cf = focus * CFrame.Angles(0, ang, 0) * CFrame.new(0, 0, 46)
+			local ang = math.rad(({ 40, 0, -40 })[i])
+			local cf = focus * CFrame.Angles(0, ang, 0) * CFrame.new(0, 0, 54)
 			buildBoard(island, theme, name, cf)
 			local tpl = (key == "NeonCity" or key == "CosmicGalaxy") and podiumTpl.Neon or podiumTpl.Meadow
 			if not ((catalog and placeCatalogPodium(island, theme, name, cf, catalog)) or (tpl and placePodium(island, theme, name, cf, tpl))) then

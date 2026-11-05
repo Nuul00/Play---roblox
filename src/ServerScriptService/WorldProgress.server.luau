@@ -296,13 +296,13 @@ end
 -- Строки таблицы создаём один раз и потом только меняем текст (раньше ~1200 меток пересоздавались каждые 2 минуты).
 local function render(def,rows)
  for _,list in ipairs(def.lists) do
-  list.CanvasSize=UDim2.fromOffset(0,math.max(250,#rows*32))
+  list.CanvasSize=UDim2.fromOffset(0,math.max(250,#rows*38))
   if not list:GetAttribute("Built") then
    list:SetAttribute("Built",true)
    local empty=label(list,"Be the first on this board!",UDim2.fromOffset(0,50),UDim2.fromOffset(780,40),23);empty.Name="Empty"
    for i=1,100 do
-    local n=label(list,"",UDim2.fromOffset(8,(i-1)*32),UDim2.fromOffset(560,30),26);n.Name="N"..i;n.TextXAlignment=Enum.TextXAlignment.Left
-    local v=label(list,"",UDim2.fromOffset(570,(i-1)*32),UDim2.fromOffset(200,30),26);v.Name="V"..i;v.TextXAlignment=Enum.TextXAlignment.Right
+    local n=label(list,"",UDim2.fromOffset(8,(i-1)*38),UDim2.fromOffset(560,36),31);n.Name="N"..i;n.TextXAlignment=Enum.TextXAlignment.Left
+    local v=label(list,"",UDim2.fromOffset(570,(i-1)*38),UDim2.fromOffset(200,36),31);v.Name="V"..i;v.TextXAlignment=Enum.TextXAlignment.Right
    end
   end
   list.Empty.Visible=#rows==0
