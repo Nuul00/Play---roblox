@@ -23,18 +23,52 @@ local function clearPets(record)
 	end
 	record.pets = {}
 end
+-- Питомцы крупнее прежнего и стоят симметрично дугой позади игрока (центр дуги — за спиной).
+-- До 5 питомцев — одна дуга, больше — две (ближняя и дальняя), каждая симметрична.
+local PET_SCALE = 1.35
+local function arc(n: number, radius: number, spread: number): { Vector3 }
+	local out = {}
+	for i = 1, n do
+		local a = n == 1 and 0 or math.rad(-spread + (i - 1) * (2 * spread / (n - 1)))
+		table.insert(out, Vector3.new(math.sin(a) * radius, 0, math.cos(a) * radius))
+	end
+	return out
+end
+local function formation(n: number): { Vector3 }
+	if n <= 0 then
+		return {}
+	elseif n == 1 then
+		return { Vector3.new(0, 0, 5) }
+	elseif n <= 5 then
+		return arc(n, 5.4, n == 2 and 38 or 62)
+	end
+	local inner = math.ceil(n / 2)
+	local list = arc(inner, 5.2, 62)
+	for _, v in ipairs(arc(n - inner, 9, inner == n - inner and 50 or 36)) do
+		table.insert(list, v)
+	end
+	return list
+end
 local function rebuild(record)
 	clearPets(record)
-	for slot, code in ipairs(ShopConfig.ParseEquipped(record.player:GetAttribute("Equipped"))) do
+	local codes = ShopConfig.ParseEquipped(record.player:GetAttribute("Equipped"))
+	local spots = formation(#codes)
+	for slot, code in ipairs(codes) do
 		local id, tier = ShopConfig.SplitPet(code)
 		local def = Config.Pets[id]
 		if def then
 			local model = PetVisuals.BuildCode(code, true)
 			model.Name = "Pet_" .. record.player.UserId .. "_" .. slot
+			pcall(function()
+				model:ScaleTo(model:GetScale() * PET_SCALE)
+			end)
+			-- насколько опорная точка модели выше её низа: ставим питомца лапами на землю
+			local bbox, ext = model:GetBoundingBox()
+			local lift = model:GetPivot().Position.Y - (bbox.Position.Y - ext.Y / 2)
 			model.Parent = effects
 			local tag = Instance.new("BillboardGui")
 			tag.Size = UDim2.fromOffset(160, 24)
-			tag.StudsOffset = Vector3.new(0, 2.4, 0)
+			tag.StudsOffset = Vector3.new(0, 3.1, 0) -- питомцы крупнее: подпись выше
 			tag.MaxDistance = 40
 			tag.LightInfluence = 0
 			tag.Parent = model.PrimaryPart
@@ -59,7 +93,7 @@ local function rebuild(record)
 					end
 				end
 			end
-			table.insert(record.pets, { model = model, slot = slot, rainbow = rainbow })
+			table.insert(record.pets, { model = model, slot = slot, rainbow = rainbow, offset = spots[slot], lift = lift })
 		end
 	end
 end
@@ -269,8 +303,9 @@ RunService.RenderStepped:Connect(function(dt)
 		for _, pet in ipairs(record.pets) do
 			if root and humanoid and humanoid.Health > 0 and (root.Position - eye).Magnitude < 220 then
 				local _, yaw = root.CFrame:ToOrientation()
-				local offset = slotOffsets[pet.slot] or slotOffsets[2]
-				local target = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0) * CFrame.new(offset.X, -1.1, offset.Z)
+				local offset = pet.offset or slotOffsets[pet.slot] or slotOffsets[2]
+				local ground = -(humanoid.HipHeight + root.Size.Y / 2) -- уровень земли относительно центра HumanoidRootPart
+				local target = CFrame.new(root.Position) * CFrame.Angles(0, yaw, 0) * CFrame.new(offset.X, ground + (pet.lift or 1.9) + 0.05, offset.Z)
 				if not pet.frame or (pet.frame.Position - target.Position).Magnitude > 50 then
 					pet.frame = target
 				else
