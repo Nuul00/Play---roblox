@@ -25,6 +25,8 @@ local BOARD = {
 	BoardCoins = { Text = "COINS", Plate = rgb(255, 190, 40), Plate2 = rgb(255, 225, 110), Ink = rgb(130, 70, 0) },
 	BoardEggs = { Text = "EGGS", Plate = rgb(90, 200, 255), Plate2 = rgb(170, 235, 255), Ink = rgb(15, 60, 130) },
 	BoardPickups = { Text = "PICKUPS", Plate = rgb(185, 110, 255), Plate2 = rgb(225, 180, 255), Ink = rgb(70, 20, 120) },
+	-- одна большая доска с вкладками
+	BoardMain = { Text = "LEADERBOARD", Plate = rgb(255, 185, 40), Plate2 = rgb(255, 225, 120), Ink = rgb(120, 60, 0) },
 }
 
 local function ghost(p)
@@ -211,49 +213,61 @@ function D.Decorate(board, worldKey, topY)
 	local cf = board.CFrame
 	local base = cf * CFrame.new(0, topY - board.Position.Y, 0)
 	-- крупные доски (Meadow, Neon) получают пропорционально крупные табличку и эмблему
-	local k = math.clamp(board.Size.X / 17, 1, 2.2)
+	local k = board.Name == "BoardMain" and 1.5 or math.clamp(board.Size.X / 17, 1, 2.2)
 	local plateCf = base * CFrame.new(0, 2.3 * k, 0)
 	local _, H = plate(m, b, w, plateCf, k)
 	local center = plateCf * CFrame.new(0, H / 2 + 3.6 * k, 0)
-	local emblem
-	if board.Name == "BoardCoins" then
-		emblem = coinModel(m, w, 5.2 * k, center, 1)
-		emblem:SetAttribute("Spin", 80)
-		emblem:SetAttribute("Bob", 0.35)
-	elseif board.Name == "BoardEggs" then
-		local t = eggTemplate(w.Egg)
-		if t then
-			emblem = fitModel(t, 5.4 * k, center, m, "Egg")
+	local function make(kind, at, scale)
+		local emblem
+		if kind == "BoardCoins" then
+			emblem = coinModel(m, w, 5.2 * scale, at, 1)
+			emblem:SetAttribute("Spin", 80)
+			emblem:SetAttribute("Bob", 0.35)
+		elseif kind == "BoardEggs" then
+			local t = eggTemplate(w.Egg)
+			if t then
+				emblem = fitModel(t, 5.4 * scale, at, m, "Egg")
+			else
+				emblem = Instance.new("Model")
+				emblem.Name = "Egg"
+				local e = part(emblem, "Shell", Vector3.new(4, 5, 4) * scale, at, rgb(170, 230, 255), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+				local mesh = Instance.new("SpecialMesh")
+				mesh.MeshType = Enum.MeshType.Sphere
+				mesh.Parent = e
+				emblem.PrimaryPart = e
+				emblem.Parent = m
+			end
+			emblem:SetAttribute("Spin", 35)
+			emblem:SetAttribute("Bob", 0.5)
 		else
+			-- хоровод из трёх монет вокруг центра
 			emblem = Instance.new("Model")
-			emblem.Name = "Egg"
-			local e = part(emblem, "Shell", Vector3.new(4, 5, 4), center, rgb(170, 230, 255), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
-			local mesh = Instance.new("SpecialMesh")
-			mesh.MeshType = Enum.MeshType.Sphere
-			mesh.Parent = e
-			emblem.PrimaryPart = e
+			emblem.Name = "Pickups"
+			local hub = part(emblem, "Hub", Vector3.new(0.2, 0.2, 0.2), at, w.Coin)
+			hub.Transparency = 1
+			emblem.PrimaryPart = hub
+			for i = 1, 3 do
+				local a = (i - 1) * math.pi * 2 / 3
+				local pos = at * CFrame.Angles(0, a, 0) * CFrame.new(0, ((i == 2) and 0.6 or -0.3) * scale, -2.1 * scale)
+				coinModel(emblem, w, 2.6 * scale, pos * CFrame.Angles(0, math.rad(90), 0), i)
+			end
 			emblem.Parent = m
+			emblem:SetAttribute("Spin", 70)
+			emblem:SetAttribute("Bob", 0.3)
 		end
-		emblem:SetAttribute("Spin", 35)
-		emblem:SetAttribute("Bob", 0.5)
-	else
-		-- хоровод из трёх монет вокруг центра
-		emblem = Instance.new("Model")
-		emblem.Name = "Pickups"
-		local hub = part(emblem, "Hub", Vector3.new(0.2, 0.2, 0.2), center, w.Coin)
-		hub.Transparency = 1
-		emblem.PrimaryPart = hub
-		for i = 1, 3 do
-			local a = (i - 1) * math.pi * 2 / 3
-			local pos = center * CFrame.Angles(0, a, 0) * CFrame.new(0, ((i == 2) and 0.6 or -0.3) * k, -2.1 * k)
-			coinModel(emblem, w, 2.6 * k, pos * CFrame.Angles(0, math.rad(90), 0), i)
-		end
-		emblem.Parent = m
-		emblem:SetAttribute("Spin", 70)
-		emblem:SetAttribute("Bob", 0.3)
+		glow(emblem, kind == "BoardEggs" and (BOARD.BoardEggs.Plate2) or w.Coin, w.Neon and 4 or nil) -- в тёмном Неоне подсвечиваем сильнее
+		CollectionService:AddTag(emblem, "BoardEmblem")
+		return emblem
 	end
-	glow(emblem, board.Name == "BoardEggs" and b.Plate2 or w.Coin, w.Neon and 4 or nil) -- в тёмном Неоне подсвечиваем сильнее
-	CollectionService:AddTag(emblem, "BoardEmblem")
+	if board.Name == "BoardMain" then
+		-- над большой доской: монета слева, яйцо по центру, хоровод монет справа — как вкладки
+		local half = board.Size.X / 2
+		make("BoardCoins", center * CFrame.new(-half + 6 * k, -1.5 * k, 0), k)
+		make("BoardEggs", center, k)
+		make("BoardPickups", center * CFrame.new(half - 6 * k, -1.5 * k, 0), k)
+	else
+		make(board.Name, center, k)
+	end
 	return m
 end
 

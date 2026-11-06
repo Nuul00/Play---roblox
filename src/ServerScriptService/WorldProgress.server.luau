@@ -244,10 +244,58 @@ local function themeOldBoard(zone,board)
   if frame and frame:IsA("BasePart") and frame.Material==Enum.Material.Neon then game:GetService("CollectionService"):AddTag(frame,"BoardPulse") end
  end
 end
+-- Одна большая доска острова (BoardMain): вкладки COINS / EGGS / PICKUPS сверху, под ними страницы.
+-- Переключает вкладки клиент (LeaderboardTabs): по нажатию и сам по кругу каждые 10 с.
+local TABS={{Part="BoardCoins",Text="COINS",Color=Color3.fromRGB(255,190,40),Ink=Color3.fromRGB(120,60,0)},
+ {Part="BoardEggs",Text="EGGS",Color=Color3.fromRGB(80,195,255),Ink=Color3.fromRGB(15,60,130)},
+ {Part="BoardPickups",Text="PICKUPS",Color=Color3.fromRGB(185,110,255),Ink=Color3.fromRGB(70,20,120)}}
+local tabbed={}
+local function tabbedPages(zone,board,noLight)
+ if tabbed[board] then return tabbed[board] end
+ local gui=Instance.new("SurfaceGui")
+ gui.Name="Rankings";gui.Face=Enum.NormalId.Front;gui.MaxDistance=170;gui.Active=true
+ gui:SetAttribute("Tabbed",true)
+ local aspect=board.Size.X/board.Size.Y
+ gui.CanvasSize=aspect>=860/390 and Vector2.new(390*aspect,390) or Vector2.new(860,860/aspect)
+ if noLight then gui.LightInfluence=0 end
+ gui.Parent=board
+ local content=Instance.new("Frame");content.Name="Content";content.BackgroundTransparency=1
+ content.AnchorPoint=Vector2.new(0.5,0.5);content.Position=UDim2.fromScale(0.5,0.5);content.Size=UDim2.fromOffset(860,390);content.Parent=gui
+ local pages={}
+ for i,t in ipairs(TABS) do
+  local b=Instance.new("TextButton");b.Name="Tab_"..t.Part;b:SetAttribute("Page",t.Part)
+  b.Position=UDim2.fromOffset(16+(i-1)*280,10);b.Size=UDim2.fromOffset(268,58);b.AutoButtonColor=false
+  b.BackgroundColor3=t.Color;b.Font=Decor.TITLE_FONT;b.TextScaled=true;b.Text=t.Text;b.TextColor3=Color3.new(1,1,1)
+  b:SetAttribute("Color",t.Color);b.Parent=content
+  Instance.new("UICorner",b).CornerRadius=UDim.new(0,18)
+  local pad=Instance.new("UIPadding");pad.PaddingTop=UDim.new(0,8);pad.PaddingBottom=UDim.new(0,6);pad.Parent=b
+  local ink=Instance.new("UIStroke");ink.Thickness=4;ink.Color=t.Ink;ink.ApplyStrokeMode=Enum.ApplyStrokeMode.Contextual;ink.Parent=b
+  local rim=Instance.new("UIStroke");rim.Name="Rim";rim.Thickness=i==1 and 5 or 0;rim.Color=Color3.new(1,1,1);rim.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;rim.Parent=b
+  b.BackgroundTransparency=i==1 and 0 or 0.45
+  local page=Instance.new("Frame");page.Name="Page_"..t.Part;page.BackgroundTransparency=1
+  page.Position=UDim2.fromOffset(0,76);page.Size=UDim2.fromOffset(860,314);page.Visible=i==1;page.Parent=content
+  pages[t.Part]=page
+ end
+ local wk=zone:GetAttribute("WorldKey")
+ local ok,err=pcall(Decor.Decorate,board,DECOR_KEY[wk] or wk or zone.Name,boardTop(board))
+ if not ok then warn("[Leaderboards] decor",err) end
+ tabbed[board]=pages
+ return pages
+end
 for _,def in ipairs(defs) do
  def.lists={};def.subtitles={}
  for _,zone in ipairs(zones) do
-  local board=zoneBoard(zone,def.Part)
+  local main=zone~=world and zone~=city and zone:FindFirstChild("BoardMain",true)
+  if main then
+   -- страница этой таблицы на большой доске с вкладками
+   local noLight=main:GetAttribute("NoLight")==true
+   local page=tabbedPages(zone,main,noLight)[def.Part]
+   table.insert(def.subtitles,label(page,persistent and "GLOBAL · refreshes every 120s" or "THIS SERVER · publish for global rankings",UDim2.fromOffset(0,0),UDim2.fromOffset(860,26),19,main:GetAttribute("SubColor")))
+   local list=Instance.new("ScrollingFrame")
+   list.Position=UDim2.fromOffset(25,30);list.Size=UDim2.fromOffset(810,280);list.BackgroundTransparency=1;list.BorderSizePixel=0;list.ScrollBarThickness=8;list.Parent=page
+   table.insert(def.lists,list)
+  end
+  local board=not main and zoneBoard(zone,def.Part)
   if board then
    local neon=zone==city or zone:GetAttribute("WorldKey")=="NeonCity"
    local noLight=neon or board:GetAttribute("NoLight")==true
