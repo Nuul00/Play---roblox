@@ -345,8 +345,79 @@ task.spawn(function()
 			end
 		end
 	end
+	-- факелы мерцают, сундуки раз в несколько секунд «выстреливают» монетами
+	local torches, chests = {}, {}
+	for _, d in ipairs(portal:GetChildren()) do
+		if d:GetAttribute("Torch") then
+			table.insert(torches, d:FindFirstChild("TorchLight"))
+		elseif d:GetAttribute("Chest") then
+			table.insert(chests, d)
+		end
+	end
+	local coinT = ReplicatedStorage:FindFirstChild("TripoProps") and ReplicatedStorage.TripoProps:FindFirstChild("RushCoin")
+	local fx = Instance.new("Folder")
+	fx.Name = "PortalChestFX"
+	fx.Parent = workspace
+	local function popCoins(chest: BasePart)
+		local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not coinT or not me or (me.Position - chest.Position).Magnitude > 120 then
+			return
+		end
+		local cl = chest:FindFirstChild("ChestLight")
+		if cl then
+			cl.Brightness = 4
+			TweenService:Create(cl, TweenInfo.new(0.8), { Brightness = 0.8 }):Play()
+		end
+		local burst = chest:FindFirstChildOfClass("ParticleEmitter")
+		if burst then
+			burst:Emit(14)
+		end
+		for k = 1, 4 do
+			local m = coinT:Clone()
+			for _, d in ipairs(m:GetDescendants()) do
+				if d:IsA("SurfaceAppearance") then
+					d.Parent = nil
+				elseif d:IsA("BasePart") then
+					d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.CastShadow = true, false, false, false, false
+					d.Material = Enum.Material.Metal
+					d.Color = Color3.fromRGB(245, 185, 40)
+					d.Reflectance = 0.18
+				end
+			end
+			local _, ext = m:GetBoundingBox()
+			m:ScaleTo(m:GetScale() * 1.3 / math.max(ext.X, ext.Y, ext.Z, 0.01))
+			m.Parent = fx
+			local pos = chest.Position
+			local vel = Vector3.new((math.random() - 0.5) * 8, 14 + math.random() * 6, (math.random() - 0.5) * 8)
+			local spin = math.random() * 6
+			task.spawn(function()
+				local t0 = os.clock()
+				while os.clock() - t0 < 1.1 and m.Parent do
+					local dt = RunService.RenderStepped:Wait()
+					vel += Vector3.new(0, -40, 0) * dt
+					pos += vel * dt
+					spin += dt * 10
+					m:PivotTo(CFrame.new(pos) * CFrame.Angles(spin, spin * 0.6, 0))
+				end
+				m:Destroy()
+			end)
+			task.wait(0.08)
+		end
+	end
+	for i, ch in ipairs(chests) do
+		task.spawn(function()
+			task.wait(i * 1.7)
+			while ch.Parent do
+				popCoins(ch)
+				task.wait(3.2 + math.random() * 1.5)
+			end
+		end)
+	end
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
+		for i, tl in ipairs(torches) do
+			tl.Brightness = 1.8 + 0.5 * math.sin(t * 13 + i) + 0.3 * math.sin(t * 7.3 + i * 2)
+		end
 		for _, f in ipairs(floats) do
 			f.m:PivotTo(f.cf * CFrame.new(0, math.sin(t * 2 + f.k) * 0.5, 0) * CFrame.Angles(0, t * 1.8 + f.k, 0))
 		end

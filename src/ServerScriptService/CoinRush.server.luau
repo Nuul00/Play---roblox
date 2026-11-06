@@ -405,6 +405,57 @@ do
 	glow.Brightness = 2
 	glow.Parent = field
 	mist.Parent = part(portal, "MistAnchor", Vector3.new(OW, 0.2, 0.2), face * CFrame.new(0, 0.6, -0.5), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+	-- живые факелы и сундуки модели арки (точки подобраны по виду в Play: факелы ±11.7 на высоте 14,
+	-- сундуки ±11.4 сверху ~6.4; оси — как у арки). Огонь, угольки и свет — у факелов; золотые искры
+	-- у сундуков, а клиент периодически «выстреливает» из них монеты (крышка — часть меша).
+	if arch then
+		for _, sx in ipairs({ -1, 1 }) do
+			local torch = part(portal, "TorchFire", Vector3.new(0.4, 0.4, 0.4), face * CFrame.new(sx * 11.7, 14.0, 0), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+			local fire = Instance.new("Fire")
+			fire.Size = 2.6
+			fire.Heat = 9
+			fire.Color = Color3.fromRGB(255, 140, 30)
+			fire.SecondaryColor = Color3.fromRGB(255, 220, 80)
+			fire.Parent = torch
+			local embers = Instance.new("ParticleEmitter")
+			embers.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			embers.Color = ColorSequence.new(Color3.fromRGB(255, 170, 60), Color3.fromRGB(255, 90, 20))
+			embers.LightEmission = 1
+			embers.Rate = 10
+			embers.Lifetime = NumberRange.new(0.8, 1.5)
+			embers.Speed = NumberRange.new(2, 4)
+			embers.SpreadAngle = Vector2.new(20, 20)
+			embers.Acceleration = Vector3.new(0, 3, 0)
+			embers.Size = NumberSequence.new(0.25, 0)
+			embers.Parent = torch
+			local tl = Instance.new("PointLight")
+			tl.Name = "TorchLight"
+			tl.Color = Color3.fromRGB(255, 150, 60)
+			tl.Range = 16
+			tl.Brightness = 2
+			tl.Parent = torch
+			torch:SetAttribute("Torch", true)
+			local chest = part(portal, "ChestGlow", Vector3.new(3.5, 1, 3), face * CFrame.new(sx * 11.4, 6.4, 0.5), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+			chest:SetAttribute("Chest", sx)
+			local glit = Instance.new("ParticleEmitter")
+			glit.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			glit.Color = ColorSequence.new(Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 255, 230))
+			glit.LightEmission = 1
+			glit.Rate = 7
+			glit.Lifetime = NumberRange.new(0.6, 1.1)
+			glit.Speed = NumberRange.new(0.5, 2)
+			glit.SpreadAngle = Vector2.new(60, 60)
+			glit.RotSpeed = NumberRange.new(-120, 120)
+			glit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.5), NumberSequenceKeypoint.new(1, 0) })
+			glit.Parent = chest
+			local cl = Instance.new("PointLight")
+			cl.Name = "ChestLight"
+			cl.Color = Color3.fromRGB(255, 200, 80)
+			cl.Range = 10
+			cl.Brightness = 0.8
+			cl.Parent = chest
+		end
+	end
 	-- табличка над аркой: название и цена (цену пишет клиент)
 	local anchor = part(portal, "SignAnchor", Vector3.new(1, 1, 1), face * CFrame.new(0, h + 3.5, 0), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
 	local bb = Instance.new("BillboardGui")
@@ -469,7 +520,7 @@ do
 	end
 	-- парящие монеты над тропинкой (модель Tripo в золоте, крутит клиент)
 	local coinSrc = ReplicatedStorage:FindFirstChild("TripoProps") and ReplicatedStorage.TripoProps:FindFirstChild("RushCoin")
-	for k, t in ipairs({ 0.22, 0.5, 0.78 }) do
+	for k, t in ipairs({ 0.18, 0.42 }) do -- ближе к дороге: у арки монета закрывала сундук
 		local pos = at(t)
 		pos = Vector3.new(pos.X, groundAt(pos) + 4.5, pos.Z)
 		if coinSrc then
@@ -607,6 +658,37 @@ do
 	R.Prompt = prompt
 	R.ReturnCF = face * CFrame.new(0, 4, -12) * CFrame.Angles(0, math.pi, 0)
 end
+
+-- монеты мира не спавнятся у портала и на тропинке: переносим их на главную дорогу рядом
+task.delay(12, function() -- после WorldPolish (он двигает монеты при старте)
+	local center = portal:GetPivot().Position
+	local stones = {}
+	for _, d in ipairs(portal:GetDescendants()) do
+		if d.Name == "PathStone" or d.Name == "GateBase" then
+			table.insert(stones, d.Position)
+		end
+	end
+	local rng = Random.new(7)
+	local moved = 0
+	for _, c in ipairs(world:GetChildren()) do
+		if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then
+			local p = c.Position
+			local near = Vector2.new(p.X - center.X, p.Z - center.Z).Magnitude < 22
+			for _, sp in ipairs(stones) do
+				if Vector2.new(p.X - sp.X, p.Z - sp.Z).Magnitude < 6 then
+					near = true
+				end
+			end
+			if near then
+				local np = Vector3.new(rng:NextNumber(-5, 5), p.Y, p.Z + rng:NextNumber(-18, 18))
+				c.Position = np
+				c:SetAttribute("Home", np)
+				moved += 1
+			end
+		end
+	end
+	print("[CoinRush] coins moved away from the portal:", moved)
+end)
 
 -- ===== забеги =====
 local runs = {} -- [player] = run
