@@ -25,7 +25,7 @@ local ORDER = { "BoardPickups", "BoardEggs", "BoardCoins" } -- слева нап
 local THEMES = {
 	Meadow = {
 		Board = rgb(30, 70, 45), Frame = rgb(120, 80, 45), FrameMat = M.Wood, Trim = rgb(255, 220, 120), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 7,
+		Title = rgb(255, 225, 130), Sub = rgb(220, 245, 210), Legs = true, LegColor = rgb(110, 72, 40), Leaves = true, Lift = 11,
 		Steps = { rgb(255, 205, 60), rgb(220, 225, 235), rgb(220, 140, 80) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(110, 200, 90), TopMat = M.Grass, Under = rgb(120, 95, 70), UnderMat = M.Slate, Rim = rgb(90, 160, 70), RimMat = M.Grass,
 		Deck = rgb(150, 100, 60), DeckMat = M.WoodPlanks, Rail = rgb(110, 72, 40), RailMat = M.Wood, Lamp = rgb(255, 210, 120),
@@ -33,7 +33,7 @@ local THEMES = {
 	},
 	NeonCity = {
 		Board = rgb(12, 10, 30), Frame = rgb(30, 26, 60), FrameMat = M.Metal, Trim = rgb(255, 80, 220), TrimMat = M.Neon, Trim2 = rgb(80, 230, 255),
-		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 7,
+		Title = rgb(255, 130, 240), Sub = rgb(120, 235, 255), Legs = true, LegColor = rgb(40, 36, 80), Pulse = true, Lift = 11,
 		Steps = { rgb(255, 215, 90), rgb(200, 210, 255), rgb(255, 140, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(22, 18, 44), TopMat = M.Metal, Under = rgb(30, 26, 60), UnderMat = M.Metal, Rim = rgb(255, 80, 220), RimMat = M.Neon, Grid = rgb(80, 230, 255),
 		Deck = rgb(26, 22, 50), DeckMat = M.Metal, Rail = rgb(80, 230, 255), RailMat = M.Neon, Lamp = rgb(255, 80, 220),
@@ -41,7 +41,7 @@ local THEMES = {
 	},
 	SkyIsles = {
 		Board = rgb(40, 70, 120), Frame = rgb(250, 250, 255), FrameMat = M.SmoothPlastic, Trim = rgb(255, 215, 110), TrimMat = M.Neon,
-		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 7,
+		Title = rgb(255, 225, 130), Sub = rgb(200, 235, 255), Legs = true, LegColor = rgb(235, 240, 255), Clouds = true, Lift = 11,
 		Float = { Bob = 0.45, Sway = 0.8, Speed = 0.7 },
 		Steps = { rgb(255, 210, 80), rgb(225, 232, 245), rgb(240, 160, 100) }, StepMat = M.SmoothPlastic, StepRim = M.Neon,
 		Top = rgb(245, 240, 255), TopMat = M.SmoothPlastic, Under = rgb(255, 255, 255), UnderMat = M.SmoothPlastic, Rim = rgb(255, 215, 110), RimMat = M.Neon, Puffs = true,
@@ -50,7 +50,7 @@ local THEMES = {
 	},
 	FrozenPeaks = {
 		Board = rgb(20, 55, 95), Frame = rgb(170, 225, 255), FrameMat = M.Glacier, Trim = rgb(140, 230, 255), TrimMat = M.Neon,
-		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 7,
+		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 11,
 		Steps = { rgb(255, 215, 110), rgb(210, 235, 255), rgb(235, 165, 120) }, StepMat = M.Ice, StepRim = M.Neon,
 		Top = rgb(245, 250, 255), TopMat = M.Snow, Under = rgb(150, 205, 240), UnderMat = M.Glacier, Rim = rgb(140, 230, 255), RimMat = M.Ice, Icicles = true,
 		Deck = rgb(180, 225, 250), DeckMat = M.Ice, Rail = rgb(245, 250, 255), RailMat = M.Snow, Lamp = rgb(150, 230, 255),
@@ -58,7 +58,7 @@ local THEMES = {
 	},
 	MagmaVolcano = {
 		Board = rgb(28, 18, 18), Frame = rgb(40, 30, 32), FrameMat = M.Basalt, Trim = rgb(255, 110, 30), TrimMat = M.Neon,
-		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 7,
+		Title = rgb(255, 170, 70), Sub = rgb(255, 210, 150), Legs = true, LegColor = rgb(45, 35, 35), Pulse = true, Embers = rgb(255, 140, 40), Lift = 11,
 		Steps = { rgb(255, 190, 60), rgb(190, 190, 200), rgb(210, 120, 70) }, StepMat = M.Basalt, StepRim = M.Neon,
 		Top = rgb(60, 36, 30), TopMat = M.CrackedLava, Under = rgb(40, 30, 32), UnderMat = M.Basalt, Rim = rgb(255, 110, 30), RimMat = M.Neon, Cracks = rgb(255, 120, 30),
 		Deck = rgb(45, 35, 35), DeckMat = M.Basalt, Rail = rgb(255, 110, 30), RailMat = M.Neon, Lamp = rgb(255, 140, 40),
@@ -66,7 +66,7 @@ local THEMES = {
 	},
 	CosmicGalaxy = {
 		Board = rgb(14, 10, 40), Frame = rgb(60, 50, 110), FrameMat = M.Metal, Trim = rgb(120, 230, 255), TrimMat = M.Neon, Trim2 = rgb(255, 110, 220),
-		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 10, Stardust = rgb(200, 190, 255),
+		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 14, Stardust = rgb(200, 190, 255),
 		Float = { Bob = 1.1, Sway = 2.5, Speed = 0.5 },
 		Steps = { rgb(255, 215, 110), rgb(200, 210, 255), rgb(240, 150, 200) }, StepMat = M.Glass, StepRim = M.Neon,
 		Top = rgb(20, 16, 50), TopMat = M.Glass, Under = rgb(50, 40, 100), UnderMat = M.Slate, Rim = rgb(120, 230, 255), RimMat = M.Neon, Grid = rgb(255, 110, 220), Asteroids = true,
@@ -488,6 +488,175 @@ local function decorateIsland(island, key, theme, ic, groundY)
 end
 
 
+-- ===== сад для острова Meadow (чтобы не казался пустым): деревья, клумбы, кусты, прудик, пикник, заборчик, бабочки =====
+local PETALS = { rgb(255, 120, 160), rgb(255, 215, 80), rgb(170, 130, 255), rgb(255, 255, 255), rgb(255, 150, 70), rgb(120, 190, 255) }
+local BLOSSOM = { rgb(255, 180, 210), rgb(255, 205, 225), rgb(250, 150, 190) }
+local function meadowGarden(island, ic, groundY)
+	local pos = ic.Position
+	local function at(x, z, y)
+		return ic * CFrame.new(x, 0, z) + Vector3.new(0, groundY - pos.Y + (y or 0), 0)
+	end
+	-- занятые места: доска с пьедесталом, дорожка/мост, слоты декора
+	local busy = { { 0, 24, 24 }, { 0, -40, 9 }, { 0, -22, 7 } }
+	for _, sl in SLOTS do
+		table.insert(busy, { sl[1], sl[2], sl[3] == "L" and 4 or 9 })
+	end
+	local function free(x, z, r)
+		if x * x + z * z > (R - 5) ^ 2 then return false end
+		if math.abs(x) < 7 + r and z < -12 then return false end -- дорожка к мосту
+		for _, b in busy do
+			if (x - b[1]) ^ 2 + (z - b[2]) ^ 2 < (b[3] + r) ^ 2 then return false end
+		end
+		return true
+	end
+	local function take(x, z, r)
+		table.insert(busy, { x, z, r })
+	end
+	local rng = Random.new(11)
+
+	-- цветущие деревья
+	local function tree(x, z, h)
+		local m = Instance.new("Model")
+		m.Name = "GardenTree"
+		local base = at(x, z)
+		cyl(m, "Trunk", h, 2.4, base * CFrame.new(0, h / 2, 0), rgb(120, 80, 50), M.Wood, GHOST)
+		for k, c in { { 0, 0, 0, 7.5 }, { 2.6, -1, 1, 5.5 }, { -2.4, -0.6, -1.2, 5.8 }, { 0.6, 1.6, -2.2, 5 }, { -0.8, -1.2, 2.6, 5 } } do
+			ball(m, "Crown", c[4] * 1.35, (base * CFrame.new(c[1] * 1.35, h + c[2] * 1.35, c[3] * 1.35)).Position, BLOSSOM[(k % #BLOSSOM) + 1], M.SmoothPlastic, GHOST)
+		end
+		local e = emitter(m:FindFirstChild("Crown"), rgb(255, 190, 215), 3, {
+			Color = ColorSequence.new(rgb(255, 190, 215), rgb(255, 240, 245)), LightEmission = 0.2,
+			Lifetime = NumberRange.new(4, 6), Speed = NumberRange.new(0.3, 0.8), Acceleration = Vector3.new(0.4, -0.7, 0),
+			RotSpeed = NumberRange.new(-90, 90), Rotation = NumberRange.new(0, 360),
+		})
+		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.2) })
+		m.Parent = island
+		take(x, z, 9)
+	end
+	tree(-44, 28, 12)
+	tree(44, 28, 13)
+	tree(-14, 48, 11)
+	tree(14, 48, 11.5)
+	tree(-28, -44, 9)
+	tree(28, -44, 9.5)
+
+	-- прудик с кувшинками и камышом (слева)
+	do
+		local px, pz = -32, 6
+		cyl(island, "PondRim", 0.5, 15, at(px, pz, 0.05), rgb(150, 150, 140), M.Slate, GHOST)
+		local w = cyl(island, "PondWater", 0.3, 13, at(px, pz, 0.25), rgb(80, 170, 230), M.Glass, GHOST)
+		w.Transparency = 0.15
+		w.Reflectance = 0.2
+		for i = 1, 4 do
+			local a = i * 1.7
+			cyl(island, "LilyPad", 0.08, rng:NextNumber(1.6, 2.2), at(px + math.cos(a) * 3.6, pz + math.sin(a) * 3.6, 0.45), rgb(90, 180, 80), M.SmoothPlastic, GHOST)
+		end
+		ball(island, "LilyFlower", 0.8, at(px + math.cos(1.7) * 3.6, pz + math.sin(1.7) * 3.6, 0.8).Position, rgb(255, 170, 210), M.SmoothPlastic, GHOST)
+		for i = 1, 7 do
+			local a = 3.6 + i * 0.22
+			local h = rng:NextNumber(2, 3.4)
+			cyl(island, "Reed", h, 0.18, at(px + math.cos(a) * 7, pz + math.sin(a) * 7, h / 2), rgb(110, 160, 60), M.Grass, GHOST)
+			part(island, "ReedTop", Vector3.new(0.35, 0.9, 0.35), at(px + math.cos(a) * 7, pz + math.sin(a) * 7, h), rgb(120, 80, 45), M.SmoothPlastic, GHOST)
+		end
+		take(px, pz, 8)
+	end
+
+	-- пикник (справа): плед, корзинка, яблоки
+	do
+		local px, pz = 32, 6
+		local cf = at(px, pz, 0.05) * CFrame.Angles(0, math.rad(20), 0)
+		for i = 0, 3 do
+			for j = 0, 3 do
+				part(island, "Blanket", Vector3.new(2, 0.1, 2), cf * CFrame.new(-3 + i * 2, 0, -3 + j * 2), (i + j) % 2 == 0 and rgb(220, 60, 60) or rgb(250, 245, 235), M.Fabric, GHOST)
+			end
+		end
+		part(island, "Basket", Vector3.new(2.2, 1.4, 1.6), cf * CFrame.new(1.4, 0.75, 1), rgb(170, 120, 60), M.WoodPlanks, GHOST)
+		part(island, "BasketHandle", Vector3.new(0.2, 1.2, 0.2), cf * CFrame.new(0.6, 2, 1), rgb(140, 95, 45), M.Wood, GHOST)
+		part(island, "BasketHandle", Vector3.new(0.2, 1.2, 0.2), cf * CFrame.new(2.2, 2, 1), rgb(140, 95, 45), M.Wood, GHOST)
+		part(island, "BasketHandle", Vector3.new(1.8, 0.2, 0.2), cf * CFrame.new(1.4, 2.6, 1), rgb(140, 95, 45), M.Wood, GHOST)
+		for k, o in { { -1.2, -1 }, { -0.4, -1.6 }, { -1.6, -0.2 } } do
+			ball(island, "Apple", 0.7, (cf * CFrame.new(o[1], 0.4, o[2])).Position, k == 2 and rgb(140, 210, 60) or rgb(220, 40, 40), M.SmoothPlastic, GHOST)
+		end
+		take(px, pz, 6)
+	end
+
+	-- кусты
+	for _ = 1, 40 do
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(24, R - 7)
+		local x, z = math.cos(a) * d, math.sin(a) * d
+		if free(x, z, 2.5) then
+			for b = 1, 3 do
+				ball(island, "Bush", rng:NextNumber(2, 3), at(x + math.cos(b * 2.1) * 1.1, z + math.sin(b * 2.1) * 1.1, 0.9).Position,
+					rgb(80, 165, 80):Lerp(rgb(140, 215, 110), rng:NextNumber(0, 0.5)), M.Grass, GHOST)
+			end
+			take(x, z, 2.5)
+		end
+	end
+
+	-- клумбы-кучки цветов
+	local function flower(x, z, col)
+		local h = rng:NextNumber(1.3, 2.2)
+		cyl(island, "FlowerStem", h, 0.14, at(x, z, h / 2), rgb(90, 160, 60), M.SmoothPlastic, GHOST)
+		local head = at(x, z, h)
+		for p = 0, 4 do
+			local a = p / 5 * math.pi * 2
+			ball(island, "Petal", 0.62, (head * CFrame.new(math.cos(a) * 0.42, 0, math.sin(a) * 0.42)).Position, col, M.SmoothPlastic, GHOST)
+		end
+		ball(island, "FlowerCore", 0.45, head.Position + Vector3.new(0, 0.08, 0), rgb(255, 200, 40), M.SmoothPlastic, GHOST)
+	end
+	local beds = 0
+	for _ = 1, 80 do
+		if beds >= 22 then break end
+		local a, d = rng:NextNumber(0, math.pi * 2), rng:NextNumber(14, R - 6)
+		local x, z = math.cos(a) * d, math.sin(a) * d
+		if free(x, z, 2.2) then
+			local col = PETALS[rng:NextInteger(1, #PETALS)]
+			for _ = 1, 5 do
+				flower(x + rng:NextNumber(-1.8, 1.8), z + rng:NextNumber(-1.8, 1.8), col)
+			end
+			take(x, z, 2.2)
+			beds += 1
+		end
+	end
+
+	-- заборчик по краю (кроме входа с моста)
+	local fr = R - 2.5
+	local step = 4.5
+	local n = math.floor(2 * math.pi * fr / step)
+	local prev
+	for i = 0, n do
+		local a = i / n * math.pi * 2
+		local x, z = math.sin(a) * fr, -math.cos(a) * fr -- a=0 — в сторону моста (−Z)
+		local gap = math.abs(math.atan2(x, -z)) < math.rad(14)
+		if not gap then
+			local post = at(x, z, 1.4)
+			part(island, "FencePost", Vector3.new(0.5, 2.8, 0.5), post, rgb(250, 245, 235), M.Wood, GHOST)
+			part(island, "FenceCap", Vector3.new(0.7, 0.3, 0.7), post * CFrame.new(0, 1.5, 0), rgb(250, 245, 235), M.Wood, GHOST)
+			if prev then
+				local mid = (prev + post.Position) / 2
+				local len = (post.Position - prev).Magnitude
+				for _, hy in { -0.4, 0.6 } do
+					part(island, "FenceRail", Vector3.new(0.25, 0.35, len), CFrame.lookAt(mid, post.Position) + Vector3.new(0, hy, 0), rgb(240, 230, 215), M.Wood, GHOST)
+				end
+			end
+			prev = post.Position
+		else
+			prev = nil
+		end
+	end
+
+	-- бабочки
+	local fly = part(island, "Butterflies", Vector3.new(R * 1.3, 0.2, R * 1.3), at(0, 0, 4), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+	fly.Transparency = 1
+	local e = emitter(fly, rgb(255, 160, 220), 3, {
+		Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, rgb(255, 150, 210)), ColorSequenceKeypoint.new(0.5, rgb(255, 220, 90)), ColorSequenceKeypoint.new(1, rgb(150, 200, 255)) }),
+		LightEmission = 0.4, Lifetime = NumberRange.new(5, 8), Speed = NumberRange.new(0.8, 1.6),
+		EmissionDirection = Enum.NormalId.Top, SpreadAngle = Vector2.new(70, 70), Acceleration = Vector3.new(0, -0.05, 0),
+		RotSpeed = NumberRange.new(-200, 200), Rotation = NumberRange.new(0, 360),
+	})
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(0.5, 0.65), NumberSequenceKeypoint.new(1, 0) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0), NumberSequenceKeypoint.new(0.85, 0), NumberSequenceKeypoint.new(1, 1) })
+end
+
 -- ===== пьедестал из каталога Roblox (ReplicatedStorage.LeaderboardPodium, «Rank Board») =====
 -- Лицевая сторона модели — −Z её точки опоры. Высоты ступеней меряем лучами один раз; на верх каждой
 -- ступени ставим невидимую Place1..3 (на неё WorldProgress ставит аватар), спереди — таблички Plate1..3.
@@ -511,8 +680,8 @@ local function localExtents(m)
 	return mn, mx
 end
 local catalog
-local function measureCatalog()
-	local t = ReplicatedStorage:FindFirstChild("LeaderboardPodium")
+local function measureCatalog(name)
+	local t = ReplicatedStorage:FindFirstChild(name or "LeaderboardPodium")
 	if not t then return nil end
 	local c = t:Clone()
 	for _, d in c:GetDescendants() do
@@ -547,7 +716,7 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 		if d:IsA("BaseScript") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored = true end
 	end
 	local mn, mx = cat.mn, cat.mx
-	local k = 12 / (mx.X - mn.X) -- пьедестал перед большой доской; головы победителей у её нижнего края
+	local k = (cat.width or 12) / (mx.X - mn.X) -- пьедестал перед большой доской; головы победителей у её нижнего края
 	m:PivotTo(CFrame.new())
 	pcall(function() m:ScaleTo(m:GetScale() * k) end)
 	local cx, cz = (mn.X + mx.X) / 2 * k, (mn.Z + mx.Z) / 2 * k
@@ -557,11 +726,18 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 	m.Name = "Podium_" .. name
 	local look = cf.LookVector
 	m:SetAttribute("Yaw", math.atan2(-look.X, -look.Z))
+	local _, _, v = theme.Top:ToHSV()
+	if cat.crown and v < 0.3 then
+		-- в тёмных мирах (неон, лава, космос) — мягкая подсветка спереди, чтобы цифры читались
+		local lamp = part(m, "PodiumGlow", Vector3.new(0.2, 0.2, 0.2), CFrame.new(piv * Vector3.new(cx, (mn.Y + (mx.Y - mn.Y) * 0.5) * k, mn.Z * k - 5)), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+		lamp.Transparency = 1
+		light(lamp, rgb(255, 240, 220), 16, 1.6)
+	end
 	for _, st in cat.steps do
 		local top = piv * Vector3.new(st.x * k, st.top * k, cz)
 		local place = part(m, "Place" .. st.place, Vector3.new(3, 0.2, 3), CFrame.new(top - Vector3.new(0, 0.1, 0)) * cf.Rotation, MEDAL[st.place], M.SmoothPlastic, GHOST)
 		place.Transparency = 1
-		local plate = part(m, "Plate" .. st.place, Vector3.new(3.4, 0.9, 0.2), CFrame.new(piv * Vector3.new(st.x * k, mn.Y * k + 0.9, mn.Z * k - 0.15)) * cf.Rotation, rgb(48, 44, 86), M.SmoothPlastic, GHOST)
+		local plate = part(m, "Plate" .. st.place, Vector3.new(cat.crown and 2.8 or 3.4, cat.crown and 0.7 or 0.9, 0.2), CFrame.new(piv * Vector3.new(st.x * k, mn.Y * k + (cat.crown and 0.55 or 0.9), mn.Z * k - 0.15)) * cf.Rotation, rgb(48, 44, 86), M.SmoothPlastic, GHOST)
 		local g = Instance.new("SurfaceGui")
 		g.Face = Enum.NormalId.Front
 		g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -579,6 +755,26 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 		tl.TextColor3 = Color3.new(1, 1, 1)
 		tl.Text = "—"
 		tl.Parent = g
+		if cat.crown and st.place == 1 then
+			-- корона парит над головой победителя
+			local crown = Instance.new("Model")
+			crown.Name = "Crown"
+			local at = CFrame.new(top + Vector3.new(0, 5.2, 0))
+			local band = cyl(crown, "Band", 0.7, 2.2, at, MEDAL[1], M.Metal, GHOST)
+			band.Reflectance = 0.25
+			crown.PrimaryPart = band
+			for i = 0, 4 do
+				local a = i / 5 * math.pi * 2
+				part(crown, "Spike", Vector3.new(0.35, 0.9, 0.35), at * CFrame.new(math.cos(a) * 0.95, 0.75, math.sin(a) * 0.95), MEDAL[1], M.Metal, GHOST)
+				ball(crown, "Gem", 0.35, (at * CFrame.new(math.cos(a) * 0.95, 1.25, math.sin(a) * 0.95)).Position, rgb(255, 80, 120), M.Neon, GHOST)
+			end
+			emitter(band, MEDAL[1], 5, { Speed = NumberRange.new(0.3, 1) })
+			light(band, MEDAL[1], 7, 0.8)
+			crown:SetAttribute("Spin", 60)
+			crown:SetAttribute("Bob", 0.3)
+			CollectionService:AddTag(crown, "BoardEmblem")
+			crown.Parent = m
+		end
 	end
 	m.Parent = island
 	return m
@@ -1024,6 +1220,9 @@ end
 function B.Build(world)
 	local built = {}
 	catalog = measureCatalog()
+	-- единый пьедестал из Tripo (ReplicatedStorage.TripoPodium) — один вид во всех мирах
+	local tripo = measureCatalog("TripoPodium")
+	if tripo then tripo.width = 10; tripo.crown = true end
 	podiumTpl.Meadow = grabTemplate(world)
 	podiumTpl.Neon = grabTemplate(world:FindFirstChild("NeonCity"))
 	local neon = world:FindFirstChild("NeonCity")
@@ -1056,6 +1255,7 @@ function B.Build(world)
 		island:SetAttribute("WorldKey", key)
 		buildIsland(island, theme, ic, hy)
 		decorateIsland(island, key, theme, ic, hy)
+		if key == "Meadow" then meadowGarden(island, ic, hy) end
 		buildBridge(island, theme, base + dir * (edge - 8), center - dir * (R - 1), hy)
 		if key == "FrozenPeaks" then
 			buildGlobe(island, theme, ic, hy, base + dir * (edge - 8), center - dir * (R - 1))
@@ -1102,7 +1302,7 @@ function B.Build(world)
 		buildBoard(island, theme, "BoardMain", cf)
 		local tpl = (key == "NeonCity" or key == "CosmicGalaxy") and podiumTpl.Neon or podiumTpl.Meadow
 		-- пьедестал как в первом/втором мире (из плейса), с медалями и короной; каталожный — только запасной
-		if not ((tpl and placePodium(island, theme, "BoardCoins", cf, tpl)) or (catalog and placeCatalogPodium(island, theme, "BoardCoins", cf, catalog))) then
+		if not ((tripo and placeCatalogPodium(island, theme, "BoardCoins", cf, tripo)) or (tpl and placePodium(island, theme, "BoardCoins", cf, tpl)) or (catalog and placeCatalogPodium(island, theme, "BoardCoins", cf, catalog))) then
 			buildPodium(island, theme, "BoardCoins", cf)
 		end
 		island.Parent = model
