@@ -266,6 +266,41 @@ local function panelY(): number
 	end
 	return math.max(y, (6 - dockY) / s)
 end
+-- панель открывается в свободное место: правее (или левее) всех кнопок этого края
+-- в её высоте — ROYAL EGG, TRADE, плитки статов и т.п. не закрываются
+local function panelX(): number
+	local size = vp()
+	local sc = rootScale.Scale
+	local right = side() == "R"
+	local y0 = dockY + panelY() * sc
+	local y1 = y0 + PH * sc
+	local pg = player.PlayerGui
+	local reach = right and size.X or 0 -- самый дальний от края край чужих кнопок
+	local limit = size.X * 0.45
+	for y = math.max(4, y0), math.min(size.Y - 4, y1), 22 do
+		for d = TAB_W * sc + 4, limit, 18 do
+			local x = right and (size.X - d) or d
+			for _, o in ipairs(pg:GetGuiObjectsAtPosition(x, y)) do
+				if solid(o, size) then
+					local a, b = o.AbsolutePosition.X, o.AbsolutePosition.X + o.AbsoluteSize.X
+					if right then
+						reach = math.min(reach, a)
+					else
+						reach = math.max(reach, b)
+					end
+					break
+				end
+			end
+		end
+	end
+	if right then
+		local edge = math.min(reach, size.X - (TAB_W + 8) * sc) - 8
+		return (edge - size.X) / sc + TAB_W -- в координатах дока (якорь панели справа)
+	else
+		local edge = math.max(reach, (TAB_W + 8) * sc) + 8
+		return edge / sc
+	end
+end
 local function applySide()
 	local right = side() == "R"
 	root.AnchorPoint = Vector2.new(right and 1 or 0, 0)
@@ -282,7 +317,7 @@ local function place()
 	local size = vp()
 	root.Position = UDim2.new(side() == "R" and 1 or 0, 0, 0, dockY)
 	if open then
-		panel.Position = UDim2.fromOffset(side() == "R" and -8 or TAB_W + 8, panelY())
+		panel.Position = UDim2.fromOffset(panelX(), panelY())
 	end
 	local _ = size
 end
@@ -294,7 +329,7 @@ local function setOpen(v)
 	if v then
 		panel.Visible = true
 		panelScale.Scale = 1
-		local px = panel.AnchorPoint.X == 1 and -8 or TAB_W + 8
+		local px = panelX()
 		local dir = panel.AnchorPoint.X == 1 and 1 or -1
 		panel.Position = UDim2.fromOffset(px + dir * 40, panelY())
 		Tween:Create(panel, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(px, panelY()) }):Play()
