@@ -763,6 +763,15 @@ do
  end
  for name, total in pairs(sum) do worldCoinValue[name] = total / count[name] end
 end
+-- Для других систем (данж Coin Rush): средняя монета мира × все множители игрока.
+do
+ local f = signals:FindFirstChild("CoinWorth") or Instance.new("BindableFunction")
+ f.Name = "CoinWorth"
+ f.Parent = signals
+ f.OnInvoke = function(p, worldName)
+  return (worldCoinValue[worldName] or worldCoinValue["Meadow Isles"] or 1) * PlayerSystems.CoinMultiplier(p)
+ end
+end
 -- Coin Rain: раз в Interval секунд игрок получает монеты на Pickups подборов в текущем мире.
 task.spawn(function()
  while world.Parent do

@@ -131,6 +131,34 @@ return function(Config)
 			Config.Exclusives[world] = id
 		end
 	end
+	-- Vault Golem — редкая награда данжа Coin Rush (id 222-227, закреплены: по одному на мир).
+	-- Выдаётся питомец лучшего открытого мира игрока; сила ×1.6 от главной Secret этого мира.
+	Config.VaultPets = {}
+	for worldIndex, world in ipairs(WORLD_ORDER) do
+		local list = Config.SuperByWorld[world]
+		local baseId = list and Config.Pets[list[1]] and Config.Pets[list[1]].Base
+		local b = baseId and Config.Pets[baseId]
+		if b then
+			local id = 221 + worldIndex
+			assert(Config.Pets[id] == nil, "SuperPets: vault id " .. id)
+			Config.Pets[id] = {
+				Name = "Vault Golem",
+				Rarity = "Secret",
+				Multiplier = math.floor(b.Multiplier * 1.6 * 100 + 0.5) / 100,
+				Visual = b.Visual,
+				Color = b.Color,
+				EggId = b.EggId,
+				Base = baseId,
+				Super = 4,
+				SuperKey = "Exclusive",
+				Scale = 1.35,
+				Look = "molten",
+				World = world,
+				Exclusive = true,
+			}
+			Config.VaultPets[world] = id
+		end
+	end
 	-- Royal Egg — яйцо за Robux (id питомцев 186-221, закреплены: 186 + (мир−1)·6 + (ступень−1)).
 	-- 6 питомцев; сила — доля от главной Secret лучшего открытого мира игрока, поэтому яйцо полезно
 	-- на любом этапе. Шансы фиксированы (их показывает окно яйца). В индекс и машины не входят.
