@@ -213,7 +213,7 @@ function D.Decorate(board, worldKey, topY)
 	local cf = board.CFrame
 	local base = cf * CFrame.new(0, topY - board.Position.Y, 0)
 	-- крупные доски (Meadow, Neon) получают пропорционально крупные табличку и эмблему
-	local k = board.Name == "BoardMain" and 1.5 or math.clamp(board.Size.X / 17, 1, 2.2)
+	local k = board.Name == "BoardMain" and 1.1 or math.clamp(board.Size.X / 17, 1, 2.2)
 	local plateCf = base * CFrame.new(0, 2.3 * k, 0)
 	local _, H = plate(m, b, w, plateCf, k)
 	local center = plateCf * CFrame.new(0, H / 2 + 3.6 * k, 0)
