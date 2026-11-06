@@ -97,7 +97,22 @@ local function setSequence(g: UIGradient)
 	g.Color = new
 end
 
+-- окна со своим продуманным оформлением ставят атрибут NoTheme — их не перекрашиваем
+local function themed(inst: Instance): boolean
+	local a: Instance? = inst
+	while a and not a:IsA("ScreenGui") do
+		if a:GetAttribute("NoTheme") then
+			return false
+		end
+		a = a.Parent
+	end
+	return true
+end
+
 local function paint(inst: Instance)
+	if not themed(inst) then
+		return
+	end
 	if inst:IsA("GuiObject") then
 		if inst.BackgroundTransparency < 1 then
 			setColor(inst, "BackgroundColor3", false)
