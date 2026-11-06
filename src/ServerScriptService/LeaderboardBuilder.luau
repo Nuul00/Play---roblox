@@ -1209,15 +1209,64 @@ local function rayDown(origin, depth)
 	end
 	return nil
 end
-local function findDirection(model, spawn, groundY)
+-- Ворота в стене мира: стену-брусок режем на два куска с проёмом под мост, по краям — светящиеся столбы.
+local function cutGate(wall, base, dir, hy, theme, island)
+	local cf, size, wpos = wall.CFrame, wall.Size, wall.Position
+	local longX = size.X >= size.Z
+	local axis = longX and cf.RightVector or cf.LookVector
+	local normal = longX and cf.LookVector or cf.RightVector
+	local denom = dir:Dot(normal)
+	local hit
+	if math.abs(denom) > 0.05 then
+		local t = (wpos - base):Dot(normal) / denom
+		hit = base + dir * t
+	else
+		hit = wpos
+	end
+	local L = longX and size.X or size.Z
+	local c = (hit - wpos):Dot(axis)
+	local g = (BRIDGE_W + 6) / 2 / math.max(0.35, math.abs(dir:Dot(normal)))
+	local function piece(a, b)
+		if b - a < 0.5 then return end
+		local p = wall:Clone()
+		p.Size = longX and Vector3.new(b - a, size.Y, size.Z) or Vector3.new(size.X, size.Y, b - a)
+		p.CFrame = cf + axis * ((a + b) / 2)
+		p.Parent = wall.Parent
+	end
+	local gateTop = hy + 14
+	local wb, wt = wpos.Y - size.Y / 2, wpos.Y + size.Y / 2
+	if wb >= gateTop then return end -- полоса/стена целиком выше проёма — не трогаем
+	piece(-L / 2, c - g)
+	piece(c + g, L / 2)
+	if wt > gateTop + 0.5 then
+		-- перемычка над воротами: стена остаётся сплошной выше проёма
+		local p = wall:Clone()
+		local h = wt - gateTop
+		p.Size = longX and Vector3.new(2 * g, h, size.Z) or Vector3.new(size.X, h, 2 * g)
+		p.CFrame = cf + axis * c + Vector3.new(0, (gateTop + h / 2) - wpos.Y, 0)
+		p.Parent = wall.Parent
+	end
+	wall:Destroy()
+	if size.Y < 3 then return end -- для тонких неоновых полос столбы не нужны
+	-- столбы ворот
+	for _, sgn in { -1, 1 } do
+		local at = wpos + axis * (c + sgn * (g + 0.8))
+		local h = gateTop - hy
+		local post = part(island, "GatePost", Vector3.new(1.6, h, 1.6), CFrame.new(at.X, hy + h / 2, at.Z), theme.Rail, theme.RailMat)
+		if theme.RailMat == M.Neon then CollectionService:AddTag(post, "BoardPulse") end
+		light(ball(island, "GateLamp", 1.8, Vector3.new(at.X, gateTop + 1, at.Z), theme.Lamp, M.Neon, GHOST), theme.Lamp, 22, 2)
+	end
+end
+
+local function findDirection(model, spawn, groundY, avoid)
 	local list = parts()
 	local near = {}
 	for _, q in list do
-		if q.Parent and Vector2.new(q.Position.X - spawn.X, q.Position.Z - spawn.Z).Magnitude < 420 and q.Position.Y < groundY + 60 and q.Position.Y > groundY - 60 then
+		if q.Parent and Vector2.new(q.Position.X - spawn.X, q.Position.Z - spawn.Z).Magnitude < 420 and q.Position.Y - q.Size.Y / 2 < groundY + 60 and q.Position.Y + q.Size.Y / 2 > groundY - 60 then
 			table.insert(near, q)
 		end
 	end
-	local best, bestScore, bestInfo, bestRemove, bestY
+	local best, bestScore, bestInfo, bestRemove, bestY, bestWalls
 	local why = {}
 	for deg = 0, 350, 10 do
 		task.wait()
@@ -1246,6 +1295,7 @@ local function findDirection(model, spawn, groundY)
 		end
 		local center = base + dir * (edge + GAP + R)
 		local removable = {}
+		local walls = {}
 		-- остров и пролёт не задевают ничего; у начала моста (последние 14 стадов площадки) нет важного
 		for _, q in near do
 			local off = q.Position - base
@@ -1257,7 +1307,21 @@ local function findDirection(model, spawn, groundY)
 			local inSpan = along > edge and along < edge + GAP + 2 and side < BRIDGE_W / 2 + 3 + math.min(r, 20) and top > hy - 6 and bottom < hy + 14
 			local atHead = along > edge - 14 and along <= edge and side < BRIDGE_W / 2 + 2 + math.min(r, 20) and top > hy + 1 and bottom < hy + 14
 			local thin = q.Size.Y < 0.5 and not q.CanCollide -- светящиеся линии на полу
-			if (inIsland or inSpan or atHead) and not thin then
+			local isWall = string.find(q.Name, "Wall", 1, true) and q:IsA("Part") and q.Shape == Enum.PartType.Block
+			if isWall then
+				-- стена вокруг мира (Neon): длинная, по центру детали не судим. Если её пересекает
+				-- коридор моста — прорежем ворота; иначе стена мосту не мешает.
+				local crosses = false
+				local half = q.Size / 2
+				for d = edge - 14, edge + GAP + 4, 2 do
+					for _, sd in { -BRIDGE_W / 2, 0, BRIDGE_W / 2 } do
+						local lp = q.CFrame:PointToObjectSpace(base + dir * d + Vector3.new(-dir.Z, 0, dir.X) * sd + Vector3.new(0, hy + 3 - base.Y, 0))
+						if math.abs(lp.X) <= half.X and math.abs(lp.Z) <= half.Z and math.abs(lp.Y) <= half.Y + 8 then crosses = true break end
+					end
+					if crosses then break end
+				end
+				if crosses then table.insert(walls, q) end
+			elseif (inIsland or inSpan or atHead) and not thin then
 				-- мелкий декор (облачка, камни пояса астероидов, ёлки) убираем, важное и крупное — нет
 				local fluff = (string.find(q.Name, "Puff", 1, true) or string.find(q.Name, "Cloud", 1, true)) and math.max(q.Size.X, q.Size.Z) < 60
 				if not fluff and (isImportant(q, model) or math.max(q.Size.X, q.Size.Y, q.Size.Z) > 20) then
@@ -1301,12 +1365,23 @@ local function findDirection(model, spawn, groundY)
 			continue
 		end
 		local score = edge + #removable * 2
+		-- не за порталом возврата: иначе, чтобы дойти до топов, игрок пятится и улетает в прошлый мир
+		for _, av in avoid or {} do
+			local to = (av - base) * Vector3.new(1, 0, 1)
+			if to.Magnitude > 4 then
+				if dir:Dot(to.Unit) > 0.35 then score += 1000 end
+			elseif dir.Z > 0.35 then
+				-- портал прямо на точке появления (Neon): игрок выходит лицом к −Z, позади — портал
+				score += 1000
+			end
+		end
+		score += #walls * 15
 		if not bestScore or score < bestScore then
-			best, bestScore, bestInfo, bestRemove, bestY = dir, score, edge, removable, hy
+			best, bestScore, bestInfo, bestRemove, bestY, bestWalls = dir, score, edge, removable, hy, walls
 		end
 	end
 	model:SetAttribute("LeaderboardIslandWhy", table.concat(why, " "))
-	return best, bestInfo, near, bestRemove, bestY
+	return best, bestInfo, near, bestRemove, bestY, bestWalls
 end
 
 -- пьедестал из плейса (как в Meadow / Neon): копия, уменьшенная под доску острова, в цветах мира
@@ -1419,7 +1494,14 @@ function B.Build(world)
 		end
 		local g = rayDown(spawn + Vector3.new(0, 5, 0), 30)
 		local groundY = g and g.Position.Y or spawn.Y - 3
-		local dir, edge, near, remove, hy = findDirection(model, spawn, groundY)
+		local avoid = {}
+		for _, d in model:GetDescendants() do
+			if string.sub(d.Name, 1, 8) == "PortalTo" and (d:IsA("BasePart") or d:IsA("Model")) then
+				local pp = d:IsA("Model") and d:GetPivot().Position or d.Position
+				if ((pp - spawn) * Vector3.new(1, 0, 1)).Magnitude < 90 then table.insert(avoid, pp) end
+			end
+		end
+		local dir, edge, near, remove, hy, walls = findDirection(model, spawn, groundY, avoid)
 		if not dir then
 			warn("[Leaderboards] no island direction in " .. key)
 			continue
@@ -1434,6 +1516,41 @@ function B.Build(world)
 		decorateIsland(island, key, theme, ic, hy)
 		if key == "Meadow" then meadowGarden(island, ic, hy) end
 		buildBridge(island, theme, base + dir * (edge - 8), center - dir * (R - 1), hy)
+		-- проход к мосту: скалы/холмы Terrain, которые встают между площадкой и началом моста
+		-- выше настила, срезаем ровной просекой (в Meadow мост упирался в скалу у берега)
+		for _, wl in walls or {} do pcall(cutGate, wl, base, dir, hy, theme, island) end
+		-- подход к мосту: дорожка и фонари, чтобы вход к топам было видно издалека, а не «шагнул в темноту»
+		do
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			local L0, L1 = edge - 44, edge - 7
+			for d = L0, L1, 4 do
+				local c = base + dir * (d + 2)
+				local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
+				if g and math.abs(g.Position.Y - hy) < 4 then
+					local tile = part(island, "ApproachPath", Vector3.new(BRIDGE_W - 2, 0.15, 4.1), CFrame.lookAt(g.Position + Vector3.new(0, 0.08, 0), g.Position + Vector3.new(0, 0.08, 0) + dir), theme.Deck, theme.DeckMat, GHOST)
+					if theme.DeckMat == M.Glass then tile.Transparency = 0.25 end
+					for _, sg in { -1, 1 } do
+						local e = part(island, "ApproachEdge", Vector3.new(0.35, 0.2, 4.1), tile.CFrame * CFrame.new(sg * (BRIDGE_W / 2 - 0.9), 0.05, 0), theme.Rail, theme.RailMat, GHOST)
+						if theme.RailMat == M.Neon then e.Transparency = 0.1 end
+					end
+				end
+			end
+			for d = L0 + 4, L1, 12 do
+				for _, sg in { -1, 1 } do
+					local c = base + dir * d + side * sg * (BRIDGE_W / 2 + 1)
+					local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
+					local y = g and g.Position.Y or hy
+					cyl(island, "ApproachPost", 3.4, 0.35, CFrame.new(c.X, y + 1.7, c.Z), theme.Rail:Lerp(Color3.new(0, 0, 0), 0.3), M.Metal, GHOST)
+					local bulb = ball(island, "ApproachLamp", 0.9, Vector3.new(c.X, y + 3.7, c.Z), theme.Lamp, M.Neon, GHOST)
+					light(bulb, theme.Lamp, 14, 1.2)
+				end
+			end
+		end
+		for d = edge - 40, edge + 2, 3 do
+			local c = base + dir * d
+			local mid = Vector3.new(c.X, hy + 0.9 + 20, c.Z)
+			workspace.Terrain:FillBlock(CFrame.lookAt(mid, mid + dir), Vector3.new(BRIDGE_W + 8, 40, 3.6), Enum.Material.Air)
+		end
 		if key == "FrozenPeaks" then
 			buildGlobe(island, theme, ic, hy, base + dir * (edge - 8), center - dir * (R - 1))
 		end

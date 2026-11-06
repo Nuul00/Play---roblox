@@ -66,12 +66,12 @@ end
 
 local atmosphere = Instance.new("Atmosphere")
 atmosphere.Name = "SkyIslesAtmosphere"
-atmosphere.Density = 0.22
+atmosphere.Density = 0.34 -- гуще: снизу не просвечивает Meadow
 atmosphere.Offset = 0.1
 atmosphere.Color = Color3.fromRGB(215, 185, 240)
 atmosphere.Decay = Color3.fromRGB(255, 150, 180)
 atmosphere.Glare = 0
-atmosphere.Haze = 0.5
+atmosphere.Haze = 1.2
 local tint = Instance.new("ColorCorrectionEffect")
 tint.Name = "SkyIslesTint"
 tint.TintColor = Color3.fromRGB(255, 232, 248)

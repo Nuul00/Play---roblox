@@ -228,8 +228,17 @@ local function upgradeCard(parent, kind, pos, size)
 	local price = atCap and 0 or d.Cost(level)
 	local affordable = coins.Value >= price
 	local text = level >= d.Global and "MAXED" or atCap and "MAX HERE" or ("BUY  💰 " .. fmt(price))
-	local b = button(card, text, UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46),
+	local b = button(card, text, UDim2.new(0, 12, 1, -58), UDim2.new(1, atCap and -24 or -92, 0, 46),
 		atCap and Color3.fromRGB(120, 120, 130) or (affordable and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)))
+	if not atCap then
+		-- MAX: сразу все уровни, на которые хватает монет
+		local mx = button(card, "MAX", UDim2.new(1, -76, 1, -58), UDim2.fromOffset(64, 46), affordable and Color3.fromRGB(255, 170, 40) or Color3.fromRGB(150, 110, 80))
+		mx.TextSize = 20
+		mx.Activated:Connect(function()
+			buy:FireServer(kind, zoneId, "max")
+			TweenService:Create(ring, TweenInfo.new(0.12), { Size = UDim2.fromOffset(iconSize + 16, iconSize + 16) }):Play()
+		end)
+	end
 	if atCap and level < d.Global then
 		label(card, "more levels in the next world", UDim2.fromOffset(0, 226), UDim2.new(1, 0, 0, 18), 13, Color3.fromRGB(255, 215, 120), Enum.Font.GothamMedium)
 	end

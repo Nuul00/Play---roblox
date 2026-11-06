@@ -366,7 +366,19 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. short(cost-stats.Coins.Value) .. " more"); return end
  stats.Coins.Value = stats.Coins.Value - cost
  if kind ~= "egg" then
-  UPGRADES[kind].set(p, stats, value + 1) else
+  local up, v = UPGRADES[kind], value + 1
+  if eggId == "max" then
+   -- UPGRADE MAX: докупаем подряд все уровни, на которые хватает монет (до предела этого мира)
+   local cap = math.min(up.max, Config.ZoneMax[zoneId] or Config.BaseMaxLevel)
+   for _ = 1, 250 do
+    if v >= cap then break end
+    local c = up.cost(v)
+    if stats.Coins.Value < c then break end
+    stats.Coins.Value -= c
+    v += 1
+   end
+  end
+  up.set(p, stats, v) else
   hatchUntil[p] = os.clock()+(p:GetAttribute("Pass_FastHatch") and 1.2 or 3.5) -- Fast Hatch: открытие в 3 раза быстрее
   local results={}
   -- Удача питомцев (AbilLuck) и ребёрсов (RebirthLuck): шанс лишнего броска, остаётся лучший.
@@ -487,6 +499,17 @@ do
  end
 end
 local SHOP_LEVEL = {}
+-- Надпись «STEP IN» на метке магазина магнитов (осталась в плейсе) — лишняя: круг и так понятен.
+for _, d in ipairs(world:GetDescendants()) do
+ if d.Name == "ZoneLabel" then
+  for _, t in ipairs(d:GetDescendants()) do
+   if t:IsA("TextLabel") and string.find(string.upper(t.Text), "STEP", 1, true) then
+    local g = t:FindFirstAncestorWhichIsA("SurfaceGui") or t:FindFirstAncestorWhichIsA("BillboardGui")
+    if g then g:Destroy() end
+   end
+  end
+ end
+end
 Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,

@@ -46,8 +46,10 @@ local function setup(base: BasePart)
 	anchor.Parent = chest
 	local light = Instance.new("PointLight")
 	light.Color = color
-	light.Range = 16
-	light.Brightness = 0.8
+	-- свет только вокруг сундука: раньше яркий свет на прыгающем сундуке заливал и мигал весь островок
+	light.Range = 8
+	light.Brightness = 0.6
+	light.Shadows = false
 	light.Parent = anchor
 	local sparks = Instance.new("ParticleEmitter")
 	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
@@ -162,10 +164,10 @@ ReplicatedStorage:WaitForChild("SkyChestOpened").OnClientEvent:Connect(function(
 	c.popUntil = os.clock() + 0.9
 	c.sleepUntil = refillAt
 	c.sparks:Emit(60)
-	local flash = TweenService:Create(c.light, TweenInfo.new(0.15), { Brightness = 8, Range = 30 })
+	local flash = TweenService:Create(c.light, TweenInfo.new(0.15), { Brightness = 2.5, Range = 14 })
 	flash:Play()
 	task.delay(0.2, function()
-		TweenService:Create(c.light, TweenInfo.new(0.8), { Brightness = 0.25, Range = 12 }):Play()
+		TweenService:Create(c.light, TweenInfo.new(0.8), { Brightness = 0.25, Range = 8 }):Play()
 	end)
 	coinFountain(c, reward)
 end)
@@ -203,8 +205,8 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 			c.model:PivotTo(c.base * offset)
 			if not asleep and os.clock() > c.popUntil then
-				c.light.Brightness = 0.8 + e * 2.2 + math.sin(t * 3) * 0.2
-				c.light.Range = 16 + e * 8
+				c.light.Brightness = 0.6 + e * 0.6
+				c.light.Range = 8 + e * 2
 			end
 			c.sparks.Rate = asleep and 0 or 2 + e * 25
 			c.gui.Enabled = asleep
