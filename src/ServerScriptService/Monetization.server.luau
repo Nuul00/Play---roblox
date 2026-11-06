@@ -121,11 +121,28 @@ local function grant(p: Player, def): boolean
 		local earned = p:GetAttribute("LifetimeEarned") or 0
 		local amount = math.floor(math.max(def.Min, earned * def.Share))
 		stats.Coins.Value += amount
+		local sig = game:GetService("ServerStorage"):FindFirstChild("ServerSignals")
+		sig = sig and sig:FindFirstChild("CoinPackGranted") -- для аналитики (Analytics.server.luau)
+		if sig then
+			sig:Fire(p, def.Key, amount, stats.Coins.Value)
+		end
 		return true
 	elseif def.Kind == "potions" then
 		for _, name in ipairs({ "Coins", "Speed", "Luck" }) do
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
 		end
+		return true
+	elseif def.Kind == "starter" then
+		-- разовый набор: если уже покупали (повтор чека) — всё равно выдаём, Roblox деньги взял
+		local stats = p:FindFirstChild("leaderstats")
+		if not stats then
+			return false
+		end
+		stats.Coins.Value += math.floor(math.max(def.Min, (p:GetAttribute("LifetimeEarned") or 0) * def.Share))
+		for _, name in ipairs({ "Coins", "Luck" }) do
+			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
+		end
+		p:SetAttribute("Save_StarterBought", true)
 		return true
 	elseif def.Kind == "luck" then
 		-- копим оставшиеся секунды (как у зелий): вне игры буст не тратится
@@ -148,7 +165,7 @@ MarketplaceService.ProcessReceipt = function(info)
 	local saveNow = game:GetService("ServerStorage"):FindFirstChild("SaveProfileNow")
 	local function saved()
 		if not saveNow then
-			return true
+			return false -- нечем сохранить — не подтверждаем, Roblox повторит позже
 		end
 		local ok, res = pcall(saveNow.Invoke, saveNow, p)
 		return ok and res == true

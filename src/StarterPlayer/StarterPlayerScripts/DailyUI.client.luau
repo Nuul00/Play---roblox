@@ -185,7 +185,7 @@ local function refresh()
 	claim.Active = (ready and not busy) and true or false
 	claimGrad.Color = claim.Active and ColorSequence.new(rgb(170, 255, 120), rgb(60, 175, 50)) or ColorSequence.new(rgb(175, 170, 195), rgb(120, 115, 145))
 	if not busy then
-		note.Text = state.Ready and "Your reward is ready! Missing a day won't reset your progress." or "Reward claimed. Your next gift unlocks after 24 hours."
+		note.Text = state.Ready and "Your reward is ready! Missing a day won't reset your progress." or "Reward claimed. A new gift every day (resets at 00:00 UTC)."
 	end
 end
 

@@ -298,7 +298,7 @@ local function card(parent, def, isPass, order)
 			if not player:GetAttribute("Pass_" .. def.Key) then
 				MarketplaceService:PromptGamePassPurchase(player, def.Id)
 			end
-		else
+		elseif not (def.Kind == "starter" and player:GetAttribute("Save_StarterBought")) then
 			MarketplaceService:PromptProductPurchase(player, def.Id)
 		end
 	end)
@@ -332,6 +332,7 @@ local function refresh()
 	for _, e in ipairs(cards) do
 		-- товары, влияющие на случайные награды, скрыты, где они запрещены (и пока сервер не проверил)
 		e.frame.Visible = not (e.def.Random and player:GetAttribute("NoPaidRandom") ~= false)
+			and not (e.def.Kind == "starter" and player:GetAttribute("Save_StarterBought"))
 		local owned = e.pass and player:GetAttribute("Pass_" .. e.def.Key)
 		if owned then
 			e.buy.Text = "✅ OWNED"
@@ -374,7 +375,7 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	end
 end)
 player.AttributeChanged:Connect(function(n)
-	if (string.sub(n, 1, 5) == "Pass_" or n == "NoPaidRandom") and panel.Visible then
+	if (string.sub(n, 1, 5) == "Pass_" or n == "NoPaidRandom" or n == "Save_StarterBought") and panel.Visible then
 		refresh()
 	end
 end)

@@ -191,7 +191,7 @@ game:BindToClose(function()
  local deadline=os.clock()+25
  while next(sessions) and os.clock()<deadline do task.wait(0.2) end
 end)
-local defs={{Part="BoardCoins",Title="TOP 100 COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 PICKUPS",Stat="CoinsCollected",Scale=1}}
+local defs={{Part="BoardCoins",Title="TOP 100 COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 · THIS WEEK",Stat="WeekCoins",Scale=100,Log=true,Weekly=true}}
 local names={}
 local function label(parent,text,pos,size,fontSize,color,font)
  local x=Instance.new("TextLabel")
@@ -258,7 +258,7 @@ end
 -- Переключает вкладки клиент (LeaderboardTabs): по нажатию и сам по кругу каждые 10 с.
 local TABS={{Part="BoardCoins",Text="COINS",Color=Color3.fromRGB(255,190,40),Ink=Color3.fromRGB(120,60,0)},
  {Part="BoardEggs",Text="EGGS",Color=Color3.fromRGB(80,195,255),Ink=Color3.fromRGB(15,60,130)},
- {Part="BoardPickups",Text="PICKUPS",Color=Color3.fromRGB(185,110,255),Ink=Color3.fromRGB(70,20,120)}}
+ {Part="BoardPickups",Text="WEEK",Color=Color3.fromRGB(185,110,255),Ink=Color3.fromRGB(70,20,120)}}
 local tabbed={}
 local function tabbedPages(zone,board,noLight)
  if tabbed[board] then return tabbed[board] end
@@ -334,7 +334,7 @@ for _,def in ipairs(defs) do
   end
  end
  -- Монеты к концу игры доходят до 1e20 — больше предела OrderedDataStore (9e18), поэтому храним логарифм.
- if persistent then def.store=DS:GetOrderedDataStore((def.Log and "CoinSprint_TopV4_" or "CoinSprint_TopV3_")..def.Stat) end
+ if persistent and not def.Weekly then def.store=DS:GetOrderedDataStore((def.Log and "CoinSprint_TopV4_" or "CoinSprint_TopV3_")..def.Stat) end
 end
 local function encode(def,v)
  v=math.max(0,tonumber(v) or 0)
@@ -460,8 +460,20 @@ local function updatePodiums(def,rows)
   end
  end
 end
+-- Недельный топ (монеты, заработанные с понедельника 00:00 UTC): новые игроки тоже попадают на доску.
+-- WeekCoins = LifetimeEarned − значение в начале недели (Save_ — сохраняется с профилем).
+local function weekId() return math.floor((os.time()-4*86400)/604800) end -- 1.1.1970 — четверг
+local function updateWeek(p)
+ if not p:GetAttribute("ProfileReady") then return end
+ local wk,le=weekId(),tonumber(p:GetAttribute("LifetimeEarned")) or 0
+ if p:GetAttribute("Save_WeekId")~=wk then p:SetAttribute("Save_WeekId",wk);p:SetAttribute("Save_WeekBase",string.format("%.17g",le)) end
+ p:SetAttribute("WeekCoins",math.max(0,le-(tonumber(p:GetAttribute("Save_WeekBase")) or le)))
+end
+local storeWeek=nil
 local function refresh()
+ for _,p in ipairs(Players:GetPlayers()) do updateWeek(p) end
  for _,def in ipairs(defs) do
+  if def.Weekly and persistent and storeWeek~=weekId() then storeWeek=weekId();def.store=DS:GetOrderedDataStore("CoinSprint_Week_"..storeWeek) end
   local rows={}
   for _,p in ipairs(Players:GetPlayers()) do
    table.insert(rows,{Name=p.DisplayName,UserId=p.UserId,Value=p:GetAttribute(def.Stat) or 0})
@@ -478,7 +490,7 @@ local function refresh()
      if not name then local success,result=pcall(function() return Players:GetNameFromUserIdAsync(id) end);name=success and result or ("User "..entry.key);names[id]=name end
      table.insert(rows,{Name=name,UserId=id or 0,Value=decode(def,entry.value)})
     end
-    for _,sub in ipairs(def.subtitles) do sub.Text="GLOBAL · refreshes every 120s" end
+    for _,sub in ipairs(def.subtitles) do sub.Text=def.Weekly and "GLOBAL · resets every Monday 00:00 UTC" or "GLOBAL · refreshes every 120s" end
    else for _,sub in ipairs(def.subtitles) do sub.Text="THIS SERVER · global service unavailable" end end
   end
   render(def,rows)

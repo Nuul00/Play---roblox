@@ -87,7 +87,7 @@ Q.Steps = {
 	step(3, "Sky Baron", "Finish the chapter for a big prize!", { Type = "earn", N = 3e10 }, { Coins = 2.5e9, Hatch = 9, Bonus = 0.05 }),
 
 	-- ===== Глава 4: Frozen Peaks (яйца 16, 17, 18; прокачка до 75) =====
-	step(4, "Frozen Frontier", "Unlock Frozen Peaks in TELEPORT (18B coins).", { Type = "world", World = "Frozen Peaks" }, { Coins = 4.5e9 }),
+	step(4, "Frozen Frontier", "Unlock Frozen Peaks in TELEPORT (10B coins).", { Type = "world", World = "Frozen Peaks" }, { Coins = 2.5e9 }),
 	step(4, "Snowflake Hunt", "Snowy pets love the cold.", { Type = "eggs", N = 10, Egg = 16 }, { Coins = 5.7e9, Potion = "Luck" }),
 	step(4, "Ice Skater", "Frozen kiosks go up to level 75.", { Type = "speed", N = 55 }, { Coins = 9e9 }),
 	step(4, "Aurora Lights", "Pets glowing like the northern sky.", { Type = "eggs", N = 10, Egg = 17 }, { Coins = 1.5e10, Potion = "Coins" }),

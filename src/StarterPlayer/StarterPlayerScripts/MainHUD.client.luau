@@ -160,6 +160,15 @@ local function refreshStats()
 		bonus *= 2
 	end
 	bonus *= 1 + (player:GetAttribute("AbilCoins") or 0) -- способность питомцев (как в PlayerSystems.CoinMultiplier)
+	if player:GetAttribute("Pass_Coins2x") then
+		bonus *= 2
+	end
+	if player:GetAttribute("Pass_VIP") then
+		bonus *= 1.25
+	end
+	if player.MembershipType == Enum.MembershipType.Premium then
+		bonus *= 1.1
+	end
 	petText.Text = "x" .. abbreviate(bonus) .. "  coins"
 	magnetText.Text = string.format("%.1f  magnet", player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0))
 end

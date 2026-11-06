@@ -132,6 +132,37 @@ local function freeHatch(p, eggId: number): number?
 	return pet
 end
 
+-- Бесплатное яйцо для других систем (7-й день ежедневки): eggId nil — второе яйцо лучшего
+-- открытого мира игрока.
+task.spawn(function()
+	local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))
+	local SHORT = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
+	local signals = game:GetService("ServerStorage"):WaitForChild("ServerSignals", 60)
+	if signals then
+		local fh = Instance.new("BindableFunction")
+		fh.Name = "FreeHatch"
+		fh.OnInvoke = function(p, eggId)
+			if not eggId then
+				local best = "island"
+				for _, def in ipairs(Worlds.Worlds) do
+					if def.Open and ((def.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(def.Id))) and SHORT[def.Id] then
+						best = SHORT[def.Id]
+					end
+				end
+				local list = {}
+				for id, egg in ipairs(Config.Eggs) do
+					if egg.World == best then
+						table.insert(list, id)
+					end
+				end
+				eggId = list[math.min(2, #list)] or 1
+			end
+			return freeHatch(p, eggId)
+		end
+		fh.Parent = signals
+	end
+end)
+
 local function grant(p, s, index: number)
 	local r = s.Reward
 	local stats = p:FindFirstChild("leaderstats")

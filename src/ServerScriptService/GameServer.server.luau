@@ -150,6 +150,18 @@ local announce = Instance.new("RemoteEvent")
 announce.Name = "GameAnnounce"
 announce.Parent = ReplicatedStorage
 local superAnnounce = Instance.new("RemoteEvent")
+-- Супер-секретки с других серверов: показываем у себя то же объявление в чате.
+task.spawn(function()
+ if RunService:IsStudio() then return end
+ pcall(function()
+  game:GetService("MessagingService"):SubscribeAsync("CoinSprintSuperSecret",function(msg)
+   local d=msg.Data
+   if type(d)=="table" and d.J~=game.JobId and type(d.N)=="string" and type(d.P)=="number" and Config.Pets[d.P] and Config.Pets[d.P].Super then
+    superAnnounce:FireAllClients(string.sub(d.N,1,40).." (another server)",d.P)
+   end
+  end)
+ end)
+end)
 superAnnounce.Name = "SuperSecretAnnounce"
 superAnnounce.Parent = ReplicatedStorage
 hatched.Parent = ReplicatedStorage
@@ -413,11 +425,11 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   local aura=PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).LuckyAura
   if aura then extraLuck+=1+PetAbilities.SuperParams("LuckyAura",aura).Luck end
   extraLuck=math.clamp(extraLuck,0,3)
-  -- Геймпассы «Super Luck» (+2 броска, шанс супер-секреток ×2) и «Mythic Luck» (+1 бросок, ×2; вместе — ×3).
-  if p:GetAttribute("Pass_SuperLuck") then extraLuck+=2 end
-  if p:GetAttribute("Pass_MythicLuck") then extraLuck+=1 end
-  -- пассы удачи ускоряют секретки, но не больше чем в 3 раза (было x10 — pay-to-win)
-  local superMult=math.min(3,(p:GetAttribute("Pass_SuperLuck") and 2 or 1)*(p:GetAttribute("Pass_MythicLuck") and 2 or 1))
+  -- Лестница пассов удачи: Super Luck — +2 броска и супер-секретки ×2; Mythic Luck (дороже) —
+  -- +3 броска и ×3; оба вместе — +4 броска и ×3 (потолок, чтобы не было pay-to-win).
+  local sl,ml=p:GetAttribute("Pass_SuperLuck")==true,p:GetAttribute("Pass_MythicLuck")==true
+  if sl and ml then extraLuck+=4 elseif ml then extraLuck+=3 elseif sl then extraLuck+=2 end
+  local superMult=ml and 3 or sl and 2 or 1
   if RunService:IsStudio() then superMult*=tonumber(workspace:GetAttribute("DebugSuperOdds")) or 1 end
   local superHits={}
   for _=1,amount do
@@ -425,14 +437,17 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   local superPet=Config.RollSuper(eggId,random:NextNumber(),superMult)
   -- Зелье удачи: два броска, остаётся более редкий питомец.
   -- Каждый источник удачи — свой лишний бросок (зелье, событие, геймпасс, буст складываются).
+  -- общий потолок лишних бросков от всего вместе: 7 (бесплатно можно набрать до 5)
+  local rollsLeft=7
   for _, on in ipairs({PlayerSystems.PotionActive(p, "Luck"), PlayerSystems.EventActive("Lucky"), p:GetAttribute("Pass_Luck2x") == true, p:GetAttribute("LuckBoostActive") == true}) do
-   if on then
+   if on and rollsLeft>0 then
+    rollsLeft-=1
     local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
     if Config.GetPetMultiplier(again)>Config.GetPetMultiplier(result) then result=again end
    end
   end
   -- Геймпасс «2x Luck» и буст удачи из магазина: ещё один бросок, остаётся лучший.
-  local luckLeft=extraLuck
+  local luckLeft=math.min(extraLuck,rollsLeft)
   while luckLeft>0 do
    if luckLeft>=1 or random:NextNumber()<luckLeft then
     local again=Config.RollEgg(eggId,random:NextInteger(1,100000))
@@ -463,7 +478,11 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   end
   if best then announce:FireAllClients(p.DisplayName,best.Pet,best.Forced==true) end
   -- Супер-секретки: отдельное объявление в чат всем на сервере.
-  for _,id in ipairs(superHits) do superAnnounce:FireAllClients(p.DisplayName,id) end
+  for _,id in ipairs(superHits) do
+   superAnnounce:FireAllClients(p.DisplayName,id)
+   -- и на всех остальных серверах игры (MessagingService)
+   task.spawn(pcall,function() game:GetService("MessagingService"):PublishAsync("CoinSprintSuperSecret",{N=p.DisplayName,P=id,J=game.JobId}) end)
+  end
  end
 end)
 

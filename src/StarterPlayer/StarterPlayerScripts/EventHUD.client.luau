@@ -59,18 +59,31 @@ local desc = label(UDim2.fromScale(0.06, 0.56), UDim2.fromScale(0.62, 0.36))
 desc.TextXAlignment = Enum.TextXAlignment.Left
 local timer = label(UDim2.fromScale(0.68, 0.14), UDim2.fromScale(0.27, 0.72))
 
+-- Между событиями плашка меньше и показывает, какое будет следующим и через сколько
+-- (расписание общее для всех серверов — WorldEvents).
 local current = ""
+local waiting = false
 local function update()
 	local id = workspace:GetAttribute("EventId") or ""
 	local def = defs[id]
-	if id == current then
+	local key = def and id or ("next:" .. tostring(workspace:GetAttribute("NextEventId")))
+	if key == current then
 		return
 	end
-	current = id
+	current = key
 	if not def then
-		pill.Visible = false
+		local nextDef = defs[workspace:GetAttribute("NextEventId") or ""]
+		waiting = nextDef ~= nil
+		pill.Visible = waiting
+		if nextDef then
+			title.Text = "⏳ NEXT: " .. nextDef.Name
+			desc.Text = nextDef.Desc .. (workspace:GetAttribute("EventWeekend") and " · weekend: 2x longer!" or "")
+			gradient.Color = ColorSequence.new(Color3.fromRGB(70, 70, 100), Color3.fromRGB(35, 35, 55))
+			scale.Scale = 0.7
+		end
 		return
 	end
+	waiting = false
 	title.Text = def.Icon .. " " .. def.Name
 	desc.Text = def.Desc
 	gradient.Color = ColorSequence.new(def.Color:Lerp(Color3.new(1, 1, 1), 0.25), def.Color:Lerp(Color3.new(0, 0, 0), 0.3))
@@ -79,19 +92,29 @@ local function update()
 	TweenService:Create(scale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 end
 workspace:GetAttributeChangedSignal("EventId"):Connect(update)
+workspace:GetAttributeChangedSignal("NextEventId"):Connect(update)
 update()
 
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
-	if not pill.Visible then
+	if not pill.Visible and not waiting then
 		return
 	end
 	t += dt
-	local left = math.max(0, (workspace:GetAttribute("EventEnd") or 0) - workspace:GetServerTimeNow())
-	timer.Text = string.format("%d:%02d", math.floor(left / 60), math.floor(left % 60))
-	rim.Transparency = left < 10 and (0.5 + 0.5 * math.sin(t * 10)) or 0
+	local target = waiting and workspace:GetAttribute("NextEventAt") or workspace:GetAttribute("EventEnd")
+	local left = math.max(0, (target or 0) - workspace:GetServerTimeNow())
+	local text = string.format("%d:%02d", math.floor(left / 60), math.floor(left % 60))
+	if timer.Text ~= text then
+		timer.Text = text
+	end
+	rim.Transparency = (not waiting and left < 10) and (0.5 + 0.5 * math.sin(t * 10)) or (waiting and 0.6 or 0)
 	local camera = workspace.CurrentCamera
-	if camera and scale.Scale >= 0.99 then
-		scale.Scale = math.clamp(camera.ViewportSize.X / 900, 0.6, 1)
+	-- окна интерфейса открыты — плашку «следующее событие» прячем, чтобы не мешала
+	if waiting then
+		pill.Visible = (player:GetAttribute("UIScreen") or "") == ""
+	end
+	if camera and (waiting or scale.Scale >= 0.99) then
+		local base = math.clamp(camera.ViewportSize.X / 900, 0.6, 1)
+		scale.Scale = waiting and base * 0.7 or base
 	end
 end)
