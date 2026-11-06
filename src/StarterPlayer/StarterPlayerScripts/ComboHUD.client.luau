@@ -99,7 +99,13 @@ local function showFlash(text: string, color: Color3)
 	TweenService:Create(flashScale, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	task.delay(1.1, function()
 		if flash.Text == text then
-			TweenService:Create(flash, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
+			local tw = TweenService:Create(flash, TweenInfo.new(0.4), { TextTransparency = 1 })
+			tw.Completed:Connect(function()
+				if flash.TextTransparency >= 0.99 then
+					flash.Visible = false -- обводка (UIStroke) сама не гаснет
+				end
+			end)
+			tw:Play()
 		end
 	end)
 end

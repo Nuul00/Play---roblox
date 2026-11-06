@@ -92,7 +92,13 @@ local function shout(text, color, dur)
 	TweenService:Create(bigScale, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	task.delay(dur or 1.6, function()
 		if big.Text == text then
-			TweenService:Create(big, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
+			local tw = TweenService:Create(big, TweenInfo.new(0.4), { TextTransparency = 1 })
+			tw.Completed:Connect(function()
+				if big.TextTransparency >= 0.99 then
+					big.Visible = false -- обводка (UIStroke) сама не гаснет
+				end
+			end)
+			tw:Play()
 		end
 	end)
 end
@@ -224,7 +230,7 @@ RunService.RenderStepped:Connect(function(dt)
 		for _, f in ipairs(myRun:GetChildren()) do
 			if f:IsA("Folder") then
 				for _, c in ipairs(f:GetChildren()) do
-					if c.Name == "Coin" or c.Name == "Bar" then
+					if c.Name == "RushBar" then -- монеты крутит CoinRushFX (модели Tripo), слитки — здесь
 						c.CFrame = c.CFrame * spin
 					end
 				end

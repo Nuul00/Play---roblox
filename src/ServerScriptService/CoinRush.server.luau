@@ -84,6 +84,30 @@ local function part(parent, name, size, cf, color, mat, props)
 	p.Parent = parent
 	return p
 end
+-- модель Tripo (ReplicatedStorage.TripoProps), отмасштабированная по наибольшей стороне
+local function tripo(name: string, size: number, parent: Instance, cf: CFrame): Model?
+	local src
+	for _, folderName in ipairs({ "TripoProps", "TripoEggs" }) do
+		local f = ReplicatedStorage:FindFirstChild(folderName)
+		src = src or (f and f:FindFirstChild(name))
+	end
+	if not src then
+		return nil
+	end
+	local m = src:Clone()
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanTouch, d.CastShadow = true, false, false, true
+		end
+	end
+	local _, ext = m:GetBoundingBox()
+	m:ScaleTo(m:GetScale() * size / math.max(ext.X, ext.Y, ext.Z, 0.01))
+	local bcf, bsz = m:GetBoundingBox()
+	local off = m:GetPivot():ToObjectSpace(bcf)
+	m:PivotTo(cf * CFrame.new(0, bsz.Y / 2, 0) * off:Inverse())
+	m.Parent = parent
+	return m
+end
 local function roomCenter(i: number): Vector3
 	return Vector3.new(0, 0, (i - 1) * (R.ROOM + 40))
 end
@@ -99,20 +123,42 @@ local function buildTemplate(): Model
 		room.Name = "Room" .. i
 		room.Parent = m
 		local size = def.Vault and 64 or S
-		part(room, "Floor", Vector3.new(size, 2, size), CFrame.new(c - Vector3.new(0, 1, 0)), def.Floor, Enum.Material.Slate)
+		part(room, "Floor", Vector3.new(size, 2, size), CFrame.new(c - Vector3.new(0, 1, 0)), def.Floor, Enum.Material.Marble)
 		-- узор пола: светящиеся линии сетки
 		for k = -2, 2 do
-			part(room, "Line", Vector3.new(size, 0.1, 0.25), CFrame.new(c + Vector3.new(0, 0.05, k * size / 5)), def.Glow, Enum.Material.Neon, { CanCollide = false, Transparency = 0.7 })
-			part(room, "Line", Vector3.new(0.25, 0.1, size), CFrame.new(c + Vector3.new(k * size / 5, 0.05, 0)), def.Glow, Enum.Material.Neon, { CanCollide = false, Transparency = 0.7 })
+			part(room, "Line", Vector3.new(size, 0.1, 0.25), CFrame.new(c + Vector3.new(0, 0.05, k * size / 5)), def.Glow, Enum.Material.Neon, { CanCollide = false, Transparency = 0.82 })
+			part(room, "Line", Vector3.new(0.25, 0.1, size), CFrame.new(c + Vector3.new(k * size / 5, 0.05, 0)), def.Glow, Enum.Material.Neon, { CanCollide = false, Transparency = 0.82 })
 		end
 		-- стены с неоновой полосой и колоннами по углам
 		for _, side in ipairs({ { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } }) do
 			local along = side[1] == 0
 			local wsize = along and Vector3.new(size + 4, 18, 2) or Vector3.new(2, 18, size + 4)
 			local pos = c + Vector3.new(side[1] * (size / 2 + 1), 9, side[2] * (size / 2 + 1))
-			part(room, "Wall", wsize, CFrame.new(pos), Color3.fromRGB(35, 30, 50), Enum.Material.Slate)
+			part(room, "Wall", wsize, CFrame.new(pos), Color3.fromRGB(70, 48, 58), Enum.Material.Brick)
 			part(room, "WallGlow", along and Vector3.new(size, 0.6, 2.2) or Vector3.new(2.2, 0.6, size), CFrame.new(pos + Vector3.new(0, 3, 0)), def.Glow, Enum.Material.Neon, { CanCollide = false })
 			part(room, "Cap", along and Vector3.new(size + 6, 1, 3) or Vector3.new(3, 1, size + 6), CFrame.new(pos + Vector3.new(0, 9.5, 0)), Color3.fromRGB(200, 160, 70), Enum.Material.Metal)
+		end
+		-- потолок: сокровищница под землёй, неба не видно
+		part(room, "Ceiling", Vector3.new(size + 6, 2, size + 6), CFrame.new(c + Vector3.new(0, 31, 0)), Color3.fromRGB(40, 30, 45), Enum.Material.Slate)
+		for _, side in ipairs({ { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } }) do
+			local along = side[1] == 0
+			part(room, "HighWall", along and Vector3.new(size + 4, 12, 2) or Vector3.new(2, 12, size + 4), CFrame.new(c + Vector3.new(side[1] * (size / 2 + 1), 24.5, side[2] * (size / 2 + 1))), Color3.fromRGB(60, 42, 52), Enum.Material.Brick)
+		end
+		-- красная ковровая дорожка от входа и знамёна на боковых стенах
+		part(room, "Carpet", Vector3.new(9, 0.12, size - 6), CFrame.new(c + Vector3.new(0, 0.06, 0)), Color3.fromRGB(150, 25, 45), Enum.Material.Fabric, { CanCollide = false })
+		for _, x in ipairs({ -5, 5 }) do
+			part(room, "CarpetTrim", Vector3.new(0.7, 0.14, size - 6), CFrame.new(c + Vector3.new(x, 0.07, 0)), Color3.fromRGB(255, 200, 70), Enum.Material.Metal, { CanCollide = false })
+		end
+		for _, sx in ipairs({ -1, 1 }) do
+			for _, z in ipairs({ -size / 4, 0, size / 4 }) do
+				local bpos = c + Vector3.new(sx * (size / 2 - 0.3), 17, z)
+				local banner = part(room, "Banner", Vector3.new(0.3, 12, 7), CFrame.new(bpos), def.Glow:Lerp(Color3.fromRGB(120, 20, 40), 0.6), Enum.Material.Fabric, { CanCollide = false })
+				part(room, "BannerRod", Vector3.new(0.6, 0.6, 8), CFrame.new(bpos + Vector3.new(0, 6.2, 0)), Color3.fromRGB(255, 200, 70), Enum.Material.Metal, { CanCollide = false })
+				-- герб: золотой ромб с камнем и бахрома снизу
+				part(room, "Emblem", Vector3.new(0.4, 3.2, 3.2), CFrame.new(bpos + Vector3.new(-sx * 0.2, 1, 0)) * CFrame.Angles(math.rad(45), 0, 0), Color3.fromRGB(255, 200, 70), Enum.Material.Metal, { CanCollide = false })
+				part(room, "Gem", Vector3.new(0.5, 1.2, 1.2), CFrame.new(bpos + Vector3.new(-sx * 0.35, 1, 0)), def.Glow, Enum.Material.Neon, { CanCollide = false, Shape = Enum.PartType.Ball })
+				part(room, "Fringe", Vector3.new(0.4, 0.6, 7), CFrame.new(bpos + Vector3.new(-sx * 0.05, -6, 0)), Color3.fromRGB(255, 200, 70), Enum.Material.Fabric, { CanCollide = false })
+			end
 		end
 		-- невидимый потолок-стена, чтобы не перепрыгнуть
 		for _, side in ipairs({ { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } }) do
@@ -125,42 +171,68 @@ local function buildTemplate(): Model
 			local orb = part(room, "Orb", Vector3.new(3, 3, 3), CFrame.new(pc + Vector3.new(0, 11.5, 0)), def.Glow, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false })
 			local l = Instance.new("PointLight")
 			l.Color = def.Glow
-			l.Range = 40
-			l.Brightness = 1.6
+			l.Range = 30
+			l.Brightness = 0.7
 			l.Parent = orb
 		end
 		-- центральная «люстра»: золотое кольцо под потолком и сильный свет на всю комнату
 		local lamp = part(room, "Lamp", Vector3.new(0.6, size * 0.35, size * 0.35), CFrame.new(c + Vector3.new(0, 26, 0)) * CFrame.Angles(0, 0, math.rad(90)), def.Glow, Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.2 })
 		local big = Instance.new("PointLight")
 		big.Color = def.Glow:Lerp(Color3.new(1, 1, 1), 0.5)
-		big.Range = 60
-		big.Brightness = 2.2
+		big.Range = 55
+		big.Brightness = 0.9
 		big.Shadows = false
 		big.Parent = lamp
 		for _, q in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
 			local wl = Instance.new("PointLight")
 			wl.Color = def.Glow
-			wl.Range = 40
-			wl.Brightness = 1.2
+			wl.Range = 30
+			wl.Brightness = 0.5
 			wl.Parent = part(room, "WallLamp", Vector3.new(1.5, 1.5, 1.5), CFrame.new(c + Vector3.new(q[1] * (size / 2 - 1), 12, q[2] * (size / 2 - 1))), def.Glow, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false })
+		end
+		-- сокровища по углам (Tripo): кучи золота и сундуки — комната выглядит как сокровищница
+		local corners = { { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } }
+		for k, q in ipairs(corners) do
+			local at = c + Vector3.new(q[1] * (size / 2 - 11), 0, q[2] * (size / 2 - 11))
+			local face = CFrame.lookAt(at, c)
+			if def.Vault or k <= 2 or i == 3 then
+				local name = (k % 2 == 0) and "RushChest" or "RushGold"
+				tripo(name, def.Vault and 10 or 8, room, face)
+			end
 		end
 		local spawn = part(room, "Spawn", Vector3.new(6, 0.2, 6), CFrame.new(c + Vector3.new(0, 0.1, -size / 2 + 8)), def.Glow, Enum.Material.Neon, { CanCollide = false, Transparency = 0.4 })
 		spawn:SetAttribute("Room", i)
 		if def.Vault then
-			-- хранилище: большой сундук-сейф с замком
-			local vault = Instance.new("Model")
-			vault.Name = "Vault"
-			vault.Parent = room
-			local vc = c + Vector3.new(0, 0, 12)
-			part(vault, "Base", Vector3.new(22, 2, 16), CFrame.new(vc + Vector3.new(0, 1, 0)), Color3.fromRGB(120, 80, 30), Enum.Material.Wood)
-			part(vault, "Body", Vector3.new(20, 10, 14), CFrame.new(vc + Vector3.new(0, 7, 0)), Color3.fromRGB(150, 100, 40), Enum.Material.Wood)
-			local lid = part(vault, "Lid", Vector3.new(20.4, 4, 14.4), CFrame.new(vc + Vector3.new(0, 14, 0)), Color3.fromRGB(170, 115, 45), Enum.Material.Wood)
-			lid:SetAttribute("Hinge", true)
-			for _, x in ipairs({ -8, 0, 8 }) do
-				part(vault, "Band", Vector3.new(1.4, 14.6, 14.8), CFrame.new(vc + Vector3.new(x, 8.5, 0)), Color3.fromRGB(255, 200, 60), Enum.Material.Metal)
+			-- хранилище: огромная круглая дверь сейфа (Tripo) в дальней стене, перед ней золотой круг
+			local doorAt = c + Vector3.new(0, 0, size / 2 - 3)
+			local door = tripo("RushVault", 26, room, CFrame.lookAt(doorAt, doorAt - Vector3.new(0, 0, 1)))
+			if door then
+				door.Name = "VaultDoor"
+			else
+				-- запасной вариант без модели: сундук-сейф из деталей
+				local vault = Instance.new("Model")
+				vault.Name = "VaultDoor"
+				vault.Parent = room
+				local vc = c + Vector3.new(0, 0, 12)
+				part(vault, "Body", Vector3.new(20, 10, 14), CFrame.new(vc + Vector3.new(0, 6, 0)), Color3.fromRGB(150, 100, 40), Enum.Material.Wood)
+				part(vault, "Lid", Vector3.new(20.4, 4, 14.4), CFrame.new(vc + Vector3.new(0, 13, 0)), Color3.fromRGB(170, 115, 45), Enum.Material.Wood)
+				for _, x in ipairs({ -8, 0, 8 }) do
+					part(vault, "Band", Vector3.new(1.4, 14.6, 14.8), CFrame.new(vc + Vector3.new(x, 7.5, 0)), Color3.fromRGB(255, 200, 60), Enum.Material.Metal)
+				end
 			end
-			part(vault, "Lock", Vector3.new(4, 5, 1.5), CFrame.new(vc + Vector3.new(0, 10, -7.6)), Color3.fromRGB(255, 220, 90), Enum.Material.Metal)
-			local zone = part(room, "VaultZone", Vector3.new(0.3, 22, 22), CFrame.new(c + Vector3.new(0, 0.1, -6)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 215, 90), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.5 })
+			-- сияние за дверью (видно, когда она откроется)
+			-- за дверью: тёплое мягкое сияние (слои от яркого центра к прозрачному краю) и сокровища
+			for k, sz in ipairs({ 18, 13, 8 }) do
+				part(room, "VaultGlowLayer", Vector3.new(sz, sz, 0.2), CFrame.new(doorAt + Vector3.new(0, 11, 2.4 - k * 0.3)), Color3.fromRGB(255, 170 + k * 20, 60 + k * 30), Enum.Material.Neon, { CanCollide = false, Transparency = 0.75 - k * 0.12 })
+			end
+			local glow = part(room, "VaultGlow", Vector3.new(1, 1, 1), CFrame.new(doorAt + Vector3.new(0, 11, 1)), Color3.fromRGB(255, 220, 120), Enum.Material.Neon, { CanCollide = false, Transparency = 1 })
+			local gl = Instance.new("PointLight")
+			gl.Color = Color3.fromRGB(255, 210, 110)
+			gl.Range = 50
+			gl.Brightness = 0
+			gl.Name = "VaultLight"
+			gl.Parent = glow
+			local zone = part(room, "VaultZone", Vector3.new(0.3, 20, 20), CFrame.new(c + Vector3.new(0, 0.1, 10)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 215, 90), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.5 })
 			zone:SetAttribute("VaultZone", true)
 		end
 	end
@@ -289,8 +361,8 @@ local function spawnCoins(run, i: number)
 	for n = 1, def.Coins do
 		-- часть монет — дорогие золотые слитки (×3)
 		local big = rng:NextNumber() < 0.12
-		local pos = c + Vector3.new(rng:NextNumber(-half, half), big and 2.2 or 1.8, rng:NextNumber(-half + 10, half))
-		local coin = part(folder, big and "Bar" or "Coin", big and Vector3.new(1.4, 3, 3) or Vector3.new(0.5, 2.6, 2.6), CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), big and Color3.fromRGB(255, 170, 40) or Color3.fromRGB(255, 215, 70), Enum.Material.Neon, { Shape = big and Enum.PartType.Block or Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+		local pos = c + Vector3.new(rng:NextNumber(-half, half), big and 0.6 or 1.8, rng:NextNumber(-half + 10, half))
+		local coin = part(folder, big and "RushBar" or "RushCoinPart", big and Vector3.new(2.8, 1.1, 1.4) or Vector3.new(0.5, 2.6, 2.6), CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), big and Color3.fromRGB(245, 185, 40) or Color3.fromRGB(255, 215, 70), big and Enum.Material.Metal or Enum.Material.Neon, { Shape = big and Enum.PartType.Block or Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
 		coin:SetAttribute("RushCoin", true)
 		table.insert(run.coins, { part = coin, value = def.Value * (big and 3 or 1) })
 	end
@@ -301,7 +373,27 @@ local function spawnCoins(run, i: number)
 		local hub = part(folder, "LaserHub", Vector3.new(4, 5, 4), CFrame.new(c + Vector3.new(0, 2.5, 0)), Color3.fromRGB(60, 20, 30), Enum.Material.Metal, { CanCollide = true })
 		hub.Shape = Enum.PartType.Cylinder
 		hub.CFrame = CFrame.new(c + Vector3.new(0, 2.5, 0)) * CFrame.Angles(0, 0, math.rad(90))
-		table.insert(run.lasers, { part = beam, center = c + Vector3.new(0, 2.5, 0), angle = (k - 1) * math.pi / def.Lasers, speed = def.Speed * (k % 2 == 0 and -1 or 1) })
+		beam.Color = Color3.fromRGB(255, 200, 210)
+		beam.Size = Vector3.new(R.ROOM - 10, 0.5, 0.5)
+		local glowL = part(folder, "LaserGlow", Vector3.new(R.ROOM - 10, 1.6, 1.6), beam.CFrame, Color3.fromRGB(255, 30, 70), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Transparency = 0.55 })
+		local hl = Instance.new("PointLight")
+		hl.Color = Color3.fromRGB(255, 50, 80)
+		hl.Range = 26
+		hl.Brightness = 3
+		hl.Parent = hub
+		local sp = Instance.new("ParticleEmitter")
+		sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sp.Color = ColorSequence.new(Color3.fromRGB(255, 120, 140))
+		sp.LightEmission = 1
+		sp.Rate = 25
+		sp.Lifetime = NumberRange.new(0.3, 0.6)
+		sp.Speed = NumberRange.new(4, 9)
+		sp.SpreadAngle = Vector2.new(180, 180)
+		sp.Size = NumberSequence.new(0.35, 0)
+		sp.Parent = hub
+		-- первые 2 с лазер мигает и не бьёт — предупреждение
+		beam.Transparency, glowL.Transparency = 0.8, 0.9
+		table.insert(run.lasers, { part = beam, glow = glowL, center = c + Vector3.new(0, 2.5, 0), angle = (k - 1) * math.pi / def.Lasers, speed = def.Speed * (k % 2 == 0 and -1 or 1), armAt = os.clock() + 2 })
 	end
 	run.totalWeight += def.Coins * def.Value * 1.24 -- 12% слитков ×3 → средний вес монеты 1.24
 end
@@ -374,8 +466,9 @@ local function startRoom(run, i: number)
 	local spawnCF = CFrame.new(run.offset + roomCenter(i) + Vector3.new(0, 4, -R.ROOM / 2 + 8))
 	if i <= #R.ROOMS then
 		spawnCoins(run, i)
-		run.ends = os.clock() + R.ROOMS[i].Time
-		send(run, "room", { Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Ends = workspace:GetServerTimeNow() + R.ROOMS[i].Time, Total = #run.coins })
+		local dur = RunService:IsStudio() and workspace:GetAttribute("RushRoomTime") or R.ROOMS[i].Time -- в Studio можно ускорить
+		run.ends = os.clock() + dur
+		send(run, "room", { Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Ends = workspace:GetServerTimeNow() + dur, Total = #run.coins })
 	else
 		spawnCF = CFrame.new(run.offset + roomCenter(i) + Vector3.new(0, 4, -26))
 		run.coins, run.lasers = {}, {}
@@ -392,19 +485,27 @@ local function openVault(run)
 	end
 	run.vaultTried = true
 	run.vaultOpen = run.bank >= run.need
-	local lid = run.model:FindFirstChild("Lid", true)
-	if run.vaultOpen and lid then
-		-- крышка откидывается назад
-		local hinge = lid.CFrame * CFrame.new(0, -2, 7.2)
+	local door = run.model:FindFirstChild("VaultDoor", true)
+	if run.vaultOpen and door then
+		-- дверь сейфа (вместе с каменной рамой — одна модель Tripo) уезжает вверх, как решётка,
+		-- и открывает сияние сокровищницы
+		local start = door:GetPivot()
+		local _, size = door:GetBoundingBox()
+		local light = run.model:FindFirstChild("VaultLight", true)
 		task.spawn(function()
-			for k = 1, 20 do
-				lid.CFrame = hinge * CFrame.Angles(math.rad(-5.5 * k), 0, 0) * CFrame.new(0, 2, -7.2)
-				task.wait(0.02)
+			task.wait(0.6) -- сначала тряска и щелчки замка (клиент)
+			for k = 1, 45 do
+				local e = 1 - (1 - k / 45) ^ 3
+				door:PivotTo(start + Vector3.new(0, size.Y * 1.05 * e, 0))
+				if light then
+					light.Brightness = 3 * e
+				end
+				task.wait(0.03)
 			end
 		end)
 	end
 	send(run, "vaultResult", { Open = run.vaultOpen, Have = run.bank, Need = run.need })
-	task.delay(run.vaultOpen and 3 or 2, function()
+	task.delay(run.vaultOpen and 4.2 or 2, function()
 		finish(run)
 	end)
 end
@@ -431,8 +532,9 @@ R.Prompt.Triggered:Connect(function(p)
 		return
 	end
 	local now = os.clock()
-	if lastRun[p] and now - lastRun[p] < R.COOLDOWN then
-		notify(p, "Coin Rush recharging: " .. math.ceil(R.COOLDOWN - (now - lastRun[p])) .. " s")
+	local cooldown = RunService:IsStudio() and 3 or R.COOLDOWN
+	if lastRun[p] and now - lastRun[p] < cooldown then
+		notify(p, "Coin Rush recharging: " .. math.ceil(cooldown - (now - lastRun[p])) .. " s")
 		return
 	end
 	local free = (p:GetAttribute("Save_RushFreeDay") or -1) ~= today()
@@ -475,9 +577,21 @@ RunService.Heartbeat:Connect(function(dt)
 	acc += dt
 	for p, run in pairs(runs) do
 		-- лазеры крутим каждый кадр (плавно), проверки — 20 раз в секунду
+		local t = os.clock()
 		for _, L in ipairs(run.lasers or {}) do
-			L.angle += L.speed * dt
-			L.part.CFrame = CFrame.new(L.center) * CFrame.Angles(0, L.angle, 0)
+			if t >= L.armAt then
+				L.angle += L.speed * dt
+				if not L.armed then
+					L.armed = true
+					L.part.Transparency, L.glow.Transparency = 0, 0.55
+				end
+			else
+				local blink = math.floor(t * 6) % 2 == 0
+				L.part.Transparency = blink and 0.3 or 0.85
+			end
+			local cf = CFrame.new(L.center) * CFrame.Angles(0, L.angle, 0)
+			L.part.CFrame = cf
+			L.glow.CFrame = cf
 		end
 	end
 	if acc < 0.05 then
@@ -511,7 +625,7 @@ RunService.Heartbeat:Connect(function(dt)
 			-- лазеры
 			for _, L in ipairs(run.lasers or {}) do
 				local half = L.part.CFrame.RightVector * (L.part.Size.X / 2)
-				if now - run.lastHit > 1.2 and math.abs(pos.Y - L.center.Y) < 4 and segDist(Vector3.new(pos.X, L.center.Y, pos.Z), L.center - half, L.center + half) < 2.2 then
+				if L.armed and now - run.lastHit > 1.2 and math.abs(pos.Y - L.center.Y) < 4 and segDist(Vector3.new(pos.X, L.center.Y, pos.Z), L.center - half, L.center + half) < 2.2 then
 					run.lastHit = now
 					run.hits += 1
 					local lost = run.bank * R.HIT_LOSS

@@ -12,6 +12,7 @@ local player = Players.LocalPlayer
 
 local MUSIC_VOLUME = 0.3
 local WORLDS = {
+	["Coin Rush"] = { music = 1836646815 }, -- данж: бодрый трек (атрибут InRush)
 	["Meadow Isles"] = { music = 1836759150 }, -- Sunny Side Up
 	["Neon District"] = {
 		music = 1836646815, -- Electronic Night
@@ -143,7 +144,7 @@ end
 
 local function onWorld()
 	local world = player:GetAttribute("CurrentWorld") or "Meadow Isles"
-	playMusic(world)
+	playMusic(player:GetAttribute("InRush") and "Coin Rush" or world)
 	-- Свет ставим чуть позже: SkyIslesFX при выходе из облаков сначала возвращает свой свет.
 	task.delay(0.5, function()
 		if (player:GetAttribute("CurrentWorld") or "Meadow Isles") == world then
@@ -152,6 +153,9 @@ local function onWorld()
 	end)
 end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(onWorld)
+player:GetAttributeChangedSignal("InRush"):Connect(function()
+	playMusic(player:GetAttribute("InRush") and "Coin Rush" or (player:GetAttribute("CurrentWorld") or "Meadow Isles"))
+end)
 task.delay(2, onWorld)
 
 -- Проверка в Studio: загрузились ли треки.
