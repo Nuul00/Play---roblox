@@ -701,6 +701,7 @@ function Volcano.Build(world: Instance): Model
 		local character = hit:FindFirstAncestorOfClass("Model")
 		local player = character and Players:GetPlayerFromCharacter(character)
 		if player and character.PrimaryPart then
+			player:SetAttribute("ServerTP", os.clock()) -- серверный телепорт: проверка скачков в GameServer его не наказывает
 			character:PivotTo(CFrame.new(spawn))
 		end
 	end)

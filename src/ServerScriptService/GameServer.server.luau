@@ -745,8 +745,8 @@ task.spawn(function()
  end
 end)
 
-local lastPos, blockedUntil = {}, {}
-Players.PlayerRemoving:Connect(function(p) lastPos[p] = nil; blockedUntil[p] = nil end)
+local lastPos, blockedUntil, strikes = {}, {}, {}
+Players.PlayerRemoving:Connect(function(p) lastPos[p] = nil; blockedUntil[p] = nil; strikes[p] = nil end)
 task.spawn(function()
  while world.Parent do
   local candidates = {}
@@ -792,6 +792,7 @@ task.spawn(function()
     local me = candidates[#candidates]
     if pw and not unlocked(p, pw) then
      -- в некупленный мир попадают только читом: возвращаем на спавн Meadow, монеты не собираем
+     p:SetAttribute("ServerTP", os.clock())
      p.Character:PivotTo(CFrame.new(0, 3 + groundY, 180))
      root.AssemblyLinearVelocity = Vector3.zero
      p:SetAttribute("CurrentWorld", "Meadow Isles")
@@ -799,16 +800,43 @@ task.spawn(function()
     elseif pw and p:GetAttribute("CurrentWorld") ~= pw then
      p:SetAttribute("CurrentWorld", pw)
     end
-    -- Проверка движения: слишком большой скачок за тик (телепорт-сбор, спидхак) — монеты
-    -- 1 секунду не собираются. Телепорты сервера (меню, ребёрс) дают ту же паузу — это незаметно.
+    -- Проверка движения: слишком большой скачок за тик (телепорт-сбор, спидхак, полёт вверх).
+    -- Телепорт сервера (меню, портал, ребёрс, страховка от падения) помечен атрибутом ServerTP —
+    -- после него только секунда паузы сбора. Скачок без него — чит: возвращаем назад и 3 с не
+    -- собираем монеты; после 5 таких за минуту — пауза 30 с. Новый персонаж (респавн) — без проверки.
     local now = os.clock()
     local prev = lastPos[p]
-    if prev then
+    local keep = false
+    if prev and prev.root == root then
      local d = root.Position - prev.pos
-     local allowed = (h.WalkSpeed * 2 + 60) * math.max(now - prev.t, 0.1)
-     if Vector2.new(d.X, d.Z).Magnitude > allowed then blockedUntil[p] = now + 1 end
+     local flat = Vector2.new(d.X, d.Z).Magnitude
+     local tick = math.max(now - prev.tick, 0.1)
+     -- при лаге клиент шлёт позицию рывком: отсчёт от последнего реального движения (не больше 1.5 с)
+     local dt = math.clamp(now - prev.t, 0.1, 1.5)
+     local speed = h.WalkSpeed * 2 + 60
+     if flat > speed * tick then blockedUntil[p] = math.max(blockedUntil[p] or 0, now + 1) end
+     if flat > speed * dt + 10 or d.Y > 160 * dt + 10 then
+      if now - (p:GetAttribute("ServerTP") or -100) < 3 then
+       blockedUntil[p] = now + 1
+      else
+       local s = strikes[p]
+       if not s or now - s.t > 60 then s = {t = now, n = 0}; strikes[p] = s end
+       s.n += 1
+       blockedUntil[p] = now + (s.n >= 5 and 30 or 3)
+       root.AssemblyLinearVelocity = Vector3.zero
+       p.Character:PivotTo(CFrame.new(prev.pos) * root.CFrame.Rotation)
+       keep = true -- точкой отсчёта остаётся прежнее место
+       if s.n == 5 then warn("[AntiCheat] repeated teleports:", p.Name) end
+      end
+     end
     end
-    lastPos[p] = {pos = root.Position, t = now}
+    if keep then
+     prev.t, prev.tick = now, now
+    elseif not prev or prev.root ~= root or (root.Position - prev.pos).Magnitude > 0.05 then
+     lastPos[p] = {pos = root.Position, t = now, tick = now, root = root}
+    else
+     prev.tick = now -- стоит на месте: t не трогаем, чтобы рывок после лага не считался читом
+    end
     if (blockedUntil[p] or 0) > now then me.blocked = true end
    end
   end

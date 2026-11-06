@@ -260,6 +260,7 @@ remote.OnServerEvent:Connect(function(p)
 	-- Возвращаем на старт Meadow Isles: новый круг начинается с первого мира (открытые миры остаются).
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if root then
+		p:SetAttribute("ServerTP", os.clock()) -- серверный телепорт: проверка скачков в GameServer его не наказывает
 		character:PivotTo(CFrame.new(0, 4 + (world:GetAttribute("GroundY") or 0), 180))
 		root.AssemblyLinearVelocity = Vector3.zero
 		p:SetAttribute("CurrentWorld", "Meadow Isles")

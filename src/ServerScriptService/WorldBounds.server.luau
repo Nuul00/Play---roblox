@@ -111,6 +111,7 @@ task.spawn(function()
 					safe[p] = root.CFrame
 				elseif last and root.Position.Y < last.Position.Y - FALL and not groundBelow(char, root.Position) then
 					root.AssemblyLinearVelocity = Vector3.zero
+					p:SetAttribute("ServerTP", os.clock()) -- серверный телепорт: проверка скачков в GameServer его не наказывает
 					char:PivotTo(last + Vector3.new(0, 4, 0))
 				end
 			end

@@ -128,6 +128,7 @@ local function teleport(p, id, buy)
 		feedback:FireClient(p, "🔓 " .. def.Name .. " unlocked!", true)
 	end
 	last[p] = now
+	p:SetAttribute("ServerTP", os.clock()) -- серверный телепорт: проверка скачков в GameServer его не наказывает
 	char:PivotTo(CFrame.new(target))
 	root.AssemblyLinearVelocity = Vector3.zero
 	p:SetAttribute("CurrentWorld", id)
