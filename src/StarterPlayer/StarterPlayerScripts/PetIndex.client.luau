@@ -138,16 +138,29 @@ for pos, id in ipairs(EGG_ORDER) do
 	b.Parent = list
 	corner(b, 12)
 	local s = stroke(b, 2.5, ink)
+	-- иконка-яйцо: овал с объёмом и бликом (раньше был плоский кружок)
 	local dot = Instance.new("Frame")
-	dot.Position = UDim2.fromOffset(10, 9)
-	dot.Size = UDim2.fromOffset(28, 32)
-	dot.BackgroundColor3 = egg.Color
+	dot.Position = UDim2.fromOffset(10, 5)
+	dot.Size = UDim2.fromOffset(32, 40)
+	dot.BackgroundColor3 = Color3.new(1, 1, 1)
 	dot.Parent = b
-	corner(dot, 14)
+	Instance.new("UICorner", dot).CornerRadius = UDim.new(0.5, 0)
 	stroke(dot, 2, ink)
-	local name = text(b, egg.Name, UDim2.fromOffset(48, 4), UDim2.fromOffset(190, 24), 18)
+	local eg = Instance.new("UIGradient")
+	eg.Color = ColorSequence.new(egg.Color:Lerp(Color3.new(1, 1, 1), 0.45), egg.Color:Lerp(Color3.new(0, 0, 0), 0.25))
+	eg.Rotation = 70
+	eg.Parent = dot
+	local shine = Instance.new("Frame")
+	shine.Position = UDim2.fromOffset(7, 7)
+	shine.Size = UDim2.fromOffset(8, 12)
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.35
+	shine.Rotation = -20
+	shine.Parent = dot
+	Instance.new("UICorner", shine).CornerRadius = UDim.new(0.5, 0)
+	local name = text(b, egg.Name, UDim2.fromOffset(50, 4), UDim2.fromOffset(188, 24), 18)
 	name.TextXAlignment = Enum.TextXAlignment.Left
-	local world = text(b, egg.World == "neon" and "Neon District" or egg.World == "sky" and "Sky Isles" or egg.World == "volcano" and "Magma Volcano" or egg.World == "galaxy" and "Cosmic Galaxy" or egg.World == "frozen" and "Frozen Peaks" or "Meadow Isles", UDim2.fromOffset(48, 26), UDim2.fromOffset(190, 18), 13, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
+	local world = text(b, egg.World == "neon" and "Neon District" or egg.World == "sky" and "Sky Isles" or egg.World == "volcano" and "Magma Volcano" or egg.World == "galaxy" and "Cosmic Galaxy" or egg.World == "frozen" and "Frozen Peaks" or "Meadow Isles", UDim2.fromOffset(50, 26), UDim2.fromOffset(188, 18), 14, Color3.fromRGB(140, 110, 80), Enum.Font.GothamMedium)
 	world.TextXAlignment = Enum.TextXAlignment.Left
 	local barBack = Instance.new("Frame")
 	barBack.Position = UDim2.fromOffset(240, 30)
@@ -163,6 +176,52 @@ for pos, id in ipairs(EGG_ORDER) do
 	local count = text(b, "", UDim2.fromOffset(240, 4), UDim2.fromOffset(100, 24), 17)
 	count.TextXAlignment = Enum.TextXAlignment.Right
 	tabs[id] = { button = b, stroke = s, bar = bar, count = count }
+end
+
+-- Особая страница: Vault Golem'ы из сейфа Coin Rush (в яйцах их нет — так игрок узнаёт, где их взять).
+local VAULT_IDS = {}
+for id = 222, 227 do
+	if Config.Pets[id] then
+		table.insert(VAULT_IDS, id)
+	end
+end
+local VAULT = { Name = "🗿 Vault Golems", Pool = {} }
+for _, id in ipairs(VAULT_IDS) do
+	table.insert(VAULT.Pool, { Pet = id, Chance = 3 })
+end
+local function pageOf(id)
+	return id == "vault" and VAULT or Config.Eggs[id]
+end
+if #VAULT_IDS > 0 then
+	local pos = #EGG_ORDER + 1
+	local b = Instance.new("TextButton")
+	b.Text = ""
+	b.Position = UDim2.fromOffset(18, 4 + (pos - 1) * 58)
+	b.Size = UDim2.fromOffset(352, 50)
+	b.BackgroundColor3 = Color3.fromRGB(255, 225, 150)
+	b.Parent = list
+	corner(b, 12)
+	local s = stroke(b, 2.5, ink)
+	local icon = text(b, "🗿", UDim2.fromOffset(8, 5), UDim2.fromOffset(36, 40), 30)
+	local name = text(b, "Vault Golems", UDim2.fromOffset(50, 4), UDim2.fromOffset(188, 24), 18)
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	local sub = text(b, "Coin Rush vault · 3%", UDim2.fromOffset(50, 26), UDim2.fromOffset(188, 18), 14, Color3.fromRGB(150, 95, 30), Enum.Font.GothamMedium)
+	sub.TextXAlignment = Enum.TextXAlignment.Left
+	local barBack = Instance.new("Frame")
+	barBack.Position = UDim2.fromOffset(240, 30)
+	barBack.Size = UDim2.fromOffset(100, 10)
+	barBack.BackgroundColor3 = Color3.fromRGB(220, 205, 175)
+	barBack.Parent = b
+	corner(barBack, 5)
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.fromScale(0, 1)
+	bar.BackgroundColor3 = Color3.fromRGB(255, 170, 40)
+	bar.Parent = barBack
+	corner(bar, 5)
+	local count = text(b, "", UDim2.fromOffset(240, 4), UDim2.fromOffset(100, 24), 17)
+	count.TextXAlignment = Enum.TextXAlignment.Right
+	tabs.vault = { button = b, stroke = s, bar = bar, count = count }
+	list.CanvasSize = UDim2.fromOffset(0, pos * 58 + 8)
 end
 
 local header = text(right, "", UDim2.fromOffset(0, 34), UDim2.new(1, 0, 0, 30), 24)
@@ -207,12 +266,13 @@ local function short(n)
 end
 local function progress(eggId)
 	local n = 0
-	for _, entry in ipairs(Config.Eggs[eggId].Pool) do
+	local pool = pageOf(eggId).Pool
+	for _, entry in ipairs(pool) do
 		if owned(entry.Pet) > 0 then
 			n += 1
 		end
 	end
-	return n, #Config.Eggs[eggId].Pool
+	return n, math.max(1, #pool)
 end
 
 local function viewport(parent, petId)
@@ -239,17 +299,17 @@ end
 
 local function showPage(eggId)
 	selected = eggId
-	local egg = Config.Eggs[eggId]
+	local egg = pageOf(eggId)
 	header.Text = egg.Name
 	grid:ClearAllChildren()
-	grid.CanvasSize=UDim2.fromOffset(0,math.ceil(#egg.Pool/3)*136)
+	grid.CanvasSize=UDim2.fromOffset(0,math.ceil(#egg.Pool/3)*146)
 	grid.CanvasPosition=Vector2.zero
 	cards = {}
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local card = Instance.new("Frame")
-		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 136)
-		card.Size = UDim2.fromOffset(112, 130)
+		card.Position = UDim2.fromOffset((i - 1) % 3 * 120, math.floor((i - 1) / 3) * 146)
+		card.Size = UDim2.fromOffset(112, 140)
 		card.BackgroundColor3 = Color3.fromRGB(255, 251, 240)
 		card.Parent = grid
 		corner(card, 12)
@@ -262,19 +322,46 @@ local function showPage(eggId)
 			view.Ambient = Color3.new(0, 0, 0)
 			view.LightColor = Color3.new(0, 0, 0)
 		end
-		text(card, found and def.Name or "???", UDim2.fromOffset(4, 58), UDim2.fromOffset(104, 18), found and 14 or 20)
-		local rarity = text(card, def.Rarity, UDim2.fromOffset(4, 76), UDim2.fromOffset(104, 16), 13, rarityColors[def.Rarity] or ink)
+		local nm = text(card, found and def.Name or "???", UDim2.fromOffset(4, 58), UDim2.fromOffset(104, 20), found and 16 or 20)
+		nm.TextScaled = found
+		local nmc = Instance.new("UITextSizeConstraint")
+		nmc.MaxTextSize = 16
+		nmc.Parent = nm
+		-- редкость — цветной плашкой с белым текстом (цветной текст на светлой бумаге читался плохо)
+		local rarity = text(card, def.Rarity, UDim2.fromOffset(18, 78), UDim2.fromOffset(76, 16), 13, Color3.new(1, 1, 1))
+		rarity.BackgroundTransparency = 0
+		rarity.BackgroundColor3 = rarityColors[def.Rarity] or ink
+		corner(rarity, 8)
+		local rs = Instance.new("UIStroke")
+		rs.Thickness = 1.2
+		rs.Color = Color3.fromRGB(60, 40, 25)
+		rs.Transparency = 0.4
+		rs.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		rs.Parent = rarity
 		if def.Rarity == "Secret" then
 			rarity.Text = "SECRET"
 		end
-		text(card, found and string.format("x%g · %g%% · own %d", def.Multiplier, entry.Chance, owned(entry.Pet)) or string.format("%g%%", entry.Chance), UDim2.fromOffset(4, 89), UDim2.fromOffset(104, 12), 9, Color3.fromRGB(120, 95, 70), Enum.Font.GothamMedium)
+		local info = text(card, found and string.format("x%s · %g%%", short(def.Multiplier), entry.Chance) or string.format("%g%% chance", entry.Chance), UDim2.fromOffset(4, 95), UDim2.fromOffset(104, 15), 13, Color3.fromRGB(110, 85, 60))
+		info.TextScaled = true
+		local ic = Instance.new("UITextSizeConstraint")
+		ic.MaxTextSize = 13
+		ic.Parent = info
+		if found and owned(entry.Pet) > 0 then
+			local own = text(card, "×" .. owned(entry.Pet), UDim2.new(1, -36, 0, 4), UDim2.fromOffset(32, 18), 14, Color3.new(1, 1, 1))
+			own.BackgroundTransparency = 0
+			own.BackgroundColor3 = Color3.fromRGB(90, 170, 90)
+			corner(own, 9)
+		end
 		-- Способность питомца (видна, когда он открыт) и значок супер-способности.
-		local ability = text(card, found and PetAbilities.Get(entry.Pet, 0).Text or "🔒 ability: ???", UDim2.fromOffset(5, 101), UDim2.fromOffset(102, 13), 11, Color3.fromRGB(150, 95, 30))
+		local ability = text(card, found and PetAbilities.Get(entry.Pet, 0).Text or "🔒 ability: ???", UDim2.fromOffset(5, 110), UDim2.fromOffset(102, 14), 12, Color3.fromRGB(150, 95, 30))
 		ability.TextScaled = true
+		local ac = Instance.new("UITextSizeConstraint")
+		ac.MaxTextSize = 12
+		ac.Parent = ability
 		local super = PetAbilities.Super(entry.Pet)
 		if super then
 			local pill = Instance.new("Frame")
-			pill.Position = UDim2.fromOffset(5, 115)
+			pill.Position = UDim2.fromOffset(5, 125)
 			pill.Size = UDim2.fromOffset(102, 13)
 			pill.BackgroundColor3 = Color3.new(1, 1, 1)
 			pill.Parent = card
@@ -290,6 +377,16 @@ local function showPage(eggId)
 		cards[i] = { model = model, view = view }
 	end
 	local n, max = progress(eggId)
+	if eggId == "vault" then
+		rewardButton.Text = "🏆 Open the Coin Rush vault: 3% drop"
+		rewardButton.BackgroundColor3 = Color3.fromRGB(200, 140, 50)
+		rewardButton.AutoButtonColor = false
+		for id, tab in pairs(tabs) do
+			tab.stroke.Thickness = id == eggId and 4 or 2.5
+			tab.stroke.Color = id == eggId and Color3.fromRGB(230, 120, 40) or ink
+		end
+		return
+	end
 	local reward = Config.GetIndexReward(eggId)
 	if player:GetAttribute("IndexClaimed" .. eggId) then
 		rewardButton.Text = "✓ REWARD CLAIMED"
@@ -314,9 +411,11 @@ local function refreshTabs()
 	local all, found = 0, 0
 	for id, tab in pairs(tabs) do
 		local n, max = progress(id)
-		all += max
-		found += n
-		tab.count.Text = (n >= max and not player:GetAttribute("IndexClaimed" .. id)) and ("🎁 " .. n .. "/" .. max) or (n .. "/" .. max)
+		if id ~= "vault" then
+			all += max
+			found += n
+		end
+		tab.count.Text = (id ~= "vault" and n >= max and not player:GetAttribute("IndexClaimed" .. id)) and ("🎁 " .. n .. "/" .. max) or (n .. "/" .. max)
 		tab.bar.Size = UDim2.fromScale(n / max, 1)
 	end
 	total.Text = string.format("Discovered %d / %d pets", found, all)
@@ -328,6 +427,9 @@ for id, tab in pairs(tabs) do
 	end)
 end
 rewardButton.Activated:Connect(function()
+	if selected == "vault" then
+		return
+	end
 	local n, max = progress(selected)
 	if n >= max and not player:GetAttribute("IndexClaimed" .. selected) then
 		claim:FireServer(selected)

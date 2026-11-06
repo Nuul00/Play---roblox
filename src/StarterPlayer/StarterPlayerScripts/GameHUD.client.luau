@@ -84,13 +84,44 @@ local function window(name,titleText,size)
  return panel,s,close
 end
 
--- Статистика.
-local panel,scale,closeStats=window("Statistics","YOUR STATISTICS",UDim2.fromOffset(420,405))
-local content=Instance.new("TextLabel");content.Position=UDim2.fromOffset(26,65);content.Size=UDim2.fromOffset(370,255);content.TextXAlignment=Enum.TextXAlignment.Left;content.TextYAlignment=Enum.TextYAlignment.Top;content.Font=Enum.Font.GothamMedium;content.TextSize=17;content.TextColor3=Color3.fromRGB(224,238,225);content.BackgroundTransparency=1;content.Parent=panel
-local statValues=content:Clone();statValues.Name="Values";statValues.Position=UDim2.fromOffset(26,65);statValues.TextXAlignment=Enum.TextXAlignment.Right;statValues.Font=Enum.Font.GothamBold;statValues.Parent=content.Parent
-local range=button(panel,"Magnet range: OFF",UDim2.fromOffset(368,38),UDim2.fromOffset(26,332))
+-- Статистика: карточки в три раздела (прогресс / сила / рекорды), у каждой иконка, подпись и крупное значение.
+local rgb=Color3.fromRGB
+local INK=rgb(35,22,60)
+local panel,scale,closeStats=window("Statistics","",UDim2.fromOffset(600,420))
+do
+ local g=Instance.new("UIGradient");g.Rotation=90;g.Color=ColorSequence.new(rgb(70,50,140),rgb(36,26,78));g.Parent=panel
+ panel:FindFirstChildOfClass("UIStroke").Color=INK
+ local head=Instance.new("Frame");head.Name="TitlePill";head.AnchorPoint=Vector2.new(0.5,0);head.Position=UDim2.new(0.5,0,0,-26);head.Size=UDim2.fromOffset(330,58);head.BackgroundColor3=rgb(80,160,255);head.Parent=panel
+ Instance.new("UICorner",head).CornerRadius=UDim.new(0,18);stroke(head,4,INK)
+ local hg=Instance.new("UIGradient");hg.Rotation=90;hg.Color=ColorSequence.new(rgb(140,215,255),rgb(50,115,235));hg.Parent=head
+ local ht=Instance.new("TextLabel");ht.BackgroundTransparency=1;ht.Size=UDim2.fromScale(1,1);ht.Text="📊 YOUR STATS";ht.Font=Enum.Font.FredokaOne;ht.TextSize=30;ht.TextColor3=Color3.new(1,1,1);ht.Parent=head;stroke(ht,2.5,INK)
+end
+local statCells={}
+local SECTIONS={
+ {"PROGRESS",rgb(255,205,80),{{"coins","💰","Coins"},{"rebirths","🔄","Rebirths"},{"index","📖","Pet index"},{"eggs","🥚","Eggs"}}},
+ {"POWER",rgb(120,220,255),{{"speed","⚡","Speed"},{"magnet","🧲","Magnet"},{"income","💵","Income"},{"double","🎲","Double coin"}}},
+ {"RECORDS",rgb(255,140,200),{{"pet","🐾","Best pet"},{"combo","🔥","Best combo"},{"rush","🏆","Rush best"},{"picked","✨","Coins picked"}}},
+}
+local CW,CH,GX=132,64,8
+for si,sec in ipairs(SECTIONS) do
+ local y=50+(si-1)*102
+ local cap=Instance.new("TextLabel");cap.BackgroundTransparency=1;cap.Position=UDim2.fromOffset(24,y);cap.Size=UDim2.fromOffset(300,22);cap.Text=sec[1];cap.Font=Enum.Font.FredokaOne;cap.TextSize=18;cap.TextColor3=sec[2];cap.TextXAlignment=Enum.TextXAlignment.Left;cap.Parent=panel;stroke(cap,2,INK)
+ for ci,c in ipairs(sec[3]) do
+  local card=Instance.new("Frame");card.Name="Stat_"..c[1];card.Position=UDim2.fromOffset(24+(ci-1)*(CW+GX),y+26);card.Size=UDim2.fromOffset(CW,CH);card.BackgroundColor3=rgb(24,16,52);card.BackgroundTransparency=0.15;card.Parent=panel
+  Instance.new("UICorner",card).CornerRadius=UDim.new(0,14)
+  local cs=stroke(card,2.5,sec[2]);cs.Transparency=0.25;cs.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+  local badge=Instance.new("TextLabel");badge.Position=UDim2.fromOffset(7,12);badge.Size=UDim2.fromOffset(40,40);badge.BackgroundColor3=sec[2];badge.BackgroundTransparency=0.55;badge.Text=c[2];badge.TextSize=24;badge.Font=Enum.Font.FredokaOne;badge.Parent=card
+  Instance.new("UICorner",badge).CornerRadius=UDim.new(1,0)
+  local lab=Instance.new("TextLabel");lab.BackgroundTransparency=1;lab.Position=UDim2.fromOffset(52,8);lab.Size=UDim2.fromOffset(CW-58,18);lab.Text=c[3];lab.Font=Enum.Font.FredokaOne;lab.TextSize=14;lab.TextColor3=rgb(200,190,235);lab.TextXAlignment=Enum.TextXAlignment.Left;lab.TextTruncate=Enum.TextTruncate.AtEnd;lab.Parent=card
+  local val=Instance.new("TextLabel");val.BackgroundTransparency=1;val.Position=UDim2.fromOffset(52,26);val.Size=UDim2.fromOffset(CW-58,30);val.Text="-";val.Font=Enum.Font.FredokaOne;val.TextScaled=true;val.TextColor3=Color3.new(1,1,1);val.TextXAlignment=Enum.TextXAlignment.Left;val.Parent=card;stroke(val,2,INK)
+  local vc=Instance.new("UITextSizeConstraint");vc.MaxTextSize=24;vc.Parent=val
+  statCells[c[1]]=val
+ end
+end
+local content=Instance.new("TextLabel");content.Name="SaveStatus";content.BackgroundTransparency=1;content.Position=UDim2.fromOffset(28,370);content.Size=UDim2.fromOffset(250,24);content.Font=Enum.Font.FredokaOne;content.TextSize=14;content.TextColor3=rgb(170,160,210);content.TextXAlignment=Enum.TextXAlignment.Left;content.Parent=panel
+local range=button(panel,"🧲 Show magnet range: OFF",UDim2.fromOffset(270,40),UDim2.fromOffset(306,362));range.BackgroundColor3=rgb(90,70,170);range.TextSize=17;range:FindFirstChildOfClass("UIStroke").Color=INK;range:FindFirstChildOfClass("UIStroke").ApplyStrokeMode=Enum.ApplyStrokeMode.Border
 player:SetAttribute("ShowMagnetRange",false)
-range.Activated:Connect(function() local visible=not player:GetAttribute("ShowMagnetRange");player:SetAttribute("ShowMagnetRange",visible);range.Text="Magnet range: "..(visible and "ON" or "OFF") end)
+range.Activated:Connect(function() local visible=not player:GetAttribute("ShowMagnetRange");player:SetAttribute("ShowMagnetRange",visible);range.Text="🧲 Show magnet range: "..(visible and "ON" or "OFF");range.BackgroundColor3=visible and rgb(70,170,90) or rgb(90,70,170) end)
 
 -- Настройки: время суток меняется только у этого игрока.
 local settings,settingsScale,closeSettings=window("Settings","SETTINGS",UDim2.fromOffset(420,250))
@@ -168,12 +199,23 @@ local function update()
   end
  end
  local function ab(n) return NumberFormat.Short(n) end
- -- две колонки: подписи слева, значения справа (раньше выравнивали пробелами — получалось криво)
- local rows={{"Coins",ab(stats.Coins.Value)},{"Speed",string.format("%g  (level %d)",Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value)},{"Magnet radius",string.format("%.1f",(player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0)))},{"Income","x"..ab(Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0))},{"Double coin",string.format("%g%%",math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10)},{"Rebirths",tostring(player:GetAttribute("Rebirths") or 0)},{"Best pet",pet and pet.Name or "None"},{"Pet bonus","x"..ab(player:GetAttribute("PetBonus") or 1)},{"Eggs opened",ab(player:GetAttribute("EggsOpened") or 0)},{"Coins picked up",ab(player:GetAttribute("CoinsCollected") or 0)},{"Pet index",owned.." / "..total}}
- local names,vals={}, {}
- for _,r in ipairs(rows) do table.insert(names,r[1]);table.insert(vals,r[2]) end
- content.Text=table.concat(names,"\n").."\n"..(player:GetAttribute("SaveStatus") or "LOADING PROFILE")
- statValues.Text=table.concat(vals,"\n")
+ local v={
+  coins=ab(stats.Coins.Value),
+  rebirths=tostring(player:GetAttribute("Rebirths") or 0),
+  index=owned.." / "..total,
+  eggs=ab(player:GetAttribute("EggsOpened") or 0),
+  speed=string.format("%g · lvl %d",Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value),
+  magnet=string.format("%.1f",(player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0))),
+  income="x"..ab(Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0)*(player:GetAttribute("PetBonus") or 1)),
+  double=string.format("%g%%",math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10),
+  pet=pet and pet.Name or "None",
+  combo="x"..tostring(player:GetAttribute("Save_BestCombo") or 0),
+  rush=ab(player:GetAttribute("Save_RushBest") or 0),
+  picked=ab(player:GetAttribute("CoinsCollected") or 0),
+ }
+ for k,t in pairs(v) do if statCells[k] then statCells[k].Text=t end end
+ local s=player:GetAttribute("SaveStatus") or "LOADING PROFILE"
+ content.Text="💾 "..s
 end
 -- Панель статистики пересобираем, только когда она открыта (монеты меняются десятки раз в секунду).
 local statsPanel=screens and screens.stats
@@ -204,7 +246,8 @@ RunService.RenderStepped:Connect(function()
  local camera=workspace.CurrentCamera
  if camera then
   local s=math.clamp(math.min(camera.ViewportSize.X/450,camera.ViewportSize.Y/460),0.3,1)
-  scale.Scale=s;settingsScale.Scale=s
+  settingsScale.Scale=s
+  scale.Scale=math.clamp(math.min(camera.ViewportSize.X/640,(camera.ViewportSize.Y-60)/460),0.3,1)
  end
  local modal=(player:GetAttribute("UIScreen") or "")~=""
  if modal and not hidden then local ok,value=pcall(function() return StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList) end);previous=not ok or value;pcall(function() StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList,false) end);hidden=true

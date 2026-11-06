@@ -77,8 +77,30 @@ window.Parent = gui
 corner(window, 20)
 stroke(window, 4)
 local scale = Instance.new("UIScale", window)
-local title = label(window, "🎒 INVENTORY", UDim2.fromOffset(20, 8), UDim2.fromOffset(300, 44), 28, Color3.fromRGB(255, 230, 150))
-title.TextXAlignment = Enum.TextXAlignment.Left
+-- оформление как у остальных окон: градиент и заголовок-плашка над краем
+local wg = Instance.new("UIGradient")
+wg.Rotation = 90
+wg.Color = ColorSequence.new(Color3.fromRGB(70, 50, 140), Color3.fromRGB(36, 26, 78))
+wg.Parent = window
+local pillHead = Instance.new("Frame")
+pillHead.Name = "TitlePill"
+pillHead.Position = UDim2.fromOffset(24, -24)
+pillHead.Size = UDim2.fromOffset(280, 56)
+pillHead.BackgroundColor3 = Color3.new(1, 1, 1)
+pillHead.ZIndex = 3
+pillHead.Parent = window
+corner(pillHead, 18)
+stroke(pillHead, 4, Color3.fromRGB(35, 22, 60))
+local pg = Instance.new("UIGradient")
+pg.Rotation = 90
+pg.Color = ColorSequence.new(Color3.fromRGB(165, 240, 120), Color3.fromRGB(55, 165, 70))
+pg.Parent = pillHead
+local title = label(pillHead, "🎒 INVENTORY", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 30)
+title.ZIndex = 4
+local tst = Instance.new("UIStroke")
+tst.Thickness = 2.5
+tst.Color = Color3.fromRGB(35, 22, 60)
+tst.Parent = title
 local close = button(window, "×", UDim2.new(1, -52, 0, 10), UDim2.fromOffset(40, 40), Color3.fromRGB(220, 70, 70))
 close.TextSize = 28
 close.Modal = true
@@ -183,7 +205,24 @@ local function buildPets()
 		return codeMult(a) > codeMult(b)
 	end)
 	if #ids == 0 then
-		label(body, "No pets yet — open an egg!", UDim2.fromOffset(0, 120), UDim2.fromOffset(748, 40), 24)
+		-- пустое состояние: подсказка, где взять первого питомца
+		local empty = Instance.new("Frame")
+		empty.AnchorPoint = Vector2.new(0.5, 0)
+		empty.Position = UDim2.new(0.5, 0, 0, 80)
+		empty.Size = UDim2.fromOffset(420, 230)
+		empty.BackgroundColor3 = Color3.fromRGB(24, 16, 52)
+		empty.BackgroundTransparency = 0.2
+		empty.Parent = body
+		corner(empty, 18)
+		local es = stroke(empty, 2.5, Color3.fromRGB(255, 205, 80))
+		es.Transparency = 0.3
+		label(empty, "🥚", UDim2.fromOffset(0, 14), UDim2.new(1, 0, 0, 80), 70)
+		local t1 = label(empty, "No pets yet!", UDim2.fromOffset(0, 100), UDim2.new(1, 0, 0, 34), 28)
+		local t1s = Instance.new("UIStroke")
+		t1s.Thickness = 2
+		t1s.Color = dark
+		t1s.Parent = t1
+		label(empty, "Walk up to any egg stand and press E to hatch your first pet. Pets multiply every coin you pick up.", UDim2.fromOffset(24, 140), UDim2.new(1, -48, 0, 70), 17, Color3.fromRGB(210, 200, 240), Enum.Font.GothamMedium)
 	end
 	for _, id in ipairs(ids) do
 		local baseId, tier = ShopConfig.SplitPet(id)
@@ -191,13 +230,18 @@ local function buildPets()
 		local variant = ShopConfig.Variants[tier]
 		local card = Instance.new("TextButton")
 		card.Text = ""
-		card.BackgroundColor3 = (equippedCount[id] or 0) > 0 and Color3.fromRGB(70, 120, 80) or Color3.fromRGB(58, 66, 92)
+		card.BackgroundColor3 = (equippedCount[id] or 0) > 0 and Color3.fromRGB(60, 120, 75) or Color3.fromRGB(40, 30, 80)
+		local cg = Instance.new("UIGradient")
+		cg.Rotation = 90
+		cg.Transparency = NumberSequence.new(0, 0)
+		cg.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 190))
+		cg.Parent = card
 		card.Parent = list
 		corner(card, 14)
 		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
 		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
-		label(card, (def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
+		label(card, ((baseId >= 222 and baseId <= 227) and "VAULT SECRET" or def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
 		-- Способность питомца и (у Legendary/Secret) значок супер-способности.
 		local ability = PetAbilities.Get(baseId, tier)
 		local abilityLine = label(card, ability.Text, UDim2.fromOffset(6, 133), UDim2.fromOffset(126, 15), 13, Color3.fromRGB(255, 235, 160))
@@ -230,6 +274,13 @@ local function buildPets()
 		end)
 		label(card, "own " .. count(id), UDim2.fromOffset(4, 166), UDim2.fromOffset(60, 20), 13, Color3.fromRGB(210, 210, 220), Enum.Font.GothamMedium)
 		if (equippedCount[id] or 0) > 0 then
+			-- надетый питомец: плашка сверху, чтобы было видно с первого взгляда
+			local on = label(card, "✔ EQUIPPED", UDim2.fromOffset(8, 6), UDim2.fromOffset(84, 18), 12)
+			on.BackgroundTransparency = 0
+			on.BackgroundColor3 = Color3.fromRGB(70, 190, 90)
+			on.ZIndex = 3
+			corner(on, 9)
+			stroke(on, 1.5)
 			local tag = label(card, "✔ x" .. equippedCount[id], UDim2.fromOffset(70, 166), UDim2.fromOffset(62, 20), 14, Color3.fromRGB(150, 255, 150))
 			tag.TextXAlignment = Enum.TextXAlignment.Right
 		end
@@ -279,7 +330,7 @@ local function buildPotions()
 			action:FireServer("potion", name)
 		end)
 	end
-	label(body, "Buy more potions at the Magnet Shop next to the kiosk.", UDim2.fromOffset(0, 380), UDim2.fromOffset(748, 24), 15, Color3.fromRGB(190, 200, 220), Enum.Font.GothamMedium)
+	label(body, "Get potions from Daily Rewards, the Coin Rush vault and the Magnet Shop next to the kiosk.", UDim2.fromOffset(0, 380), UDim2.fromOffset(748, 24), 15, Color3.fromRGB(190, 200, 220), Enum.Font.GothamMedium)
 end
 
 -- ===== Достижения =====
@@ -332,7 +383,8 @@ local function buildBadges()
 		medal.Parent = row
 		corner(medal, 38)
 		stroke(medal, 3)
-		label(medal, b.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 38)
+		local mi = label(medal, b.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 38)
+		mi.TextTransparency = done and 0 or 0.45
 		local n = label(row, b.Name .. (done and "  ✔" or ""), UDim2.fromOffset(100, 8), UDim2.fromOffset(260, 28), 20)
 		n.TextXAlignment = Enum.TextXAlignment.Left
 		local d = label(row, b.Desc .. string.format(" · x%g coins", ShopConfig.BadgeBonus), UDim2.fromOffset(100, 36), UDim2.fromOffset(260, 22), 14, Color3.fromRGB(210, 215, 230), Enum.Font.GothamMedium)

@@ -108,11 +108,21 @@ for day, reward in ipairs(D.Rewards) do
 	icon.Text = ICONS[reward.Icon] or "🎁"
 	icon.TextSize = 46
 	icon.Parent = c
-	local nameLabel = text(c, reward.Name, 4, 98, CW - 8, 44, 14)
-	local status = text(c, "", 4, 146, CW - 8, 36, 15)
+	-- название награды — тёмным по светлой карточке (белое с обводкой на светлом не читалось)
+	local nameLabel = text(c, reward.Name, 4, 96, CW - 8, 46, 16, ink)
+	nameLabel:FindFirstChildOfClass("UIStroke").Enabled = false
+	nameLabel.TextScaled = true
+	local nc = Instance.new("UITextSizeConstraint")
+	nc.MaxTextSize = 17
+	nc.Parent = nameLabel
+	-- статус — плашкой внизу карточки
+	local pill = frame(c, 10, 148, CW - 20, 30, ink, 10)
+	pill.BackgroundTransparency = 0.25
+	pill.Visible = false
+	local status = text(pill, "", 0, 0, CW - 20, 30, 16)
 	local tick = text(c, "✓", 0, 38, CW, 60, 54, rgb(120, 255, 120))
 	tick.Visible = false
-	cells[day] = { frame = c, grad = g, stroke = cs, status = status, icon = icon, tick = tick, name = nameLabel, reward = reward }
+	cells[day] = { frame = c, grad = g, stroke = cs, status = status, pill = pill, icon = icon, tick = tick, name = nameLabel, reward = reward }
 end
 
 local note = text(panel, "", 20, 292, 820, 26, 15, rgb(225, 210, 255))
@@ -128,6 +138,9 @@ round(claim, 16)
 stroke(claim, ink, 4)
 local claimScale = Instance.new("UIScale", claim)
 local claimGrad = Instance.new("UIGradient", claim)
+-- надпись отдельной меткой: градиент кнопки красил и текст (зелёное на зелёном)
+claim.TextTransparency = 1
+local claimLabel = text(claim, "", 0, 0, 360, 56, 28)
 claimGrad.Rotation = 90
 claim.MouseEnter:Connect(function()
 	if claim.Active then
@@ -152,7 +165,7 @@ local function refresh()
 		-- монеты награды растут вместе с игроком: показываем настоящую сумму
 		if c.reward.Coins then
 			local amount = D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned"))
-			local extra = c.reward.Potions and "\n+ 3 potions" or ""
+			local extra = c.reward.FreeHatch and "\n+ free egg + 3 potions" or c.reward.Potions and "\n+ 3 potions" or ""
 			c.name.Text = shortNum(amount) .. " coins" .. extra
 		end
 		local current = i == state.Day
@@ -178,8 +191,10 @@ local function refresh()
 			end
 			c.status.Text = claimed and "CLAIMED" or current and "NEXT" or ""
 		end
+		c.pill.Visible = c.status.Text ~= ""
+		c.pill.BackgroundColor3 = (current and state.Ready) and rgb(40, 120, 40) or claimed and rgb(70, 75, 95) or ink
 	end
-	claim.Text = busy and "CLAIMING..."
+	claimLabel.Text = busy and "CLAIMING..."
 		or ready and "CLAIM!"
 		or string.format("NEXT IN %02d:%02d:%02d", math.floor(state.Remaining / 3600), math.floor(state.Remaining / 60) % 60, math.floor(state.Remaining) % 60)
 	claim.Active = (ready and not busy) and true or false

@@ -192,12 +192,15 @@ do
 	end
 	-- { статистика, иконка, название, описание (%s — цель), цели, старые Id для первых уровней }
 	local CHAINS = {
-		{ "CoinsCollected", "🪙", "Coin Collector", "Pick up %s coins", { 100, 1000, 10000, 50000, 250000, 1000000, 5000000 }, { "Pickup100", "Pickup1000" } },
+		{ "CoinsCollected", "💰", "Coin Collector", "Pick up %s coins", { 100, 1000, 10000, 50000, 250000, 1000000, 5000000 }, { "Pickup100", "Pickup1000" } },
 		{ "EggsOpened", "🥚", "Egg Master", "Open %s eggs", { 10, 100, 500, 2500, 10000, 50000 }, { "Eggs10", "Eggs100" } },
 		{ "LifetimeEarned", "💎", "Rich", "Earn %s coins in total", { 100000, 1e8, 1e10, 1e12, 1e14, 1e16, 1e18 }, { "Rich" } },
 		{ "PetsDiscovered", "📖", "Explorer", "Discover %s pets", { 12, 25, 40, 60, 80, 100 }, { "Index12" } },
 		{ "Rebirths", "🔄", "Reborn", "Rebirth %s times", { 1, 3, 5, 10, 15, 25, 35, 50 }, {} },
 		{ "MagnetTier", "🧲", "Magnet Fan", "Own magnet #%s", { 5, 10, 20, 30, 40, 50, 60 }, {} },
+		-- Coin Rush и комбо: достижения связывают их с общей прогрессией (каждое — ×1.03 монет навсегда)
+		{ "Save_RushRuns", "🏆", "Vault Raider", "Finish %s Coin Rush runs", { 1, 5, 25, 100 }, { "Rush1", "Rush5", "Rush25", "Rush100" } },
+		{ "Save_BestCombo", "🔥", "Combo King", "Reach a %s-coin combo", { 15, 40, 80, 150 }, { "Combo15", "Combo40", "Combo80", "Combo150" } },
 	}
 	for _, c in ipairs(CHAINS) do
 		for i, goal in ipairs(c[5]) do
