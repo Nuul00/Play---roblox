@@ -37,9 +37,9 @@ CoinTypes.Worlds = {
 	Frozen = {
 		Theme = { rgb(150, 230, 255), rgb(200, 160, 255) }, -- лёд и северное сияние
 		Kinds = {
-			{ Id = "Ice", Weight = 60, Value = 400, Scale = 1, Color = rgb(140, 220, 255) },
-			{ Id = "Crystal", Weight = 30, Value = 800, Scale = 1.12, Color = rgb(120, 170, 255) },
-			{ Id = "Aurora", Weight = 10, Value = 1600, Scale = 1.25, Color = rgb(120, 255, 200) },
+			{ Id = "Ice", Weight = 60, Value = 700, Scale = 1, Color = rgb(140, 220, 255) },
+			{ Id = "Crystal", Weight = 30, Value = 1400, Scale = 1.12, Color = rgb(120, 170, 255) },
+			{ Id = "Aurora", Weight = 10, Value = 2800, Scale = 1.25, Color = rgb(120, 255, 200) },
 		},
 	},
 	Volcano = {

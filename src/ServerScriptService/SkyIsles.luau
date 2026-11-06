@@ -24,6 +24,8 @@ local function part(parent, name, size, at, color, material, props)
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
+	-- мелкий декор без теней (производительность); крупные формы и земля тень оставляют
+	if math.max(size.X, size.Y, size.Z) < 12 then p.CastShadow = false end
 	p.Material = material or M.SmoothPlastic
 	p.Color = color
 	p.CFrame = typeof(at) == "CFrame" and at or CFrame.new(at)
@@ -794,9 +796,9 @@ end
 -- Каждый следующий остров выше и щедрее.
 -- Награду и перезарядку сундука выдаёт SkyChests.server (тег "SkyChest", атрибуты ChestId и Reward).
 local TREASURE = {
-	{ Id = 1, At = Vector3.new(195, 32, -91), Size = 30, Reward = 200e6, Seed = 31 },
-	{ Id = 2, At = Vector3.new(129, 52, -184), Size = 32, Reward = 600e6, Seed = 47 },
-	{ Id = 3, At = Vector3.new(19, 74, -219), Size = 36, Reward = 2e9, Seed = 59 },
+	{ Id = 1, At = Vector3.new(195, 32, -91), Size = 30, Reward = 20e6, Share = 0.01, Seed = 31 },
+	{ Id = 2, At = Vector3.new(129, 52, -184), Size = 32, Reward = 60e6, Share = 0.02, Seed = 47 },
+	{ Id = 3, At = Vector3.new(19, 74, -219), Size = 36, Reward = 200e6, Share = 0.04, Seed = 59 },
 }
 -- Откуда начинается подъём к первому острову (на площадке, ближе к краю, по направлению к острову).
 local TREASURE_START = Vector3.new(91, 0, -42)
@@ -895,7 +897,7 @@ local function chest(parent, at, face, id, reward)
 	sub.BackgroundTransparency = 1
 	sub.Position = UDim2.fromScale(0, 0.55)
 	sub.Size = UDim2.fromScale(1, 0.4)
-	sub.Text = "+" .. comma(reward) .. " coins"
+	sub.Text = "+" .. comma(reward) .. "+ coins" -- растёт с прогрессом игрока (SkyChests: доля от заработанного)
 	sub.TextScaled = true
 	sub.Font = Enum.Font.FredokaOne
 	sub.TextColor3 = rgb(255, 255, 255)
@@ -1071,7 +1073,8 @@ local function treasureIslet(parent, def, face)
 	local chestAt = spot(archBack + 4.5, 0)
 	disc(m, "ChestPlinth", 7, 0.6, chestAt + Vector3.new(0, 0.3, 0), MARBLE)
 	trim(disc(m, "PlinthGlow", 7.4, 0.25, chestAt + Vector3.new(0, 0.15, 0), TRIM, M.Neon, { CanCollide = false, CanTouch = false, CanQuery = false }))
-	chest(m, chestAt + Vector3.new(0, 0.6, 0), forward, def.Id, def.Reward)
+	local cm = chest(m, chestAt + Vector3.new(0, 0.6, 0), forward, def.Id, def.Reward)
+	if cm and cm.PrimaryPart then cm.PrimaryPart:SetAttribute("Share", def.Share or 0) end
 	for _, sx in ipairs({ -1, 1 }) do
 		local post = spot(archBack + 5.5, sx * 4.6)
 		part(m, "LanternPost", Vector3.new(0.4, 3.2, 0.4), post + Vector3.new(0, 1.6, 0), MARBLE, M.SmoothPlastic, { CanCollide = false })

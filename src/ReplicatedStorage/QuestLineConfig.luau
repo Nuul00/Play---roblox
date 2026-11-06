@@ -87,7 +87,7 @@ Q.Steps = {
 	step(3, "Sky Baron", "Finish the chapter for a big prize!", { Type = "earn", N = 3e10 }, { Coins = 2.5e9, Hatch = 9, Bonus = 0.05 }),
 
 	-- ===== Глава 4: Frozen Peaks (яйца 16, 17, 18; прокачка до 75) =====
-	step(4, "Frozen Frontier", "Unlock Frozen Peaks in TELEPORT (12B coins).", { Type = "world", World = "Frozen Peaks" }, { Coins = 3e9 }),
+	step(4, "Frozen Frontier", "Unlock Frozen Peaks in TELEPORT (18B coins).", { Type = "world", World = "Frozen Peaks" }, { Coins = 4.5e9 }),
 	step(4, "Snowflake Hunt", "Snowy pets love the cold.", { Type = "eggs", N = 10, Egg = 16 }, { Coins = 5.7e9, Potion = "Luck" }),
 	step(4, "Ice Skater", "Frozen kiosks go up to level 75.", { Type = "speed", N = 55 }, { Coins = 9e9 }),
 	step(4, "Aurora Lights", "Pets glowing like the northern sky.", { Type = "eggs", N = 10, Egg = 17 }, { Coins = 1.5e10, Potion = "Coins" }),
@@ -98,7 +98,7 @@ Q.Steps = {
 	step(4, "Frozen Fortune", "Finish the chapter for a big prize!", { Type = "earn", N = 1.5e12 }, { Coins = 2.4e11, Hatch = 18, Bonus = 0.05 }),
 
 	-- ===== Глава 5: Magma Volcano (яйца 10, 11, 12; прокачка до 100) =====
-	step(5, "Heat Wave", "Unlock Magma Volcano in TELEPORT (600B coins).", { Type = "world", World = "Magma Volcano" }, { Coins = 1.5e11 }),
+	step(5, "Heat Wave", "Unlock Magma Volcano in TELEPORT (1.2T coins).", { Type = "world", World = "Magma Volcano" }, { Coins = 3e11 }),
 	step(5, "Ember Awakening", "Fire pets burn with power.", { Type = "eggs", N = 10, Egg = 10 }, { Coins = 7.8e11, Potion = "Luck" }),
 	step(5, "Lava Sprinter", "Volcano kiosks go up to level 100.", { Type = "speed", N = 80 }, { Coins = 1.2e12 }),
 	step(5, "Molten Magnet", "Buy Magma Core in the Volcano magnet shop.", { Type = "magnetTier", N = 45 }, { Coins = 2.1e12 }),
@@ -110,7 +110,7 @@ Q.Steps = {
 	step(5, "Volcano Lord", "Finish the chapter for a big prize!", { Type = "earn", N = 4e14 }, { Coins = 4.8e13, Hatch = 12, Bonus = 0.05 }),
 
 	-- ===== Глава 6: Cosmic Galaxy (яйца 13, 14, 15; прокачка до 125) =====
-	step(6, "Lift Off", "Unlock Cosmic Galaxy in TELEPORT (100T coins)!", { Type = "world", World = "Cosmic Galaxy" }, { Coins = 2.5e13 }),
+	step(6, "Lift Off", "Unlock Cosmic Galaxy in TELEPORT (300T coins)!", { Type = "world", World = "Cosmic Galaxy" }, { Coins = 7.5e13 }),
 	step(6, "Rocket Science", "Space pets from another world.", { Type = "eggs", N = 10, Egg = 13 }, { Coins = 1.8e14, Potion = "Luck" }),
 	step(6, "Star Speed", "Galaxy kiosks go up to level 125.", { Type = "speed", N = 110 }, { Coins = 3.6e14 }),
 	step(6, "Nebula Drift", "Pets born in the stars.", { Type = "eggs", N = 10, Egg = 14 }, { Coins = 6.3e14, Potion = "Coins" }),

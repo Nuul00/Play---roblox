@@ -72,6 +72,8 @@ local function open(p: Player, base: BasePart)
 		return
 	end
 	-- Без yield между проверкой и выдачей: двойной клик не даст награду дважды.
+	-- награда растёт с прогрессом: не меньше базы, иначе доля от всего заработанного (база одна на всех)
+	reward = math.max(reward, math.floor((tonumber(p:GetAttribute("LifetimeEarned")) or 0) * (base:GetAttribute("Share") or 0)))
 	mine[id] = os.time()
 	p:SetAttribute("Save_Chest" .. id, os.time())
 	coins.Value += reward

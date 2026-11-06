@@ -35,6 +35,8 @@ local function part(parent: Instance, name: string, size: Vector3, cf: CFrame | 
 	p.Material = material or M.SmoothPlastic
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
+	-- мелкий декор без теней (производительность); крупные формы и земля тень оставляют
+	if math.max(size.X, size.Y, size.Z) < 12 then p.CastShadow = false end
 	if props then
 		for k, v in pairs(props) do
 			if k ~= "Class" then

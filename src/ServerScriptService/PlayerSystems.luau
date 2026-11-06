@@ -220,8 +220,8 @@ end
 
 -- ===== Скорость =====
 PlayerSystems.MaxWalkSpeed = 85
-PlayerSystems.MaxMagnetBase = 40 -- уровень + магнит + питомцы
-PlayerSystems.MaxMagnetTotal = 60 -- с геймпассом Super Magnet
+PlayerSystems.MaxMagnetBase = 55 -- уровень + магнит + питомцы
+PlayerSystems.MaxMagnetTotal = 80 -- с геймпассом Super Magnet
 function PlayerSystems.ApplySpeed(p)
 	local stats = p:FindFirstChild("leaderstats")
 	local h = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
