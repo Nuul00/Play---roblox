@@ -23,6 +23,28 @@ local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
 world:SetAttribute("ServerRunning", true)
 local city = world:WaitForChild("NeonCity")
+-- В Неонграде не было магазина магнитов: ставим копию магазина Meadow на свободное место слева от
+-- спавна (между небоскрёбами и дорогой к магазину апгрейдов), лицом к центру района.
+do
+ local src = world:WaitForChild("MagnetShop", 10)
+ if src and not city:FindFirstChild("MagnetShop") then
+  local m = src:Clone()
+  m:PivotTo(m:GetPivot() + Vector3.new(city.Floor.Position.X, -2, 23))
+  m.Parent = city
+  -- дорожка от конца ShopPath (за магазином апгрейдов) к кругу магазина магнитов
+  local path = city:FindFirstChild("ShopPath")
+  local zone = m:FindFirstChild("ShopZone")
+  if path and zone and path:IsA("BasePart") then
+   local x = path.Position.X - path.Size.X / 2 + 4
+   local z0, z1 = path.Position.Z + path.Size.Z / 2, zone.Position.Z
+   local link = path:Clone()
+   link.Name = "MagnetPath"
+   link.Size = Vector3.new(path.Size.Z, path.Size.Y, z1 - z0)
+   link.CFrame = CFrame.new(x, path.Position.Y, (z0 + z1) / 2)
+   link.Parent = city
+  end
+ end
+end
 workspace.GlobalWind=Vector3.new(8,0,3)
 workspace.Terrain:FillBlock(CFrame.new(250,-15,0),Vector3.new(1000,10,650),Enum.Material.Water)
 workspace.Terrain:FillBlock(CFrame.new(0,-6,0),Vector3.new(300,12,460),Enum.Material.Grass)
@@ -307,7 +329,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
   -- Какой магазин магнитов рядом: от него зависит, какие магниты можно купить (def.World).
   local stats, shopWorld
-  for _, candidate in ipairs({{world, world, "Meadow Isles"}, {sky, sky, "Sky Isles"}, {frozen, frozen, "Frozen Peaks"}, {volcano, volcano, "Magma Volcano"}, {galaxy, galaxy, "Cosmic Galaxy"}}) do
+  for _, candidate in ipairs({{world, world, "Meadow Isles"}, {city, city, "Neon District"}, {sky, sky, "Sky Isles"}, {frozen, frozen, "Frozen Peaks"}, {volcano, volcano, "Magma Volcano"}, {galaxy, galaxy, "Cosmic Galaxy"}}) do
    local shop = candidate[1] and candidate[1]:FindFirstChild("MagnetShop")
    local zonePart = shop and shop:FindFirstChild("ShopZone")
    if zonePart then
@@ -491,6 +513,9 @@ do
  local magnetShop = world:FindFirstChild("MagnetShop")
  local zonePart = magnetShop and magnetShop:FindFirstChild("ShopZone")
  if zonePart then shopZones.magnets = zonePart end
+ local neonMagnets = city:FindFirstChild("MagnetShop")
+ local neonZone = neonMagnets and neonMagnets:FindFirstChild("ShopZone")
+ if neonZone then shopZones.neonmagnets = neonZone end
  local skyMagnets = sky:FindFirstChild("MagnetShop")
  local skyZone = skyMagnets and skyMagnets:FindFirstChild("ShopZone")
  if skyZone then shopZones.skymagnets = skyZone end
@@ -747,7 +772,7 @@ task.spawn(function()
      local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
      if inside and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
-      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") elseif id == "volcanomagnets" then openMenu:FireClient(p, "magnets", "volcano") elseif id == "galaxymagnets" then openMenu:FireClient(p, "magnets", "galaxy") else openMenu:FireClient(p, "upgrades", id) end
+      if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "neonmagnets" then openMenu:FireClient(p, "magnets", "neon") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") elseif id == "volcanomagnets" then openMenu:FireClient(p, "magnets", "volcano") elseif id == "galaxymagnets" then openMenu:FireClient(p, "magnets", "galaxy") else openMenu:FireClient(p, "upgrades", id) end
      end
      insideZone[key] = inside or nil
     end

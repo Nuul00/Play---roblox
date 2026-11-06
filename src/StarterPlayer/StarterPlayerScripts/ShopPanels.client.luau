@@ -276,7 +276,7 @@ end
 
 local magnetTab = "magnets"
 local magnetZone = nil
-local MAGNET_TITLES = { island = "🧲 MAGNET SHOP", sky = "☁️ SKY MAGNETS", frozen = "❄️ FROZEN MAGNETS", volcano = "🌋 VOLCANO MAGNETS", galaxy = "🌌 GALAXY MAGNETS" }
+local MAGNET_TITLES = { island = "🧲 MAGNET SHOP", neon = "🌃 NEON MAGNETS", sky = "☁️ SKY MAGNETS", frozen = "❄️ FROZEN MAGNETS", volcano = "🌋 VOLCANO MAGNETS", galaxy = "🌌 GALAXY MAGNETS" }
 -- Магазин магнитов строится ОДИН раз (карточки и 3D-превью кэшируются), дальше только обновляются
 -- надписи и цвета. Раньше всё окно со всеми превью пересобиралось при каждом изменении монет —
 -- а монеты, пока стоишь в магазине, меняются постоянно, отсюда и были лаги.
@@ -402,7 +402,7 @@ local function renderPotions()
 end
 
 local lastTier = nil
-local ZONE_WORLD = { island = "Meadow Isles", sky = "Sky Isles", frozen = "Frozen Peaks", volcano = "Magma Volcano", galaxy = "Cosmic Galaxy" }
+local ZONE_WORLD = { island = "Meadow Isles", neon = "Neon District", sky = "Sky Isles", frozen = "Frozen Peaks", volcano = "Magma Volcano", galaxy = "Cosmic Galaxy" }
 local lastShopWorld = nil
 local function renderMagnets()
 	title.Text = MAGNET_TITLES[magnetZone or ""] or "🧲 MAGNET SHOP"
@@ -514,7 +514,7 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 	end
 	local world = workspace:WaitForChild("CoinSpeedWorld")
 	if newMode == "magnets" then
-		local shopHolder = newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world
+		local shopHolder = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world
 		zonePart = shopHolder:FindFirstChild("MagnetShop") and shopHolder.MagnetShop:FindFirstChild("ShopZone")
 	else
 		local zone = newZone == "neon" and world:FindFirstChild("NeonCity") or newZone == "sky" and world:FindFirstChild("SkyIsles") or newZone == "frozen" and world:FindFirstChild("FrozenPeaks") or newZone == "volcano" and world:FindFirstChild("MagmaVolcano") or newZone == "galaxy" and world:FindFirstChild("CosmicGalaxy") or world

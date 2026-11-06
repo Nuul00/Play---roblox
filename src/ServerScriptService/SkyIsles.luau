@@ -1368,7 +1368,8 @@ function Sky.Build(world)
 	underside(ground)
 	-- Дорожки с золотыми кромками.
 	part(ground, "MainPath", Vector3.new(18, 0.5, 270), L(0, 0.4, 5), rgb(255, 214, 236), M.SmoothPlastic, { CanCollide = false })
-	part(ground, "ShopPath", Vector3.new(190, 0.5, 14), L(0, 0.41, 45), rgb(200, 214, 255), M.SmoothPlastic, { CanCollide = false })
+	-- дорожка заканчивается у дверей магазинов (раньше шла под ними насквозь — магазин стоял на дорожке)
+	part(ground, "ShopPath", Vector3.new(152, 0.5, 14), L(0, 0.41, 45), rgb(200, 214, 255), M.SmoothPlastic, { CanCollide = false })
 	for _, sx in ipairs({ -1, 1 }) do
 		trim(glowPart(ground, "PathEdge", Vector3.new(0.4, 0.2, 270), L(sx * 9.2, 0.6, 5), TRIM))
 	end
