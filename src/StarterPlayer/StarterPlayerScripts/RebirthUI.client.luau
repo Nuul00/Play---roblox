@@ -97,6 +97,7 @@ local panel = frame(gui, 0, 0, W, H, rgb(80, 50, 170), 28)
 panel.AnchorPoint = Vector2.new(0.5, 0.5)
 panel.Position = UDim2.fromScale(0.5, 0.53)
 panel.Visible = false
+panel:SetAttribute("NoTheme", true) -- свой фиолетовый стиль, как у DAILY
 stroke(panel, ink, 5)
 grad(panel, rgb(125, 85, 230), rgb(45, 22, 110))
 local scale = Instance.new("UIScale", panel)

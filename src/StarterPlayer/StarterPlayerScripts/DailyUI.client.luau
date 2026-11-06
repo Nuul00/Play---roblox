@@ -72,12 +72,17 @@ local function grad(f, a, b, rot)
 end
 
 -- цвет и иконка по типу награды
+local ShopConfig = require(RS:WaitForChild("ShopConfig"))
+local function potionImage(name)
+	local d = ShopConfig.Potions[name]
+	return d and d.Image
+end
 local KIND = {
-	Coins = { icon = "💰", col = rgb(255, 196, 50) },
-	Luck = { icon = "🍀", col = rgb(80, 220, 110) },
-	Speed = { icon = "⚡", col = rgb(70, 175, 255) },
-	Potion = { icon = "🧪", col = rgb(255, 100, 200) },
-	Star = { icon = "🎁", col = GOLD },
+	Coins = { icon = "💰", col = rgb(255, 196, 50), image = ShopConfig.RewardImages.CoinBag },
+	Luck = { icon = "🍀", col = rgb(80, 220, 110), image = potionImage("Luck") },
+	Speed = { icon = "⚡", col = rgb(70, 175, 255), image = potionImage("Speed") },
+	Potion = { icon = "🧪", col = rgb(255, 180, 40), image = potionImage("Coins") },
+	Star = { icon = "🎁", col = GOLD, image = ShopConfig.RewardImages.Gift },
 }
 
 ------------------------------------------------------------------ окно
@@ -181,7 +186,22 @@ for day, reward in ipairs(D.Rewards) do
 	orb.BackgroundTransparency = big and 0.35 or 0.7
 	local os = stroke(orb, kind.col, 3)
 	os.Transparency = 0.2
-	local icon = text(orb, kind.icon, 0, 0, orbSize, orbSize, big and 64 or 46, nil, 0)
+	local icon
+	local image = kind.image
+	if reward.Coins and day > 1 and not reward.FreeHatch then
+		image = ShopConfig.RewardImages.CoinPile -- большой мешок — гора монет
+	end
+	if image then
+		-- картинка зелья чуть больше круга — бутылка «выходит» за его край
+		icon = Instance.new("ImageLabel")
+		icon.BackgroundTransparency = 1
+		icon.Image = image
+		icon.Position = UDim2.fromOffset(-14, -16)
+		icon.Size = UDim2.fromOffset(orbSize + 28, orbSize + 28)
+		icon.Parent = orb
+	else
+		icon = text(orb, kind.icon, 0, 0, orbSize, orbSize, big and 64 or 46, nil, 0)
+	end
 	local iconBase = icon.Position
 	-- сумма / название
 	local name = text(c, reward.Name, 6, big and 154 or 124, w - 12, big and 38 or 52, big and 19 or 18, nil, 2)
@@ -275,7 +295,11 @@ local function refresh()
 		local isNow = i == current
 		local claimed = i <= shownDay and not (isNow and state.Ready)
 		c.stamp.Visible = claimed
-		c.icon.TextTransparency = claimed and 0.6 or 0
+		if c.icon:IsA("ImageLabel") then
+			c.icon.ImageTransparency = claimed and 0.6 or 0
+		else
+			c.icon.TextTransparency = claimed and 0.6 or 0
+		end
 		c.orb.BackgroundTransparency = claimed and 0.9 or (c.big and 0.35 or 0.7)
 		c.name.TextTransparency = claimed and 0.45 or 0
 		c.shine.Visible = isNow and ready

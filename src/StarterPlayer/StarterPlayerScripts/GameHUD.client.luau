@@ -88,8 +88,9 @@ end
 local rgb=Color3.fromRGB
 local INK=rgb(35,22,60)
 local panel,scale,closeStats=window("Statistics","",UDim2.fromOffset(600,420))
+panel:SetAttribute("NoTheme",true);panel.BackgroundColor3=Color3.new(1,1,1) -- свой фиолетовый стиль, как у DAILY
 do
- local g=Instance.new("UIGradient");g.Rotation=90;g.Color=ColorSequence.new(rgb(70,50,140),rgb(36,26,78));g.Parent=panel
+ local g=Instance.new("UIGradient");g.Rotation=90;g.Color=ColorSequence.new(rgb(62,36,130),rgb(20,12,52));g.Parent=panel
  panel:FindFirstChildOfClass("UIStroke").Color=INK
  local head=Instance.new("Frame");head.Name="TitlePill";head.AnchorPoint=Vector2.new(0.5,0);head.Position=UDim2.new(0.5,0,0,-26);head.Size=UDim2.fromOffset(330,58);head.BackgroundColor3=rgb(80,160,255);head.Parent=panel
  Instance.new("UICorner",head).CornerRadius=UDim.new(0,18);stroke(head,4,INK)
@@ -124,7 +125,17 @@ player:SetAttribute("ShowMagnetRange",false)
 range.Activated:Connect(function() local visible=not player:GetAttribute("ShowMagnetRange");player:SetAttribute("ShowMagnetRange",visible);range.Text="🧲 Show magnet range: "..(visible and "ON" or "OFF");range.BackgroundColor3=visible and rgb(70,170,90) or rgb(90,70,170) end)
 
 -- Настройки: время суток меняется только у этого игрока.
-local settings,settingsScale,closeSettings=window("Settings","SETTINGS",UDim2.fromOffset(420,250))
+local settings,settingsScale,closeSettings=window("Settings","",UDim2.fromOffset(420,250))
+-- оформление как у остальных окон: фиолетовый градиент и плашка-заголовок
+do
+ settings:SetAttribute("NoTheme",true);settings.BackgroundColor3=Color3.new(1,1,1)
+ local g=Instance.new("UIGradient");g.Rotation=90;g.Color=ColorSequence.new(rgb(62,36,130),rgb(20,12,52));g.Parent=settings
+ settings:FindFirstChildOfClass("UIStroke").Color=INK
+ local head=Instance.new("Frame");head.AnchorPoint=Vector2.new(0.5,0);head.Position=UDim2.new(0.5,0,0,-26);head.Size=UDim2.fromOffset(260,56);head.BackgroundColor3=Color3.new(1,1,1);head.Parent=settings
+ Instance.new("UICorner",head).CornerRadius=UDim.new(0,18);stroke(head,4,INK)
+ local hg=Instance.new("UIGradient");hg.Rotation=90;hg.Color=ColorSequence.new(rgb(215,215,235),rgb(115,110,160));hg.Parent=head
+ local ht=Instance.new("TextLabel");ht.BackgroundTransparency=1;ht.Size=UDim2.fromScale(1,1);ht.Text="⚙ SETTINGS";ht.Font=Enum.Font.FredokaOne;ht.TextSize=28;ht.TextColor3=Color3.new(1,1,1);ht.Parent=head;stroke(ht,2.5,INK)
+end
 local timeTitle=Instance.new("TextLabel");timeTitle.BackgroundTransparency=1;timeTitle.Position=UDim2.fromOffset(20,70);timeTitle.Size=UDim2.fromOffset(380,30);timeTitle.Text="Time of day";timeTitle.Font=Enum.Font.FredokaOne;timeTitle.TextSize=20;timeTitle.TextColor3=Color3.new(1,1,1);timeTitle.TextXAlignment=Enum.TextXAlignment.Left;timeTitle.Parent=settings
 local modes={{"Day","☀ DAY",Color3.fromRGB(110,190,255)},{"Evening","🌇 EVENING",Color3.fromRGB(245,140,80)},{"Night","🌙 NIGHT",Color3.fromRGB(80,70,170)}}
 local modeButtons,modeStrokes={},{}
@@ -162,7 +173,7 @@ end
 local hint=Instance.new("TextLabel");hint.BackgroundTransparency=1;hint.Position=UDim2.fromOffset(20,190);hint.Size=UDim2.fromOffset(380,40);hint.TextWrapped=true;hint.Text="Only changes what you see. Street lamps glow at night.";hint.Font=Enum.Font.Gotham;hint.TextSize=14;hint.TextColor3=Color3.fromRGB(200,210,220);hint.Parent=settings
 applyTime("Evening")
 -- Музыка миров (WorldAmbience): вкл/выкл только у этого игрока.
-settings.Size=UDim2.fromOffset(420,300)
+settings.Size=UDim2.fromOffset(420,312)
 local music=button(settings,"🎵 Music: ON",UDim2.fromOffset(380,40),UDim2.fromOffset(20,240));music.BackgroundColor3=Color3.fromRGB(90,160,110)
 music.Activated:Connect(function()
  local off=not player:GetAttribute("MusicOff");player:SetAttribute("MusicOff",off)

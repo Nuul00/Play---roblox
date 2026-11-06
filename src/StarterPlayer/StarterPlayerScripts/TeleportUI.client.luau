@@ -48,6 +48,7 @@ panel.Position = UDim2.fromScale(0.5, 0.5)
 panel.Size = UDim2.fromOffset(880, 400)
 panel.BackgroundColor3 = rgb(70, 40, 150)
 panel.Visible = false
+panel:SetAttribute("NoTheme", true) -- свой фиолетовый стиль, как у DAILY
 panel.Parent = gui
 corner(panel, 26)
 stroke(panel, ink, 5)

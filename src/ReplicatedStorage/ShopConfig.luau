@@ -153,9 +153,16 @@ end
 -- Зелья действуют 5 минут, повторное использование продлевает время.
 ShopConfig.PotionOrder = { "Coins", "Speed", "Luck" }
 ShopConfig.Potions = {
-	Coins = { Name = "Coin Potion", Icon = "💰", Effect = "x2 coins", Price = 400, Share = 0.02, Duration = 300, Color = Color3.fromRGB(255, 200, 50) },
-	Speed = { Name = "Speed Potion", Icon = "⚡", Effect = "x1.25 walk speed", Price = 300, Share = 0.01, Duration = 300, Color = Color3.fromRGB(80, 180, 255) },
-	Luck = { Name = "Luck Potion", Icon = "🍀", Effect = "x2 egg luck", Price = 600, Share = 0.03, Duration = 300, Color = Color3.fromRGB(90, 220, 110) },
+	Coins = { Name = "Coin Potion", Icon = "💰", Image = "rbxassetid://100373857120587", Effect = "x2 coins", Price = 400, Share = 0.02, Duration = 300, Color = Color3.fromRGB(255, 200, 50) },
+	Speed = { Name = "Speed Potion", Icon = "⚡", Image = "rbxassetid://72013927211774", Effect = "x1.25 walk speed", Price = 300, Share = 0.01, Duration = 300, Color = Color3.fromRGB(80, 180, 255) },
+	Luck = { Name = "Luck Potion", Icon = "🍀", Image = "rbxassetid://133244866432284", Effect = "x2 egg luck", Price = 600, Share = 0.03, Duration = 300, Color = Color3.fromRGB(90, 220, 110) },
+}
+
+-- Иконки наград (ChatGPT, загружены через Open Cloud): мешок монет, гора монет, подарок-джекпот.
+ShopConfig.RewardImages = {
+	CoinBag = "rbxassetid://87157540094531",
+	CoinPile = "rbxassetid://136423613777895",
+	Gift = "rbxassetid://135823901516807",
 }
 
 -- Цена зелья растёт с игроком: не меньше Price и не меньше доли Share от всего заработанного.

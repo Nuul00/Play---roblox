@@ -61,6 +61,7 @@ book.Position = UDim2.fromScale(0.5, 0.52)
 book.Size = UDim2.fromOffset(820, 500)
 book.BackgroundColor3 = leather
 book.Visible = false
+book:SetAttribute("NoTheme", true) -- книга в своих цветах (кожа и бумага)
 book.Parent = gui
 corner(book, 22)
 stroke(book, 5, Color3.fromRGB(60, 30, 18))

@@ -73,6 +73,8 @@ window.Position = UDim2.fromScale(0.5, 0.52)
 window.Size = UDim2.fromOffset(780, 480)
 window.BackgroundColor3 = Color3.fromRGB(40, 48, 70)
 window.Visible = false
+window:SetAttribute("NoTheme", true)
+window.BackgroundColor3 = Color3.new(1, 1, 1) -- цвет даёт градиент (он умножается на фон) -- свой фиолетовый стиль, как у DAILY
 window.Parent = gui
 corner(window, 20)
 stroke(window, 4)
@@ -80,7 +82,7 @@ local scale = Instance.new("UIScale", window)
 -- оформление как у остальных окон: градиент и заголовок-плашка над краем
 local wg = Instance.new("UIGradient")
 wg.Rotation = 90
-wg.Color = ColorSequence.new(Color3.fromRGB(70, 50, 140), Color3.fromRGB(36, 26, 78))
+wg.Color = ColorSequence.new(Color3.fromRGB(62, 36, 130), Color3.fromRGB(20, 12, 52))
 wg.Parent = window
 local pillHead = Instance.new("Frame")
 pillHead.Name = "TitlePill"
@@ -108,7 +110,7 @@ close.Modal = true
 local tabNames = { { "pets", "🐾 PETS" }, { "potions", "🧪 POTIONS" }, { "badges", "🏅 BADGES" } }
 local tabButtons = {}
 for i, t in ipairs(tabNames) do
-	local b = button(window, t[2], UDim2.fromOffset(330 + (i - 1) * 132, 12), UDim2.fromOffset(124, 36), Color3.fromRGB(70, 80, 110))
+	local b = button(window, t[2], UDim2.fromOffset(330 + (i - 1) * 132, 12), UDim2.fromOffset(124, 36), Color3.fromRGB(85, 62, 160))
 	tabButtons[t[1]] = b
 end
 local body = Instance.new("Frame")
@@ -308,7 +310,7 @@ local function buildPotions()
 		local card = Instance.new("Frame")
 		card.Position = UDim2.fromOffset((i - 1) * 252, 44)
 		card.Size = UDim2.fromOffset(236, 330)
-		card.BackgroundColor3 = Color3.fromRGB(58, 66, 92)
+		card.BackgroundColor3 = Color3.fromRGB(48, 32, 100)
 		card.Parent = body
 		corner(card, 16)
 		stroke(card, 3, def.Color)
@@ -320,7 +322,18 @@ local function buildPotions()
 		bottle.Parent = card
 		corner(bottle, 48)
 		stroke(bottle, 3)
-		label(bottle, def.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 48)
+		-- картинка зелья (ChatGPT): бутылка поверх цветного круга, чуть больше его
+		local img = Instance.new("ImageLabel")
+		img.BackgroundTransparency = 1
+		img.AnchorPoint = Vector2.new(0.5, 0.5)
+		img.Position = UDim2.fromScale(0.5, 0.47)
+		img.Size = UDim2.fromScale(1.35, 1.35)
+		img.Image = def.Image or ""
+		img.Parent = bottle
+		bottle.BackgroundTransparency = 0.55
+		if not def.Image then
+			label(bottle, def.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 48)
+		end
 		label(card, def.Name, UDim2.fromOffset(0, 126), UDim2.new(1, 0, 0, 30), 22)
 		label(card, def.Effect, UDim2.fromOffset(0, 156), UDim2.new(1, 0, 0, 24), 17, def.Color)
 		label(card, "Owned: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 186), UDim2.new(1, 0, 0, 24), 18, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
@@ -372,7 +385,7 @@ local function buildBadges()
 		local row = Instance.new("Frame")
 		row.Position = UDim2.fromOffset(((i - 1) % 2) * 378, math.floor((i - 1) / 2) * 118)
 		row.Size = UDim2.fromOffset(362, 108)
-		row.BackgroundColor3 = done and Color3.fromRGB(70, 110, 70) or Color3.fromRGB(58, 66, 92)
+		row.BackgroundColor3 = done and Color3.fromRGB(70, 110, 70) or Color3.fromRGB(48, 32, 100)
 		row.Parent = list
 		corner(row, 14)
 		stroke(row, 3, done and Color3.fromRGB(255, 210, 80) or dark)
@@ -392,7 +405,7 @@ local function buildBadges()
 		local barBack = Instance.new("Frame")
 		barBack.Position = UDim2.fromOffset(100, 68)
 		barBack.Size = UDim2.fromOffset(250, 20)
-		barBack.BackgroundColor3 = Color3.fromRGB(35, 38, 52)
+		barBack.BackgroundColor3 = Color3.fromRGB(22, 14, 48)
 		barBack.Parent = row
 		corner(barBack, 10)
 		local bar = Instance.new("Frame")
@@ -423,7 +436,7 @@ local function render()
 	spinning = {}
 	potionTimers = {}
 	for name, b in pairs(tabButtons) do
-		b.BackgroundColor3 = name == current and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(70, 80, 110)
+		b.BackgroundColor3 = name == current and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(85, 62, 160)
 	end
 	if current == "pets" then
 		buildPets()

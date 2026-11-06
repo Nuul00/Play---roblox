@@ -385,7 +385,17 @@ local function renderPotions()
 		corner(card, 16)
 		stroke(card, 3, def.Color)
 		gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
-		juicyIcon(card, def.Icon, def.Color, def.Color:Lerp(Color3.new(1, 1, 1), 0.3), 92, UDim2.new(0.5, 0, 0, 14))
+		if def.Image then
+			local img = Instance.new("ImageLabel")
+			img.BackgroundTransparency = 1
+			img.AnchorPoint = Vector2.new(0.5, 0)
+			img.Position = UDim2.new(0.5, 0, 0, 4)
+			img.Size = UDim2.fromOffset(112, 112)
+			img.Image = def.Image
+			img.Parent = card
+		else
+			juicyIcon(card, def.Icon, def.Color, def.Color:Lerp(Color3.new(1, 1, 1), 0.3), 92, UDim2.new(0.5, 0, 0, 14))
+		end
 		label(card, def.Name, UDim2.fromOffset(0, 116), UDim2.new(1, 0, 0, 28), 20)
 		label(card, def.Effect .. " · 5 min", UDim2.fromOffset(0, 146), UDim2.new(1, 0, 0, 22), 15, def.Color)
 		label(card, "You have: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 176), UDim2.new(1, 0, 0, 22), 16, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)

@@ -14,12 +14,11 @@ local UISounds = require(ReplicatedStorage:WaitForChild("UISounds"))
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("TradeRemote")
 
-local INK = Color3.fromRGB(25, 20, 45)
-local PANEL = Color3.fromRGB(45, 55, 95)
-local CARD = Color3.fromRGB(65, 78, 125)
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
+local INK = K.INK
 local GREEN = Color3.fromRGB(80, 200, 100)
 local RED = Color3.fromRGB(230, 80, 90)
-local GOLD = Color3.fromRGB(255, 205, 70)
+local GOLD = K.GOLD
 local RARITY = {
 	Common = Color3.fromRGB(200, 205, 215), Uncommon = Color3.fromRGB(110, 230, 120), Rare = Color3.fromRGB(80, 170, 255),
 	Epic = Color3.fromRGB(190, 110, 255), Mythic = Color3.fromRGB(255, 120, 80), Legendary = Color3.fromRGB(255, 190, 50), Secret = Color3.fromRGB(255, 90, 170),
@@ -31,54 +30,9 @@ gui.ResetOnSpawn = false
 gui.DisplayOrder = 50 -- выше кнопки Royal Egg (45)
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function corner(o, r)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, r or 12)
-	c.Parent = o
-end
-local function stroke(o, col, th)
-	local s = Instance.new("UIStroke")
-	s.Color = col or INK
-	s.Thickness = th or 2
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = o
-	return s
-end
 local function text(parent, t, size, pos, ts, col)
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.Size = size
-	l.Position = pos
-	l.Text = t
-	l.Font = Enum.Font.FredokaOne
-	l.TextSize = ts or 18
-	l.TextColor3 = col or Color3.new(1, 1, 1)
-	l.Parent = parent
-	local s = Instance.new("UIStroke")
-	s.Thickness = 1.5
-	s.Color = INK
-	s.Parent = l
+	local l = K.text(parent, t, pos, size, ts or 18, col, 2)
 	return l
-end
-local function button(parent, t, size, pos, col, ts)
-	local b = Instance.new("TextButton")
-	b.Size = size
-	b.Position = pos
-	b.BackgroundColor3 = col
-	b.Text = t
-	b.Font = Enum.Font.FredokaOne
-	b.TextSize = ts or 18
-	b.TextColor3 = Color3.new(1, 1, 1)
-	b.AutoButtonColor = true
-	b.Parent = parent
-	corner(b, 10)
-	stroke(b, INK, 2)
-	local s = Instance.new("UIStroke")
-	s.Thickness = 1.5
-	s.Color = INK
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-	s.Parent = b
-	return b
 end
 local function codeInfo(code)
 	local id, tier = ShopConfig.SplitPet(code)
@@ -87,19 +41,22 @@ local function codeInfo(code)
 	local prefix = tier > 0 and (ShopConfig.Variants[tier].Name .. " ") or ""
 	return def, prefix .. (def and def.Name or "?"), mult, tier
 end
+-- карточка питомца: тёмное стекло, рамка цвета редкости, 3D-модель, имя и сила
 local function petCard(parent, code, count, size)
 	local def, name, mult, tier = codeInfo(code)
+	local rc = tier > 0 and ShopConfig.Variants[tier].Color or (def and RARITY[def.Rarity]) or INK
 	local card = Instance.new("TextButton")
 	card.Size = size
-	card.BackgroundColor3 = CARD
+	card.BackgroundColor3 = Color3.new(1, 1, 1)
 	card.Text = ""
-	card.AutoButtonColor = true
+	card.AutoButtonColor = false
 	card.Parent = parent
-	corner(card, 10)
-	stroke(card, tier > 0 and ShopConfig.Variants[tier].Color or (def and RARITY[def.Rarity]) or INK, 2.5)
+	K.corner(card, 12)
+	K.grad(card, rc:Lerp(K.CARD, 0.7), K.CARD2)
+	K.stroke(card, rc, 2.5)
 	local view = Instance.new("ViewportFrame")
 	view.BackgroundTransparency = 1
-	view.Size = UDim2.new(1, 0, 1, -26)
+	view.Size = UDim2.new(1, 0, 1, -24)
 	view.Ambient = Color3.fromRGB(200, 200, 210)
 	view.LightDirection = Vector3.new(-1, -1, -2)
 	view.Parent = card
@@ -116,46 +73,67 @@ local function petCard(parent, code, count, size)
 		cam.Parent = view
 		view.CurrentCamera = cam
 	end
-	local n = text(card, name, UDim2.new(1, -6, 0, 14), UDim2.new(0, 3, 1, -26), 12, def and RARITY[def.Rarity] or nil)
-	n.TextScaled = true
-	text(card, "×" .. NumberFormat.Short(mult), UDim2.new(1, -6, 0, 12), UDim2.new(0, 3, 1, -13), 11, Color3.fromRGB(255, 230, 150))
+	K.text(card, name, UDim2.new(0, 3, 1, -25), UDim2.new(1, -6, 0, 13), 13, Color3.new(1, 1, 1), 1.5)
+	K.text(card, "×" .. NumberFormat.Short(mult), UDim2.new(0, 3, 1, -13), UDim2.new(1, -6, 0, 12), 12, Color3.fromRGB(255, 225, 120), 1.5)
 	if count and count > 1 then
-		local badge = text(card, "x" .. count, UDim2.fromOffset(34, 18), UDim2.new(1, -36, 0, 2), 15, GOLD)
-		badge.TextXAlignment = Enum.TextXAlignment.Right
+		local badge = K.text(card, "x" .. count, UDim2.new(1, -36, 0, 3), UDim2.fromOffset(32, 18), 14, Color3.new(1, 1, 1), 1.5)
+		badge.BackgroundTransparency = 0
+		badge.BackgroundColor3 = Color3.fromRGB(230, 140, 40)
+		K.corner(badge, 9)
 	end
+	local sc = Instance.new("UIScale")
+	sc.Parent = card
+	card.MouseEnter:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1.06 }):Play()
+	end)
+	card.MouseLeave:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+	end)
 	return card
+end
+-- аватарка игрока (кругом с обводкой)
+local function avatar(parent, userId, pos, sz)
+	local img = Instance.new("ImageLabel")
+	img.Position = pos
+	img.Size = UDim2.fromOffset(sz, sz)
+	img.BackgroundColor3 = Color3.fromRGB(90, 70, 170)
+	img.Parent = parent
+	K.corner(img, UDim.new(1, 0))
+	K.stroke(img, GOLD, 2.5)
+	task.spawn(function()
+		local ok, url = pcall(function()
+			return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+		end)
+		if ok then
+			img.Image = url
+		end
+	end)
+	return img
 end
 
 -- ===== кнопка =====
-local open = button(gui, "🤝 TRADE", UDim2.fromOffset(118, 40), UDim2.new(0, 16, 0.5, -54), Color3.fromRGB(70, 150, 230), 17)
+local open = K.button(gui, "🤝 TRADE", UDim2.new(0, 16, 0.5, -54), UDim2.fromOffset(124, 44), K.BLUE, 19)
 open.AnchorPoint = Vector2.new(0, 0.5)
 
 -- ===== список игроков =====
-local list = Instance.new("Frame")
-list.AnchorPoint = Vector2.new(0.5, 0.5)
-list.Position = UDim2.fromScale(0.5, 0.5)
-list.Size = UDim2.fromOffset(360, 380)
-list.BackgroundColor3 = PANEL
-list.Visible = false
-list.Parent = gui
-corner(list, 18)
-stroke(list, GOLD, 3)
-text(list, "🤝 TRADE WITH...", UDim2.new(1, 0, 0, 40), UDim2.fromOffset(0, 8), 24, GOLD)
-local listClose = button(list, "X", UDim2.fromOffset(36, 36), UDim2.new(1, -44, 0, 8), RED, 20)
+local list, listClose, listScale = K.window(gui, "TradeList", 420, 380, "🤝 TRADE", K.BLUE)
+K.text(list, "Pick a player to send a trade request", UDim2.fromOffset(30, 46), UDim2.new(1, -60, 0, 24), 18, Color3.fromRGB(215, 200, 255), 0)
 local scroll = Instance.new("ScrollingFrame")
-scroll.Position = UDim2.fromOffset(12, 56)
-scroll.Size = UDim2.new(1, -24, 1, -68)
+scroll.Position = UDim2.fromOffset(20, 80)
+scroll.Size = UDim2.new(1, -40, 1, -100)
 scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 6
+scroll.ScrollBarImageColor3 = GOLD
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.CanvasSize = UDim2.new()
 scroll.Parent = list
 local lay = Instance.new("UIListLayout")
-lay.Padding = UDim.new(0, 8)
+lay.Padding = UDim.new(0, 10)
 lay.Parent = scroll
 local function fillList()
 	for _, c in ipairs(scroll:GetChildren()) do
-		if c:IsA("Frame") or c:IsA("TextLabel") then
+		if c:IsA("GuiObject") then
 			c:Destroy()
 		end
 	end
@@ -163,14 +141,15 @@ local function fillList()
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= player then
 			any = true
-			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, -8, 0, 50)
-			row.BackgroundColor3 = CARD
-			row.Parent = scroll
-			corner(row, 10)
-			local nm = text(row, p.DisplayName, UDim2.new(1, -120, 1, 0), UDim2.fromOffset(12, 0), 18)
+			local row = K.frame(scroll, UDim2.new(), UDim2.new(1, -10, 0, 66), Color3.new(1, 1, 1), 16)
+			K.grad(row, K.CARD, K.CARD2)
+			K.stroke(row, Color3.fromRGB(120, 90, 220), 2)
+			avatar(row, p.UserId, UDim2.fromOffset(10, 9), 48)
+			local nm = K.text(row, p.DisplayName, UDim2.fromOffset(68, 10), UDim2.new(1, -190, 0, 26), 20, nil, 2)
 			nm.TextXAlignment = Enum.TextXAlignment.Left
-			local b = button(row, "TRADE", UDim2.fromOffset(96, 36), UDim2.new(1, -104, 0, 7), GREEN, 17)
+			local un = K.text(row, "@" .. p.Name, UDim2.fromOffset(68, 36), UDim2.new(1, -190, 0, 18), 14, Color3.fromRGB(190, 175, 235), 0)
+			un.TextXAlignment = Enum.TextXAlignment.Left
+			local b = K.button(row, "TRADE", UDim2.new(1, -112, 0, 12), UDim2.fromOffset(100, 42), K.GREEN, 19)
 			b.Activated:Connect(function()
 				remote:FireServer("request", p.UserId)
 				list.Visible = false
@@ -179,8 +158,11 @@ local function fillList()
 		end
 	end
 	if not any then
-		local l = text(scroll, "No other players here yet.\nInvite a friend!", UDim2.new(1, 0, 0, 60), UDim2.new(), 18)
-		l.TextWrapped = true
+		local box = K.frame(scroll, UDim2.new(), UDim2.new(1, -10, 0, 150), Color3.new(1, 1, 1), 16)
+		K.grad(box, K.CARD, K.CARD2)
+		K.text(box, "👥", UDim2.fromOffset(0, 12), UDim2.new(1, 0, 0, 56), 50, nil, 0)
+		K.text(box, "No other players here yet", UDim2.fromOffset(10, 72), UDim2.new(1, -20, 0, 28), 22)
+		K.text(box, "Invite a friend: +10% coins for each friend!", UDim2.fromOffset(10, 104), UDim2.new(1, -20, 0, 22), 16, Color3.fromRGB(200, 185, 245), 0)
 	end
 end
 open.Activated:Connect(function()
@@ -195,19 +177,16 @@ listClose.Activated:Connect(function()
 end)
 
 -- ===== входящий запрос =====
-local req = Instance.new("Frame")
+local req = K.frame(gui, UDim2.new(0.5, 0, 0, 110), UDim2.fromOffset(440, 120), Color3.new(1, 1, 1), 20)
 req.AnchorPoint = Vector2.new(0.5, 0)
-req.Position = UDim2.new(0.5, 0, 0, 110)
-req.Size = UDim2.fromOffset(400, 104)
-req.BackgroundColor3 = PANEL
 req.Visible = false
-req.Parent = gui
-corner(req, 14)
-stroke(req, GOLD, 3)
-local reqText = text(req, "", UDim2.new(1, -20, 0, 40), UDim2.fromOffset(10, 6), 20)
-reqText.TextWrapped = true
-local accept = button(req, "✔ ACCEPT", UDim2.fromOffset(170, 42), UDim2.fromOffset(18, 52), GREEN, 18)
-local decline = button(req, "✖ DECLINE", UDim2.fromOffset(170, 42), UDim2.new(1, -188, 0, 52), RED, 18)
+K.grad(req, Color3.fromRGB(62, 36, 130), Color3.fromRGB(20, 12, 52))
+K.stroke(req, GOLD, 4)
+local reqAvatar
+local reqText = K.text(req, "", UDim2.fromOffset(84, 12), UDim2.new(1, -96, 0, 40), 22)
+reqText.TextXAlignment = Enum.TextXAlignment.Left
+local accept = K.button(req, "✔ ACCEPT", UDim2.fromOffset(84, 62), UDim2.fromOffset(160, 44), K.GREEN, 19)
+local decline = K.button(req, "DECLINE", UDim2.fromOffset(258, 62), UDim2.fromOffset(160, 44), K.RED, 19)
 local reqFrom
 accept.Activated:Connect(function()
 	if reqFrom then
@@ -223,61 +202,52 @@ decline.Activated:Connect(function()
 end)
 
 -- ===== окно обмена =====
-local win = Instance.new("Frame")
-win.AnchorPoint = Vector2.new(0.5, 0.5)
-win.Position = UDim2.fromScale(0.5, 0.5)
-win.Size = UDim2.fromOffset(780, 520)
-win.BackgroundColor3 = PANEL
-win.Visible = false
-win.Parent = gui
-corner(win, 20)
-stroke(win, GOLD, 4)
-local title = text(win, "TRADE", UDim2.new(1, 0, 0, 36), UDim2.fromOffset(0, 8), 26, GOLD)
-local winClose = button(win, "X", UDim2.fromOffset(38, 38), UDim2.new(1, -46, 0, 8), RED, 20)
-local function side(x, label)
-	local f = Instance.new("Frame")
-	f.Position = UDim2.fromOffset(x, 50)
-	f.Size = UDim2.fromOffset(372, 236)
-	f.BackgroundColor3 = Color3.fromRGB(35, 42, 75)
-	f.Parent = win
-	corner(f, 14)
-	local h = text(f, label, UDim2.new(1, -16, 0, 26), UDim2.fromOffset(8, 4), 18)
-	h.TextXAlignment = Enum.TextXAlignment.Left
-	local st = text(f, "", UDim2.fromOffset(150, 26), UDim2.new(1, -158, 0, 4), 18, GREEN)
-	st.TextXAlignment = Enum.TextXAlignment.Right
+local win, winClose, winScale, title = K.window(gui, "TradeWindow", 840, 580, "🤝 TRADE", K.BLUE, 560)
+local function side(x, label, accent)
+	local f, h = K.section(win, UDim2.fromOffset(x, 52), UDim2.fromOffset(372, 250), label, accent)
+	local st = K.text(f, "", UDim2.new(1, -128, 0, 4), UDim2.fromOffset(118, 24), 16, Color3.new(1, 1, 1), 1.5)
+	st.BackgroundColor3 = Color3.fromRGB(60, 170, 70)
+	st.BackgroundTransparency = 1
+	K.corner(st, 10)
 	local grid = Instance.new("Frame")
-	grid.Position = UDim2.fromOffset(8, 34)
-	grid.Size = UDim2.new(1, -16, 1, -42)
+	grid.Position = UDim2.fromOffset(10, 42)
+	grid.Size = UDim2.new(1, -20, 1, -52)
 	grid.BackgroundTransparency = 1
 	grid.Parent = f
 	local g = Instance.new("UIGridLayout")
-	g.CellSize = UDim2.fromOffset(112, 60)
+	g.CellSize = UDim2.fromOffset(112, 62)
 	g.CellPadding = UDim2.fromOffset(6, 6)
 	g.Parent = grid
-	return grid, st, h
+	local empty = K.text(f, "Empty", UDim2.fromOffset(10, 120), UDim2.new(1, -20, 0, 26), 20, Color3.fromRGB(150, 135, 200), 0)
+	return grid, st, h, f, empty
 end
-local myGrid, myStatus = side(12, "YOUR OFFER")
-local theirGrid, theirStatus, theirHead = side(396, "THEIR OFFER")
-local ready = button(win, "READY", UDim2.fromOffset(200, 46), UDim2.new(0.5, -100, 0, 292), GREEN, 22)
-local countdown = text(win, "", UDim2.fromOffset(250, 26), UDim2.new(0.5, 110, 0, 302), 16, GOLD)
+local myGrid, myStatus, _, mySide, myEmpty = side(24, "YOUR OFFER", Color3.fromRGB(255, 180, 50))
+local theirGrid, theirStatus, theirHead, theirSide, theirEmpty = side(444, "THEIR OFFER", Color3.fromRGB(90, 170, 255))
+-- стрелки обмена между сторонами
+local swap = K.frame(win, UDim2.fromOffset(398, 150), UDim2.fromOffset(44, 44), Color3.new(1, 1, 1), UDim.new(1, 0))
+K.grad(swap, Color3.fromRGB(255, 225, 90), Color3.fromRGB(240, 140, 30))
+K.stroke(swap, INK, 3)
+K.text(swap, "⇄", UDim2.fromOffset(0, 2), UDim2.fromOffset(44, 40), 30, nil, 2)
+local ready, readyLabel, readyColors = K.button(win, "READY", UDim2.new(0.5, -110, 0, 312), UDim2.fromOffset(220, 52), K.GREEN, 26)
+local countdown = K.text(win, "", UDim2.new(0.5, 122, 0, 322), UDim2.fromOffset(260, 30), 18, GOLD, 2)
 countdown.TextXAlignment = Enum.TextXAlignment.Left
-local hint = text(win, "Click your pets below to add · click your offer to remove · only pets not in your team", UDim2.new(1, -24, 0, 18), UDim2.fromOffset(12, 342), 13, Color3.fromRGB(200, 205, 230))
-hint.TextXAlignment = Enum.TextXAlignment.Left
+local invSec = K.section(win, UDim2.fromOffset(24, 376), UDim2.fromOffset(792, 184), "YOUR PETS  ·  click to add, click your offer to remove  ·  team pets can't be traded", Color3.fromRGB(150, 100, 240))
 local inv = Instance.new("ScrollingFrame")
-inv.Position = UDim2.fromOffset(12, 366)
-inv.Size = UDim2.new(1, -24, 0, 142)
-inv.BackgroundColor3 = Color3.fromRGB(35, 42, 75)
+inv.Position = UDim2.fromOffset(8, 38)
+inv.Size = UDim2.new(1, -16, 1, -44)
+inv.BackgroundTransparency = 1
+inv.BorderSizePixel = 0
 inv.ScrollBarThickness = 6
+inv.ScrollBarImageColor3 = GOLD
 inv.AutomaticCanvasSize = Enum.AutomaticSize.Y
 inv.CanvasSize = UDim2.new()
-inv.Parent = win
-corner(inv, 12)
+inv.Parent = invSec
 local invGrid = Instance.new("UIGridLayout")
 invGrid.CellSize = UDim2.fromOffset(112, 64)
 invGrid.CellPadding = UDim2.fromOffset(6, 6)
 invGrid.Parent = inv
 local pad = Instance.new("UIPadding")
-pad.PaddingLeft, pad.PaddingTop = UDim.new(0, 6), UDim.new(0, 6)
+pad.PaddingLeft, pad.PaddingTop = UDim.new(0, 4), UDim.new(0, 4)
 pad.Parent = inv
 
 local state
@@ -312,22 +282,29 @@ local function render()
 	end
 	theirHead.Text = string.upper(state.WithName) .. "'S OFFER"
 	title.Text = "🤝 TRADE WITH " .. string.upper(state.WithName)
+	myEmpty.Visible = #state.Mine == 0
+	theirEmpty.Visible = #state.Theirs == 0
 	clear(myGrid)
 	clear(theirGrid)
 	for _, e in ipairs(state.Mine) do
-		local c = petCard(myGrid, e.Code, e.Count, UDim2.fromOffset(112, 60))
+		local c = petCard(myGrid, e.Code, e.Count, UDim2.fromOffset(112, 62))
 		c.Activated:Connect(function()
 			remote:FireServer("set", e.Code, e.Count - 1)
 			UISounds.Play("click")
 		end)
 	end
 	for _, e in ipairs(state.Theirs) do
-		petCard(theirGrid, e.Code, e.Count, UDim2.fromOffset(112, 60))
+		petCard(theirGrid, e.Code, e.Count, UDim2.fromOffset(112, 62))
 	end
-	myStatus.Text = state.MyReady and "READY ✓" or ""
-	theirStatus.Text = state.TheirReady and "READY ✓" or ""
-	ready.Text = state.MyReady and "UNREADY" or "READY"
-	ready.BackgroundColor3 = state.MyReady and Color3.fromRGB(200, 150, 60) or GREEN
+	-- готовность: зелёная плашка и зелёная рамка стороны
+	myStatus.Text = state.MyReady and "✔ READY" or ""
+	theirStatus.Text = state.TheirReady and "✔ READY" or ""
+	myStatus.BackgroundTransparency = state.MyReady and 0 or 1
+	theirStatus.BackgroundTransparency = state.TheirReady and 0 or 1
+	mySide:FindFirstChildOfClass("UIStroke").Color = state.MyReady and GREEN or Color3.fromRGB(255, 180, 50)
+	theirSide:FindFirstChildOfClass("UIStroke").Color = state.TheirReady and GREEN or Color3.fromRGB(90, 170, 255)
+	readyLabel.Text = state.MyReady and "UNREADY" or "READY"
+	readyColors(state.MyReady and K.ORANGE or K.GREEN)
 	-- инвентарь: свободные питомцы, сильнейшие сначала
 	clear(inv)
 	local codes = {}
@@ -354,7 +331,7 @@ local function render()
 		end)
 	end
 	if #codes == 0 then
-		text(inv, "No free pets (pets in your team can't be traded)", UDim2.fromOffset(500, 30), UDim2.new(), 15)
+		K.text(inv, "No free pets: pets in your team can't be traded. Unequip some in your inventory.", UDim2.new(), UDim2.fromOffset(760, 40), 17, Color3.fromRGB(200, 185, 245), 0)
 	end
 end
 ready.Activated:Connect(function()
@@ -371,6 +348,10 @@ remote.OnClientEvent:Connect(function(kind, d)
 	if kind == "request" then
 		reqFrom = d.From
 		reqText.Text = d.Name .. " wants to trade with you!"
+		if reqAvatar then
+			reqAvatar:Destroy()
+		end
+		reqAvatar = avatar(req, d.From, UDim2.fromOffset(16, 16), 56)
 		req.Visible = true
 		UISounds.Play("reward")
 		local token = d.From
@@ -394,7 +375,7 @@ remote.OnClientEvent:Connect(function(kind, d)
 		if d.Done then
 			UISounds.Play("fanfare")
 		end
-		local toast = text(gui, d.Done or d.Reason or "Trade closed", UDim2.fromOffset(500, 40), UDim2.new(0.5, -250, 0.25, 0), 24, d.Done and GOLD or Color3.fromRGB(255, 160, 160))
+		local toast = K.text(gui, d.Done or d.Reason or "Trade closed", UDim2.new(0.5, -260, 0.25, 0), UDim2.fromOffset(520, 44), 28, d.Done and GOLD or Color3.fromRGB(255, 160, 160), 3)
 		task.delay(2.5, function()
 			toast:Destroy()
 		end)
@@ -406,16 +387,16 @@ RunService.RenderStepped:Connect(function()
 		local left = state.Ends - workspace:GetServerTimeNow()
 		countdown.Text = left > 0 and ("Trading in " .. math.ceil(left) .. "...") or "Trading..."
 	else
-		countdown.Text = state and "Both players must press READY" or ""
+		countdown.Text = state and "Both must press READY" or ""
 	end
 end)
 -- окна не больше экрана (телефоны, маленькие окна)
 local function fit()
 	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+	-- у окон UIKit уже есть свой UIScale — второй на том же объекте Roblox игнорирует
 	for _, f in ipairs({ win, list, req }) do
-		local sc = f:FindFirstChild("Fit") or Instance.new("UIScale")
-		sc.Name = "Fit"
-		sc.Scale = math.min(1, (vp.X - 24) / f.Size.X.Offset, (vp.Y - 70) / f.Size.Y.Offset)
+		local sc = f:FindFirstChildOfClass("UIScale") or Instance.new("UIScale")
+		sc.Scale = math.min(1, (vp.X - 24) / f.Size.X.Offset, (vp.Y - 100) / (f.Size.Y.Offset + 30))
 		sc.Parent = f
 	end
 end
