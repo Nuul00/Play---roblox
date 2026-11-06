@@ -12,6 +12,7 @@ local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
 local RoyalEggModel = require(ReplicatedStorage:WaitForChild("RoyalEggModel"))
 local UISounds = require(ReplicatedStorage:WaitForChild("UISounds"))
 local NumberFormat = require(ReplicatedStorage:WaitForChild("NumberFormat"))
+local Themes = require(script.Parent:WaitForChild("RoyalHatchThemes"))
 local player = Players.LocalPlayer
 
 local RARITY = {
@@ -290,34 +291,16 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		end
 		RunService.RenderStepped:Wait()
 	end
-	-- 3) взрыв: вспышка, яйцо исчезает, искры, конфетти
-	local burst = emitter(dust, color, { Rate = 0, Lifetime = NumberRange.new(0.8, 1.6), Speed = NumberRange.new(14, 26), SpreadAngle = Vector2.new(180, 180), Acceleration = Vector3.new(0, -14, 0), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) }) })
-	burst:Emit(80 + rank * 25)
-	local conf = Instance.new("ParticleEmitter")
-	conf.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	conf.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 120)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 220, 90)), ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 200, 255)) })
-	conf.Rate = 0
-	conf.Lifetime = NumberRange.new(1.5, 2.5)
-	conf.Speed = NumberRange.new(10, 18)
-	conf.SpreadAngle = Vector2.new(40, 40)
-	conf.Acceleration = Vector3.new(0, -12, 0)
-	conf.RotSpeed = NumberRange.new(-300, 300)
-	conf.Size = NumberSequence.new(0.5)
-	conf.EmissionDirection = Enum.NormalId.Top
-	conf.Parent = dust
-	conf:Emit(60)
+	-- 3) финал под конкретного питомца (кристаллы, огонь, космос...) — RoyalHatchThemes
 	for _, r in ipairs(rays) do
 		TweenService:Create(r.part, TweenInfo.new(0.3), { Transparency = 1 }):Play()
 	end
-	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Brightness = 0.35
-	cc.TintColor = color:Lerp(Color3.new(1, 1, 1), 0.6)
-	cc.Parent = Lighting
-	TweenService:Create(cc, TweenInfo.new(0.6), { Brightness = 0, TintColor = Color3.new(1, 1, 1) }):Play()
-	task.delay(0.7, function()
-		cc:Destroy()
-	end)
-	egg:Destroy()
+	local theme = Themes.ByTier[def.RoyalTier or 1] or "royal"
+	local ctx = { folder = folder, ground = landPos, center = landPos + Vector3.new(0, size.Y / 2, 0), egg = egg, color = color, rank = rank }
+	Themes.Climax(theme, ctx)
+	if egg.Parent then
+		egg:Destroy()
+	end
 	tagGui:Destroy()
 	aura.Enabled = false
 	UISounds.Play(rank >= 5 and "rare" or "hatch")
@@ -367,6 +350,7 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	txt("👑 ROYAL " .. def.Rarity:upper(), 0, 30, color)
 	txt(def.Name, 30, 34, Color3.new(1, 1, 1))
 	txt("×" .. NumberFormat.Short(def.Multiplier) .. " coins", 64, 24, Color3.fromRGB(255, 225, 140))
+	local auraUpdate = Themes.Aura(theme, ctx)
 	t0 = os.clock()
 	local show = 4.2 + rank * 0.4
 	while os.clock() - t0 < show do
@@ -381,6 +365,9 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		local look = CFrame.Angles(0, (1 - k) * math.pi * 4 + e * 0.8, 0)
 		pet:PivotTo(CFrame.new(landPos + Vector3.new(0, sz.Y / 2 + math.abs(math.sin(e * 3)) * 0.4, 0)) * look * off:Inverse())
 		beam.Transparency = 0.78 + 0.12 * math.sin(e * 6)
+		if auraUpdate then
+			pcall(auraUpdate, e, landPos + Vector3.new(0, sz.Y, 0))
+		end
 		RunService.RenderStepped:Wait()
 	end
 	-- исчезает: прыгает к игроку и тает
