@@ -204,6 +204,7 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 			egg:ScaleTo(target)
 		end)
 	end
+	local skyShaft
 	if stages >= 2 then
 		say("✨ EVOLVING...", Color3.fromRGB(150, 230, 255))
 		shake(1.1, 14, 22)
@@ -238,17 +239,9 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		end
 		evolve(3, 5.6, Color3.fromRGB(255, 225, 130))
 		say("👑 DIVINE EGG!", Color3.fromRGB(255, 215, 90))
-		-- луч с неба на яйцо
-		local sky = Instance.new("Part")
-		sky.Anchored, sky.CanCollide, sky.CanQuery, sky.CanTouch, sky.CastShadow = true, false, false, false, false
-		sky.Shape = Enum.PartType.Cylinder
-		sky.Material = Enum.Material.Neon
-		sky.Color = Color3.fromRGB(255, 240, 190)
-		sky.Transparency = 0.6
-		sky.Size = Vector3.new(80, 6, 6)
-		sky.CFrame = CFrame.new(landPos + Vector3.new(0, 40, 0)) * CFrame.Angles(0, 0, math.rad(90))
-		sky.Parent = folder
-		TweenService:Create(sky, TweenInfo.new(1.2), { Transparency = 0.85, Size = Vector3.new(80, 3, 3) }):Play()
+		-- мягкий луч света с неба на яйцо
+		skyShaft = Themes.LightShaft(folder, landPos, 70, Color3.fromRGB(255, 236, 170), 0.8, { power = 0.55, bottom = size.Y * 1.1 })
+		task.wait(0.5)
 		shake(0.8, 6, 12)
 	end
 
@@ -263,6 +256,7 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	local wobble = (stages > 1 and 1.2 or 1.6) + rank * 0.2
 	t0 = os.clock()
 	local rays = {}
+	local rayHub, rayCore
 	while os.clock() - t0 < wobble do
 		local k = (os.clock() - t0) / wobble
 		local amp = math.rad(6 + 22 * k)
@@ -272,28 +266,41 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		glow.Range = 4 + 18 * k
 		glow.Brightness = 3 * k
 		aura.Rate = 10 + 60 * k
-		-- лучи из «трещин» после половины
-		if k > 0.55 and #rays < 5 then
-			local r = Instance.new("Part")
-			r.Anchored, r.CanCollide, r.CanQuery, r.CanTouch, r.CastShadow = true, false, false, false, false
-			r.Material = Enum.Material.Neon
-			r.Color = color:Lerp(Color3.new(1, 1, 1), 0.25)
-			r.Transparency = 0.35
-			r.Size = Vector3.new(0.15, 0.15, 1)
-			r.Parent = folder
-			table.insert(rays, { part = r, dir = CFrame.Angles(math.random() * math.pi * 2, math.random() * math.pi * 2, 0).LookVector })
+		-- мягкие лучи света из «трещин» после половины
+		if k > 0.55 and #rays < 6 then
+			if not rayHub then
+				rayHub = Instance.new("Part")
+				rayHub.Anchored, rayHub.CanCollide, rayHub.CanQuery, rayHub.CanTouch, rayHub.Transparency = true, false, false, false, 1
+				rayHub.Size = Vector3.new(0.2, 0.2, 0.2)
+				rayHub.CFrame = CFrame.new(landPos + Vector3.new(0, size.Y * 0.5, 0))
+				rayHub.Parent = folder
+				rayCore = Instance.new("Attachment")
+				rayCore.Parent = rayHub
+			end
+			local tip = Instance.new("Attachment")
+			tip.Parent = rayHub
+			local bm = Instance.new("Beam")
+			bm.Attachment0, bm.Attachment1 = rayCore, tip
+			bm.FaceCamera = true
+			bm.LightEmission, bm.LightInfluence = 1, 0
+			bm.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			bm.TextureMode = Enum.TextureMode.Stretch
+			bm.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.6))
+			bm.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(0.6, 0.45), NumberSequenceKeypoint.new(1, 1) })
+			bm.Parent = rayHub
+			table.insert(rays, { part = bm, tip = tip, dir = CFrame.Angles(math.random() * math.pi * 2, math.random() * math.pi * 2, 0).LookVector })
 		end
 		for _, r in ipairs(rays) do
-			local len = 1.5 + 4.5 * k
-			local c = landPos + Vector3.new(0, size.Y * 0.5, 0)
-			r.part.Size = Vector3.new(0.18, 0.18, len)
-			r.part.CFrame = CFrame.lookAt(c + r.dir * len / 2, c + r.dir * len)
+			local len = 2 + 6 * k
+			r.tip.Position = r.dir * len
+			r.part.Width0 = 0.5 + 0.9 * k
+			r.part.Width1 = 1.6 + 2.6 * k
 		end
 		RunService.RenderStepped:Wait()
 	end
 	-- 3) финал под конкретного питомца (кристаллы, огонь, космос...) — RoyalHatchThemes
-	for _, r in ipairs(rays) do
-		TweenService:Create(r.part, TweenInfo.new(0.3), { Transparency = 1 }):Play()
+	if rayHub then
+		rayHub:Destroy()
 	end
 	local theme = Themes.ByTier[def.RoyalTier or 1] or "royal"
 	local ctx = { folder = folder, ground = landPos, center = landPos + Vector3.new(0, size.Y / 2, 0), egg = egg, color = color, rank = rank }
@@ -315,16 +322,11 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	local scale0 = pet:GetScale()
 	local want = scale0 * (3.2 + rank * 0.35) / math.max(ps.Y, ps.X, 0.1)
 	pet.Parent = folder
-	local beam = Instance.new("Part")
-	beam.Shape = Enum.PartType.Cylinder
-	beam.Anchored, beam.CanCollide, beam.CanQuery, beam.CanTouch, beam.CastShadow = true, false, false, false, false
-	beam.Material = Enum.Material.Neon
-	beam.Color = color
-	beam.Transparency = 0.8
-	beam.Size = Vector3.new(40, 0.3, 0.3)
-	beam.CFrame = CFrame.new(landPos + Vector3.new(0, 20, 0)) * CFrame.Angles(0, 0, math.rad(90))
-	beam.Parent = folder
-	TweenService:Create(beam, TweenInfo.new(0.5, Enum.EasingStyle.Back), { Size = Vector3.new(40, 1.5 + rank * 0.5, 1.5 + rank * 0.5) }):Play()
+	if skyShaft then
+		skyShaft.fade(0.8)
+	end
+	-- колонна света редкости: мягкий луч, вырастает из земли вверх
+	local pillar = Themes.LightShaft(folder, landPos, 45, color, 0.4 + rank * 0.1, { rise = true, power = 0.75, bottom = 3 + rank * 0.4 })
 	local bb = Instance.new("BillboardGui")
 	bb.Size = UDim2.fromOffset(260, 90)
 	bb.StudsOffsetWorldSpace = Vector3.new(0, 6 + rank * 0.4, 0)
@@ -364,14 +366,14 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		local off = pet:GetPivot():ToObjectSpace(cf)
 		local look = CFrame.Angles(0, (1 - k) * math.pi * 4 + e * 0.8, 0)
 		pet:PivotTo(CFrame.new(landPos + Vector3.new(0, sz.Y / 2 + math.abs(math.sin(e * 3)) * 0.4, 0)) * look * off:Inverse())
-		beam.Transparency = 0.78 + 0.12 * math.sin(e * 6)
+		pillar.update(e)
 		if auraUpdate then
 			pcall(auraUpdate, e, landPos + Vector3.new(0, sz.Y, 0))
 		end
 		RunService.RenderStepped:Wait()
 	end
 	-- исчезает: прыгает к игроку и тает
-	TweenService:Create(beam, TweenInfo.new(0.4), { Transparency = 1, Size = Vector3.new(40, 0.2, 0.2) }):Play()
+	pillar.fade(0.5)
 	bb:Destroy()
 	for _, d in ipairs(pet:GetDescendants()) do
 		if d:IsA("BasePart") then

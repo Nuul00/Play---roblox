@@ -444,4 +444,167 @@ function T.Aura(theme: string, ctx)
 	return update
 end
 
+-- Мягкий «божественный» луч света вместо неоновой палки: три слоя Beam (FaceCamera, мягкие края
+-- через текстуру дыма, затухание на концах), бегущие по лучу световые волны, пылинки в свете,
+-- вспышка и свечение на земле. opts.rise = луч растёт от земли вверх (иначе спускается с неба).
+-- Возвращает { update(e), fade(sec) }.
+local function softSeq(base, top, bottom)
+	return NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(top, base),
+		NumberSequenceKeypoint.new(bottom, base),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+end
+function T.LightShaft(folder, ground: Vector3, height: number, color: Color3, s: number, opts)
+	opts = opts or {}
+	local power = opts.power or 1 -- <1 = прозрачнее (чтобы не засвечивать яйцо/питомца)
+	local low = opts.bottom or 0 -- нижний конец луча выше земли (луч не перекрывает питомца)
+	local white = color:Lerp(Color3.new(1, 1, 1), 0.75)
+	local holder = basePart(folder, Vector3.new(0.2, 0.2, 0.2), CFrame.new(ground), color, nil, 1)
+	local aTop = Instance.new("Attachment")
+	local aBot = Instance.new("Attachment")
+	aTop.Parent, aBot.Parent = holder, holder
+	aTop.Position, aBot.Position = Vector3.new(0, height, 0), Vector3.new(0, height, 0)
+	if opts.rise then
+		aTop.Position, aBot.Position = Vector3.new(0, low + 0.1, 0), Vector3.new(0, low, 0)
+	end
+	local layers = {
+		-- ширина, прозрачность, цвет; слои от широкого прозрачного ореола к яркому ядру = мягкий край.
+		-- tex = бегущие по лучу «волны» света (дымка)
+		{ w = 16, t = 0.975, c = color },
+		{ w = 13, t = 0.965, c = color },
+		{ w = 10, t = 0.95, c = color },
+		{ w = 7.5, t = 0.92, c = color:Lerp(white, 0.15) },
+		{ w = 5.5, t = 0.86, c = color:Lerp(white, 0.3) },
+		{ w = 3.8, t = 0.74, c = color:Lerp(white, 0.5) },
+		{ w = 2.4, t = 0.5, c = color:Lerp(white, 0.7) },
+		{ w = 1.1, t = 0.15, c = white },
+		{ w = 7, t = 0.5, c = color:Lerp(white, 0.4), tex = true, len = 10, speed = opts.rise and 1.3 or -1.3 },
+		{ w = 3.5, t = 0.35, c = white, tex = true, len = 5, speed = opts.rise and 2.6 or -2.6 },
+	}
+	local beams = {}
+	for _, L in ipairs(layers) do
+		local b = Instance.new("Beam")
+		b.Attachment0, b.Attachment1 = aTop, aBot
+		b.FaceCamera = true
+		b.LightEmission = 1
+		b.LightInfluence = 0
+		if L.tex then
+			b.Texture = SMOKE
+			b.TextureMode = Enum.TextureMode.Wrap
+			b.TextureLength = L.len
+			b.TextureSpeed = L.speed
+		end
+		b.Color = ColorSequence.new(L.c)
+		b.Width0, b.Width1 = 0, 0
+		b.Segments = 10 -- при 1 Beam не рисуется
+		L.t = 1 - (1 - L.t) * power
+		b.Transparency = softSeq(L.t, 0.12, 0.9)
+		pcall(function()
+			b.Brightness = 2
+		end)
+		b.Parent = holder
+		table.insert(beams, { beam = b, L = L })
+	end
+	-- пылинки, медленно поднимающиеся в свете
+	local motesPart = basePart(folder, Vector3.new(2.2 * s, height * 0.9, 2.2 * s), CFrame.new(ground + Vector3.new(0, height * 0.45, 0)), color, nil, 1)
+	local motes = emitter(motesPart, {
+		Color = ColorSequence.new(white),
+		LightEmission = 1,
+		LightInfluence = 0,
+		Lifetime = NumberRange.new(2, 3.5),
+		Speed = NumberRange.new(0.3, 1.2),
+		Acceleration = Vector3.new(0, 1.5, 0),
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.22 * s), NumberSequenceKeypoint.new(1, 0) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.1), NumberSequenceKeypoint.new(1, 1) }),
+		SpreadAngle = Vector2.new(180, 180),
+	})
+	pcall(function()
+		motes.Shape = Enum.ParticleEmitterShape.Cylinder
+		motes.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	end)
+	-- свет на земле
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Range = 0
+	light.Brightness = 3
+	light.Shadows = false
+	light.Parent = holder
+	local glow = basePart(folder, Vector3.new(0.05, 1, 1), CFrame.new(ground + Vector3.new(0, 0.06, 0)) * CFrame.Angles(0, 0, math.rad(90)), color, Enum.Material.Neon, 0.82, Enum.PartType.Cylinder)
+	local intensity = 0
+	local alive = true
+	local function apply(k, pulse)
+		for _, B in ipairs(beams) do
+			local w = B.L.w * s * k * pulse
+			B.beam.Width0 = w * (opts.rise and 0.75 or 1)
+			B.beam.Width1 = w
+		end
+		light.Range = 18 * s * k
+		glow.Size = Vector3.new(0.05, 7 * s * k, 7 * s * k)
+	end
+	-- появление: луч опускается с неба (или вырастает из земли) и раскрывается
+	task.spawn(function()
+		local t0 = os.clock()
+		local dur = opts.rise and 0.35 or 0.5
+		while alive and os.clock() - t0 < dur do
+			local k = (os.clock() - t0) / dur
+			local e = 1 - (1 - k) ^ 3
+			if opts.rise then
+				aTop.Position = Vector3.new(0, low + (height - low) * e, 0)
+			else
+				aBot.Position = Vector3.new(0, low + (height - low) * (1 - e), 0)
+			end
+			intensity = 0.35 + 0.65 * e
+			apply(intensity, 1)
+			frame()
+		end
+		if not alive then
+			return
+		end
+		aTop.Position, aBot.Position = Vector3.new(0, height, 0), Vector3.new(0, low, 0)
+		intensity = 1
+		motes.Rate = 14 * s
+		-- вспышка-кольцо в точке удара
+		local ring = basePart(folder, Vector3.new(0.05, 2, 2), CFrame.new(ground + Vector3.new(0, 0.08, 0)) * CFrame.Angles(0, 0, math.rad(90)), white, Enum.Material.Neon, 0.3, Enum.PartType.Cylinder)
+		TweenService:Create(ring, TweenInfo.new(0.7, Enum.EasingStyle.Quint), { Size = Vector3.new(0.05, 16 * s, 16 * s), Transparency = 1 }):Play()
+		task.delay(0.75, function()
+			ring:Destroy()
+		end)
+		light.Brightness = 8
+		TweenService:Create(light, TweenInfo.new(0.6), { Brightness = 3 }):Play()
+	end)
+	local shaft = {}
+	function shaft.update(e)
+		if alive and intensity >= 1 then
+			apply(1, 1 + 0.06 * math.sin(e * 2.3) + 0.03 * math.sin(e * 5.1))
+		end
+	end
+	function shaft.fade(sec)
+		if not alive then
+			return
+		end
+		alive = false
+		motes.Rate = 0
+		task.spawn(function()
+			local t0 = os.clock()
+			while os.clock() - t0 < sec do
+				local k = 1 - (os.clock() - t0) / sec
+				for _, B in ipairs(beams) do
+					B.beam.Transparency = softSeq(1 - (1 - B.L.t) * k, 0.12, 0.9)
+					B.beam.Width0 = B.L.w * s * (0.6 + 0.4 * k)
+					B.beam.Width1 = B.beam.Width0
+				end
+				light.Brightness = 3 * k
+				glow.Transparency = 1 - 0.18 * k
+				frame()
+			end
+			holder:Destroy()
+			motesPart:Destroy()
+			glow:Destroy()
+		end)
+	end
+	return shaft
+end
+
 return T
