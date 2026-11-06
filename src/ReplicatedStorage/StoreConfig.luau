@@ -12,11 +12,11 @@ StoreConfig.Passes = {
 	{ Key = "SuperLuck", Id = 2067554513, Name = "Super Luck", Desc = "+2 egg rolls · 2x Super Secret chance", Random = true, Color = Color3.fromRGB(90, 170, 255) },
 	-- Открытие ×9 и автооткрытие яиц. Id = 0, пока пасс не создан в Creator Dashboard — тогда
 	-- функции бесплатны для всех. Кто играл до введения пассов, получает их бесплатно навсегда.
-	{ Key = "Hatch9", Id = 0, Name = "×9 Hatch", Desc = "Open 9 eggs at once", Color = Color3.fromRGB(190, 120, 255) },
-	{ Key = "AutoHatch", Id = 0, Name = "Auto Hatch", Desc = "Eggs open automatically while you stand by them", Color = Color3.fromRGB(255, 120, 170) },
-	{ Key = "GoldenHatch", Id = 0, Name = "Golden Hatch", Desc = "5% chance a hatched pet comes out Golden", Random = true, Color = Color3.fromRGB(255, 205, 60) },
-	{ Key = "QuickTravel", Id = 0, Name = "Quick Travel", Desc = "Teleport to any egg or shop in your world", Color = Color3.fromRGB(110, 210, 255) },
-	{ Key = "RoyalAura", Id = 0, Name = "Royal Aura", Desc = "Sparkling golden aura and crown (cosmetic)", Color = Color3.fromRGB(255, 225, 120) },
+	{ Key = "Hatch9", Id = 2075900816, Name = "×9 Hatch", Desc = "Open 9 eggs at once", Color = Color3.fromRGB(190, 120, 255) },
+	{ Key = "AutoHatch", Id = 2075384801, Name = "Auto Hatch", Desc = "Eggs open automatically while you stand by them", Color = Color3.fromRGB(255, 120, 170) },
+	{ Key = "GoldenHatch", Id = 2074754833, Name = "Golden Hatch", Desc = "5% chance a hatched pet comes out Golden", Random = true, Color = Color3.fromRGB(255, 205, 60) },
+	{ Key = "QuickTravel", Id = 2075480804, Name = "Quick Travel", Desc = "Teleport to any egg or shop in your world", Color = Color3.fromRGB(110, 210, 255) },
+	{ Key = "RoyalAura", Id = 2074766782, Name = "Royal Aura", Desc = "Sparkling golden aura and crown (cosmetic)", Color = Color3.fromRGB(255, 225, 120) },
 	{ Key = "MythicLuck", Id = 2067596576, Name = "Mythic Luck", Desc = "+3 egg rolls · 3x Super Secret chance (best luck pass)", Random = true, Color = Color3.fromRGB(240, 90, 220) },
 }
 
