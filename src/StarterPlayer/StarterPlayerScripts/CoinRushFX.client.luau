@@ -147,7 +147,7 @@ local function dress(part: BasePart)
 		return
 	end
 	local big = part.Name == "RushBar"
-	local info = { base = part.CFrame, phase = math.random() * 6, big = big }
+	local info = { base = part.CFrame, phase = math.random() * 6, big = big, expireAt = part:GetAttribute("ExpireAt") }
 	local t = coinTemplate()
 	if t and not big then
 		local m = t:Clone()
@@ -173,7 +173,28 @@ local function dress(part: BasePart)
 					v.model:Destroy()
 				end
 				local me = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if me and (me.Position - v.base.Position).Magnitude < 40 then
+				if part:GetAttribute("Expired") then
+					-- не успел: монета тает серым дымком
+					local a = Instance.new("Part")
+					a.Anchored, a.CanCollide, a.CanQuery, a.CanTouch, a.Transparency = true, false, false, false, 1
+					a.Size = Vector3.new(0.2, 0.2, 0.2)
+					a.Position = v.base.Position
+					a.Parent = fxFolder
+					local e = Instance.new("ParticleEmitter")
+					e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+					e.Color = ColorSequence.new(Color3.fromRGB(200, 190, 170))
+					e.Transparency = NumberSequence.new(0.4, 1)
+					e.Rate = 0
+					e.Speed = NumberRange.new(1, 3)
+					e.SpreadAngle = Vector2.new(180, 180)
+					e.Lifetime = NumberRange.new(0.4, 0.7)
+					e.Size = NumberSequence.new(1.2, 2.4)
+					e.Parent = a
+					e:Emit(6)
+					task.delay(1, function()
+						a:Destroy()
+					end)
+				elseif me and (me.Position - v.base.Position).Magnitude < 40 then
 					burst(v.base.Position, v.big)
 					playDing()
 				end
@@ -183,10 +204,24 @@ local function dress(part: BasePart)
 end
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
+	local st = workspace:GetServerTimeNow()
 	for part, v in pairs(visuals) do
 		if v.model then
 			local cf = CFrame.new(v.base.Position + Vector3.new(0, 0.9 + math.sin(t * 2.5 + v.phase) * 0.35, 0)) * CFrame.Angles(0, t * 2.2 + v.phase, 0)
 			v.model:PivotTo(cf)
+			-- скоро исчезнет: мигает всё чаще
+			if v.expireAt then
+				local left = v.expireAt - st
+				local hide = left < 1.4 and math.floor(t * (left < 0.6 and 14 or 7)) % 2 == 0
+				if hide ~= v.hidden then
+					v.hidden = hide
+					for _, d in ipairs(v.model:GetDescendants()) do
+						if d:IsA("BasePart") then
+							d.LocalTransparencyModifier = hide and 0.85 or 0
+						end
+					end
+				end
+			end
 		end
 	end
 end)

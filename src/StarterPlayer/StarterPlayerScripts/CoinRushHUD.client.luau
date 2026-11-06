@@ -160,6 +160,14 @@ remote.OnClientEvent:Connect(function(kind, d)
 		roomL.Text = "ROOM " .. d.Room .. "/" .. d.Rooms .. " · " .. d.Name
 		leftL.Text = d.Total .. " coins left"
 		shout("ROOM " .. d.Room .. ": " .. d.Name, GOLD, 1.4)
+		if d.Hint then
+			local room = d.Room
+			task.delay(1.6, function()
+				if vault == nil and roomL.Text:find(d.Name, 1, true) then
+					shout(d.Hint, Color3.new(1, 1, 1), 2.2)
+				end
+			end)
+		end
 		UISounds.Play("unlock")
 	elseif kind == "bank" then
 		bankL.Text = "💰 " .. coins(d.Bank)
@@ -242,8 +250,8 @@ end)
 -- подсказка портала: цена ключа
 local function updatePrompt()
 	local portal = workspace:FindFirstChild("CoinRushPortal", true)
-	local field = portal and portal:FindFirstChild("Field")
-	local prompt = field and field:FindFirstChildOfClass("ProximityPrompt")
+	local anchor = portal and (portal:FindFirstChild("PromptAnchor") or portal:FindFirstChild("Field"))
+	local prompt = anchor and anchor:FindFirstChildOfClass("ProximityPrompt")
 	if prompt then
 		local cost = player:GetAttribute("RushKeyCost") or 0
 		prompt.ObjectText = cost <= 0 and "FREE run today!" or ("🔑 Key: " .. NumberFormat.Short(cost) .. " coins")

@@ -238,6 +238,9 @@ function PlayerSystems.ApplySpeed(p)
 	end
 	speed *= 1 + (p:GetAttribute("AbilSpeed") or 0) -- способность питомцев
 	speed = math.min(math.floor(speed * 10 + 0.5) / 10, PlayerSystems.MaxWalkSpeed) -- выше — уже неуправляемо
+	if p:GetAttribute("InRush") then
+		speed = math.min(speed, 26) -- данж Coin Rush: испытания на ловкость, а не на прокачку
+	end
 	if math.abs(h.WalkSpeed - speed) > 0.01 then
 		h.WalkSpeed = speed
 	end

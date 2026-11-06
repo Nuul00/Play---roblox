@@ -16,11 +16,17 @@ local R = {}
 R.ORIGIN = Vector3.new(-6000, 60, 0)
 R.SLOT = 600 -- шаг между экземплярами забегов по X
 R.ROOM = 96 -- размер комнаты
+-- Комнаты — испытания (магнит в данже НЕ работает: монету надо задеть, радиус R.PICKUP):
+--  1 COIN CHASE — монеты появляются волнами и через Life секунд исчезают (мигают перед этим);
+--  2 LASER HALL — вращающиеся лазеры + низкий лазер-«метла» через всю комнату: его надо перепрыгнуть;
+--  3 LAVA FLOOR — плитки пола загораются оранжевым (предупреждение) и становятся лавой.
 R.ROOMS = {
-	{ Name = "THE MINT", Coins = 60, Value = 0.5, Lasers = 0, Time = 25, Floor = Color3.fromRGB(70, 60, 90), Glow = Color3.fromRGB(255, 200, 70) },
-	{ Name = "LASER HALL", Coins = 80, Value = 0.75, Lasers = 2, Speed = 0.6, Time = 25, Floor = Color3.fromRGB(45, 50, 80), Glow = Color3.fromRGB(90, 200, 255) },
-	{ Name = "GOLD STORM", Coins = 100, Value = 1, Lasers = 3, Speed = 0.9, Time = 25, Floor = Color3.fromRGB(80, 40, 50), Glow = Color3.fromRGB(255, 90, 120) },
+	{ Name = "COIN CHASE", Hint = "Coins vanish fast — grab them!", Mode = "waves", Coins = 64, Wave = 8, WaveEvery = 2.6, Life = 4.2, Value = 0.5, Lasers = 0, Time = 25, Floor = Color3.fromRGB(70, 60, 90), Glow = Color3.fromRGB(255, 200, 70) },
+	{ Name = "LASER HALL", Hint = "Dodge the beams — JUMP over the low laser!", Coins = 70, Value = 0.75, Lasers = 2, Speed = 0.7, Sweep = true, Time = 25, Floor = Color3.fromRGB(45, 50, 80), Glow = Color3.fromRGB(90, 200, 255) },
+	{ Name = "LAVA FLOOR", Hint = "Red tiles burn — keep moving!", Coins = 80, Value = 1, Lasers = 0, Lava = true, Time = 25, Floor = Color3.fromRGB(80, 40, 50), Glow = Color3.fromRGB(255, 90, 120) },
 }
+R.PICKUP = 3.8 -- радиус подбора монет в данже (вместо магнита)
+R.SPEED_CAP = 26 -- скорость в данже не выше (прокачанные не пролетают комнату за секунды)
 R.VAULT_TIME = 12
 R.VAULT_NEED = 0.55 -- доля от всех монет забега (в «весе»), чтобы открыть хранилище
 R.HIT_LOSS = 0.15
@@ -498,9 +504,12 @@ do
 	prompt.ActionText = "Enter Coin Rush"
 	prompt.ObjectText = "Treasure Dungeon"
 	prompt.HoldDuration = 0.3
-	prompt.MaxActivationDistance = 16
+	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = field
+	-- подсказка «Enter» висит на невидимой опоре у входа на уровне груди (на вихре высоко в арке
+	-- она появлялась ненадёжно)
+	local promptAnchor = part(portal, "PromptAnchor", Vector3.new(4, 4, 1), face * CFrame.new(0, 3, -1.5), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+	prompt.Parent = promptAnchor
 	portal.Parent = world
 	R.Prompt = prompt
 	R.ReturnCF = face * CFrame.new(0, 4, -12) * CFrame.Angles(0, math.pi, 0)
@@ -533,6 +542,20 @@ local function tp(p, cf: CFrame)
 	char:PivotTo(cf)
 end
 
+local function spawnOne(run, folder, def, c: Vector3, rng, life: number?)
+	local half = R.ROOM / 2 - 8
+	-- часть монет — дорогие золотые слитки (×3)
+	local big = rng:NextNumber() < 0.12
+	local pos = c + Vector3.new(rng:NextNumber(-half, half), big and 0.6 or 1.8, rng:NextNumber(-half + 10, half))
+	local coin = part(folder, big and "RushBar" or "RushCoinPart", big and Vector3.new(2.8, 1.1, 1.4) or Vector3.new(0.5, 2.6, 2.6), CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), big and Color3.fromRGB(245, 185, 40) or Color3.fromRGB(255, 215, 70), big and Enum.Material.Metal or Enum.Material.Neon, { Shape = big and Enum.PartType.Block or Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	coin:SetAttribute("RushCoin", true)
+	local e = { part = coin, value = def.Value * (big and 3 or 1) }
+	if life then
+		e.expire = os.clock() + life
+		coin:SetAttribute("ExpireAt", workspace:GetServerTimeNow() + life) -- клиент мигает перед исчезновением
+	end
+	table.insert(run.coins, e)
+end
 local function spawnCoins(run, i: number)
 	local def = R.ROOMS[i]
 	local c = run.offset + roomCenter(i)
@@ -540,15 +563,39 @@ local function spawnCoins(run, i: number)
 	folder.Name = "Coins" .. i
 	folder.Parent = run.model
 	run.coins = {}
-	local rng = Random.new()
-	local half = R.ROOM / 2 - 8
-	for n = 1, def.Coins do
-		-- часть монет — дорогие золотые слитки (×3)
-		local big = rng:NextNumber() < 0.12
-		local pos = c + Vector3.new(rng:NextNumber(-half, half), big and 0.6 or 1.8, rng:NextNumber(-half + 10, half))
-		local coin = part(folder, big and "RushBar" or "RushCoinPart", big and Vector3.new(2.8, 1.1, 1.4) or Vector3.new(0.5, 2.6, 2.6), CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), big and Color3.fromRGB(245, 185, 40) or Color3.fromRGB(255, 215, 70), big and Enum.Material.Metal or Enum.Material.Neon, { Shape = big and Enum.PartType.Block or Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
-		coin:SetAttribute("RushCoin", true)
-		table.insert(run.coins, { part = coin, value = def.Value * (big and 3 or 1) })
+	run.folder, run.def, run.center, run.rng = folder, def, c, Random.new()
+	run.wave, run.sweep, run.lava = nil, nil, nil
+	if def.Mode == "waves" then
+		run.wave = { left = def.Coins, nextAt = os.clock() + 1 }
+	else
+		for _ = 1, def.Coins do
+			spawnOne(run, folder, def, c, run.rng)
+		end
+	end
+	-- низкий лазер-«метла»: едет поперёк комнаты туда-обратно, его перепрыгивают
+	if def.Sweep then
+		local w = R.ROOM - 4
+		local cf = CFrame.new(c + Vector3.new(0, 1.3, -R.ROOM / 2 + 14))
+		local core = part(folder, "SweepLaser", Vector3.new(w, 0.45, 0.45), cf, Color3.fromRGB(255, 210, 220), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Transparency = 0.8 })
+		local glowS = part(folder, "SweepGlow", Vector3.new(w, 1.3, 1.3), cf, Color3.fromRGB(255, 40, 90), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Transparency = 0.9 })
+		for _, x in ipairs({ -w / 2, w / 2 }) do
+			local emit = part(folder, "SweepEnd", Vector3.new(1.6, 1.6, 1.6), cf * CFrame.new(x, 0, 0), Color3.fromRGB(80, 20, 30), Enum.Material.Metal, { CanCollide = false, CanQuery = false })
+			emit:SetAttribute("SweepEnd", x)
+		end
+		run.sweep = { core = core, glow = glowS, z = -R.ROOM / 2 + 14, dir = 1, speed = 13, c = c, armAt = os.clock() + 2.5, half = R.ROOM / 2 - 6 }
+	end
+	-- пол-лава: сетка 6×6 плиток-наложений, загораются циклами
+	if def.Lava then
+		local n, size = 6, R.ROOM / 6
+		run.lava = { tiles = {}, nextAt = os.clock() + 2.5, size = size, n = n, c = c }
+		for ix = 0, n - 1 do
+			for iz = 0, n - 1 do
+				local pos = c + Vector3.new(-R.ROOM / 2 + size * (ix + 0.5), 0.12, -R.ROOM / 2 + size * (iz + 0.5))
+				local t = part(folder, "LavaTile", Vector3.new(size - 0.6, 0.12, size - 0.6), CFrame.new(pos), Color3.fromRGB(255, 140, 40), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Transparency = 1 })
+				-- плитка у входа никогда не горит (безопасный старт)
+				table.insert(run.lava.tiles, { part = t, ix = ix, iz = iz, state = 0, safe = (iz == 0 and (ix == 2 or ix == 3)) })
+			end
+		end
 	end
 	-- лазеры: вращающиеся балки через центр комнаты
 	run.lasers = {}
@@ -579,7 +626,7 @@ local function spawnCoins(run, i: number)
 		beam.Transparency, glowL.Transparency = 0.8, 0.9
 		table.insert(run.lasers, { part = beam, glow = glowL, center = c + Vector3.new(0, 2.5, 0), angle = (k - 1) * math.pi / def.Lasers, speed = def.Speed * (k % 2 == 0 and -1 or 1), armAt = os.clock() + 2 })
 	end
-	run.totalWeight += def.Coins * def.Value * 1.24 -- 12% слитков ×3 → средний вес монеты 1.24
+	run.totalWeight += def.Coins * def.Value * 1.24 -- 12% слитков ×3 → средний вес монеты 1.24 (вся комната, и волны тоже)
 end
 
 local function send(run, kind, data)
@@ -596,6 +643,7 @@ local function finish(run, reason: string?)
 	local p = run.player
 	runs[p] = nil
 	p:SetAttribute("InRush", nil)
+	pcall(PlayerSystems.ApplySpeed, p)
 	local reward = math.floor(run.bank * run.worth)
 	local loot = {}
 	if run.vaultOpen then
@@ -652,10 +700,10 @@ local function startRoom(run, i: number)
 		spawnCoins(run, i)
 		local dur = RunService:IsStudio() and workspace:GetAttribute("RushRoomTime") or R.ROOMS[i].Time -- в Studio можно ускорить
 		run.ends = os.clock() + dur
-		send(run, "room", { Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Ends = workspace:GetServerTimeNow() + dur, Total = #run.coins })
+		send(run, "room", { Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Hint = R.ROOMS[i].Hint, Ends = workspace:GetServerTimeNow() + dur, Total = #run.coins + (run.wave and run.wave.left or 0) })
 	else
 		spawnCF = CFrame.new(run.offset + roomCenter(i) + Vector3.new(0, 4, -26))
-		run.coins, run.lasers = {}, {}
+		run.coins, run.lasers, run.sweep, run.lava, run.wave = {}, {}, nil, nil, nil
 		run.need = run.totalWeight * (RunService:IsStudio() and workspace:GetAttribute("RushVaultNeed") or R.VAULT_NEED) -- в Studio порог можно задать атрибутом
 		run.ends = os.clock() + R.VAULT_TIME
 		send(run, "vault", { Need = run.need, Have = run.bank, Ends = workspace:GetServerTimeNow() + R.VAULT_TIME, Worth = run.worth })
@@ -704,7 +752,8 @@ local function startRun(p)
 	local run = { player = p, slot = slot, offset = offset, model = m, bank = 0, totalWeight = 0, hits = 0, worth = coinWorth(p), lastHit = 0 }
 	runs[p] = run
 	p:SetAttribute("InRush", true)
-	startRoom(run, 1)
+	pcall(PlayerSystems.ApplySpeed, p) -- в данже скорость ограничена (R.SPEED_CAP)
+	startRoom(run, RunService:IsStudio() and workspace:GetAttribute("RushStartRoom") or 1) -- в Studio можно начать с любой комнаты
 end
 
 R.Prompt.Triggered:Connect(function(p)
@@ -777,6 +826,30 @@ RunService.Heartbeat:Connect(function(dt)
 			L.part.CFrame = cf
 			L.glow.CFrame = cf
 		end
+		local S = run.sweep
+		if S then
+			if t >= S.armAt then
+				if not S.armed then
+					S.armed = true
+					S.core.Transparency, S.glow.Transparency = 0, 0.5
+				end
+				S.z += S.dir * S.speed * dt
+				if S.z > S.half then
+					S.z, S.dir = S.half, -1
+				elseif S.z < -S.half then
+					S.z, S.dir = -S.half, 1
+				end
+			else
+				S.core.Transparency = math.floor(t * 6) % 2 == 0 and 0.3 or 0.85
+			end
+			local cf = CFrame.new(S.c + Vector3.new(0, 1.3, S.z))
+			S.core.CFrame, S.glow.CFrame = cf, cf
+			for _, e in ipairs(run.folder and run.folder:GetChildren() or {}) do
+				if e.Name == "SweepEnd" then
+					e.CFrame = cf * CFrame.new(e:GetAttribute("SweepEnd"), 0, 0)
+				end
+			end
+		end
 	end
 	if acc < 0.05 then
 		return
@@ -792,11 +865,37 @@ RunService.Heartbeat:Connect(function(dt)
 		elseif not run.done then
 			local pos = root.Position
 			-- монеты
-			local radius = (p:GetAttribute("MagnetRadius") or 6) + (p:GetAttribute("AbilMagnet") or 0) + 2
+			local radius = R.PICKUP -- магнит в данже не действует
+			local function hit(from: Vector3)
+				if now - run.lastHit <= 1.2 then
+					return
+				end
+				run.lastHit = now
+				run.hits += 1
+				local lost = run.bank * R.HIT_LOSS
+				run.bank -= lost
+				local away = Vector3.new(pos.X - from.X, 0, pos.Z - from.Z)
+				root.AssemblyLinearVelocity = (away.Magnitude > 0.1 and away.Unit or Vector3.new(0, 0, -1)) * 55 + Vector3.new(0, 35, 0)
+				send(run, "hit", { Lost = lost, Bank = run.bank })
+			end
+			-- волны монет (комната 1)
+			local W = run.wave
+			if W and W.left > 0 and now >= W.nextAt then
+				for _ = 1, math.min(run.def.Wave, W.left) do
+					spawnOne(run, run.folder, run.def, run.center, run.rng, run.def.Life)
+				end
+				W.left -= math.min(run.def.Wave, W.left)
+				W.nextAt = now + run.def.WaveEvery
+				send(run, "bank", { Bank = run.bank, Left = #run.coins + W.left, Got = 0 })
+			end
 			local got = 0
 			for k = #run.coins, 1, -1 do
 				local c = run.coins[k]
-				if (c.part.Position - pos).Magnitude <= radius then
+				if c.expire and now >= c.expire then
+					c.part:SetAttribute("Expired", true)
+					c.part:Destroy()
+					table.remove(run.coins, k)
+				elseif (c.part.Position - pos).Magnitude <= radius then
 					run.bank += c.value
 					got += 1
 					c.part:Destroy()
@@ -804,18 +903,51 @@ RunService.Heartbeat:Connect(function(dt)
 				end
 			end
 			if got > 0 then
-				send(run, "bank", { Bank = run.bank, Left = #run.coins, Got = got })
+				send(run, "bank", { Bank = run.bank, Left = #run.coins + (W and W.left or 0), Got = got })
+			end
+			local floorY = run.center and run.center.Y or pos.Y - 3
+			-- низкий лазер: задел, если не в прыжке
+			local S = run.sweep
+			if S and S.armed and math.abs(pos.Z - (S.c.Z + S.z)) < 1.4 and pos.Y - floorY < 4.6 then
+				hit(Vector3.new(pos.X, pos.Y, S.c.Z + S.z - S.dir * 3))
+			end
+			-- лава: циклы предупреждение → лава → остывание
+			local Lv = run.lava
+			if Lv then
+				if now >= Lv.nextAt then
+					Lv.nextAt = now + 3.2
+					for _, tile in ipairs(Lv.tiles) do
+						if not tile.safe and tile.state == 0 and run.rng:NextNumber() < 0.42 then
+							tile.state, tile.warnAt = 1, now
+						end
+					end
+				end
+				for _, tile in ipairs(Lv.tiles) do
+					if tile.state == 1 then
+						tile.part.Transparency = 0.35 + 0.25 * math.sin(now * 18)
+						tile.part.Color = Color3.fromRGB(255, 95, 10)
+						if now - tile.warnAt >= 1.1 then
+							tile.state, tile.hotAt = 2, now
+							tile.part.Color = Color3.fromRGB(200, 20, 10)
+							tile.part.Transparency = 0.05
+						end
+					elseif tile.state == 2 and now - tile.hotAt >= 1.7 then
+						tile.state = 0
+						tile.part.Transparency = 1
+					end
+				end
+				local ix = math.floor((pos.X - (Lv.c.X - R.ROOM / 2)) / Lv.size)
+				local iz = math.floor((pos.Z - (Lv.c.Z - R.ROOM / 2)) / Lv.size)
+				local tile = Lv.tiles[ix * Lv.n + iz + 1]
+				if tile and ix >= 0 and ix < Lv.n and iz >= 0 and iz < Lv.n and tile.state == 2 and pos.Y - floorY < 5 then
+					hit(tile.part.Position)
+				end
 			end
 			-- лазеры
 			for _, L in ipairs(run.lasers or {}) do
 				local half = L.part.CFrame.RightVector * (L.part.Size.X / 2)
-				if L.armed and now - run.lastHit > 1.2 and math.abs(pos.Y - L.center.Y) < 4 and segDist(Vector3.new(pos.X, L.center.Y, pos.Z), L.center - half, L.center + half) < 2.2 then
-					run.lastHit = now
-					run.hits += 1
-					local lost = run.bank * R.HIT_LOSS
-					run.bank -= lost
-					root.AssemblyLinearVelocity = (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(L.center.X, 0, L.center.Z)).Unit * 60 + Vector3.new(0, 35, 0)
-					send(run, "hit", { Lost = lost, Bank = run.bank })
+				if L.armed and math.abs(pos.Y - L.center.Y) < 4 and segDist(Vector3.new(pos.X, L.center.Y, pos.Z), L.center - half, L.center + half) < 2.2 then
+					hit(L.center)
 				end
 			end
 			-- хранилище: встал в круг — проверка
@@ -826,7 +958,7 @@ RunService.Heartbeat:Connect(function(dt)
 				end
 			end
 			-- таймер или все монеты собраны
-			if not run.vaultTried and (now >= run.ends or (run.room <= #R.ROOMS and #run.coins == 0)) then
+			if not run.vaultTried and (now >= run.ends or (run.room <= #R.ROOMS and #run.coins == 0 and not (W and W.left > 0))) then
 				if run.room < #R.ROOMS + 1 then
 					startRoom(run, run.room + 1)
 				else
