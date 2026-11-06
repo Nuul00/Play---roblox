@@ -690,6 +690,21 @@ local function setCoinVisible(part, visible)
  -- Эффекты (искры, свет, значки) включает клиент сам (WorldCulling): свой мир + Available.
  -- Раньше сервер включал их у всех — и это ломало отсечение эффектов чужих миров.
 end
+local ComboConfig = require(ReplicatedStorage:WaitForChild("ComboConfig"))
+local comboLast = {}
+Players.PlayerRemoving:Connect(function(p) comboLast[p] = nil end)
+-- комбо сгорает после паузы: сбрасываем атрибут, чтобы клиент спрятал счётчик
+task.spawn(function()
+ while true do
+  task.wait(0.25)
+  local now = os.clock()
+  for p, last in pairs(comboLast) do
+   if now - last > ComboConfig.Window + 0.15 and (p:GetAttribute("Combo") or 0) > 0 then
+    p:SetAttribute("Combo", 0)
+   end
+  end
+ end
+end)
 local function collect(record, p)
  if not record.available then return end
  local stats = p:FindFirstChild("leaderstats")
@@ -697,7 +712,13 @@ local function collect(record, p)
  record.available = false
  record.part:SetAttribute("Available", false)
  setCoinVisible(record.part, false)
- local earned=record.value*PlayerSystems.CoinMultiplier(p)
+ -- Coin Combo (ComboConfig): монеты без пауз — растёт комбо и множитель
+ local now=os.clock()
+ local combo=(now-(comboLast[p] or 0)<=ComboConfig.Window) and (p:GetAttribute("Combo") or 0)+1 or 1
+ comboLast[p]=now
+ p:SetAttribute("Combo",combo)
+ if combo>(p:GetAttribute("Save_BestCombo") or 0) then p:SetAttribute("Save_BestCombo",combo) end
+ local earned=record.value*PlayerSystems.CoinMultiplier(p)*ComboConfig.MultOf(combo)
  -- Апгрейд «двойная монета» + способность питомцев: шанс получить награду x2.
  local doubleChance=Config.GetDoubleChance(p:GetAttribute("DoubleLevel") or 0)+(p:GetAttribute("AbilDouble") or 0)
  if random:NextNumber()<math.min(doubleChance,0.95) then earned*=2 end
