@@ -539,25 +539,151 @@ local function meadowGarden(island, ic, groundY)
 	tree(-28, -44, 9)
 	tree(28, -44, 9.5)
 
-	-- прудик с кувшинками и камышом (слева)
+	-- живой пруд (как на облачном острове): настоящая вода Terrain с волнами, каменный бортик,
+	-- водопад с горки, брызги и пузырьки, качающиеся кувшинки, уточка, камыши, светлячки
 	do
-		local px, pz = -32, 6
-		cyl(island, "PondRim", 0.5, 15, at(px, pz, 0.05), rgb(150, 150, 140), M.Slate, GHOST)
-		local w = cyl(island, "PondWater", 0.3, 13, at(px, pz, 0.25), rgb(80, 170, 230), M.Glass, GHOST)
-		w.Transparency = 0.15
-		w.Reflectance = 0.2
-		for i = 1, 4 do
-			local a = i * 1.7
-			cyl(island, "LilyPad", 0.08, rng:NextNumber(1.6, 2.2), at(px + math.cos(a) * 3.6, pz + math.sin(a) * 3.6, 0.45), rgb(90, 180, 80), M.SmoothPlastic, GHOST)
+		local px, pz, PR = -33, 4, 9
+		local c = at(px, pz).Position
+		-- вода Terrain — клетками по 4 студа: берём клетку, в которой лежит газон острова
+		local cell = math.floor(groundY / 4) * 4
+		local surface = cell + 4
+		local dy = surface - groundY -- насколько гладь выше травы
+		workspace.Terrain:FillCylinder(CFrame.new(c.X, cell + 2, c.Z), 4, PR, Enum.Material.Water)
+		local bed = cyl(island, "PondBed", 0.2, PR * 2 + 2, at(px, pz, 0.1), rgb(30, 85, 100), M.Sand, GHOST)
+		bed.Transparency = 0
+		-- бортик из окатанных камней с мхом
+		local stone = { rgb(150, 150, 145), rgb(125, 128, 122), rgb(170, 165, 155) }
+		local rimH = dy + 0.7
+		local n = 40
+		for i = 0, n - 1 do
+			local a = i / n * math.pi * 2
+			local d = rng:NextNumber(1.8, 2.4) * math.max(1, rimH / 2.4)
+			ball(island, "PondStone", d, at(px + math.cos(a) * (PR + 0.4), pz + math.sin(a) * (PR + 0.4), rimH - d / 2 + 0.1).Position, stone[i % 3 + 1], M.Slate, GHOST)
+			if i % 4 == 0 then
+				ball(island, "Moss", d * 0.55, at(px + math.cos(a) * (PR + 0.6), pz + math.sin(a) * (PR + 0.6), rimH + 0.1).Position, rgb(95, 170, 75), M.Grass, GHOST)
+			end
 		end
-		ball(island, "LilyFlower", 0.8, at(px + math.cos(1.7) * 3.6, pz + math.sin(1.7) * 3.6, 0.8).Position, rgb(255, 170, 210), M.SmoothPlastic, GHOST)
-		for i = 1, 7 do
-			local a = 3.6 + i * 0.22
-			local h = rng:NextNumber(2, 3.4)
-			cyl(island, "Reed", h, 0.18, at(px + math.cos(a) * 7, pz + math.sin(a) * 7, h / 2), rgb(110, 160, 60), M.Grass, GHOST)
-			part(island, "ReedTop", Vector3.new(0.35, 0.9, 0.35), at(px + math.cos(a) * 7, pz + math.sin(a) * 7, h), rgb(120, 80, 45), M.SmoothPlastic, GHOST)
+		-- водопад с каменной горки на дальней от моста стороне
+		local cz = pz + PR + 2.5
+		local function rock(x, z, y, s)
+			ball(island, "FallRock", s, at(x, z, y).Position, stone[rng:NextInteger(1, 3)]:Lerp(rgb(90, 95, 90), rng:NextNumber(0, 0.3)), M.Slate, GHOST)
 		end
-		take(px, pz, 8)
+		for _, r in { { -4, 0, 2, 6 }, { 4, 0, 2, 6 }, { -3, 1.5, 5.5, 5.5 }, { 3, 1.5, 5.5, 5.5 }, { 0, 2.5, 3, 6.5 }, { 0, 2, 8, 5.5 }, { -2.5, 2.5, 9.5, 4 }, { 2.5, 2.5, 9.5, 4 }, { -6.5, 0.5, 1.5, 4.5 }, { 6.5, 0.5, 1.5, 4.5 } } do
+			rock(px + r[1], cz + r[2], dy + r[3] - 2, r[4])
+		end
+		for _, g in { { -2, 2, 11.5, 3.5 }, { 2, 2.5, 11.2, 3 }, { 0, 3, 12, 3.2 }, { -5, 1, 4.5, 2.4 }, { 5, 1, 4.5, 2.4 } } do
+			ball(island, "FallMoss", g[4], at(px + g[1], cz + g[2], dy + g[3] - 2).Position, rgb(100, 180, 80), M.Grass, GHOST)
+		end
+		-- маленький куст-цветок на макушке горки
+		for k = 0, 4 do
+			local a = k / 5 * math.pi * 2
+			ball(island, "Petal", 0.6, at(px + math.cos(a) * 0.5, cz + 3 + math.sin(a) * 0.5, dy + 12.3).Position, rgb(255, 150, 200), M.SmoothPlastic, GHOST)
+		end
+		-- струя: стекло от уступа до глади + бегущие капли
+		local lipY, botY = dy + 7.6, dy
+		local top = at(px, cz - 2.2, lipY).Position
+		local bot = at(px, cz - 3.4, botY).Position
+		local mid = (top + bot) / 2
+		local back = (at(px, cz + 1).Position - at(px, cz).Position).Unit
+		local sheet = part(island, "FallSheet", Vector3.new(3.2, (top - bot).Magnitude, 0.3), CFrame.lookAt(mid, mid - back) * CFrame.Angles(math.rad(-9), 0, 0), rgb(170, 225, 255), M.Glass, GHOST)
+		sheet.Transparency = 0.3
+		sheet.Reflectance = 0.25
+		local core = part(island, "FallCore", Vector3.new(2, (top - bot).Magnitude, 0.15), sheet.CFrame * CFrame.new(0, 0, -0.12), rgb(240, 250, 255), M.SmoothPlastic, GHOST)
+		core.Transparency = 0.45
+		local src = part(island, "DropSource", Vector3.new(3, 0.2, 0.4), CFrame.lookAt(top, top - back), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+		src.Transparency = 1
+		emitter(src, rgb(240, 250, 255), 60, {
+			Color = ColorSequence.new(rgb(245, 252, 255)), LightEmission = 0.3, EmissionDirection = Enum.NormalId.Bottom,
+			Lifetime = NumberRange.new((lipY - botY) / 16), Speed = NumberRange.new(14, 17), SpreadAngle = Vector2.new(4, 4),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.25) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.5) }),
+		})
+		-- брызги и пена внизу
+		local splash = part(island, "Splash", Vector3.new(3, 0.2, 1.5), CFrame.new(bot + Vector3.new(0, 0.2, 0)), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+		splash.Transparency = 1
+		emitter(splash, rgb(255, 255, 255), 30, {
+			Color = ColorSequence.new(rgb(255, 255, 255)), LightEmission = 0.2, EmissionDirection = Enum.NormalId.Top,
+			Lifetime = NumberRange.new(0.6, 1.1), Speed = NumberRange.new(3, 6), SpreadAngle = Vector2.new(50, 50), Acceleration = Vector3.new(0, -14, 0),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0.1) }),
+		})
+		emitter(splash, rgb(230, 245, 255), 8, {
+			Color = ColorSequence.new(rgb(235, 248, 255)), LightEmission = 0, EmissionDirection = Enum.NormalId.Top,
+			Lifetime = NumberRange.new(1.5, 2.5), Speed = NumberRange.new(0.5, 1.2), SpreadAngle = Vector2.new(60, 60),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 2.6) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 1) }),
+		})
+		local foam = cyl(island, "Foam", 0.1, 4, CFrame.new(bot + Vector3.new(0, 0.05, 0)), rgb(245, 252, 255), M.SmoothPlastic, GHOST)
+		foam.Transparency = 0.35
+		CollectionService:AddTag(foam, "BoardPulse")
+		-- пузырьки со дна
+		local bub = part(island, "Bubbles", Vector3.new(PR * 1.2, 0.2, PR * 1.2), at(px, pz, 0.3), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+		bub.Transparency = 1
+		emitter(bub, rgb(220, 245, 255), 3, {
+			Color = ColorSequence.new(rgb(225, 248, 255)), LightEmission = 0.4, EmissionDirection = Enum.NormalId.Top,
+			Lifetime = NumberRange.new(1.2, 2), Speed = NumberRange.new(1, 2), SpreadAngle = Vector2.new(5, 5),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 0.3) }),
+		})
+		-- кувшинки — каждая отдельной моделькой, клиент их покачивает и медленно крутит
+		local function lily(x, z, flower)
+			local m = Instance.new("Model")
+			m.Name = "Lily"
+			local p0 = at(x, z, dy + 0.12)
+			local pad = cyl(m, "LilyPad", 0.12, rng:NextNumber(2, 2.8), p0, rgb(80, 175, 75):Lerp(rgb(130, 210, 90), rng:NextNumber(0, 0.5)), M.SmoothPlastic, GHOST)
+			m.PrimaryPart = pad
+			if flower then
+				local col = ({ rgb(255, 170, 210), rgb(255, 245, 250), rgb(255, 210, 120) })[rng:NextInteger(1, 3)]
+				for k = 0, 5 do
+					local a = k / 6 * math.pi * 2
+					part(m, "Petal", Vector3.new(0.35, 0.2, 0.8), p0 * CFrame.Angles(0, a, 0) * CFrame.new(0, 0.3, -0.35) * CFrame.Angles(math.rad(-30), 0, 0), col, M.SmoothPlastic, GHOST)
+				end
+				ball(m, "Heart", 0.35, (p0 * CFrame.new(0, 0.4, 0)).Position, rgb(255, 220, 90), M.Neon, GHOST)
+			end
+			m.Parent = island
+			m:SetAttribute("Spin", rng:NextNumber(-6, 6))
+			m:SetAttribute("Bob", 0.08)
+			CollectionService:AddTag(m, "BoardEmblem")
+		end
+		for k = 1, 7 do
+			local a = k * 0.9 + rng:NextNumber(-0.2, 0.2)
+			local r = rng:NextNumber(3, PR - 2)
+			lily(px + math.cos(a) * r, pz + math.sin(a) * r * 0.8, k % 2 == 1)
+		end
+		-- уточка
+		do
+			local m = Instance.new("Model")
+			m.Name = "Duck"
+			local d0 = at(px + 2.5, pz - 3, dy + 0.5)
+			local body = ball(m, "Body", 1.5, d0.Position, rgb(255, 220, 60), M.SmoothPlastic, GHOST)
+			ball(m, "Tail", 0.7, (d0 * CFrame.new(0, 0.35, 0.65)).Position, rgb(255, 210, 50), M.SmoothPlastic, GHOST)
+			ball(m, "Head", 1, (d0 * CFrame.new(0, 0.9, -0.55)).Position, rgb(255, 225, 70), M.SmoothPlastic, GHOST)
+			part(m, "Beak", Vector3.new(0.45, 0.2, 0.5), d0 * CFrame.new(0, 0.85, -1.1), rgb(255, 140, 40), M.SmoothPlastic, GHOST)
+			for _, s in { -1, 1 } do
+				ball(m, "Eye", 0.18, (d0 * CFrame.new(s * 0.32, 1.05, -0.95)).Position, rgb(30, 30, 40), M.SmoothPlastic, GHOST)
+			end
+			m.PrimaryPart = body
+			m.Parent = island
+			m:SetAttribute("Spin", 10)
+			m:SetAttribute("Bob", 0.12)
+			CollectionService:AddTag(m, "BoardEmblem")
+		end
+		-- камыши-рогозы и цветы по переднему краю
+		for i = 1, 9 do
+			local a = math.pi * 0.75 + i * 0.16
+			local h = rng:NextNumber(2.4, 3.8)
+			local x, z = px + math.cos(a) * (PR + 1.6), pz + math.sin(a) * (PR + 1.6)
+			cyl(island, "Reed", h, 0.18, at(x, z, h / 2), rgb(110, 165, 60), M.Grass, GHOST)
+			cyl(island, "ReedTop", 0.9, 0.38, at(x, z, h), rgb(120, 78, 45), M.SmoothPlastic, GHOST)
+		end
+		-- светлячки над водой
+		local fl = part(island, "Fireflies", Vector3.new(PR * 1.8, 0.2, PR * 1.8), at(px, pz, dy + 1.5), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
+		fl.Transparency = 1
+		emitter(fl, rgb(220, 255, 120), 2.5, {
+			Color = ColorSequence.new(rgb(230, 255, 130), rgb(255, 220, 90)), LightEmission = 1, EmissionDirection = Enum.NormalId.Top,
+			Lifetime = NumberRange.new(3, 5), Speed = NumberRange.new(0.3, 0.8), SpreadAngle = Vector2.new(80, 80),
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.3), NumberSequenceKeypoint.new(1, 0) }),
+		})
+		take(px, pz, PR + 3)
+		take(px, cz + 2, 7)
 	end
 
 	-- пикник (справа): плед, корзинка, яблоки
