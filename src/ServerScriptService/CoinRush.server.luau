@@ -289,9 +289,10 @@ do
 	-- до ~12 ст и полукруглый верх). Поверхность — SurfaceGui со слоями градиентов (клиент их крутит:
 	-- переливы и спираль), светлое ядро, мерцающие искорки; по краю проёма — светящийся ободок;
 	-- искры вылетают из портала навстречу игроку.
-	local OW = arch and 9.8 or 10 -- ширина проёма
+	-- поверхность чуть больше проёма: края уходят за раму арки, без щелей по своду
+	local OW = arch and 11.4 or 10 -- ширина (проём ~9.8)
 	local OR = OW / 2
-	local OS = arch and 12.2 or 10 -- высота прямых краёв (дальше — полукруг)
+	local OS = arch and 13.2 or 10 -- высота прямых краёв (дальше — полукруг до ~18.9, свод арки ~17)
 	local surfH = OS + OR + OR -- снизу запас под землю, чтобы нижнее скругление спряталось
 	local surfCF = face * CFrame.new(0, OS + OR - surfH / 2, 0)
 	local field = part(portal, "Field", Vector3.new(OW, surfH, 0.2), surfCF, GOLD, Enum.Material.SmoothPlastic, { CanCollide = false, CanQuery = false, Transparency = 1, CastShadow = false })
@@ -363,18 +364,6 @@ do
 			sp:SetAttribute("Phase", k * 0.7)
 			sp.Parent = sg
 		end
-	end
-	-- светящийся ободок по краю проёма: прямые края + полукруглый верх
-	local RIMC = Color3.fromRGB(255, 235, 150)
-	for _, x in ipairs({ -OR, OR }) do
-		part(portal, "PortalRim", Vector3.new(0.35, OS, 0.35), face * CFrame.new(x, OS / 2, 0), RIMC, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
-	end
-	for k = 0, 11 do
-		local a0 = math.pi * k / 12
-		local a1 = math.pi * (k + 1) / 12
-		local am = (a0 + a1) / 2
-		local seg = 2 * OR * math.sin(math.pi / 24) + 0.1
-		part(portal, "PortalRim", Vector3.new(seg, 0.35, 0.35), face * CFrame.new(OR * math.cos(am), OS + OR * math.sin(am), 0) * CFrame.Angles(0, 0, am + math.pi / 2), RIMC, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
 	end
 	-- искры из портала навстречу и лёгкая золотая дымка у порога
 	local swirl = Instance.new("ParticleEmitter")
