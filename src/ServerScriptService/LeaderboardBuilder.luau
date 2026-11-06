@@ -728,10 +728,10 @@ local function placeCatalogPodium(island, theme, name, cf, cat)
 	m:SetAttribute("Yaw", math.atan2(-look.X, -look.Z))
 	local _, _, v = theme.Top:ToHSV()
 	if cat.crown and v < 0.3 then
-		-- в тёмных мирах (неон, лава, космос) — мягкая подсветка спереди, чтобы цифры читались
-		local lamp = part(m, "PodiumGlow", Vector3.new(0.2, 0.2, 0.2), CFrame.new(piv * Vector3.new(cx, (mn.Y + (mx.Y - mn.Y) * 0.5) * k, mn.Z * k - 5)), rgb(255, 255, 255), M.SmoothPlastic, GHOST)
-		lamp.Transparency = 1
-		light(lamp, rgb(255, 240, 220), 16, 1.6)
+		-- в тёмных мирах (неон, лава, космос) белый пластик под bloom «выгорает» — приглушаем
+		for _, d in m:GetDescendants() do
+			if d:IsA("SurfaceAppearance") then pcall(function() d.Color = rgb(185, 185, 200) end) end
+		end
 	end
 	for _, st in cat.steps do
 		local top = piv * Vector3.new(st.x * k, st.top * k, cz)
