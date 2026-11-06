@@ -42,7 +42,7 @@ for i, name in ipairs(ShopConfig.AllPotions) do
 	local glow = Instance.new("Frame")
 	glow.AnchorPoint = Vector2.new(0.5, 0.5)
 	glow.Position = UDim2.fromOffset(32, 28)
-	glow.Size = UDim2.fromOffset(54, 54)
+	glow.Size = UDim2.fromOffset(60, 60)
 	glow.BackgroundColor3 = def.Color
 	glow.BackgroundTransparency = 0.45
 	glow.Parent = chip
@@ -55,7 +55,7 @@ for i, name in ipairs(ShopConfig.AllPotions) do
 	img.BackgroundTransparency = 1
 	img.AnchorPoint = Vector2.new(0.5, 0.5)
 	img.Position = UDim2.fromOffset(32, 26)
-	img.Size = UDim2.fromOffset(66, 66)
+	img.Size = UDim2.fromOffset(56, 56)
 	img.Image = def.Image or ""
 	img.Parent = chip
 	local timer = Instance.new("TextLabel")

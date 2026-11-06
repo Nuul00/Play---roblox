@@ -192,7 +192,7 @@ for day, reward in ipairs(D.Rewards) do
 	-- лучи за иконкой (только джекпот)
 	local rays
 	if big then
-		rays = frame(c, w / 2 - 80, 40, 160, 160, rgb(0, 0, 0))
+		rays = frame(c, w / 2 - 80, 16, 160, 160, rgb(0, 0, 0))
 		rays.BackgroundTransparency = 1
 		for i = 0, 5 do
 			local r = frame(rays, 68, 0, 24, 160, rgb(255, 250, 225))
@@ -205,8 +205,8 @@ for day, reward in ipairs(D.Rewards) do
 		end
 	end
 	-- светящийся круг с иконкой
-	local orbSize = big and 96 or 72
-	local orb = frame(c, (w - orbSize) / 2, big and 56 or 46, orbSize, orbSize, kind.col, UDim.new(1, 0))
+	local orbSize = big and 100 or 82
+	local orb = frame(c, (w - orbSize) / 2, big and 46 or 40, orbSize, orbSize, kind.col, UDim.new(1, 0))
 	orb.BackgroundTransparency = big and 0.35 or 0.7
 	local os = stroke(orb, kind.col, 3)
 	os.Transparency = 0.2
@@ -217,8 +217,9 @@ for day, reward in ipairs(D.Rewards) do
 		icon = Instance.new("ImageLabel")
 		icon.BackgroundTransparency = 1
 		icon.Image = image
-		icon.Position = UDim2.fromOffset(-14, -16)
-		icon.Size = UDim2.fromOffset(orbSize + 28, orbSize + 28)
+		-- картинка внутри круга, не вылезает на шапку DAY и соседние карточки
+		icon.Position = UDim2.fromOffset(2, 2)
+		icon.Size = UDim2.fromOffset(orbSize - 4, orbSize - 4)
 		icon.Parent = orb
 	else
 		icon = text(orb, kind.icon, 0, 0, orbSize, orbSize, big and 64 or 46, nil, 0)
@@ -232,7 +233,7 @@ for day, reward in ipairs(D.Rewards) do
 		end
 	end
 	if hasSuper and not big then
-		local tag = frame(c, w / 2 - 30, 36, 60, 18, rgb(255, 255, 255), 9)
+		local tag = frame(c, w / 2 - 30, 40 + orbSize - 12, 60, 18, rgb(255, 255, 255), 9)
 		grad(tag, rgb(255, 235, 120), rgb(240, 150, 30))
 		stroke(tag, INK, 2)
 		tag.ZIndex = 4
@@ -240,7 +241,7 @@ for day, reward in ipairs(D.Rewards) do
 		tt.ZIndex = 5
 	end
 	-- сумма / название
-	local name = text(c, reward.Name, 6, big and 150 or 124, w - 12, big and 54 or 52, big and 19 or 18, nil, 2)
+	local name = text(c, reward.Name, 6, big and 150 or 132, w - 12, big and 54 or 50, big and 19 or 18, nil, 2)
 	-- статус внизу
 	local pill = frame(c, 10, CH - 42, w - 20, 30, INK, 12)
 	pill.BackgroundTransparency = 0.2
@@ -251,7 +252,7 @@ for day, reward in ipairs(D.Rewards) do
 	shine.BackgroundTransparency = 0.75
 	shine.Visible = false
 	-- штамп «получено»
-	local stamp = frame(holder, w / 2 - 34, 58, 68, 68, rgb(70, 200, 90), UDim.new(1, 0))
+	local stamp = frame(holder, w / 2 - 34, 47, 68, 68, rgb(70, 200, 90), UDim.new(1, 0))
 	stroke(stamp, rgb(20, 80, 30), 4)
 	stamp.Rotation = -12
 	stamp.ZIndex = 5
