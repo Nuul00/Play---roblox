@@ -265,9 +265,83 @@ task.spawn(function()
 	if not field then
 		return
 	end
+	-- рельеф (Terrain) поверх пола рисуется у клиента: поднимаем портал и каждую плиту тропинки
+	-- до поверхности, иначе они тонут в траве
+	task.wait(2)
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = { workspace.Terrain }
+	local function lift(pos: Vector3, baseY: number): number
+		local h = workspace:Raycast(Vector3.new(pos.X, baseY + 60, pos.Z), Vector3.new(0, -120, 0), rp)
+		local d = h and (h.Position.Y - baseY) or 0
+		return (d > 0.2 and d < 12) and d or 0
+	end
+	local floor = workspace.CoinSpeedWorld:FindFirstChild("Floor")
+	local floorY = floor and floor.Position.Y + floor.Size.Y / 2 or 0
+	local dPortal = lift(field.Position, floorY)
+	for _, c in ipairs(portal:GetChildren()) do
+		if c.Name ~= "RushPath" then
+			if c:IsA("Model") then
+				c:PivotTo(c:GetPivot() + Vector3.new(0, dPortal, 0))
+			elseif c:IsA("BasePart") then
+				c.CFrame = c.CFrame + Vector3.new(0, dPortal, 0)
+			end
+		end
+	end
+	local pm = portal:FindFirstChild("RushPath")
+	if pm then
+		-- под тропинкой и перед аркой трава → земля (иначе высокая трава прячет плиты)
+		local T = workspace.Terrain
+		local function clearGrass(pos: Vector3, r: number)
+			local h = workspace:Raycast(Vector3.new(pos.X, floorY + 60, pos.Z), Vector3.new(0, -120, 0), rp)
+			if not h then
+				return
+			end
+			local y = h.Position.Y
+			local reg = Region3.new(Vector3.new(pos.X - r, y - 6, pos.Z - r), Vector3.new(pos.X + r, y + 4, pos.Z + r)):ExpandToGrid(4)
+			for _, m in ipairs({ Enum.Material.Grass, Enum.Material.LeafyGrass }) do
+				pcall(function()
+					T:ReplaceMaterial(reg, 4, m, Enum.Material.Ground)
+				end)
+			end
+		end
+		for _, c in ipairs(pm:GetChildren()) do
+			if c.Name == "PathStone" then
+				clearGrass(c.Position, 3)
+			end
+		end
+		clearGrass(field.Position, 6)
+		for _, c in ipairs(pm:GetChildren()) do
+			if c:IsA("Model") then
+				c:PivotTo(c:GetPivot() + Vector3.new(0, lift(c:GetPivot().Position, floorY), 0))
+			elseif c:IsA("BasePart") then
+				c.CFrame = c.CFrame + Vector3.new(0, lift(c.Position, floorY), 0)
+			end
+		end
+	end
 	local f0, c0 = field.CFrame, core and core.CFrame
+	-- тропинка: монеты парят и крутятся, огоньки бегут волной к порталу
+	local pathModel = portal:WaitForChild("RushPath", 10)
+	local floats, lights = {}, {}
+	if pathModel then
+		for _, d in ipairs(pathModel:GetChildren()) do
+			if d.Name == "FloatCoin" and d:IsA("Model") then
+				table.insert(floats, { m = d, cf = d:GetPivot(), k = d:GetAttribute("Float") or 1 })
+			elseif d.Name == "PathLight" then
+				table.insert(lights, { p = d, w = d:GetAttribute("Wave") or 0 })
+			end
+		end
+	end
 	RunService.RenderStepped:Connect(function()
 		local t = os.clock()
+		for _, f in ipairs(floats) do
+			f.m:PivotTo(f.cf * CFrame.new(0, math.sin(t * 2 + f.k) * 0.5, 0) * CFrame.Angles(0, t * 1.8 + f.k, 0))
+		end
+		for _, l in ipairs(lights) do
+			local wave = (math.sin((l.w - t * 0.6) * math.pi * 2) + 1) / 2
+			l.p.Transparency = 0.6 - 0.6 * wave
+			l.p.Size = Vector3.new(0.9, 0.9, 0.9) * (0.8 + 0.45 * wave)
+		end
 		field.CFrame = f0 * CFrame.Angles(t * 1.5, 0, 0)
 		if core then
 			core.CFrame = c0 * CFrame.Angles(-t * 2.2, 0, 0)

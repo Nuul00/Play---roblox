@@ -249,7 +249,7 @@ local world = workspace:WaitForChild("CoinSpeedWorld")
 local function groundAt(pos: Vector3): number
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { world }
+	params.FilterDescendantsInstances = { world, workspace.Terrain } -- поверх пола местами лежит рельеф (Terrain)
 	local hit = workspace:Raycast(pos + Vector3.new(0, 200, 0), Vector3.new(0, -400, 0), params)
 	return hit and hit.Position.Y or 0
 end
@@ -334,27 +334,113 @@ do
 	lbl("💰 COIN RUSH", 0, 48, GOLD)
 	local sub = lbl("Treasure Dungeon", 48, 26, Color3.new(1, 1, 1))
 	sub.Name = "Sub"
-	-- золотая дорожка от главной дороги к порталу и фонари по бокам
-	local front = face * CFrame.new(0, 0, -6)
-	local roadX = (R.PORTAL.Pos.X > 0 and 1 or -1) * 10 -- край главной дороги
-	local len = math.max(8, math.abs(front.Position.X - roadX))
-	local mid = (front.Position + Vector3.new(roadX, front.Position.Y, front.Position.Z)) / 2
-	local walk = CFrame.lookAt(Vector3.new(mid.X, gy + 0.35, mid.Z), Vector3.new(roadX, gy + 0.35, front.Position.Z))
-	part(portal, "GoldPath", Vector3.new(7, 0.16, len), walk, Color3.fromRGB(230, 180, 70), Enum.Material.Cobblestone, { CanCollide = false })
-	for _, x in ipairs({ -3.8, 3.8 }) do
-		part(portal, "PathEdge", Vector3.new(0.5, 0.2, len), walk * CFrame.new(x, 0.02, 0), GOLD, Enum.Material.Neon, { CanCollide = false, Transparency = 0.3 })
+	-- красивая тропинка от главной дороги к порталу: плавная «змейка» из светлых каменных плит
+	-- с золотой каймой, по краям — огоньки (мигают волной, клиент), над ней парят золотые монеты,
+	-- на развилке у дороги — указатель. Ничего не мешает: детали без столкновений, только плиты твёрдые.
+	local path = Instance.new("Model")
+	path.Name = "RushPath"
+	path.Parent = portal
+	local side = R.PORTAL.Pos.X > 0 and 1 or -1
+	local startP = Vector3.new(side * 8.5, 0, base.Z) -- край главной дороги
+	startP = Vector3.new(startP.X, groundAt(startP), startP.Z)
+	local endP = (face * CFrame.new(0, 0, -7)).Position -- у входа в арку
+	endP = Vector3.new(endP.X, gy, endP.Z)
+	local dir = (endP - startP)
+	local len = dir.Magnitude
+	local right = Vector3.new(-dir.Z, 0, dir.X).Unit
+	local steps = math.max(6, math.floor(len / 2.6))
+	local function at(t)
+		return startP + dir * t + right * math.sin(t * math.pi * 2) * 3.2
 	end
-	for k = 0, 2 do
-		for _, x in ipairs({ -5.5, 5.5 }) do
-			local lp = walk * CFrame.new(x, 0, -len / 2 + 4 + k * (len - 8) / 2)
-			part(portal, "LampPost", Vector3.new(0.6, 7, 0.6), lp * CFrame.new(0, 3.5, 0), DARK, Enum.Material.Metal)
-			local lamp = part(portal, "Lantern", Vector3.new(1.4, 1.4, 1.4), lp * CFrame.new(0, 7.5, 0), GOLD, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false })
-			local ll = Instance.new("PointLight")
-			ll.Color = GOLD
-			ll.Range = 14
-			ll.Brightness = 1.2
-			ll.Parent = lamp
+	local STONE, RIM = Color3.fromRGB(238, 222, 190), Color3.fromRGB(255, 196, 60)
+	for k = 0, steps do
+		local t = k / steps
+		local pos = at(t)
+		pos = Vector3.new(pos.X, groundAt(pos), pos.Z)
+		local ahead = at(math.min(1, t + 0.02)) - at(math.max(0, t - 0.02))
+		local cf = CFrame.lookAt(pos, pos + Vector3.new(ahead.X, 0, ahead.Z)) * CFrame.Angles(0, math.rad((k % 3 - 1) * 6), 0)
+		part(path, "PathRim", Vector3.new(5.6, 0.5, 3.0), cf * CFrame.new(0, 0.25, 0), RIM, Enum.Material.Metal, { CanCollide = false, CanQuery = false })
+		part(path, "PathStone", Vector3.new(5, 0.62, 2.5), cf * CFrame.new(0, 0.31, 0), STONE, Enum.Material.Slate)
+		if k % 2 == 0 and k > 0 and k < steps then
+			for _, x in ipairs({ -3.6, 3.6 }) do
+				local l = part(path, "PathLight", Vector3.new(0.9, 0.9, 0.9), cf * CFrame.new(x, 1.5, 0), RIM, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false, CanQuery = false })
+				l:SetAttribute("Wave", t)
+			end
 		end
+	end
+	-- парящие монеты над тропинкой (модель Tripo в золоте, крутит клиент)
+	local coinSrc = ReplicatedStorage:FindFirstChild("TripoProps") and ReplicatedStorage.TripoProps:FindFirstChild("RushCoin")
+	for k, t in ipairs({ 0.22, 0.5, 0.78 }) do
+		local pos = at(t)
+		pos = Vector3.new(pos.X, groundAt(pos) + 4.5, pos.Z)
+		if coinSrc then
+			local c = coinSrc:Clone()
+			for _, d in ipairs(c:GetDescendants()) do
+				if d:IsA("SurfaceAppearance") then
+					d.Parent = nil
+				elseif d:IsA("BasePart") then
+					d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false
+					d.Material = Enum.Material.Metal
+					d.Color = Color3.fromRGB(245, 185, 40)
+					d.Reflectance = 0.18
+				end
+			end
+			local _, ext = c:GetBoundingBox()
+			c:ScaleTo(c:GetScale() * 2.6 / math.max(ext.X, ext.Y, ext.Z, 0.01))
+			c:PivotTo(CFrame.new(pos))
+			c.Name = "FloatCoin"
+			c:SetAttribute("Float", k)
+			c.Parent = path
+		end
+		local sp = part(path, "CoinSparkle", Vector3.new(0.2, 0.2, 0.2), CFrame.new(pos), RIM, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Color = ColorSequence.new(RIM)
+		e.LightEmission = 1
+		e.Rate = 6
+		e.Lifetime = NumberRange.new(0.8, 1.2)
+		e.Speed = NumberRange.new(0.5, 1.5)
+		e.SpreadAngle = Vector2.new(180, 180)
+		e.Size = NumberSequence.new(0.35, 0)
+		e.Parent = sp
+	end
+	-- указатель на развилке: столб, доска «COIN RUSH» и золотая стрелка к порталу
+	local signAt = Vector3.new(startP.X - side * 0.5, groundAt(startP + Vector3.new(0, 0, -9)), startP.Z - 9) -- в стороне от входа, не мешает
+	part(path, "SignPost", Vector3.new(0.7, 8, 0.7), CFrame.new(signAt + Vector3.new(0, 4, 0)), Color3.fromRGB(110, 70, 40), Enum.Material.Wood, { CanCollide = false })
+	-- доска вдоль оси X (к порталу), лицом к идущим по дороге с обеих сторон
+	local board = part(path, "SignBoard", Vector3.new(7.5, 2.2, 0.4), CFrame.new(signAt + Vector3.new(side * 3.2, 6.6, 0)), Color3.fromRGB(90, 45, 30), Enum.Material.Wood, { CanCollide = false })
+	part(path, "SignTrim", Vector3.new(7.9, 2.6, 0.3), board.CFrame, RIM, Enum.Material.Metal, { CanCollide = false })
+	-- Front смотрит в −Z: у зрителя справа −X; Back — справа +X. Стрелка всегда к порталу.
+	for _, faceId in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+		local towardRight = (faceId == Enum.NormalId.Back) == (side > 0)
+		local sg = Instance.new("SurfaceGui")
+		sg.Face = faceId
+		sg.PixelsPerStud = 40
+		sg.LightInfluence = 0
+		sg.Parent = board
+		local tl = Instance.new("TextLabel")
+		tl.Size = UDim2.fromScale(1, 1)
+		tl.BackgroundTransparency = 1
+		tl.Text = towardRight and "COIN RUSH  >>" or "<<  COIN RUSH"
+		tl.TextScaled = true
+		tl.Font = Enum.Font.FredokaOne
+		tl.TextColor3 = RIM
+		tl.Parent = sg
+		local st = Instance.new("UIStroke")
+		st.Thickness = 2
+		st.Color = Color3.fromRGB(60, 25, 10)
+		st.Parent = tl
+	end
+	-- два фонаря у входа на тропинку
+	for _, x in ipairs({ -3.8, 3.8 }) do
+		local lp = CFrame.lookAt(startP, startP + dir) * CFrame.new(x * 1.15, 0, -3)
+		part(path, "LampPost", Vector3.new(0.6, 7, 0.6), lp * CFrame.new(0, 3.5, 0), DARK, Enum.Material.Metal, { CanCollide = false })
+		local lamp = part(path, "Lantern", Vector3.new(1.5, 1.5, 1.5), lp * CFrame.new(0, 7.5, 0), RIM, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false, CanQuery = false })
+		local ll = Instance.new("PointLight")
+		ll.Color = RIM
+		ll.Range = 16
+		ll.Brightness = 1.4
+		ll.Parent = lamp
 	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Enter Coin Rush"
