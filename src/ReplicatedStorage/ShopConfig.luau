@@ -126,12 +126,17 @@ do
 		} },
 	}
 	local id = #ShopConfig.Magnets
+	-- Баланс 2026-11 (v3): цены магнитов каждого мира — от цены входа в мир до ~цены его среднего
+	-- яйца (раньше общий рост x1.45 отставал: магниты Галактики стоили копейки рядом с её яйцами).
+	local RANGE = { ["Frozen Peaks"] = { 1e10, 3e11 }, ["Magma Volcano"] = { 1.5e12, 5e13 }, ["Cosmic Galaxy"] = { 4e14, 1.2e16 } }
 	for _, w in ipairs(WORLD_MAGNETS) do
-		for _, m in ipairs(w[2]) do
+		for i, m in ipairs(w[2]) do
 			id += 1
 			local k = id - 30
-			-- Баланс 2026-11: дороже #30 (3B) и в тон ценам яиц мира; радиус растёт мягче.
-			local price = math.floor(3e9 * 1.45 ^ k / 1000 + 0.5) * 1000
+			local r = RANGE[w[1]]
+			local raw = r and r[1] * (r[2] / r[1]) ^ ((i - 1) / math.max(1, #w[2] - 1)) or 3e9 * 1.45 ^ k
+			local mag = 10 ^ (math.floor(math.log10(raw)) - 1)
+			local price = math.floor(raw / mag + 0.5) * mag
 			ShopConfig.Magnets[id] = magnet(id, m[1], price, 14 + 0.27 * k, {
 				World = w[1],
 				Body = m[2],

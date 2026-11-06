@@ -221,7 +221,8 @@ function Config.GetMagnetUpgradeCost(level) return upCost(0.8, level) end
 function Config.GetIncomeMultiplier(level) return 1+0.25*level end
 function Config.GetIncomeUpgradeCost(level) return upCost(1.6, level) end
 -- Шанс, что подобранная монета даст двойную награду.
-function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(0.9,0.75+0.002*(level-50)) end
+-- До 50 уровня +1.5% за уровень (75%), дальше до 100% к 125-му (раньше поздние уровни давали по +0.2%).
+function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(1,0.75+0.25*(level-50)/75) end
 function Config.GetDoubleUpgradeCost(level) return upCost(2.5, level) end
 -- Ребёрс: за монеты И яйца, открытые с прошлого ребёрса, сбрасывает прокачку,
 -- но даёт постоянный множитель монет, удачу яиц и награды на вехах (дорога наград).
@@ -229,9 +230,9 @@ Config.MaxRebirths=50
 Config.RebirthStartSpeed=6
 -- Округление до двух значащих цифр: цены выглядят «красиво» (250K, 6.6M, 1.2B...).
 local function niceRound(x) if x<100 then return math.floor(x+0.5) end local mag=10^(math.floor(math.log10(x))-1) return math.floor(x/mag+0.5)*mag end
--- Цена в монетах: плавная кривая, рост за ребёрс от x2.6 в начале до x1.35 к 50-му.
--- Баланс 2026-11: первый ребёрс ~316M (примерно в Sky Isles), дальше ×2.1 → ×1.3 за ребёрс.
-function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.33*r-0.001*r*r)) end -- 1-й ребёрс 250M: ~10-я минута первой сессии
+-- Цена в монетах: 1-й ребёрс 250M (~10-я минута первой сессии), рост за ребёрс от ×2.1 в начале
+-- до ×1.25 к 50-му (раньше к концу оставалось ×1.8 при +4% бонуса — поздние ребёрсы были стеной).
+function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.33*r-0.0023*r*r)) end
 -- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
 function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+15*r+1.2*r*r)/5+0.5)*5) end
 -- Множитель монет: первые 10 как раньше (+0.75), дальше ускоряется.
