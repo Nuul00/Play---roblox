@@ -1,143 +1,93 @@
--- Эффекты (частицы, лучи, свет) работают только в мире, где сейчас игрок. Иначе со спавна видно
--- искры и сияние других миров в небе (Sky Isles висит над Meadow), и на это тратятся кадры.
--- Списки эффектов каждого мира собираем один раз (и пополняем по DescendantAdded), исходное
--- состояние храним в таблице — переход между мирами не обходит десятки тысяч объектов.
+-- Экономия на слабых устройствах: частицы, свет и анимированные текстуры миров, в которых игрока
+-- сейчас нет, выключаются (их всё равно не видно — миры стоят в тысячах studs друг от друга).
+-- Выключаем только то, что было включено, и при возвращении включаем ровно это же,
+-- чтобы не мешать скриптам, которые сами гасят свои эффекты.
 local Players = game:GetService("Players")
-
 local player = Players.LocalPlayer
 local world = workspace:WaitForChild("CoinSpeedWorld")
 
-local GROUPS = {
-	NeonCity = "Neon District",
-	SkyIsles = "Sky Isles",
-	FrozenPeaks = "Frozen Peaks",
-	MagmaVolcano = "Magma Volcano",
-	CosmicGalaxy = "Cosmic Galaxy",
+local WORLD_MODEL = {
+	["Neon District"] = "NeonCity",
+	["Sky Isles"] = "SkyIsles",
+	["Frozen Peaks"] = "FrozenPeaks",
+	["Magma Volcano"] = "MagmaVolcano",
+	["Cosmic Galaxy"] = "CosmicGalaxy",
 }
-local FX = { ParticleEmitter = true, Beam = true, Trail = true, Fire = true, Smoke = true, Sparkles = true, PointLight = true, SpotLight = true, SurfaceLight = true }
 
-local lists: { [string]: { Instance } } = {}
-for _, id in pairs(GROUPS) do
-	lists[id] = {}
-end
-lists["Meadow Isles"] = {}
-local owner: { [Instance]: string } = setmetatable({}, { __mode = "k" }) :: any
-local orig: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any -- исходный Enabled
--- Эффекты монет: сервер больше не включает/выключает их сам, видимость решает клиент
--- (свой мир + монета доступна). Так собранные и чужие монеты не тратят кадры.
-local coinOf: { [Instance]: BasePart } = setmetatable({}, { __mode = "k" }) :: any
-local current = player:GetAttribute("CurrentWorld") or "Meadow Isles"
+local off: { [Instance]: { Instance } } = {} -- модель мира -> что мы в ней выключили
 
-local function worldOf(d: Instance): string
-	local node = d
-	while node and node.Parent ~= world do
-		node = node.Parent
-	end
-	return node and GROUPS[node.Name] or "Meadow Isles"
-end
-local function findCoin(d: Instance): BasePart?
-	local node = d.Parent
-	for _ = 1, 4 do
-		if not node then
-			return nil
-		end
-		if node:IsA("BasePart") and string.match(node.Name, "^Coin_%d+$") then
-			return node
-		end
-		node = node.Parent
-	end
-	return nil
+local function switchable(d: Instance): boolean
+	return d:IsA("ParticleEmitter") or d:IsA("Light") or d:IsA("Beam") or d:IsA("Trail")
 end
 
-local function desired(d: Instance): boolean
-	if not orig[d] then
-		return false
-	end
-	local coin = coinOf[d]
-	if coin and coin:GetAttribute("Available") == false then
-		return false
-	end
-	-- у монет Frozen/Volcano/Galaxy вместо плоской монеты 3D-модель (TripoCoins): её значки не показываем
-	if coin and d:IsA("LayerCollector") and coin:FindFirstChildWhichIsA("Model") then
-		return false
-	end
-	return owner[d] == current
-end
-local function sync(d: Instance)
-	local want = desired(d)
-	if (d :: any).Enabled ~= want then
-		(d :: any).Enabled = want
-	end
-end
-
-local coinFx: { [BasePart]: { Instance } } = setmetatable({}, { __mode = "k" }) :: any
-local function add(d: Instance)
-	local coin = findCoin(d)
-	local isFx = FX[d.ClassName] or (coin ~= nil and d:IsA("SurfaceGui"))
-	if not isFx or owner[d] then
+local function hide(m: Instance)
+	if off[m] then
 		return
 	end
-	local id = worldOf(d)
-	owner[d] = id
-	orig[d] = (d :: any).Enabled
-	table.insert(lists[id], d)
-	if coin then
-		coinOf[d] = coin
-		local list = coinFx[coin]
-		if not list then
-			list = {}
-			coinFx[coin] = list
-			coin:GetAttributeChangedSignal("Available"):Connect(function()
-				for _, x in ipairs(list) do
-					if x.Parent then
-						sync(x)
-					end
-				end
-			end)
+	local list = {}
+	for _, d in ipairs(m:GetDescendants()) do
+		if switchable(d) and (d :: any).Enabled then
+			(d :: any).Enabled = false
+			table.insert(list, d)
 		end
-		table.insert(list, d)
 	end
-	sync(d)
+	off[m] = list
 end
 
-local function apply(id: string)
-	if id == current then
+local function show(m: Instance)
+	local list = off[m]
+	if not list then
 		return
 	end
-	local old = current
-	current = id
-	for _, wid in ipairs({ id, old }) do
-		for k, d in ipairs(lists[wid] or {}) do
-			if d.Parent then
-				sync(d)
-			end
-			if k % 3000 == 0 then
-				task.wait()
-			end
+	off[m] = nil
+	for _, d in ipairs(list) do
+		if d.Parent then
+			(d :: any).Enabled = true
 		end
 	end
-	-- чистим удалённые
-	for _, list in pairs(lists) do
-		for i = #list, 1, -1 do
-			if not list[i].Parent then
-				table.remove(list, i)
+end
+
+local function update()
+	local current = WORLD_MODEL[player:GetAttribute("CurrentWorld") or ""]
+	for _, name in pairs(WORLD_MODEL) do
+		local m = world:FindFirstChild(name)
+		if m then
+			if name == current then
+				show(m)
+			else
+				hide(m)
 			end
 		end
 	end
 end
 
--- подписка раньше обхода: эффекты, созданные пока идёт обход (с паузами), тоже попадут в списки
-world.DescendantAdded:Connect(function(d)
-	if FX[d.ClassName] or d:IsA("SurfaceGui") then
-		task.defer(add, d)
-	end
-end)
-for k, d in ipairs(world:GetDescendants()) do
-	add(d)
-	if k % 4000 == 0 then
-		task.wait()
-	end
-end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(function()
-	apply(player:GetAttribute("CurrentWorld") or "Meadow Isles")
+	task.defer(update)
 end)
+-- миры строятся сервером не сразу: проверяем ещё пару раз после входа
+task.spawn(function()
+	for _ = 1, 6 do
+		update()
+		task.wait(10)
+	end
+end)
+-- игрок в мире, где эффекты выключены, а сервер добавил новый — тоже гасим
+for _, name in pairs(WORLD_MODEL) do
+	task.spawn(function()
+		local m = world:WaitForChild(name, 120)
+		if not m then
+			return
+		end
+		m.DescendantAdded:Connect(function(d)
+			local list = off[m]
+			if list and switchable(d) then
+				task.defer(function()
+					if off[m] == list and (d :: any).Enabled then
+						(d :: any).Enabled = false
+						table.insert(list, d)
+					end
+				end)
+			end
+		end)
+	end)
+end
