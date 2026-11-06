@@ -1,6 +1,9 @@
--- Зелья справа: выдвижная вкладка у правого края (стрелка + бутылка + число зелий).
+-- Зелья: выдвижная вкладка у края экрана (стрелка + бутылка + число зелий).
 -- Клик — выезжает панель со всеми зельями игрока (обычные и СУПЕР): картинка, сколько есть,
--- таймер и кнопка USE. Под вкладкой — столбик активных зелий с таймерами (мигают в конце).
+-- таймер и кнопка USE. Рядом с вкладкой — ряд активных зелий с таймерами (мигают в конце).
+-- Сторона (справа/слева) — в настройках; вкладку можно тянуть вверх-вниз вдоль края.
+-- Вкладка никогда не встаёт на другие кнопки: свободные места по краю ищем сканированием
+-- экрана (GetGuiObjectsAtPosition) и ставим её на ближайшее свободное к выбранному игроком.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local Run = game:GetService("RunService")
@@ -19,23 +22,22 @@ gui.ResetOnSpawn = false
 gui.DisplayOrder = 13
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- корень у правого края; всё внутри масштабируется вместе
+-- док = вкладка; панель и ряд активных зелий висят рядом с ним (за его границами)
+local TAB_W, TAB_H = 50, 76
 local root = Instance.new("Frame")
 root.Name = "PotionDock"
 root.BackgroundTransparency = 1
 root.AnchorPoint = Vector2.new(1, 0)
 root.Position = UDim2.new(1, 0, 0.42, 0)
-root.Size = UDim2.fromOffset(380, 420)
+root.Size = UDim2.fromOffset(TAB_W, TAB_H)
 root.Parent = gui
 local rootScale = Instance.new("UIScale")
 rootScale.Parent = root
 
 ------------------------------------------------------------------ вкладка
-local TAB_W, TAB_H = 50, 92
 local tab = Instance.new("TextButton")
 tab.Name = "PotionTab"
-tab.AnchorPoint = Vector2.new(1, 0)
-tab.Position = UDim2.new(1, 0, 0, 0)
+tab.Position = UDim2.fromOffset(0, 0)
 tab.Size = UDim2.fromOffset(TAB_W, TAB_H)
 tab.Text = ""
 tab.AutoButtonColor = false
@@ -47,13 +49,13 @@ K.grad(tab, rgb(190, 130, 255), rgb(100, 50, 200))
 -- правый край вкладки «уходит» за экран: прячем правые скругления
 local flat = K.frame(tab, UDim2.new(1, -16, 0, 0), UDim2.new(0, 16, 1, 0), Color3.new(1, 1, 1))
 K.grad(flat, rgb(190, 130, 255), rgb(100, 50, 200))
-local arrow = K.text(tab, "◀", UDim2.fromOffset(2, 6), UDim2.fromOffset(TAB_W - 4, 22), 20, nil, 2)
+local arrow = K.text(tab, "◀", UDim2.fromOffset(2, 3), UDim2.fromOffset(TAB_W - 4, 20), 18, nil, 2)
 arrow.ZIndex = 3
 local bottle = Instance.new("ImageLabel")
 bottle.BackgroundTransparency = 1
 bottle.Image = ShopConfig.Potions.SuperLuck.Image or ""
-bottle.Position = UDim2.fromOffset(3, 30)
-bottle.Size = UDim2.fromOffset(44, 44)
+bottle.Position = UDim2.fromOffset(6, 24)
+bottle.Size = UDim2.fromOffset(38, 38)
 bottle.ZIndex = 3
 bottle.Parent = tab
 local badge = K.text(tab, "0", UDim2.fromOffset(-10, TAB_H - 22), UDim2.fromOffset(30, 22), 15, nil, 1.5)
@@ -76,7 +78,7 @@ local PW = 318
 local ROW = 56
 local list = ShopConfig.AllPotions
 local PH = 52 + #list * (ROW + 6) + 22
-local panel = K.frame(root, UDim2.new(1, -(TAB_W + 8), 0, 0), UDim2.fromOffset(PW, PH), Color3.new(1, 1, 1), 20)
+local panel = K.frame(root, UDim2.fromOffset(-8, 0), UDim2.fromOffset(PW, PH), Color3.new(1, 1, 1), 20)
 panel.AnchorPoint = Vector2.new(1, 0)
 panel.Visible = false
 panel.Active = true -- клики по панели не считаются «мимо»
@@ -123,10 +125,11 @@ local active = Instance.new("Frame")
 active.Name = "Active"
 active.BackgroundTransparency = 1
 active.AnchorPoint = Vector2.new(1, 0)
-active.Position = UDim2.new(1, -6, 0, TAB_H + 10)
-active.Size = UDim2.fromOffset(64, 6 * 76)
+active.Position = UDim2.fromOffset(-8, 3)
+active.Size = UDim2.fromOffset(6 * 68, 70)
 active.Parent = root
 local lay = Instance.new("UIListLayout")
+lay.FillDirection = Enum.FillDirection.Horizontal
 lay.Padding = UDim.new(0, 6)
 lay.HorizontalAlignment = Enum.HorizontalAlignment.Right
 lay.SortOrder = Enum.SortOrder.LayoutOrder
@@ -163,23 +166,198 @@ for i, name in ipairs(list) do
 end
 
 ------------------------------------------------------------------ открыть / закрыть
+------------------------------------------------------------------ сторона, высота, свободные места
 local open = false
+local function side(): string
+	return player:GetAttribute("Save_PotionSide") == "L" and "L" or "R"
+end
+local dockY = 0 -- верх вкладки, пиксели экрана (как AbsolutePosition)
+local wantY = nil -- куда поставил игрок (доля высоты экрана)
+local free = {} -- free[i] = true: полоса края на высоте i*STEP свободна
+local STEP = 6
+local function vp(): Vector2
+	local cam = workspace.CurrentCamera
+	return gui.AbsoluteSize.Magnitude > 0 and gui.AbsoluteSize or (cam and cam.ViewportSize or Vector2.new(1280, 720))
+end
+local function tabH(): number
+	return TAB_H * rootScale.Scale
+end
+-- что считать «кнопкой/плашкой», которую нельзя закрывать (большие оверлеи и пустые рамки — нет)
+local function solid(o: GuiObject, size: Vector2): boolean
+	if o:IsDescendantOf(gui) then
+		return false
+	end
+	local a = o.AbsoluteSize
+	if a.X > size.X * 0.45 or a.Y > size.Y * 0.45 or a.X < 4 or a.Y < 4 then
+		return false
+	end
+	if o:IsA("GuiButton") then
+		return true
+	end
+	if o.BackgroundTransparency < 0.85 then
+		return true
+	end
+	if (o:IsA("ImageLabel") or o:IsA("ImageButton")) and (o :: any).Image ~= "" and (o :: any).ImageTransparency < 0.85 then
+		return true
+	end
+	if o:IsA("TextLabel") and o.Text ~= "" and o.TextTransparency < 0.85 then
+		return true
+	end
+	return false
+end
+local function scan()
+	local size = vp()
+	local w = TAB_W * rootScale.Scale
+	local xs = side() == "R" and { size.X - 3, size.X - w / 2, size.X - w + 3 } or { 3, w / 2, w - 3 }
+	table.clear(free)
+	local pg = player.PlayerGui
+	for i = 0, math.floor(size.Y / STEP) do
+		local y = i * STEP
+		local ok = y > 8 and y < size.Y - 8
+		if ok then
+			for _, x in ipairs(xs) do
+				for _, o in ipairs(pg:GetGuiObjectsAtPosition(x, y)) do
+					if solid(o, size) then
+						ok = false
+						break
+					end
+				end
+				if not ok then
+					break
+				end
+			end
+		end
+		free[i] = ok
+	end
+end
+-- ближайшая к y высота, где вся вкладка (+ отступ) встаёт на свободное место
+local function fits(y: number): boolean
+	local h = tabH()
+	for yy = y - 4, y + h + 4, STEP do
+		if free[math.floor(yy / STEP)] == false or free[math.floor(yy / STEP)] == nil then
+			return false
+		end
+	end
+	return true
+end
+local function nearestFree(y: number): number
+	local size = vp()
+	y = math.clamp(y, 8, size.Y - tabH() - 8)
+	if fits(y) then
+		return y
+	end
+	for d = STEP, size.Y, STEP do
+		if y - d >= 8 and fits(y - d) then
+			return y - d
+		end
+		if y + d <= size.Y - tabH() - 8 and fits(y + d) then
+			return y + d
+		end
+	end
+	return y -- свободного места нет: оставляем, где просили
+end
+local function panelY(): number
+	-- панель не вылезает за низ/верх экрана
+	local size = vp()
+	local s = rootScale.Scale
+	local y = 0
+	if dockY + PH * s > size.Y - 6 then
+		y = (size.Y - 6 - dockY) / s - PH
+	end
+	return math.max(y, (6 - dockY) / s)
+end
+local function applySide()
+	local right = side() == "R"
+	root.AnchorPoint = Vector2.new(right and 1 or 0, 0)
+	-- плоский край вкладки — к краю экрана
+	flat.Position = right and UDim2.new(1, -16, 0, 0) or UDim2.fromOffset(0, 0)
+	badge.Position = right and UDim2.fromOffset(-10, TAB_H - 22) or UDim2.new(1, -20, 0, TAB_H - 22)
+	panel.AnchorPoint = Vector2.new(right and 1 or 0, 0)
+	active.AnchorPoint = Vector2.new(right and 1 or 0, 0)
+	active.Position = UDim2.fromOffset(right and -8 or TAB_W + 8, 3)
+	lay.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+	arrow.Text = (open == right) and "▶" or "◀"
+end
+local function place()
+	local size = vp()
+	root.Position = UDim2.new(side() == "R" and 1 or 0, 0, 0, dockY)
+	if open then
+		panel.Position = UDim2.fromOffset(side() == "R" and -8 or TAB_W + 8, panelY())
+	end
+	local _ = size
+end
+
 local function setOpen(v)
 	open = v
-	arrow.Text = v and "▶" or "◀"
+	local right = side() == "R"
+	arrow.Text = (v == right) and "▶" or "◀"
 	if v then
 		panel.Visible = true
 		panelScale.Scale = 1
-		panel.Position = UDim2.new(1, -(TAB_W + 8) + 40, 0, 0)
-		Tween:Create(panel, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Position = UDim2.new(1, -(TAB_W + 8), 0, 0) }):Play()
+		local px = panel.AnchorPoint.X == 1 and -8 or TAB_W + 8
+		local dir = panel.AnchorPoint.X == 1 and 1 or -1
+		panel.Position = UDim2.fromOffset(px + dir * 40, panelY())
+		Tween:Create(panel, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(px, panelY()) }):Play()
 	else
 		panel.Visible = false
 	end
 	active.Visible = not v -- панель сама показывает таймеры
+	gui.DisplayOrder = v and 55 or 13 -- открытая панель поверх кнопок ROYAL EGG / TRADE
 end
+local justDragged = false
 tab.Activated:Connect(function()
+	if justDragged then
+		justDragged = false
+		return
+	end
 	setOpen(not open)
 end)
+-- перетаскивание вкладки вверх-вниз вдоль края (мышь и палец)
+local dragging, dragStart, dockStart, moved = false, 0, 0, false
+tab.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging, moved = true, false
+		dragStart, dockStart = input.Position.Y, dockY
+	end
+end)
+UIS.InputChanged:Connect(function(input)
+	if not dragging then
+		return
+	end
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		local d = input.Position.Y - dragStart
+		if math.abs(d) > 8 then
+			moved = true
+		end
+		if moved then
+			dockY = nearestFree(dockStart + d) -- перескакивает через чужие кнопки
+			place()
+		end
+	end
+end)
+UIS.InputEnded:Connect(function(input)
+	if not dragging then
+		return
+	end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+		if moved then
+			justDragged = true
+			task.delay(0.3, function()
+				justDragged = false
+			end)
+			wantY = dockY / vp().Y
+			action:FireServer("potiony", wantY)
+		end
+	end
+end)
+player:GetAttributeChangedSignal("Save_PotionSide"):Connect(function()
+	applySide()
+	scan()
+	dockY = nearestFree(dockY)
+	place()
+end)
+
 -- клик мимо панели и вкладки закрывает её
 UIS.InputBegan:Connect(function(input, processed)
 	if not open or processed then
@@ -197,8 +375,28 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 end)
 
 ------------------------------------------------------------------ обновление
-local mainHud = player.PlayerGui:WaitForChild("MainHUD", 20)
-local column = mainHud and mainHud:FindFirstChild("Panels")
+-- раз в 1.5 с пересканируем край: появилась чужая кнопка — уходим с неё, освободилось — возвращаемся
+task.spawn(function()
+	task.wait(2) -- даём остальному HUD построиться
+	applySide()
+	wantY = player:GetAttribute("Save_PotionY") or 0.42
+	while gui.Parent do
+		if not dragging then
+			scan()
+			local target = nearestFree((wantY or 0.42) * vp().Y)
+			if math.abs(target - dockY) > 1 then
+				dockY = target
+				place()
+			end
+		end
+		task.wait(1.5)
+	end
+end)
+player:GetAttributeChangedSignal("Save_PotionY"):Connect(function()
+	if not dragging then
+		wantY = player:GetAttribute("Save_PotionY") or wantY
+	end
+end)
 local t = 0
 Run.RenderStepped:Connect(function(dt)
 	t += dt
@@ -206,11 +404,6 @@ Run.RenderStepped:Connect(function(dt)
 	if cam then
 		local v = cam.ViewportSize
 		rootScale.Scale = math.clamp(math.min(v.X / 1000, v.Y / 620), 0.55, 1)
-		-- на телефоне колонка статов у правого края по центру: ставим док над ней
-		if column and column.Parent and column.AbsolutePosition.X > v.X / 2 then
-			local top = column.AbsolutePosition.Y - gui.AbsolutePosition.Y
-			root.Position = UDim2.new(1, 0, 0, math.max(150, top - (TAB_H + 14) * rootScale.Scale))
-		end
 	end
 	local now = os.time()
 	local total = 0

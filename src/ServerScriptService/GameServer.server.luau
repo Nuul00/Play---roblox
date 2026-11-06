@@ -239,6 +239,11 @@ action.OnServerEvent:Connect(function(p, kind, arg)
   p:SetAttribute("AutoDelete" .. arg, not p:GetAttribute("AutoDelete" .. arg))
  elseif kind == "potion" and type(arg) == "string" then
   PlayerSystems.UsePotion(p, arg)
+ -- настройки вкладки зелий (сторона экрана и высота) — сохраняются с профилем
+ elseif kind == "potionside" and (arg == "L" or arg == "R") then
+  p:SetAttribute("Save_PotionSide", arg)
+ elseif kind == "potiony" and type(arg) == "number" and arg == arg and arg >= 0 and arg <= 1 then
+  p:SetAttribute("Save_PotionY", math.floor(arg * 1000 + 0.5) / 1000)
  elseif kind == "magnet" and type(arg) == "number" then
   PlayerSystems.EquipMagnet(p, arg)
  end
