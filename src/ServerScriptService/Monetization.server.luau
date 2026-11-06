@@ -67,9 +67,27 @@ task.spawn(function()
 		end
 	end
 end)
-Players.PlayerAdded:Connect(checkPasses)
+-- Страны, где запрещены платные случайные предметы: прячем товары с Random = true (StoreUI)
+-- и не предлагаем их сами. Пока ответа нет — считаем, что запрещено (безопаснее).
+local PolicyService = game:GetService("PolicyService")
+local function checkPolicy(p: Player)
+	p:SetAttribute("NoPaidRandom", true)
+	for attempt = 1, 3 do
+		local ok, info = pcall(PolicyService.GetPolicyInfoForPlayerAsync, PolicyService, p)
+		if ok and info then
+			p:SetAttribute("NoPaidRandom", info.ArePaidRandomItemsRestricted == true)
+			return
+		end
+		task.wait(attempt * 2)
+	end
+end
+local function onJoin(p: Player)
+	task.spawn(checkPolicy, p)
+	checkPasses(p)
+end
+Players.PlayerAdded:Connect(onJoin)
 for _, p in ipairs(Players:GetPlayers()) do
-	task.spawn(checkPasses, p)
+	task.spawn(onJoin, p)
 end
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(p, passId, purchased)

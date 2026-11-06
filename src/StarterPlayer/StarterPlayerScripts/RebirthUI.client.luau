@@ -77,16 +77,9 @@ local function tseq(points)
 	end
 	return NumberSequence.new(k)
 end
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function fmt(n)
-	n = tonumber(n) or 0
-	local units = { { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
-	for _, u in ipairs(units) do
-		if n >= u[1] then
-			local v = n / u[1]
-			return (string.format(v >= 100 and "%.0f" or "%.1f", v):gsub("%.0$", "")) .. u[2]
-		end
-	end
-	return tostring(math.floor(n))
+	return NumberFormat.Short(n)
 end
 local function mult(v)
 	return "x" .. string.format("%g", math.floor(v * 100 + 0.5) / 100)

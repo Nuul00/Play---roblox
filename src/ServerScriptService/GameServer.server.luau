@@ -413,7 +413,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   local aura=PetAbilities.ParseSupers(p:GetAttribute("PetSupers")).LuckyAura
   if aura then extraLuck+=1+PetAbilities.SuperParams("LuckyAura",aura).Luck end
   extraLuck=math.clamp(extraLuck,0,3)
-  -- Геймпассы «Super Luck» (+2 броска, шанс супер-секреток ×2) и «Mythic Luck» (+1 бросок, ×5).
+  -- Геймпассы «Super Luck» (+2 броска, шанс супер-секреток ×2) и «Mythic Luck» (+1 бросок, ×2; вместе — ×3).
   if p:GetAttribute("Pass_SuperLuck") then extraLuck+=2 end
   if p:GetAttribute("Pass_MythicLuck") then extraLuck+=1 end
   -- пассы удачи ускоряют секретки, но не больше чем в 3 раза (было x10 — pay-to-win)

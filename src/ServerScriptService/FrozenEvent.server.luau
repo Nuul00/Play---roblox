@@ -18,7 +18,12 @@ local FIRST = 2 * 60
 local DURATION = 60
 local CRYSTALS = 24
 local REWARD_COINS = 40 -- в «обычных монетах» Frozen
-local BASE_VALUE = 400 -- ледяная монета (CoinTypes.Worlds.Frozen)
+-- ледяная монета берётся из CoinTypes (было вписано 400 при реальных 700 — кристаллы недодавали 43%)
+local BASE_VALUE = 700
+pcall(function()
+	local kinds = require(ReplicatedStorage:WaitForChild("CoinTypes")).Worlds.Frozen.Kinds
+	BASE_VALUE = kinds[1].Value
+end)
 
 local feedback = ReplicatedStorage:WaitForChild("GameFeedback")
 local folder = Instance.new("Folder")

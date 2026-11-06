@@ -32,18 +32,15 @@ local colors = {
 local WHITE = Color3.new(1, 1, 1)
 local INK = Color3.fromRGB(28, 20, 44)
 
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function fmt(n)
-	for _, u in ipairs({ { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" } }) do
-		if n >= u[1] then
-			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
-		end
-	end
-	local s = tostring(math.floor(n))
-	return (s:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
+	return NumberFormat.Short(n)
 end
 local function corner(f, r)
 	Instance.new("UICorner", f).CornerRadius = UDim.new(0, r or 16)
 end
+local UISounds = require(game:GetService("ReplicatedStorage"):WaitForChild("UISounds"))
+local TOUCH_ONLY = game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled
 local function stroke(f, c, t, tr)
 	local s = Instance.new("UIStroke")
 	s.Color = c
@@ -341,7 +338,7 @@ local function refresh()
 	for _, pair in ipairs({ { single, 1 }, { triple, 3 }, { nine, 9 } }) do
 		local b, n = pair[1], pair[2]
 		local affordable = coins.Value >= egg.Cost * n
-		b.Text = waiting and "OPENING…" or string.format("OPEN ×%d [%s]\n💰 %s", n, n == 1 and "E" or n == 3 and "R" or "T", fmt(egg.Cost * n))
+		b.Text = waiting and "OPENING…" or (TOUCH_ONLY and string.format("OPEN ×%d\n💰 %s", n, fmt(egg.Cost * n)) or string.format("OPEN ×%d [%s]\n💰 %s", n, n == 1 and "E" or n == 3 and "R" or "T", fmt(egg.Cost * n)))
 		b.Active = affordable and not waiting and not autoEgg
 		b.AutoButtonColor = b.Active and not currentSkin
 		if currentSkin then
@@ -394,7 +391,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, processed
 	end
 end)
 -- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
-hint.Text = "⌨ E ×1  R ×3  T ×9   ·   ✓ KEEP = auto-delete copies   ·   🌌 Super Secrets: 1 in 3M · 10M · 30M · 🔮 Mythic 1 in 15M · 🌠 Cosmic 1 in 50M"
+hint.Text = (TOUCH_ONLY and "" or "⌨ E ×1  R ×3  T ×9   ·   ") .. "✓ KEEP / ✕ AUTO-DELETE copies   ·   🌌 Super Secret odds — scroll down"
 hint.TextScaled = true
 do
 	local c = Instance.new("UITextSizeConstraint")
@@ -455,15 +452,42 @@ local function showEgg(id)
 		stroke(chance, INK, 2, 0)
 		label(cell, string.format("×%g 💰", def.Multiplier), 112, 56, 84, 20, 14, sky and Color3.fromRGB(235, 130, 40) or Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
 		local owned = label(cell, "", 112, 78, 84, 18, 11, Color3.fromRGB(205, 195, 225))
-		local name = label(cell, def.Name, 6, cellH - 42, 188, 18, 14, WHITE, Enum.Font.FredokaOne)
+		local name = label(cell, def.Name, 6, cellH - 50, 188, 18, 14, WHITE, Enum.Font.FredokaOne)
 		stroke(name, INK, 1.5, 0)
-		local toggle = button(cell, "", 8, cellH - 22, 184, 18)
-		toggle.TextSize = 11
+		-- выше, чем было (18 px): на телефоне в такой переключатель не попасть
+		local toggle = button(cell, "", 8, cellH - 30, 184, 26)
+		toggle.TextSize = 12
 		toggle.Font = Enum.Font.GothamBold
 		toggle.Activated:Connect(function()
 			action:FireServer("autodelete", entry.Pet)
 		end)
 		table.insert(cells, { id = entry.Pet, toggle = toggle, owned = owned, frame = cell })
+	end
+	-- Шансы супер-секреток этого яйца — до покупки (правило Roblox о платных случайных предметах).
+	do
+		local rows = {}
+		for tierIndex, tier in ipairs(Config.SuperTiers) do
+			local id = Config.SuperByWorld[egg.World] and Config.SuperByWorld[egg.World][tierIndex]
+			if id and tier.Odds then
+				table.insert(rows, string.format("%s %s — %s", tier.Icon, Config.Pets[id].Name, Config.FormatOdds(tier.Odds)))
+			end
+		end
+		for _, id in ipairs(Config.Specials) do
+			local def = Config.Pets[id]
+			if def.World == nil or def.World == egg.World then
+				table.insert(rows, string.format("%s %s (%s) — %s", def.SuperKey == "Cosmic" and "🌠" or "🔮", def.Name, def.SuperKey, Config.FormatOdds(def.Odds)))
+			end
+		end
+		local top = math.ceil(count / cols) * (cellH + 9)
+		local h = 30 + #rows * 18 + 34
+		local extra = box(gallery, 0, top, 3 * 212 - 12, h, sky and Color3.fromRGB(245, 238, 255) or Color3.fromRGB(36, 28, 60))
+		stroke(extra, Color3.fromRGB(190, 140, 255), 2, 0)
+		label(extra, "🌌 SUPER SECRETS (from any hatch of this egg)", 10, 4, 600, 22, 15, Color3.fromRGB(200, 160, 255), Enum.Font.FredokaOne)
+		for k, text in ipairs(rows) do
+			label(extra, text, 14, 28 + (k - 1) * 18, 600, 18, 13, sky and Color3.fromRGB(70, 60, 110) or Color3.fromRGB(225, 220, 245), Enum.Font.GothamBold).TextXAlignment = Enum.TextXAlignment.Left
+		end
+		label(extra, "Luck boosts (passes, potions, events) raise rare chances. Shown chances are base chances.", 14, h - 30, 600, 18, 11, Color3.fromRGB(170, 160, 200), Enum.Font.Gotham).TextXAlignment = Enum.TextXAlignment.Left
+		gallery.CanvasSize = UDim2.fromOffset(0, top + h)
 	end
 	player:SetAttribute("UIScreen", "egg")
 	panel.Visible = true
@@ -1079,6 +1103,7 @@ end
 -- Скорлупа лопается: яйцо убираем, осколки летят, питомец появляется, подпись готовится.
 function H.burst(e)
 	e.burst = true
+	UISounds.Play("crack")
 	local egg = e.egg
 	if egg then
 		local cf, s = egg.lastCF or CFrame.identity, egg.lastS or 1
@@ -1112,6 +1137,7 @@ end
 -- Момент самого редкого яйца: заголовок, общая вспышка, тряска и сигнал для RareFX.
 function H.onBest(t)
 	H.titled, H.titleAt = true, t
+	UISounds.Play(H.bestIdx >= 6 and "rare" or "hatch")
 	local best = H.bestName
 	local superDef
 	for _, e in ipairs(H.eggs) do

@@ -194,15 +194,12 @@ for i, def in ipairs(Worlds.Worlds) do
 	cards[i] = { def = def, go = go, info = info, stroke = cs }
 end
 
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function short(n)
-	for _, u in ipairs({ { 1e24, "Sp" }, { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
-		if n >= u[1] then
-			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
-		end
-	end
-	return tostring(math.floor(n))
+	return NumberFormat.Short(n)
 end
 local busy = false
+local confirmId, confirmUntil = nil, 0 -- покупка мира: первое касание спрашивает, второе покупает
 local function refresh()
 	local current = player:GetAttribute("CurrentWorld")
 	local speed = stats.SpeedLevel.Value
@@ -231,7 +228,11 @@ local function refresh()
 			-- мир ещё не куплен: цена на карточке, кнопка покупает и сразу переносит
 			local enough = stats.Coins.Value >= d.Cost
 			c.info.Text = "🔒 Unlock for 🪙 " .. short(d.Cost)
-			c.go.Text = busy and "..." or "UNLOCK"
+			local asking = confirmId == d.Id and os.clock() < confirmUntil
+			c.go.Text = busy and "..." or (asking and "SURE?" or "UNLOCK")
+			if asking then
+				c.info.Text = "Tap again: spend 🪙 " .. short(d.Cost)
+			end
 			c.go.BackgroundColor3 = enough and rgb(255, 170, 40) or rgb(150, 120, 90)
 			c.go.Active = not busy
 		else
@@ -248,6 +249,15 @@ for _, c in ipairs(cards) do
 		if busy or not c.go.Active then
 			return
 		end
+		local d = c.def
+		local locked = (d.Cost or 0) > 0 and not player:GetAttribute(Worlds.UnlockKey(d.Id))
+		if locked and stats.Coins.Value >= d.Cost and not (confirmId == d.Id and os.clock() < confirmUntil) then
+			confirmId, confirmUntil = d.Id, os.clock() + 3
+			refresh()
+			task.delay(3.1, refresh)
+			return
+		end
+		confirmId = nil
 		busy = true
 		refresh()
 		local ok, result = pcall(function()

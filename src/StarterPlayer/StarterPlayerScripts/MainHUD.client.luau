@@ -39,14 +39,9 @@ if game:GetService("UserInputService").TouchEnabled and not game:GetService("Use
 	list.HorizontalAlignment = Enum.HorizontalAlignment.Right
 end
 
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function abbreviate(n: number): string
-	local units = { { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
-	for _, u in ipairs(units) do
-		if n >= u[1] then
-			return string.format("%.2f", n / u[1]):gsub("%.?0+$", "") .. u[2]
-		end
-	end
-	return string.format("%g", math.floor(n * 10 + 0.5) / 10)
+	return NumberFormat.Short(n)
 end
 
 local function panel(order: number, height: number, top: Color3, bottom: Color3, iconColor: Color3, iconText: string)

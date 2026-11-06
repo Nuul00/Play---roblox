@@ -140,16 +140,12 @@ end
 -- Цены, показанные в окне: окно перерисовываем, только когда монеты пересекают одну из них.
 local shownPrices = {}
 local recording = false
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function fmt(n)
 	if recording then
 		table.insert(shownPrices, n)
 	end
-	for _, u in ipairs({ { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }) do
-		if n >= u[1] then
-			return (string.format("%.1f", n / u[1]):gsub("%.0$", "")) .. u[2]
-		end
-	end
-	return string.format("%g", math.floor(n))
+	return NumberFormat.Short(n)
 end
 
 local window = Instance.new("Frame")
@@ -424,13 +420,18 @@ local function renderMagnets()
 	table.clear(spinning)
 	-- Каждый магазин показывает только магниты своего мира (+ надетый, чтобы его можно было снять).
 	local shopWorld = ZONE_WORLD[magnetZone or "island"] or "Meadow Isles"
-	if lastShopWorld ~= shopWorld then
-		lastShopWorld = shopWorld
-		magnetArea.CanvasPosition = Vector2.zero
-	end
+	local jump = lastShopWorld ~= shopWorld
+	lastShopWorld = shopWorld
+	local visibleIndex, targetIndex = 0, nil
 	for i, def in ipairs(ShopConfig.Magnets) do
 		local c = magnetCards[i]
 		c.card.Visible = (def.World or "Meadow Isles") == shopWorld or i == equipped
+		if c.card.Visible then
+			visibleIndex += 1
+			if i == ownedTier + 1 or (not targetIndex and i == ownedTier) then
+				targetIndex = visibleIndex
+			end
+		end
 		c.card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
 		local text, color
 		if i == equipped then
@@ -451,9 +452,12 @@ local function renderMagnets()
 			table.insert(spinning, c.model)
 		end
 	end
-	if lastTier ~= ownedTier then
-		lastTier = ownedTier
-		local row = math.floor(math.min(ownedTier, #ShopConfig.Magnets - 1) / 4)
+	-- Прокручиваем к следующему магниту только при входе в магазин (другого мира). После покупки
+	-- окно остаётся там, где игрок его оставил: раньше оно отлистывалось к самому началу, потому что
+	-- ряд считался по номеру магнита среди ВСЕХ миров, а карточки чужих миров скрыты.
+	lastTier = ownedTier
+	if jump and targetIndex then
+		local row = math.floor((targetIndex - 1) / 4)
 		magnetArea.CanvasPosition = Vector2.new(0, math.max(row - 1, 0) * 204)
 	end
 end

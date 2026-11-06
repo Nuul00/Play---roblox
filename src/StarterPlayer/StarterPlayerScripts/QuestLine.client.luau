@@ -109,6 +109,7 @@ local stepText = label(stepChip, 0, 1, 62, 20, 15, WHITE, Enum.TextXAlignment.Ce
 local collapseBtn = Instance.new("TextButton")
 collapseBtn.Position = UDim2.fromOffset(W - 38, 4)
 collapseBtn.Size = UDim2.fromOffset(28, 26)
+collapseBtn:SetAttribute("TouchMin", true) -- TouchTargets увеличит на телефоне
 collapseBtn.BackgroundColor3 = rgb(255, 255, 255)
 collapseBtn.BackgroundTransparency = 0.75
 collapseBtn.Text = "–"

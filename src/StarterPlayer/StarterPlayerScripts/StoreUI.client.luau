@@ -279,7 +279,7 @@ local function card(parent, def, isPass, order)
 	bts.Thickness = 2
 	bts.Color = rgb(20, 80, 30)
 	bts.Parent = buy
-	local entry = { def = def, pass = isPass, buy = buy, img = img, price = nil }
+	local entry = { def = def, pass = isPass, buy = buy, img = img, price = nil, frame = c }
 	table.insert(cards, entry)
 	task.spawn(function()
 		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, def.Id, isPass and Enum.InfoType.GamePass or Enum.InfoType.Product)
@@ -291,6 +291,9 @@ local function card(parent, def, isPass, order)
 		end
 	end)
 	buy.Activated:Connect(function()
+		if def.Random and player:GetAttribute("NoPaidRandom") ~= false then
+			return
+		end
 		if isPass then
 			if not player:GetAttribute("Pass_" .. def.Key) then
 				MarketplaceService:PromptGamePassPurchase(player, def.Id)
@@ -327,6 +330,8 @@ end
 
 local function refresh()
 	for _, e in ipairs(cards) do
+		-- товары, влияющие на случайные награды, скрыты, где они запрещены (и пока сервер не проверил)
+		e.frame.Visible = not (e.def.Random and player:GetAttribute("NoPaidRandom") ~= false)
 		local owned = e.pass and player:GetAttribute("Pass_" .. e.def.Key)
 		if owned then
 			e.buy.Text = "✅ OWNED"
@@ -369,7 +374,7 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	end
 end)
 player.AttributeChanged:Connect(function(n)
-	if string.sub(n, 1, 5) == "Pass_" and panel.Visible then
+	if (string.sub(n, 1, 5) == "Pass_" or n == "NoPaidRandom") and panel.Visible then
 		refresh()
 	end
 end)

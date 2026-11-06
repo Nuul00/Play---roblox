@@ -283,14 +283,9 @@ local function buildPotions()
 end
 
 -- ===== Достижения =====
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function short(n: number): string
-	for _, u in ipairs({ { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e4, "K" } }) do
-		if n >= u[1] then
-			local unit = u[1] == 1e4 and 1e3 or u[1]
-			return (string.format("%.2f", n / unit):gsub("%.?0+$", "")) .. u[2]
-		end
-	end
-	return tostring(math.floor(n))
+	return NumberFormat.Short(n)
 end
 
 local function buildBadges()
@@ -360,7 +355,18 @@ local function buildBadges()
 	end
 end
 
+local lastRendered = nil
 local function render()
+	-- запоминаем прокрутку: раньше после каждого «надеть» список прыгал наверх
+	local keep = {}
+	if lastRendered == current then
+		for _, d in ipairs(body:GetDescendants()) do
+			if d:IsA("ScrollingFrame") then
+				keep[d.Name] = d.CanvasPosition
+			end
+		end
+	end
+	lastRendered = current
 	body:ClearAllChildren()
 	spinning = {}
 	potionTimers = {}
@@ -373,6 +379,15 @@ local function render()
 		buildPotions()
 	else
 		buildBadges()
+	end
+	if next(keep) then
+		task.defer(function()
+			for _, d in ipairs(body:GetDescendants()) do
+				if d:IsA("ScrollingFrame") and keep[d.Name] then
+					d.CanvasPosition = keep[d.Name]
+				end
+			end
+		end)
 	end
 end
 for name, b in pairs(tabButtons) do
@@ -395,6 +410,7 @@ player.PlayerGui:WaitForChild("OpenInventory").Event:Connect(function()
 	else
 		player:SetAttribute("UIScreen", "inventory")
 		window.Visible = true
+		lastRendered = nil -- новое открытие — с начала списка
 		render()
 	end
 end)

@@ -1,4 +1,5 @@
 -- Кнопки сверху слева (Индекс, Статистика, Настройки), окно статистики, настройки времени суток,
+local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 -- всплывающие сообщения сервера. Индекс-книга живёт в PetIndex.client.luau.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
@@ -86,6 +87,7 @@ end
 -- Статистика.
 local panel,scale,closeStats=window("Statistics","YOUR STATISTICS",UDim2.fromOffset(420,405))
 local content=Instance.new("TextLabel");content.Position=UDim2.fromOffset(26,65);content.Size=UDim2.fromOffset(370,255);content.TextXAlignment=Enum.TextXAlignment.Left;content.TextYAlignment=Enum.TextYAlignment.Top;content.Font=Enum.Font.GothamMedium;content.TextSize=17;content.TextColor3=Color3.fromRGB(224,238,225);content.BackgroundTransparency=1;content.Parent=panel
+local statValues=content:Clone();statValues.Name="Values";statValues.Position=UDim2.fromOffset(26,65);statValues.TextXAlignment=Enum.TextXAlignment.Right;statValues.Font=Enum.Font.GothamBold;statValues.Parent=content.Parent
 local range=button(panel,"Magnet range: OFF",UDim2.fromOffset(368,38),UDim2.fromOffset(26,332))
 player:SetAttribute("ShowMagnetRange",false)
 range.Activated:Connect(function() local visible=not player:GetAttribute("ShowMagnetRange");player:SetAttribute("ShowMagnetRange",visible);range.Text="Magnet range: "..(visible and "ON" or "OFF") end)
@@ -165,19 +167,37 @@ local function update()
    for _,k in ipairs({"PetOwned","PetGold","PetDiamond","PetRainbow"}) do if (player:GetAttribute(k..i) or 0)>0 then owned=owned+1 break end end
   end
  end
- local function ab(n) for _,u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do if n>=u[1] then return (string.format("%.2f",n/u[1]):gsub("%.?0+$",""))..u[2] end end return tostring(math.floor(n)) end
- content.Text=string.format("Coins                  %s\nSpeed                  %g  (level %d)\nMagnet radius      %.2f\nIncome                 x%g\nDouble coin        %g%%\nRebirths              %d\nBest pet               %s\nPet bonus             x%s\nEggs opened        %d\nCoins picked up   %d\nPet index              %d / %d\n%s",ab(stats.Coins.Value),Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value,(player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0)),Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0),math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10,player:GetAttribute("Rebirths") or 0,pet and pet.Name or "None",ab(player:GetAttribute("PetBonus") or 1),player:GetAttribute("EggsOpened") or 0,player:GetAttribute("CoinsCollected") or 0,owned,total,player:GetAttribute("SaveStatus") or "LOADING PROFILE")
+ local function ab(n) return NumberFormat.Short(n) end
+ -- две колонки: подписи слева, значения справа (раньше выравнивали пробелами — получалось криво)
+ local rows={{"Coins",ab(stats.Coins.Value)},{"Speed",string.format("%g  (level %d)",Config.GetWalkSpeed(stats.SpeedLevel.Value),stats.SpeedLevel.Value)},{"Magnet radius",string.format("%.1f",(player:GetAttribute("MagnetRadius") or Config.GetMagnetRadius(player:GetAttribute("MagnetLevel") or 0)))},{"Income","x"..ab(Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0))},{"Double coin",string.format("%g%%",math.floor(Config.GetDoubleChance(player:GetAttribute("DoubleLevel") or 0)*1000+0.5)/10)},{"Rebirths",tostring(player:GetAttribute("Rebirths") or 0)},{"Best pet",pet and pet.Name or "None"},{"Pet bonus","x"..ab(player:GetAttribute("PetBonus") or 1)},{"Eggs opened",ab(player:GetAttribute("EggsOpened") or 0)},{"Coins picked up",ab(player:GetAttribute("CoinsCollected") or 0)},{"Pet index",owned.." / "..total}}
+ local names,vals={}, {}
+ for _,r in ipairs(rows) do table.insert(names,r[1]);table.insert(vals,r[2]) end
+ content.Text=table.concat(names,"\n").."\n"..(player:GetAttribute("SaveStatus") or "LOADING PROFILE")
+ statValues.Text=table.concat(vals,"\n")
 end
 -- Панель статистики пересобираем, только когда она открыта (монеты меняются десятки раз в секунду).
 local statsPanel=screens and screens.stats
 local function updateIfShown() if not statsPanel or statsPanel.Visible then update() end end
 stats.Coins.Changed:Connect(updateIfShown);stats.SpeedLevel.Changed:Connect(updateIfShown);player.AttributeChanged:Connect(updateIfShown);update()
 if statsPanel then statsPanel:GetPropertyChangedSignal("Visible"):Connect(function() if statsPanel.Visible then update() end end) end
-local toast=Instance.new("TextLabel");toast.AnchorPoint=Vector2.new(0.5,1);toast.Position=UDim2.new(0.5,0,1,-190);toast.Size=UDim2.new(0.7,0,0,38);toast.BackgroundColor3=Color3.fromRGB(30,47,50);toast.BackgroundTransparency=0.08;toast.TextColor3=Color3.fromRGB(243,235,207);toast.TextWrapped=true;toast.Font=Enum.Font.GothamBold;toast.TextSize=16;toast.Visible=false;toast.Parent=gui;Instance.new("UICorner",toast).CornerRadius=UDim.new(0,10)
+local toast=Instance.new("TextLabel");toast.AnchorPoint=Vector2.new(0.5,1);toast.Position=UDim2.new(0.5,0,1,-190);toast.Size=UDim2.new(0.7,0,0,38);toast.BackgroundColor3=Color3.fromRGB(30,47,50);toast.BackgroundTransparency=0.08;toast.TextColor3=Color3.fromRGB(243,235,207);toast.TextWrapped=true;toast.Font=Enum.Font.GothamBold;toast.TextSize=16;toast.Visible=false;local toastGui=Instance.new("ScreenGui");toastGui.Name="ToastHUD";toastGui.ResetOnSpawn=false;toastGui.DisplayOrder=60;toastGui.IgnoreGuiInset=false;toastGui.Parent=gui.Parent;toast.Parent=toastGui;Instance.new("UICorner",toast).CornerRadius=UDim.new(0,10)
 local version=0
 local function showToast(message) version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end
-rebirthToast.Event:Connect(function() showToast("Rebirth is coming soon!") end)
-ReplicatedStorage:WaitForChild("GameFeedback").OnClientEvent:Connect(function(message,success) if success then return end version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end)
+-- Сообщения сервера: ошибки — тёмный тост, успехи (мир открыт, квест, награда, покупка) — золотой
+-- с «прыжком». Раньше успехи просто отбрасывались, и игрок не видел, что что-то получилось.
+local toastScale=Instance.new("UIScale");toastScale.Parent=toast
+local toastStroke=Instance.new("UIStroke");toastStroke.Thickness=2;toastStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;toastStroke.Parent=toast
+local TweenService=game:GetService("TweenService")
+ReplicatedStorage:WaitForChild("GameFeedback").OnClientEvent:Connect(function(message,success)
+ if type(message)~="string" or string.sub(message,1,7)=="World: " then return end -- о смене мира и так видно
+ version=version+1;local current=version;toast.Text=message;toast.Visible=true
+ toast.BackgroundColor3=success and Color3.fromRGB(255,196,60) or Color3.fromRGB(30,47,50)
+ toast.TextColor3=success and Color3.fromRGB(60,35,10) or Color3.fromRGB(243,235,207)
+ toastStroke.Color=success and Color3.fromRGB(150,90,20) or Color3.fromRGB(10,20,22)
+ toastScale.Scale=success and 0.7 or 1
+ if success then TweenService:Create(toastScale,TweenInfo.new(0.3,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play() end
+ task.delay(success and 3.2 or 2.8,function() if version==current then toast.Visible=false end end)
+end)
 local hidden=false
 local previous=true
 RunService.RenderStepped:Connect(function()
