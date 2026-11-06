@@ -40,6 +40,69 @@ local function box(name: string, minV: Vector3, maxV: Vector3, floorY: number)
 	wall(name .. "West", Vector3.new(THICK, HEIGHT, sz), Vector3.new(minV.X - THICK / 2, y, cz))
 end
 
+-- Стена вдоль оси X (на линии z) от x0 до x1 с проходом [g0, g1] (если он задан).
+local function wallX(name: string, x0: number, x1: number, z: number, y: number, g0: number?, g1: number?)
+	if g0 and g1 and g1 > x0 and g0 < x1 then
+		if g0 > x0 then
+			wall(name .. "A", Vector3.new(g0 - x0, HEIGHT, THICK), Vector3.new((x0 + g0) / 2, y, z))
+		end
+		if x1 > g1 then
+			wall(name .. "B", Vector3.new(x1 - g1, HEIGHT, THICK), Vector3.new((g1 + x1) / 2, y, z))
+		end
+	else
+		wall(name, Vector3.new(x1 - x0, HEIGHT, THICK), Vector3.new((x0 + x1) / 2, y, z))
+	end
+end
+local function wallZ(name: string, z0: number, z1: number, x: number, y: number, g0: number?, g1: number?)
+	if g0 and g1 and g1 > z0 and g0 < z1 then
+		if g0 > z0 then
+			wall(name .. "A", Vector3.new(THICK, HEIGHT, g0 - z0), Vector3.new(x, y, (z0 + g0) / 2))
+		end
+		if z1 > g1 then
+			wall(name .. "B", Vector3.new(THICK, HEIGHT, z1 - g1), Vector3.new(x, y, (g1 + z1) / 2))
+		end
+	else
+		wall(name, Vector3.new(THICK, HEIGHT, z1 - z0), Vector3.new(x, y, (z0 + z1) / 2))
+	end
+end
+
+-- Как box, но с островом (iMin..iMax), который примыкает к одной из сторон: в этой стороне
+-- проход шириной с остров, вокруг острова — три своих стены.
+local function islandBox(name: string, minV: Vector3, maxV: Vector3, floorY: number, iMin: Vector3, iMax: Vector3)
+	local y = floorY + HEIGHT / 2 - 20
+	local T2 = THICK / 2
+	local side
+	if iMin.Z >= maxV.Z - 10 then
+		side = "N"
+	elseif iMax.Z <= minV.Z + 10 then
+		side = "S"
+	elseif iMin.X >= maxV.X - 10 then
+		side = "E"
+	elseif iMax.X <= minV.X + 10 then
+		side = "W"
+	end
+	local x0, x1, z0, z1 = minV.X - THICK, maxV.X + THICK, minV.Z, maxV.Z
+	local gx0, gx1 = math.max(iMin.X, minV.X), math.min(iMax.X, maxV.X)
+	local gz0, gz1 = math.max(iMin.Z, minV.Z), math.min(iMax.Z, maxV.Z)
+	wallX(name .. "North", x0, x1, maxV.Z + T2, y, side == "N" and gx0 or nil, side == "N" and gx1 or nil)
+	wallX(name .. "South", x0, x1, minV.Z - T2, y, side == "S" and gx0 or nil, side == "S" and gx1 or nil)
+	wallZ(name .. "East", z0, z1, maxV.X + T2, y, side == "E" and gz0 or nil, side == "E" and gz1 or nil)
+	wallZ(name .. "West", z0, z1, minV.X - T2, y, side == "W" and gz0 or nil, side == "W" and gz1 or nil)
+	if side == "N" or side == "S" then
+		local a, b = side == "N" and maxV.Z or iMin.Z, side == "N" and iMax.Z or minV.Z
+		wallZ(name .. "IslandW", a, b, gx0 - T2, y)
+		wallZ(name .. "IslandE", a, b, gx1 + T2, y)
+		local zEnd = side == "N" and iMax.Z + T2 or iMin.Z - T2
+		wallX(name .. "IslandEnd", gx0 - THICK, gx1 + THICK, zEnd, y)
+	elseif side == "E" or side == "W" then
+		local a, b = side == "E" and maxV.X or iMin.X, side == "E" and iMax.X or minV.X
+		wallX(name .. "IslandS", a, b, gz0 - T2, y)
+		wallX(name .. "IslandN", a, b, gz1 + T2, y)
+		local xEnd = side == "E" and iMax.X + T2 or iMin.X - T2
+		wallZ(name .. "IslandEnd", gz0 - THICK, gz1 + THICK, xEnd, y)
+	end
+end
+
 local function bounds(parts: { BasePart })
 	local minV, maxV
 	for _, p in ipairs(parts) do
@@ -55,7 +118,15 @@ task.defer(function()
 	local floor = world:FindFirstChild("Floor")
 	if floor and floor:IsA("BasePart") then
 		local minV, maxV = bounds({ floor })
-		box("Meadow", minV, maxV, maxV.Y)
+		-- остров лидеров примыкает к краю пола: в стене на его ширину проход, а сам остров
+		-- обнесён своими стенами (раньше стена отрезала доски)
+		local island = world:WaitForChild("LeaderboardIsland_Meadow", 30)
+		if island and island:IsA("Model") then
+			local cf, sz = island:GetBoundingBox()
+			islandBox("Meadow", minV, maxV, maxV.Y, cf.Position - sz / 2, cf.Position + sz / 2)
+		else
+			box("Meadow", minV, maxV, maxV.Y)
+		end
 	end
 	if city then
 		local parts = {}
