@@ -21,7 +21,7 @@ end
 
 -- stage: 1 — обычное Royal Egg, 2 — «треснувшее с кристаллами», 3 — божественное с крыльями и нимбом
 -- (ступени эволюции при открытии, RoyalHatch). Нет модели ступени — берётся предыдущая.
-local STAGE_NAME = { "RoyalEgg", "RoyalEggStage2", "RoyalEggStage3" }
+local STAGE_NAME = { "RoyalEggPremium", "RoyalEggStage2", "RoyalEggStage3" }
 function RoyalEggModel.Build(stage: number?): Model
 	local folder = script.Parent:FindFirstChild("TripoEggs")
 	local t
@@ -30,6 +30,9 @@ function RoyalEggModel.Build(stage: number?): Model
 		if t then
 			break
 		end
+	end
+	if not t and folder then
+		t = folder:FindFirstChild("RoyalEgg") -- прежнее яйцо, если премиум-модели нет
 	end
 	if t then
 		local m = t:Clone()
