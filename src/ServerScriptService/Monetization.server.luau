@@ -169,6 +169,30 @@ local function grant(p: Player, def): boolean
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
 		end
 		return true
+	elseif def.Kind == "pet" then
+		local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))
+		local SHORT = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
+		local best = "island"
+		for _, w in ipairs(Worlds.Worlds) do
+			if w.Open and SHORT[w.Id] and ((w.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(w.Id))) then
+				best = SHORT[w.Id]
+			end
+		end
+		local id = Config.Exclusives and Config.Exclusives[best]
+		if not id then
+			return false
+		end
+		local count = (p:GetAttribute("PetOwned" .. id) or 0) + 1
+		p:SetAttribute("PetOwned" .. id, count)
+		PlayerSystems.OnHatched(p, id)
+		task.delay(0.5, function()
+			local hatched = ReplicatedStorage:FindFirstChild("GameHatched")
+			if hatched and p.Parent == Players then
+				hatched:FireClient(p, { { Pet = id, Count = count, Deleted = false, Forced = false } }, Config.Pets[id].EggId)
+			end
+		end)
+		return true
 	elseif def.Kind == "starter" then
 		-- разовый набор: если уже покупали (повтор чека) — всё равно выдаём, Roblox деньги взял
 		local stats = p:FindFirstChild("leaderstats")

@@ -213,7 +213,7 @@ function PlayerSystems.CoinMultiplier(p): number
 		m *= 2
 	end
 	if p:GetAttribute("Pass_VIP") then
-		m *= 1.25
+		m *= 1.5
 	end
 	-- подписка Roblox Premium: +10% монет (Roblox платит авторам за время Premium-игроков)
 	if p.MembershipType == Enum.MembershipType.Premium then

@@ -164,7 +164,7 @@ local function refreshStats()
 		bonus *= 2
 	end
 	if player:GetAttribute("Pass_VIP") then
-		bonus *= 1.25
+		bonus *= 1.5
 	end
 	if player.MembershipType == Enum.MembershipType.Premium then
 		bonus *= 1.1

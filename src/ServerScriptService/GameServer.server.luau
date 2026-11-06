@@ -464,10 +464,14 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   if superPet then result=superPet; forced=false; table.insert(superHits,superPet) end
   local attribute = "PetOwned" .. result
   local deleted=p:GetAttribute("AutoDelete"..result)==true
+  -- геймпасс Golden Hatch: 5% — питомец сразу золотой (у супер-секреток ступеней нет)
+  local golden = not deleted and not Config.Pets[result].Super and p:GetAttribute("Pass_GoldenHatch")==true and random:NextNumber()<0.05
+  if golden then attribute = "PetGold" .. result end
   local count = (p:GetAttribute(attribute) or 0)+(deleted and 0 or 1)
   if not deleted then p:SetAttribute(attribute,count) end
+  if golden then notify(p, "✨ Golden Hatch: " .. Config.Pets[result].Name .. " came out GOLDEN!", true) end
   -- Автоматически сопровождает самый сильный из открытых питомцев.
-  if not deleted then PlayerSystems.OnHatched(p, result) end
+  if not deleted then PlayerSystems.OnHatched(p, golden and ShopConfig.PetCode(result, 1) or result) end
   table.insert(results,{Pet=result,Count=count,Deleted=deleted,Forced=forced})
   end
   p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+amount)

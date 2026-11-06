@@ -101,6 +101,36 @@ return function(Config)
 		}
 		table.insert(Config.Specials, sp.Id)
 	end
+	-- Эксклюзивные питомцы за Robux (id 180-185, закреплены): по одному на мир, из яиц не выпадают.
+	-- Покупка выдаёт питомца лучшего открытого мира — поэтому он полезен на любом этапе.
+	-- Сила: ×1.5 от главной Secret мира (слабее супер-секреток ×3+). В индекс не входят (Super).
+	local EXCLUSIVE_LOOK = { island = "blossom", neon = "void", sky = "prism", frozen = "frost", volcano = "molten", galaxy = "starlight" }
+	Config.Exclusives = {}
+	for worldIndex, world in ipairs(WORLD_ORDER) do
+		local list = Config.SuperByWorld[world]
+		local baseId = list and Config.Pets[list[1]] and Config.Pets[list[1]].Base
+		local b = baseId and Config.Pets[baseId]
+		if b then
+			local id = 179 + worldIndex
+			assert(Config.Pets[id] == nil, "SuperPets: exclusive id " .. id)
+			Config.Pets[id] = {
+				Name = "Royal " .. b.Name,
+				Rarity = "Secret",
+				Multiplier = b.Multiplier * 1.5,
+				Visual = b.Visual,
+				Color = b.Color,
+				EggId = b.EggId,
+				Base = baseId,
+				Super = 4,
+				SuperKey = "Exclusive",
+				Scale = 1.35,
+				Look = EXCLUSIVE_LOOK[world],
+				World = world,
+				Exclusive = true,
+			}
+			Config.Exclusives[world] = id
+		end
+	end
 	function Config.RollSuper(eggId, r01, luckMult)
 		local egg = Config.Eggs[eggId]
 		local list = egg and Config.SuperByWorld[egg.World]
