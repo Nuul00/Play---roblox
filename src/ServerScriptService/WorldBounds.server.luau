@@ -72,13 +72,14 @@ local function islandBox(name: string, minV: Vector3, maxV: Vector3, floorY: num
 	local y = floorY + HEIGHT / 2 - 20
 	local T2 = THICK / 2
 	local side
-	if iMin.Z >= maxV.Z - 10 then
+	-- остров выходит за эту сторону пола (может и заходить на пол, как в Неонграде)
+	if iMax.Z > maxV.Z + 5 then
 		side = "N"
-	elseif iMax.Z <= minV.Z + 10 then
+	elseif iMin.Z < minV.Z - 5 then
 		side = "S"
-	elseif iMin.X >= maxV.X - 10 then
+	elseif iMax.X > maxV.X + 5 then
 		side = "E"
-	elseif iMax.X <= minV.X + 10 then
+	elseif iMin.X < minV.X - 5 then
 		side = "W"
 	end
 	local x0, x1, z0, z1 = minV.X - THICK, maxV.X + THICK, minV.Z, maxV.Z
@@ -141,7 +142,13 @@ task.defer(function()
 		end
 		if #parts > 0 then
 			local minV, maxV = bounds(parts)
-			box("Neon", minV, maxV, maxV.Y)
+			local island = city:WaitForChild("LeaderboardIsland_NeonCity", 30)
+			if island and island:IsA("Model") then
+				local cf, sz = island:GetBoundingBox()
+				islandBox("Neon", minV, maxV, maxV.Y, cf.Position - sz / 2, cf.Position + sz / 2)
+			else
+				box("Neon", minV, maxV, maxV.Y)
+			end
 		end
 	end
 end)
