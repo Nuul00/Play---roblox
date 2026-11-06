@@ -943,10 +943,10 @@ local function placePodium(island, theme, name, cf, tpl)
 	for _, c in m:GetChildren() do
 		if string.match(c.Name, "^Winner") or c.Name:match("^PodiumSpot") then c:Destroy() end
 	end
-	pcall(function() m:ScaleTo(m:GetScale() * 0.72) end)
+	pcall(function() m:ScaleTo(m:GetScale() * 0.62) end)
 	local bcf, size = m:GetBoundingBox()
 	local offset = m:GetPivot():ToObjectSpace(bcf)
-	local target = CFrame.new((cf * CFrame.new(0, size.Y / 2, -7)).Position) * cf.Rotation * tpl.rot
+	local target = CFrame.new((cf * CFrame.new(0, size.Y / 2, -6)).Position) * cf.Rotation * tpl.rot
 	m:PivotTo(target * offset:Inverse())
 	for _, d in m:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -960,6 +960,51 @@ local function placePodium(island, theme, name, cf, tpl)
 	m.Name = "Podium_" .. name
 	local look = cf.LookVector
 	m:SetAttribute("Yaw", math.atan2(-look.X, -look.Z))
+	-- украшения: светящееся кольцо по верху ступени, медаль с цифрой спереди, корона над первым местом
+	local up = Vector3.yAxis
+	local function halfAlong(p, v)
+		local c = p.CFrame
+		return math.abs(c.RightVector:Dot(v)) * p.Size.X / 2 + math.abs(c.UpVector:Dot(v)) * p.Size.Y / 2 + math.abs(c.LookVector:Dot(v)) * p.Size.Z / 2
+	end
+	for place = 1, 3 do
+		local st = m:FindFirstChild("Place" .. place)
+		if st and st:IsA("BasePart") then
+			local top = st.Position.Y + halfAlong(st, up)
+			local r = halfAlong(st, cf.RightVector)
+			local ring = cyl(m, "GlowRing" .. place, 0.3, r * 2 + 0.4, CFrame.new(st.Position.X, top - 0.1, st.Position.Z), MEDAL[place], M.Neon, GHOST)
+			ring.Transparency = 0.1
+			CollectionService:AddTag(ring, "BoardPulse")
+			local depth = halfAlong(st, look)
+			-- медаль стоит ребром на переднем крае ступени, у ног победителя — табличку с именем не закрывает
+			local mc = CFrame.lookAt(Vector3.new(st.Position.X, top + 0.75, st.Position.Z) + look * (depth - 0.3), Vector3.new(st.Position.X, top + 0.75, st.Position.Z) + look * 50)
+			local medal = part(m, "Medal" .. place, Vector3.new(0.3, 1.5, 1.5), mc * CFrame.Angles(0, math.rad(90), 0), MEDAL[place], M.Metal, GHOST)
+			medal.Shape = Enum.PartType.Cylinder
+			medal.Reflectance = 0.2
+			for _, f in { Enum.NormalId.Left, Enum.NormalId.Right } do
+				text(medal, f, tostring(place), MEDAL[place]:Lerp(Color3.new(0, 0, 0), 0.55), Enum.Font.LuckiestGuy, 80)
+			end
+			if place == 1 then
+				-- корона парит над головой победителя
+				local crown = Instance.new("Model")
+				crown.Name = "Crown"
+				local at = CFrame.new(st.Position.X, top + 5, st.Position.Z)
+				local band = cyl(crown, "Band", 0.7, 2.2, at, MEDAL[1], M.Metal, GHOST)
+				band.Reflectance = 0.25
+				crown.PrimaryPart = band
+				for i = 0, 4 do
+					local a = i / 5 * math.pi * 2
+					part(crown, "Spike", Vector3.new(0.35, 0.9, 0.35), at * CFrame.new(math.cos(a) * 0.95, 0.75, math.sin(a) * 0.95), MEDAL[1], M.Metal, GHOST)
+					ball(crown, "Gem", 0.35, (at * CFrame.new(math.cos(a) * 0.95, 1.25, math.sin(a) * 0.95)).Position, rgb(255, 80, 120), M.Neon, GHOST)
+				end
+				emitter(band, MEDAL[1], 5, { Speed = NumberRange.new(0.3, 1) })
+				light(band, MEDAL[1], 12, 1.4)
+				crown:SetAttribute("Spin", 60)
+				crown:SetAttribute("Bob", 0.3)
+				CollectionService:AddTag(crown, "BoardEmblem")
+				crown.Parent = m
+			end
+		end
+	end
 	m.Parent = island
 	return m
 end
@@ -1056,7 +1101,8 @@ function B.Build(world)
 		local cf = ic * CFrame.new(0, 0, 24)
 		buildBoard(island, theme, "BoardMain", cf)
 		local tpl = (key == "NeonCity" or key == "CosmicGalaxy") and podiumTpl.Neon or podiumTpl.Meadow
-		if not ((catalog and placeCatalogPodium(island, theme, "BoardCoins", cf, catalog)) or (tpl and placePodium(island, theme, "BoardCoins", cf, tpl))) then
+		-- пьедестал как в первом/втором мире (из плейса), с медалями и короной; каталожный — только запасной
+		if not ((tpl and placePodium(island, theme, "BoardCoins", cf, tpl)) or (catalog and placeCatalogPodium(island, theme, "BoardCoins", cf, catalog))) then
 			buildPodium(island, theme, "BoardCoins", cf)
 		end
 		island.Parent = model
