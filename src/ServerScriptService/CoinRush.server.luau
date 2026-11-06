@@ -426,6 +426,10 @@ R.Prompt.Triggered:Connect(function(p)
 	if runs[p] or not p:GetAttribute("ProfileReady") then
 		return
 	end
+	if p:GetAttribute("Trading") then
+		notify(p, "Finish your trade first")
+		return
+	end
 	local now = os.clock()
 	if lastRun[p] and now - lastRun[p] < R.COOLDOWN then
 		notify(p, "Coin Rush recharging: " .. math.ceil(R.COOLDOWN - (now - lastRun[p])) .. " s")
