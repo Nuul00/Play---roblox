@@ -156,7 +156,9 @@ local function refreshStats()
 	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end
-	if (player:GetAttribute("PotionEndCoins") or 0) > workspace:GetServerTimeNow() then
+	if (player:GetAttribute("PotionEndSuperCoins") or 0) > workspace:GetServerTimeNow() then
+		bonus *= 3
+	elseif (player:GetAttribute("PotionEndCoins") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end
 	bonus *= 1 + (player:GetAttribute("AbilCoins") or 0) -- способность питомцев (как в PlayerSystems.CoinMultiplier)
@@ -176,7 +178,7 @@ speedLevel.Changed:Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventId"):Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventEnd"):Connect(refreshStats)
 -- только атрибуты, влияющие на панель (иначе пересчёт на каждую монету и каждого питомца)
-local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, PotionEndCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true }
+local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, PotionEndCoins = true, PotionEndSuperCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true }
 player.AttributeChanged:Connect(function(name)
 	if STAT_ATTRS[name] then
 		refreshStats()

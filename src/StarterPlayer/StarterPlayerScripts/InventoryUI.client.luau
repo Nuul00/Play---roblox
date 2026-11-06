@@ -304,46 +304,72 @@ end
 -- ===== Зелья =====
 local potionTimers = {}
 local function buildPotions()
-	label(body, "Potions last 5 minutes. Using another one adds more time.", UDim2.fromOffset(0, 0), UDim2.fromOffset(748, 30), 17, Color3.fromRGB(210, 215, 230), Enum.Font.GothamMedium)
-	for i, name in ipairs(ShopConfig.PotionOrder) do
-		local def = ShopConfig.Potions[name]
-		local card = Instance.new("Frame")
-		card.Position = UDim2.fromOffset((i - 1) * 252, 44)
-		card.Size = UDim2.fromOffset(236, 330)
-		card.BackgroundColor3 = Color3.fromRGB(48, 32, 100)
-		card.Parent = body
-		corner(card, 16)
-		stroke(card, 3, def.Color)
-		local bottle = Instance.new("Frame")
-		bottle.AnchorPoint = Vector2.new(0.5, 0)
-		bottle.Position = UDim2.new(0.5, 0, 0, 20)
-		bottle.Size = UDim2.fromOffset(96, 96)
-		bottle.BackgroundColor3 = def.Color
-		bottle.Parent = card
-		corner(bottle, 48)
-		stroke(bottle, 3)
-		-- картинка зелья (ChatGPT): бутылка поверх цветного круга, чуть больше его
-		local img = Instance.new("ImageLabel")
-		img.BackgroundTransparency = 1
-		img.AnchorPoint = Vector2.new(0.5, 0.5)
-		img.Position = UDim2.fromScale(0.5, 0.47)
-		img.Size = UDim2.fromScale(1.35, 1.35)
-		img.Image = def.Image or ""
-		img.Parent = bottle
-		bottle.BackgroundTransparency = 0.55
-		if not def.Image then
-			label(bottle, def.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 48)
+	-- два ряда: обычные (магазин за монеты) и СУПЕР (только награды и Robux)
+	local rows = {
+		{ ShopConfig.PotionOrder, "POTIONS · 5 min · buy at the Magnet Shop", Color3.fromRGB(200, 190, 240) },
+		{ ShopConfig.SuperPotionOrder, "⭐ SUPER POTIONS · 10 min · Daily Rewards, Coin Rush vault, Rebirths", Color3.fromRGB(255, 215, 90) },
+	}
+	for r, row in ipairs(rows) do
+		local y0 = (r - 1) * 200
+		local cap = label(body, row[2], UDim2.fromOffset(4, y0), UDim2.fromOffset(740, 24), 17, row[3])
+		cap.TextXAlignment = Enum.TextXAlignment.Left
+		for i, name in ipairs(row[1]) do
+			local def = ShopConfig.Potions[name]
+			local have = player:GetAttribute("Potion" .. name) or 0
+			local card = Instance.new("Frame")
+			card.Position = UDim2.fromOffset((i - 1) * 252, y0 + 28)
+			card.Size = UDim2.fromOffset(244, 164)
+			card.BackgroundColor3 = Color3.new(1, 1, 1)
+			card.Parent = body
+			corner(card, 16)
+			stroke(card, def.Super and 3.5 or 2.5, def.Super and Color3.fromRGB(255, 205, 70) or def.Color)
+			local g = Instance.new("UIGradient")
+			g.Rotation = 90
+			g.Color = ColorSequence.new(def.Color:Lerp(Color3.fromRGB(48, 32, 100), def.Super and 0.55 or 0.75), Color3.fromRGB(24, 16, 56))
+			g.Parent = card
+			local glow = Instance.new("Frame")
+			glow.Position = UDim2.fromOffset(14, 26)
+			glow.Size = UDim2.fromOffset(100, 100)
+			glow.BackgroundColor3 = def.Color
+			glow.BackgroundTransparency = 0.7
+			glow.Parent = card
+			corner(glow, 50)
+			local img = Instance.new("ImageLabel")
+			img.BackgroundTransparency = 1
+			img.Position = UDim2.fromOffset(2, 12)
+			img.Size = UDim2.fromOffset(124, 124)
+			img.Image = def.Image or ""
+			img.ImageTransparency = have > 0 and 0 or 0.35
+			img.Parent = card
+			local n = label(card, def.Name, UDim2.fromOffset(124, 10), UDim2.fromOffset(114, 40), 18)
+			n.TextScaled = true
+			local ns = Instance.new("UITextSizeConstraint")
+			ns.MaxTextSize = 18
+			ns.Parent = n
+			local nst = Instance.new("UIStroke")
+			nst.Thickness = 2
+			nst.Color = dark
+			nst.Parent = n
+			label(card, def.Effect, UDim2.fromOffset(124, 50), UDim2.fromOffset(114, 20), 15, def.Color:Lerp(Color3.new(1, 1, 1), 0.35))
+			label(card, "Owned: " .. have, UDim2.fromOffset(124, 72), UDim2.fromOffset(114, 20), 16, Color3.fromRGB(225, 220, 245), Enum.Font.GothamBold)
+			potionTimers[name] = label(card, "", UDim2.fromOffset(124, 94), UDim2.fromOffset(114, 20), 15, Color3.fromRGB(150, 255, 150))
+			local use = button(card, have > 0 and "USE" or (def.Super and "FROM REWARDS" or "BUY IN SHOP"), UDim2.fromOffset(128, 120), UDim2.fromOffset(106, 34), have > 0 and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(90, 80, 130))
+			use.TextScaled = have <= 0
+			use.Activated:Connect(function()
+				if have > 0 then
+					action:FireServer("potion", name)
+				end
+			end)
+			if def.Super then
+				local tag = label(card, "SUPER", UDim2.fromOffset(10, 8), UDim2.fromOffset(60, 18), 13, Color3.new(1, 1, 1))
+				tag.BackgroundTransparency = 0
+				tag.BackgroundColor3 = Color3.fromRGB(235, 150, 30)
+				tag.ZIndex = 3
+				corner(tag, 9)
+				stroke(tag, 1.5)
+			end
 		end
-		label(card, def.Name, UDim2.fromOffset(0, 126), UDim2.new(1, 0, 0, 30), 22)
-		label(card, def.Effect, UDim2.fromOffset(0, 156), UDim2.new(1, 0, 0, 24), 17, def.Color)
-		label(card, "Owned: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 186), UDim2.new(1, 0, 0, 24), 18, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
-		potionTimers[name] = label(card, "", UDim2.fromOffset(0, 214), UDim2.new(1, 0, 0, 24), 17, Color3.fromRGB(150, 255, 150))
-		local use = button(card, "USE", UDim2.fromOffset(28, 262), UDim2.fromOffset(180, 46), (player:GetAttribute("Potion" .. name) or 0) > 0 and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(110, 110, 120))
-		use.Activated:Connect(function()
-			action:FireServer("potion", name)
-		end)
 	end
-	label(body, "Get potions from Daily Rewards, the Coin Rush vault and the Magnet Shop next to the kiosk.", UDim2.fromOffset(0, 380), UDim2.fromOffset(748, 24), 15, Color3.fromRGB(190, 200, 220), Enum.Font.GothamMedium)
 end
 
 -- ===== Достижения =====

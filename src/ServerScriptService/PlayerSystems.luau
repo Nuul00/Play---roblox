@@ -203,7 +203,9 @@ function PlayerSystems.CoinMultiplier(p): number
 	if (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() and p:GetAttribute("CurrentWorld") == "Frozen Peaks" then
 		m *= 2
 	end
-	if PlayerSystems.PotionActive(p, "Coins") then
+	if PlayerSystems.PotionActive(p, "SuperCoins") then
+		m *= 3 -- супер-зелье вместо обычного
+	elseif PlayerSystems.PotionActive(p, "Coins") then
 		m *= 2
 	end
 	-- Способность питомцев «+% монет» (MainHUD считает так же).
@@ -233,7 +235,9 @@ function PlayerSystems.ApplySpeed(p)
 		return
 	end
 	local speed = Config.GetWalkSpeed(stats.SpeedLevel.Value)
-	if PlayerSystems.PotionActive(p, "Speed") then
+	if PlayerSystems.PotionActive(p, "SuperSpeed") then
+		speed *= 1.5
+	elseif PlayerSystems.PotionActive(p, "Speed") then
 		speed *= 1.25
 	end
 	speed *= 1 + (p:GetAttribute("AbilSpeed") or 0) -- способность питомцев
@@ -344,8 +348,8 @@ function PlayerSystems.Setup(p)
 	p:SetAttribute("PetsDiscovered", 0)
 	p:SetAttribute("MagnetTier", 1)
 	p:SetAttribute("MagnetEquipped", 1)
-	for name in pairs(ShopConfig.Potions) do
-		p:SetAttribute("Potion" .. name, 1) -- одно бесплатное зелье каждого вида
+	for _, name in ipairs(ShopConfig.PotionOrder) do
+		p:SetAttribute("Potion" .. name, 1) -- одно бесплатное зелье каждого обычного вида
 		p:SetAttribute("PotionEnd" .. name, 0)
 	end
 	for _, badge in ipairs(ShopConfig.Badges) do

@@ -19,7 +19,7 @@ row.Name = "ActivePotions"
 row.BackgroundTransparency = 1
 row.AnchorPoint = Vector2.new(0, 1)
 row.Position = UDim2.new(0, 14, 1, -232)
-row.Size = UDim2.fromOffset(240, 74)
+row.Size = UDim2.fromOffset(440, 74)
 row.Parent = gui
 local lay = Instance.new("UIListLayout")
 lay.FillDirection = Enum.FillDirection.Horizontal
@@ -30,7 +30,7 @@ local rowScale = Instance.new("UIScale")
 rowScale.Parent = row
 
 local chips = {}
-for i, name in ipairs(ShopConfig.PotionOrder) do
+for i, name in ipairs(ShopConfig.AllPotions) do
 	local def = ShopConfig.Potions[name]
 	local chip = Instance.new("Frame")
 	chip.Name = name
@@ -48,7 +48,7 @@ for i, name in ipairs(ShopConfig.PotionOrder) do
 	glow.Parent = chip
 	Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
 	local gs = Instance.new("UIStroke")
-	gs.Color = INK
+	gs.Color = def.Super and Color3.fromRGB(255, 210, 70) or INK -- супер-зелье — золотая рамка
 	gs.Thickness = 3
 	gs.Parent = glow
 	local img = Instance.new("ImageLabel")

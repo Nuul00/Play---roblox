@@ -254,13 +254,17 @@ local function updatePrompt()
 	local prompt = anchor and anchor:FindFirstChildOfClass("ProximityPrompt")
 	if prompt then
 		local cost = player:GetAttribute("RushKeyCost") or 0
-		prompt.ObjectText = cost <= 0 and "FREE run today!" or ("🔑 Key: " .. NumberFormat.Short(cost) .. " coins")
+		local keys = player:GetAttribute("Save_RushKeys") or 0
+		local freeToday = (player:GetAttribute("Save_RushFreeDay") or -1) ~= math.floor(workspace:GetServerTimeNow() / 86400)
+		prompt.ObjectText = cost > 0 and ("🔑 Key: " .. NumberFormat.Short(cost) .. " coins") or (not freeToday and keys > 0) and ("🔑 Use key (" .. keys .. " left)") or "FREE run today!"
 	end
 	local sign = portal and portal:FindFirstChild("RushSign", true)
 	local sub = sign and sign:FindFirstChild("Sub")
 	if sub then
 		local cost = player:GetAttribute("RushKeyCost") or 0
-		sub.Text = cost <= 0 and "✨ FREE RUN TODAY ✨" or ("🔑 " .. NumberFormat.Short(cost) .. " coins")
+		local keys = player:GetAttribute("Save_RushKeys") or 0
+		local freeToday = (player:GetAttribute("Save_RushFreeDay") or -1) ~= math.floor(workspace:GetServerTimeNow() / 86400)
+		sub.Text = cost > 0 and ("🔑 " .. NumberFormat.Short(cost) .. " coins") or (not freeToday and keys > 0) and ("🔑 " .. keys .. " RUSH KEY" .. (keys > 1 and "S" or "")) or "✨ FREE RUN TODAY ✨"
 	end
 end
 -- вихрь портала крутится (только у себя)
@@ -455,4 +459,5 @@ task.spawn(function()
 	end)
 end)
 player:GetAttributeChangedSignal("RushKeyCost"):Connect(updatePrompt)
+player:GetAttributeChangedSignal("Save_RushKeys"):Connect(updatePrompt)
 task.delay(5, updatePrompt)

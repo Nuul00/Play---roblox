@@ -814,7 +814,7 @@ local function finish(run, reason: string?)
 		reward *= 2
 		local rng = Random.new()
 		if rng:NextNumber() < 0.45 then
-			local names = ShopConfig.PotionOrder
+			local names = ShopConfig.SuperPotionOrder -- в сейфе — только СУПЕР-зелья
 			local name = names[rng:NextInteger(1, #names)]
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + 1)
 			table.insert(loot, ShopConfig.Potions[name].Icon .. " " .. ShopConfig.Potions[name].Name)
@@ -935,8 +935,12 @@ R.Prompt.Triggered:Connect(function(p)
 		return
 	end
 	local free = (p:GetAttribute("Save_RushFreeDay") or -1) ~= today()
+	local keys = p:GetAttribute("Save_RushKeys") or 0
 	if free then
 		p:SetAttribute("Save_RushFreeDay", today())
+	elseif keys > 0 then
+		-- ключ из награды (дейлики, ребёрс) — забег без оплаты
+		p:SetAttribute("Save_RushKeys", keys - 1)
 	else
 		local cost = R.KeyCost(p)
 		local stats = p:FindFirstChild("leaderstats")
@@ -957,7 +961,7 @@ task.spawn(function()
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p:GetAttribute("ProfileReady") then
 				local free = (p:GetAttribute("Save_RushFreeDay") or -1) ~= today()
-				p:SetAttribute("RushKeyCost", free and 0 or R.KeyCost(p))
+				p:SetAttribute("RushKeyCost", (free or (p:GetAttribute("Save_RushKeys") or 0) > 0) and 0 or R.KeyCost(p))
 			end
 		end
 	end

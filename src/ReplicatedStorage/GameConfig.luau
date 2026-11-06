@@ -239,19 +239,19 @@ function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+15*r+1.2*r*r
 function Config.GetRebirthBonus(r) return 1+0.75*r+0.05*math.max(0,r-10)^2 end
 -- Вехи: подарки (зелья) выдаются один раз; слоты, удача, титул и аура действуют постоянно.
 Config.RebirthMilestones={
- {At=1,Icon="🧪",Name="Starter Potions",Desc="1 Coin + 1 Luck potion",Potions={Coins=1,Luck=1}},
+ {At=1,Icon="🧪",Name="Starter Potions",Desc="1 Super Coin + 1 Super Luck potion",Potions={SuperCoins=1,SuperLuck=1}},
  {At=3,Icon="🐾",Name="Pet Slot",Desc="+1 pet team slot",Slots=1},
- {At=5,Icon="🍀",Name="Luck Pack",Desc="3 Luck potions",Potions={Luck=3}},
+ {At=5,Icon="🍀",Name="Luck Pack",Desc="3 Super Luck potions",Potions={SuperLuck=3}},
  {At=7,Icon="🏷️",Name="Title: Reborn",Desc="Title over your head",Title="Reborn"},
- {At=10,Icon="🐾",Name="Pet Slot",Desc="+1 slot, 2 Coin + 2 Speed potions",Slots=1,Potions={Coins=2,Speed=2}},
+ {At=10,Icon="🐾",Name="Pet Slot",Desc="+1 slot, 2 Super Coin + 2 Super Speed potions",Slots=1,Potions={SuperCoins=2,SuperSpeed=2}},
  {At=15,Icon="🔥",Name="Bronze Aura",Desc="Aura + 10% egg luck",Aura=1,Luck=0.10},
- {At=20,Icon="🎁",Name="Potion Chest",Desc="3 of each potion + title Ascended",Title="Ascended",Potions={Coins=3,Speed=3,Luck=3}},
+ {At=20,Icon="🎁",Name="Potion Chest",Desc="3 of each Super potion + title Ascended",Title="Ascended",Potions={SuperCoins=3,SuperSpeed=3,SuperLuck=3}},
  {At=25,Icon="🐾",Name="Pet Slot",Desc="+1 pet team slot",Slots=1},
- {At=30,Icon="🌟",Name="Golden Aura",Desc="Gold aura + 5 Luck potions",Aura=2,Potions={Luck=5}},
+ {At=30,Icon="🌟",Name="Golden Aura",Desc="Gold aura + 5 Super Luck potions",Aura=2,Potions={SuperLuck=5}},
  {At=35,Icon="🍀",Name="Lucky Star",Desc="+15% egg luck",Luck=0.15},
- {At=40,Icon="👑",Name="Title: Mythic",Desc="Title + 5 of each potion",Title="Mythic",Potions={Coins=5,Speed=5,Luck=5}},
+ {At=40,Icon="👑",Name="Title: Mythic",Desc="Title + 5 of each Super potion",Title="Mythic",Potions={SuperCoins=5,SuperSpeed=5,SuperLuck=5}},
  {At=45,Icon="🌈",Name="Rainbow Aura",Desc="Rainbow aura",Aura=3},
- {At=50,Icon="🌌",Name="Eternal",Desc="Cosmic aura, title, +25% luck, 10 of each potion",Title="Eternal",Aura=4,Luck=0.25,Potions={Coins=10,Speed=10,Luck=10}},
+ {At=50,Icon="🌌",Name="Eternal",Desc="Cosmic aura, title, +25% luck, 10 of each Super potion",Title="Eternal",Aura=4,Luck=0.25,Potions={SuperCoins=10,SuperSpeed=10,SuperLuck=10}},
 }
 Config.RebirthAuraNames={"Bronze","Golden","Rainbow","Cosmic"}
 -- Доп. удача яиц (доля): +1% за каждый ребёрс плюс бонусы вех.

@@ -141,7 +141,8 @@ task.spawn(function()
 	if signals then
 		local fh = Instance.new("BindableFunction")
 		fh.Name = "FreeHatch"
-		fh.OnInvoke = function(p, eggId)
+		-- count — сколько яиц открыть разом (одна анимация), top — самое дорогое яйцо мира, а не второе
+		fh.OnInvoke = function(p, eggId, count, top)
 			if not eggId then
 				local best = "island"
 				for _, def in ipairs(Worlds.Worlds) do
@@ -155,9 +156,38 @@ task.spawn(function()
 						table.insert(list, id)
 					end
 				end
-				eggId = list[math.min(2, #list)] or 1
+				eggId = (top and list[#list]) or list[math.min(2, #list)] or 1
 			end
-			return freeHatch(p, eggId)
+			count = math.clamp(math.floor(tonumber(count) or 1), 1, 9)
+			if count == 1 then
+				return freeHatch(p, eggId)
+			end
+			-- несколько яиц: каждое с двойной удачей, одна общая анимация открытия
+			local results = {}
+			local best
+			for _ = 1, count do
+				local pet = Config.RollEgg(eggId, random:NextInteger(1, 100000))
+				local second = Config.RollEgg(eggId, random:NextInteger(1, 100000))
+				if Config.GetPetMultiplier(second) > Config.GetPetMultiplier(pet) then
+					pet = second
+				end
+				local attr = "PetOwned" .. pet
+				local n = num(p, attr) + 1
+				p:SetAttribute(attr, n)
+				PlayerSystems.OnHatched(p, pet)
+				table.insert(results, { Pet = pet, Count = n, Deleted = false, Forced = false })
+				if not best or Config.GetPetMultiplier(pet) > Config.GetPetMultiplier(best) then
+					best = pet
+				end
+			end
+			feedback:FireClient(p, "🎁 " .. count .. " free " .. Config.Eggs[eggId].Name .. "s! Best: " .. Config.Pets[best].Name .. " (" .. Config.Pets[best].Rarity .. ")", true)
+			task.delay(1.6, function()
+				local hatched = ReplicatedStorage:FindFirstChild("GameHatched")
+				if hatched and p.Parent == Players then
+					hatched:FireClient(p, results, eggId)
+				end
+			end)
+			return best
 		end
 		fh.Parent = signals
 	end

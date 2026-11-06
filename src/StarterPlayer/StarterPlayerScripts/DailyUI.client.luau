@@ -77,13 +77,37 @@ local function potionImage(name)
 	local d = ShopConfig.Potions[name]
 	return d and d.Image
 end
+local IMG = ShopConfig.RewardImages
 local KIND = {
-	Coins = { icon = "💰", col = rgb(255, 196, 50), image = ShopConfig.RewardImages.CoinBag },
-	Luck = { icon = "🍀", col = rgb(80, 220, 110), image = potionImage("Luck") },
-	Speed = { icon = "⚡", col = rgb(70, 175, 255), image = potionImage("Speed") },
-	Potion = { icon = "🧪", col = rgb(255, 180, 40), image = potionImage("Coins") },
-	Star = { icon = "🎁", col = GOLD, image = ShopConfig.RewardImages.Gift },
+	Coins = { icon = "💰", col = rgb(255, 196, 50), image = IMG.CoinBag },
+	CoinPile = { icon = "💰", col = rgb(255, 150, 40), image = IMG.CoinPile },
+	SuperLuck = { icon = "🍀", col = rgb(60, 215, 100), image = potionImage("SuperLuck") },
+	SuperCoins = { icon = "💰", col = rgb(255, 170, 30), image = potionImage("SuperCoins") },
+	SuperSpeed = { icon = "⚡", col = rgb(70, 160, 255), image = potionImage("SuperSpeed") },
+	Key = { icon = "🔑", col = rgb(235, 80, 200), image = IMG.Keys2 },
+	Star = { icon = "🎁", col = GOLD, image = IMG.Gift },
 }
+-- подпись награды из её содержимого (монеты, супер-зелья, ключи, яйца)
+local function describe(reward, coins)
+	local parts = {}
+	if coins then
+		table.insert(parts, coins .. " coins")
+	end
+	for _, name in ipairs(ShopConfig.SuperPotionOrder) do
+		local n = reward.Potions and reward.Potions[name]
+		if n then
+			table.insert(parts, (n > 1 and (n .. "× ") or "") .. ShopConfig.Potions[name].Short)
+		end
+	end
+	if reward.RushKeys then
+		table.insert(parts, reward.RushKeys .. " Rush key" .. (reward.RushKeys > 1 and "s" or ""))
+	end
+	if reward.FreeHatch then
+		local n = reward.FreeHatch == true and 1 or reward.FreeHatch
+		table.insert(parts, n .. " free top eggs")
+	end
+	return table.concat(parts, "\n+ ")
+end
 
 ------------------------------------------------------------------ окно
 local W, H = 920, 470
@@ -188,9 +212,6 @@ for day, reward in ipairs(D.Rewards) do
 	os.Transparency = 0.2
 	local icon
 	local image = kind.image
-	if reward.Coins and day > 1 and not reward.FreeHatch then
-		image = ShopConfig.RewardImages.CoinPile -- большой мешок — гора монет
-	end
 	if image then
 		-- картинка зелья чуть больше круга — бутылка «выходит» за его край
 		icon = Instance.new("ImageLabel")
@@ -203,8 +224,23 @@ for day, reward in ipairs(D.Rewards) do
 		icon = text(orb, kind.icon, 0, 0, orbSize, orbSize, big and 64 or 46, nil, 0)
 	end
 	local iconBase = icon.Position
+	-- плашка SUPER: эту награду не купить за монеты
+	local hasSuper = false
+	for name in pairs(reward.Potions or {}) do
+		if ShopConfig.Potions[name] and ShopConfig.Potions[name].Super then
+			hasSuper = true
+		end
+	end
+	if hasSuper and not big then
+		local tag = frame(c, w / 2 - 30, 36, 60, 18, rgb(255, 255, 255), 9)
+		grad(tag, rgb(255, 235, 120), rgb(240, 150, 30))
+		stroke(tag, INK, 2)
+		tag.ZIndex = 4
+		local tt = text(tag, "SUPER", 0, 1, 60, 16, 14, nil, 1.5)
+		tt.ZIndex = 5
+	end
 	-- сумма / название
-	local name = text(c, reward.Name, 6, big and 154 or 124, w - 12, big and 38 or 52, big and 19 or 18, nil, 2)
+	local name = text(c, reward.Name, 6, big and 150 or 124, w - 12, big and 54 or 52, big and 19 or 18, nil, 2)
 	-- статус внизу
 	local pill = frame(c, 10, CH - 42, w - 20, 30, INK, 12)
 	pill.BackgroundTransparency = 0.2
@@ -288,9 +324,17 @@ local function refresh()
 	current = state.Day
 	local shownDay = (state.Ready and state.Day == 1) and 0 or day -- новая неделя: прошлые галочки не показываем
 	for i, c in ipairs(cells) do
-		if c.reward.Coins then
-			local amount = NumberFormat.Short(D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned")))
-			c.name.Text = c.reward.FreeHatch and (amount .. " coins\n+ free egg + 3 potions") or (amount .. " coins")
+		local amount = c.reward.Coins and NumberFormat.Short(D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned")))
+		if c.big then
+			-- джекпот: коротко в две строки
+			local supers = 0
+			for _, n in pairs(c.reward.Potions or {}) do
+				supers += n
+			end
+			local eggs = c.reward.FreeHatch == true and 1 or (c.reward.FreeHatch or 0)
+			c.name.Text = (amount and (amount .. " coins") or "") .. (eggs > 0 and ("\n+ " .. eggs .. " top eggs") or "") .. "\n+ " .. supers .. " Super potions" .. (c.reward.RushKeys and " + key" or "")
+		else
+			c.name.Text = describe(c.reward, amount)
 		end
 		local isNow = i == current
 		local claimed = i <= shownDay and not (isNow and state.Ready)

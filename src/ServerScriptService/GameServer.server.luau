@@ -371,6 +371,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   else
    local def = type(eggId) == "string" and ShopConfig.Potions[eggId]
    if not def then return end
+   if def.Super then notify(p, "Super potions can't be bought with coins: get them from rewards!"); return end
    cost, name = ShopConfig.PotionCost(eggId, p:GetAttribute("LifetimeEarned")), def.Name
   end
   if stats.Coins.Value < cost then notify(p,"Not enough coins. Need " .. short(cost-stats.Coins.Value) .. " more"); return end
@@ -441,7 +442,9 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Каждый источник удачи — свой лишний бросок (зелье, событие, геймпасс, буст складываются).
   -- общий потолок лишних бросков от всего вместе: 7 (бесплатно можно набрать до 5)
   local rollsLeft=7
-  for _, on in ipairs({PlayerSystems.PotionActive(p, "Luck"), PlayerSystems.EventActive("Lucky"), p:GetAttribute("Pass_Luck2x") == true, p:GetAttribute("LuckBoostActive") == true}) do
+  -- супер-зелье удачи — два лишних броска (обычное — один, вместе не складываются)
+  local superLuck=PlayerSystems.PotionActive(p, "SuperLuck")
+  for _, on in ipairs({superLuck or PlayerSystems.PotionActive(p, "Luck"), superLuck, PlayerSystems.EventActive("Lucky"), p:GetAttribute("Pass_Luck2x") == true, p:GetAttribute("LuckBoostActive") == true}) do
    if on and rollsLeft>0 then
     rollsLeft-=1
     local again=Config.RollEgg(eggId,random:NextInteger(1,100000))

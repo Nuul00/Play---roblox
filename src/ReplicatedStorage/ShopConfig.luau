@@ -163,12 +163,25 @@ ShopConfig.RewardImages = {
 	CoinBag = "rbxassetid://87157540094531",
 	CoinPile = "rbxassetid://136423613777895",
 	Gift = "rbxassetid://135823901516807",
+	Key = "rbxassetid://106655154523737",
+	Keys2 = "rbxassetid://108556651467078",
+	EggTicket = "rbxassetid://119039170163833",
 }
+
+-- СУПЕР-зелья: сильнее и дольше обычных, за монеты не продаются — только награды
+-- (дейлики, сейф Coin Rush, ребёрсы, квесты) и паки за Robux. Действуют вместо обычного
+-- того же типа (не складываются с ним): x3 монет, x1.5 скорости, +2 броска удачи.
+ShopConfig.SuperPotionOrder = { "SuperCoins", "SuperSpeed", "SuperLuck" }
+ShopConfig.Potions.SuperCoins = { Name = "Super Coin Potion", Short = "Super Coin", Icon = "💰", Image = "rbxassetid://96705395595679", Effect = "x3 coins", Duration = 600, Color = Color3.fromRGB(255, 170, 30), Super = true, Base = "Coins" }
+ShopConfig.Potions.SuperSpeed = { Name = "Super Speed Potion", Short = "Super Speed", Icon = "⚡", Image = "rbxassetid://126064573164393", Effect = "x1.5 walk speed", Duration = 600, Color = Color3.fromRGB(60, 140, 255), Super = true, Base = "Speed" }
+ShopConfig.Potions.SuperLuck = { Name = "Super Luck Potion", Short = "Super Luck", Icon = "🍀", Image = "rbxassetid://126031374933776", Effect = "x3 egg luck", Duration = 600, Color = Color3.fromRGB(40, 200, 90), Super = true, Base = "Luck" }
+-- все зелья (сохранение, инвентарь, таймеры на экране)
+ShopConfig.AllPotions = { "Coins", "Speed", "Luck", "SuperCoins", "SuperSpeed", "SuperLuck" }
 
 -- Цена зелья растёт с игроком: не меньше Price и не меньше доли Share от всего заработанного.
 function ShopConfig.PotionCost(name: string, lifetime: number?): number
 	local def = ShopConfig.Potions[name]
-	if not def then
+	if not def or def.Super then
 		return math.huge
 	end
 	return math.floor(math.max(def.Price, (def.Share or 0) * (tonumber(lifetime) or 0)))

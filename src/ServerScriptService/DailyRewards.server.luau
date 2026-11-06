@@ -18,12 +18,13 @@ remote.OnServerInvoke=function(p)
  p:SetAttribute("DailyDay",state.Day);p:SetAttribute("DailyClaimedAt",now)
  stats.Coins.Value+=D.CoinsFor(reward,p:GetAttribute("LifetimeEarned"))
  for name,count in pairs(reward.Potions or {}) do p:SetAttribute("Potion"..name,(p:GetAttribute("Potion"..name) or 0)+count) end
+ if reward.RushKeys then p:SetAttribute("Save_RushKeys",(p:GetAttribute("Save_RushKeys") or 0)+reward.RushKeys) end
  -- 7-й день: бесплатное яйцо (двойная удача) из лучшего открытого мира — через QuestLine (FreeHatch)
  if reward.FreeHatch then
   task.spawn(function()
    local sig=game:GetService("ServerStorage"):FindFirstChild("ServerSignals")
    local fh=sig and sig:FindFirstChild("FreeHatch")
-   if fh then pcall(fh.Invoke,fh,p,nil) end
+   if fh then pcall(fh.Invoke,fh,p,nil,reward.FreeHatch==true and 1 or reward.FreeHatch,true) end
   end)
  end
  return {Ok=true,Day=state.Day,Message="Claimed: "..reward.Name}

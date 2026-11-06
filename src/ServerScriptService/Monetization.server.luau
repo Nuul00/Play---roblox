@@ -165,7 +165,7 @@ local function grant(p: Player, def): boolean
 		end
 		return true
 	elseif def.Kind == "potions" then
-		for _, name in ipairs({ "Coins", "Speed", "Luck" }) do
+		for _, name in ipairs({ "SuperCoins", "SuperSpeed", "SuperLuck" }) do -- за Robux — СУПЕР-зелья
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
 		end
 		return true
@@ -238,9 +238,10 @@ local function grant(p: Player, def): boolean
 			return false
 		end
 		stats.Coins.Value += math.floor(math.max(def.Min, (p:GetAttribute("LifetimeEarned") or 0) * def.Share))
-		for _, name in ipairs({ "Coins", "Luck" }) do
+		for _, name in ipairs({ "SuperCoins", "SuperLuck" }) do
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
 		end
+		p:SetAttribute("Save_RushKeys", (p:GetAttribute("Save_RushKeys") or 0) + 3)
 		p:SetAttribute("Save_StarterBought", true)
 		return true
 	elseif def.Kind == "luck" then

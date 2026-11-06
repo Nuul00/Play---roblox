@@ -1,14 +1,17 @@
 -- Новая награда — каждый новый календарный день по UTC (раньше: ровно через 24 ч после прошлой,
 -- и забравший в 20:00 назавтра в 18:00 ничего не получал). Пропуск дня прогресс не сбрасывает.
 local D={Interval=24*60*60}
+-- Награды недели: то, чего не купить за монеты — СУПЕР-зелья, ключи Coin Rush, бесплатные яйца.
+-- Монеты — доля от всего заработанного (растут вместе с игроком). FreeHatch — сколько яиц
+-- открыть бесплатно (самое дорогое яйцо лучшего открытого мира, двойная удача).
 D.Rewards={
- {Name="Coin bag",Coins=1000,Share=0.01,Icon="Coins"},
- {Name="Luck potion ×1",Potions={Luck=1},Icon="Luck"},
- {Name="Big coin bag",Coins=2500,Share=0.025,Icon="Coins"},
- {Name="Speed potion ×2",Potions={Speed=2},Icon="Speed"},
- {Name="Coin potion ×2",Potions={Coins=2},Icon="Potion"},
- {Name="Luck potion ×3",Potions={Luck=3},Icon="Luck"},
- {Name="Free egg + chest + 3 potions",Coins=10000,Share=0.06,Potions={Coins=1,Speed=1,Luck=1},FreeHatch=true,Icon="Star"},
+ {Name="Coin bag",Coins=2000,Share=0.04,Icon="Coins"},
+ {Name="Super Luck potion",Potions={SuperLuck=1},Icon="SuperLuck"},
+ {Name="Coin pile + Rush key",Coins=5000,Share=0.08,RushKeys=1,Icon="CoinPile"},
+ {Name="Super Coin + Super Speed",Potions={SuperCoins=1,SuperSpeed=1},Icon="SuperCoins"},
+ {Name="2 Coin Rush keys",RushKeys=2,Icon="Key"},
+ {Name="2 Super Luck potions",Potions={SuperLuck=2},Icon="SuperLuck"},
+ {Name="JACKPOT",Coins=25000,Share=0.2,Potions={SuperCoins=1,SuperSpeed=1,SuperLuck=1},FreeHatch=3,RushKeys=1,Icon="Star"},
 }
 -- Монеты награды растут с игроком: не меньше Coins и не меньше доли Share от всего заработанного.
 function D.CoinsFor(reward,lifetime) return math.floor(math.max(reward.Coins or 0,(reward.Share or 0)*(tonumber(lifetime) or 0))) end

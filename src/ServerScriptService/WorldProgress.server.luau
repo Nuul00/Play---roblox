@@ -24,7 +24,7 @@ local function snapshot(p)
  for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
  data.Equipped=p:GetAttribute("Equipped") or ""
  data.Potions={};data.PotionLeft={}
- for _,name in ipairs({"Coins","Speed","Luck"}) do
+ for _,name in ipairs(ShopConfig.AllPotions) do
   data.Potions[name]=p:GetAttribute("Potion"..name) or 0
   data.PotionLeft[name]=math.max(0,(p:GetAttribute("PotionEnd"..name) or 0)-os.time())
  end
@@ -104,7 +104,7 @@ local function load(p)
  end
  p:SetAttribute("PetLevel",best)
  if type(loaded.Potions)=="table" then
-  for _,name in ipairs({"Coins","Speed","Luck"}) do
+  for _,name in ipairs(ShopConfig.AllPotions) do
    p:SetAttribute("Potion"..name,math.floor(number(loaded.Potions[name])))
    p:SetAttribute("PotionEnd"..name,os.time()+math.floor(number(type(loaded.PotionLeft)=="table" and loaded.PotionLeft[name])))
   end
