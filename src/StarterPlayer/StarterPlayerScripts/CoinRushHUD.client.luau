@@ -269,7 +269,7 @@ task.spawn(function()
 	if not portal then
 		return
 	end
-	local field, core = portal:WaitForChild("Field", 10), portal:WaitForChild("Core", 10)
+	local field, core = portal:WaitForChild("Field", 10), nil
 	if not field then
 		return
 	end
@@ -327,7 +327,12 @@ task.spawn(function()
 			end
 		end
 	end
-	local f0, c0 = field.CFrame, core and core.CFrame
+	local guis = {}
+	for _, g in ipairs(field:GetChildren()) do
+		if g:IsA("SurfaceGui") then
+			table.insert(guis, g)
+		end
+	end
 	-- тропинка: монеты парят и крутятся, огоньки бегут волной к порталу
 	local pathModel = portal:WaitForChild("RushPath", 10)
 	local floats, lights = {}, {}
@@ -350,10 +355,31 @@ task.spawn(function()
 			l.p.Transparency = 0.6 - 0.6 * wave
 			l.p.Size = Vector3.new(0.9, 0.9, 0.9) * (0.8 + 0.45 * wave)
 		end
-		field.CFrame = f0 * CFrame.Angles(t * 1.5, 0, 0)
-		if core then
-			core.CFrame = c0 * CFrame.Angles(-t * 2.2, 0, 0)
-			core.Transparency = 0.5 + 0.1 * math.sin(t * 3)
+		-- поверхность портала: полосы крутятся навстречу, ядро «дышит», искорки мерцают
+		for _, sg in ipairs(guis) do
+			local bands, bands2, coreF, base = sg:FindFirstChild("Bands"), sg:FindFirstChild("Bands2"), sg:FindFirstChild("Core"), sg:FindFirstChild("Base")
+			if bands then
+				bands.UIGradient.Rotation = (t * 40) % 360
+			end
+			if bands2 then
+				bands2.UIGradient.Rotation = (-t * 65) % 360
+			end
+			if base then
+				base.UIGradient.Offset = Vector2.new(0, math.sin(t * 0.8) * 0.15)
+			end
+			if coreF then
+				local k = 0.55 + 0.06 * math.sin(t * 2.2)
+				coreF.Size = UDim2.fromScale(k, k)
+			end
+			for _, tw in ipairs(sg:GetChildren()) do
+				if tw.Name == "Twinkle" then
+					local ph = tw:GetAttribute("Phase") or 0
+					local v = (math.sin(t * 3 + ph) + 1) / 2
+					tw.ImageTransparency = 1 - v
+					tw.Size = UDim2.fromOffset(18 + 26 * v, 18 + 26 * v)
+					tw.Rotation = t * 60 + ph * 50
+				end
+			end
 		end
 	end)
 end)

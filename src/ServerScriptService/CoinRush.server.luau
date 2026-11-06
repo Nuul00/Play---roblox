@@ -285,33 +285,126 @@ do
 		end
 		part(portal, "Top", Vector3.new(17, 2.5, 3), face * CFrame.new(0, 17.5, 0), DARK, Enum.Material.Slate)
 	end
-	-- золотой вихрь в проёме: мерцающее поле + светящийся центр + затягивающиеся искры
-	local r = math.min(w, h) * 0.26
-	local cy = h * 0.42
-	local diskCF = face * CFrame.new(0, cy, 0) * CFrame.Angles(0, math.rad(90), 0)
-	local field = part(portal, "Field", Vector3.new(0.3, r * 2, r * 2), diskCF, GOLD, Enum.Material.ForceField, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.1 })
-	part(portal, "Core", Vector3.new(0.2, r * 1.6, r * 1.6), diskCF, Color3.fromRGB(255, 225, 140), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.55 })
-	field:SetAttribute("Spin", true)
+	-- портал в проёме арки: «капсула» точно по форме проёма (измерено: ~9.8 ст шириной, прямые края
+	-- до ~12 ст и полукруглый верх). Поверхность — SurfaceGui со слоями градиентов (клиент их крутит:
+	-- переливы и спираль), светлое ядро, мерцающие искорки; по краю проёма — светящийся ободок;
+	-- искры вылетают из портала навстречу игроку.
+	local OW = arch and 9.8 or 10 -- ширина проёма
+	local OR = OW / 2
+	local OS = arch and 12.2 or 10 -- высота прямых краёв (дальше — полукруг)
+	local surfH = OS + OR + OR -- снизу запас под землю, чтобы нижнее скругление спряталось
+	local surfCF = face * CFrame.new(0, OS + OR - surfH / 2, 0)
+	local field = part(portal, "Field", Vector3.new(OW, surfH, 0.2), surfCF, GOLD, Enum.Material.SmoothPlastic, { CanCollide = false, CanQuery = false, Transparency = 1, CastShadow = false })
+	field:SetAttribute("PortalSurface", true)
+	local PPS = 24
+	for _, faceId in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+		local sg = Instance.new("SurfaceGui")
+		sg.Name = "PortalGui"
+		sg.Face = faceId
+		sg.PixelsPerStud = PPS
+		sg.LightInfluence = 0
+		pcall(function()
+			sg.Brightness = 1.15
+		end)
+		sg.ClipsDescendants = true
+		sg.Parent = field
+		local function layer(name, scale, color, transp, rot)
+			local f = Instance.new("Frame")
+			f.Name = name
+			f.AnchorPoint = Vector2.new(0.5, 0.5)
+			f.Position = UDim2.fromScale(0.5, 0.5)
+			f.Size = UDim2.fromScale(scale, scale)
+			f.BackgroundColor3 = Color3.new(1, 1, 1)
+			f.BorderSizePixel = 0
+			f.Parent = sg
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(0, math.floor(OW * PPS * scale / 2))
+			c.Parent = f
+			local g = Instance.new("UIGradient")
+			g.Color = color
+			g.Transparency = transp
+			g.Rotation = rot
+			g.Parent = f
+			return f
+		end
+		-- 1) основа: тёплое золото с тёмно-оранжевой глубиной к краям
+		layer("Base", 1, ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 70, 20)),
+			ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 160, 40)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 220, 110)),
+			ColorSequenceKeypoint.new(0.7, Color3.fromRGB(255, 160, 40)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 70, 20)),
+		}), NumberSequence.new(0.05), 0)
+		-- 2) спиральные полосы света (вращаются)
+		layer("Bands", 1, ColorSequence.new(Color3.fromRGB(255, 250, 220)), NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0.55), NumberSequenceKeypoint.new(0.25, 1),
+			NumberSequenceKeypoint.new(0.45, 0.5), NumberSequenceKeypoint.new(0.55, 1), NumberSequenceKeypoint.new(0.75, 0.55),
+			NumberSequenceKeypoint.new(0.85, 1), NumberSequenceKeypoint.new(1, 1),
+		}), 30)
+		-- 3) второй слой полос навстречу — даёт «закрутку»
+		layer("Bands2", 1, ColorSequence.new(Color3.fromRGB(255, 200, 90)), NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.6), NumberSequenceKeypoint.new(0.4, 1),
+			NumberSequenceKeypoint.new(0.6, 0.6), NumberSequenceKeypoint.new(0.7, 1), NumberSequenceKeypoint.new(1, 1),
+		}), -60)
+		-- 4) светлое ядро в глубине
+		layer("Core", 0.55, ColorSequence.new(Color3.fromRGB(255, 255, 240)), NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.15), NumberSequenceKeypoint.new(1, 1),
+		}), 90)
+		-- 5) искорки
+		for k = 1, 9 do
+			local sp = Instance.new("ImageLabel")
+			sp.Name = "Twinkle"
+			sp.BackgroundTransparency = 1
+			sp.Image = "rbxasset://textures/particles/sparkles_main.dds"
+			sp.AnchorPoint = Vector2.new(0.5, 0.5)
+			sp.Position = UDim2.fromScale(0.2 + (k * 0.37) % 0.6, 0.12 + (k * 0.23) % 0.62)
+			sp.Size = UDim2.fromOffset(34, 34)
+			sp.ImageColor3 = Color3.fromRGB(255, 250, 220)
+			sp:SetAttribute("Phase", k * 0.7)
+			sp.Parent = sg
+		end
+	end
+	-- светящийся ободок по краю проёма: прямые края + полукруглый верх
+	local RIMC = Color3.fromRGB(255, 235, 150)
+	for _, x in ipairs({ -OR, OR }) do
+		part(portal, "PortalRim", Vector3.new(0.35, OS, 0.35), face * CFrame.new(x, OS / 2, 0), RIMC, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
+	end
+	for k = 0, 11 do
+		local a0 = math.pi * k / 12
+		local a1 = math.pi * (k + 1) / 12
+		local am = (a0 + a1) / 2
+		local seg = 2 * OR * math.sin(math.pi / 24) + 0.1
+		part(portal, "PortalRim", Vector3.new(seg, 0.35, 0.35), face * CFrame.new(OR * math.cos(am), OS + OR * math.sin(am), 0) * CFrame.Angles(0, 0, am + math.pi / 2), RIMC, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
+	end
+	-- искры из портала навстречу и лёгкая золотая дымка у порога
 	local swirl = Instance.new("ParticleEmitter")
 	swirl.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	swirl.Color = ColorSequence.new(GOLD, Color3.fromRGB(255, 245, 200))
 	swirl.LightEmission = 1
-	swirl.Rate = 60
-	swirl.Lifetime = NumberRange.new(0.8, 1.4)
-	swirl.Speed = NumberRange.new(-6, -3) -- к центру
-	swirl.SpreadAngle = Vector2.new(180, 180)
-	swirl.RotSpeed = NumberRange.new(-200, 200)
-	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
-	pcall(function()
-		swirl.Shape = Enum.ParticleEmitterShape.Disc
-		swirl.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
-	end)
+	swirl.Rate = 35
+	swirl.Lifetime = NumberRange.new(1, 1.8)
+	swirl.Speed = NumberRange.new(1.5, 4)
+	swirl.SpreadAngle = Vector2.new(25, 25)
+	swirl.EmissionDirection = Enum.NormalId.Front
+	swirl.Acceleration = Vector3.new(0, 1.5, 0)
+	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) })
 	swirl.Parent = field
+	local mist = Instance.new("ParticleEmitter")
+	mist.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	mist.Color = ColorSequence.new(Color3.fromRGB(255, 215, 120))
+	mist.LightEmission = 0.6
+	mist.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.75), NumberSequenceKeypoint.new(1, 1) })
+	mist.Rate = 6
+	mist.Lifetime = NumberRange.new(2, 3)
+	mist.Speed = NumberRange.new(0.5, 1.2)
+	mist.Size = NumberSequence.new(3, 6)
+	mist.EmissionDirection = Enum.NormalId.Front
 	local glow = Instance.new("PointLight")
 	glow.Color = GOLD
-	glow.Range = 30
+	glow.Range = 28
 	glow.Brightness = 2
 	glow.Parent = field
+	mist.Parent = part(portal, "MistAnchor", Vector3.new(OW, 0.2, 0.2), face * CFrame.new(0, 0.6, -0.5), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
 	-- табличка над аркой: название и цена (цену пишет клиент)
 	local anchor = part(portal, "SignAnchor", Vector3.new(1, 1, 1), face * CFrame.new(0, h + 3.5, 0), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
 	local bb = Instance.new("BillboardGui")
