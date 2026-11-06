@@ -45,3 +45,5 @@ RoyalEgg3=92d5cfcc-88ad-4ef5-92e5-cda908fd41fa#SapphireOwl
 RoyalEgg4=c0b82d24-223d-4e96-abf5-bef8d6df3456#EmeraldGriffin
 RoyalEgg5=126deab4-ff44-4937-8ef4-3a93e0ab35e5#GoldenPhoenix
 RoyalEgg6=ef62f3ea-871d-4e52-ae05-53824f785975#ImperialDragon
+RoyalEggV2=ba2aa836-64c5-498f-8ebd-47ac5927f842#RoyalEggCandy
+RoyalPedestal=9667a11b-a985-4b60-abeb-a5bb4fadef6b#RoyalPedestal

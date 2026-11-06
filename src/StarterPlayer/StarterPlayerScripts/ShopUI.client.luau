@@ -1424,6 +1424,10 @@ function H.step(dt)
 end
 
 RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
+	-- Royal Egg открывается в мире (RoyalHatch.client.luau)
+	if sourceEgg == "royal" then
+		return
+	end
 	-- Без анимации RareFX показывает свой эффект сразу (defer — чтобы он успел подписаться).
 	if type(batch) ~= "table" or #batch < 1 or #batch > 9 or not displays[sourceEgg] then
 		task.defer(H.burstEvent.Fire, H.burstEvent)

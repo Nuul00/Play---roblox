@@ -326,6 +326,15 @@ end)
 close.Activated:Connect(function()
 	show(false)
 end)
+-- открыть окно из мира (круг у пьедестала Royal Egg — RoyalEggStandFX)
+local openEvent = Instance.new("BindableEvent")
+openEvent.Name = "OpenRoyalEgg"
+openEvent.Parent = player:WaitForChild("PlayerGui")
+openEvent.Event:Connect(function()
+	if live and not panel.Visible and (player:GetAttribute("UIScreen") or "") == "" then
+		show(true)
+	end
+end)
 local function refreshButton()
 	open.Visible = live and player:GetAttribute("NoPaidRandom") == false and (player:GetAttribute("UIScreen") or "") == ""
 end

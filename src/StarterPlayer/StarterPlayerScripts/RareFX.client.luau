@@ -217,7 +217,10 @@ local function cinematic(rank: number, rarity: string)
 	end)
 end
 
-ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch)
+ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
+	if sourceEgg == "royal" then
+		return -- у Royal Egg своя анимация в мире (RoyalHatch)
+	end
 	if type(batch) ~= "table" then
 		return
 	end
