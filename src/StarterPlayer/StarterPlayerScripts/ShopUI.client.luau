@@ -40,6 +40,7 @@ local function corner(f, r)
 	Instance.new("UICorner", f).CornerRadius = UDim.new(0, r or 16)
 end
 local UISounds = require(game:GetService("ReplicatedStorage"):WaitForChild("UISounds"))
+local StoreConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("StoreConfig"))
 local TOUCH_ONLY = game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled
 local function stroke(f, c, t, tr)
 	local s = Instance.new("UIStroke")
@@ -337,8 +338,9 @@ local function refresh()
 	local waiting = os.clock() < busy
 	for _, pair in ipairs({ { single, 1 }, { triple, 3 }, { nine, 9 } }) do
 		local b, n = pair[1], pair[2]
-		local affordable = coins.Value >= egg.Cost * n
-		b.Text = waiting and "OPENING…" or (TOUCH_ONLY and string.format("OPEN ×%d\n💰 %s", n, fmt(egg.Cost * n)) or string.format("OPEN ×%d [%s]\n💰 %s", n, n == 1 and "E" or n == 3 and "R" or "T", fmt(egg.Cost * n)))
+		local locked = n == 9 and not StoreConfig.HasPassFeature(player, "Hatch9")
+		local affordable = coins.Value >= egg.Cost * n or locked
+		b.Text = locked and "🔒 OPEN ×9\ngamepass" or waiting and "OPENING…" or (TOUCH_ONLY and string.format("OPEN ×%d\n💰 %s", n, fmt(egg.Cost * n)) or string.format("OPEN ×%d [%s]\n💰 %s", n, n == 1 and "E" or n == 3 and "R" or "T", fmt(egg.Cost * n)))
 		b.Active = affordable and not waiting and not autoEgg
 		b.AutoButtonColor = b.Active and not currentSkin
 		if currentSkin then
@@ -353,7 +355,7 @@ local function refresh()
 		end
 	end
 	local on = autoEgg == eggId
-	auto.Text = on and "AUTO: ON\ntap to stop" or "AUTO OPEN\n×3 when possible"
+	auto.Text = on and "AUTO: ON\ntap to stop" or (StoreConfig.HasPassFeature(player, "AutoHatch") and "AUTO OPEN\n×3 when possible" or "🔒 AUTO OPEN\ngamepass")
 	auto.BackgroundColor3 = on and Color3.fromRGB(220, 70, 90) or (skyTheme and BUTTON_COLORS.sky.auto or BUTTON_COLORS.dark.auto)
 	if currentSkin then
 		auto.BackgroundTransparency = 1
@@ -361,7 +363,22 @@ local function refresh()
 	end
 end
 
+-- ×9 и автооткрытие — геймпассы (StoreConfig.HasPassFeature: бесплатно, пока пасс не создан,
+-- и тем, кто играл до их введения). Нет пасса — кнопка предлагает его купить.
+local function needPass(key)
+	if StoreConfig.HasPassFeature(player, key) then
+		return false
+	end
+	local def = StoreConfig.PassByKey(key)
+	if def then
+		game:GetService("MarketplaceService"):PromptGamePassPurchase(player, def.Id)
+	end
+	return true
+end
 local function hatch(n)
+	if n == 9 and needPass("Hatch9") then
+		return true
+	end
 	if not eggId or os.clock() < busy or coins.Value < Config.Eggs[eggId].Cost * n then
 		return false
 	end
@@ -401,6 +418,8 @@ end
 auto.Activated:Connect(function()
 	if autoEgg == eggId then
 		stopAuto()
+	elseif eggId and needPass("AutoHatch") then
+		return
 	elseif eggId then
 		if coins.Value < Config.Eggs[eggId].Cost then
 			subtitle.Text = "Not enough coins for auto open"

@@ -81,7 +81,44 @@ local function checkPolicy(p: Player)
 		task.wait(attempt * 2)
 	end
 end
+-- Пассы ×9 Hatch и Auto Hatch: кто уже играл, когда эти функции были бесплатными, получает их
+-- навсегда (Save_FreeHatch9 / Save_FreeAutoHatch). Проверка начинает работать, только когда пасс
+-- создан (Id > 0); игроки, впервые зашедшие после этого, покупают пасс.
+local function grandfather(p: Player)
+	if p:GetAttribute("Save_HatchRulesV2") then
+		return
+	end
+	local live = false
+	for _, key in ipairs({ "Hatch9", "AutoHatch" }) do
+		local def = StoreConfig.PassByKey(key)
+		if def and (def.Id or 0) > 0 then
+			live = true
+		end
+	end
+	if not live then
+		return
+	end
+	p:SetAttribute("Save_HatchRulesV2", true)
+	if (tonumber(p:GetAttribute("EggsOpened")) or 0) > 0 or (tonumber(p:GetAttribute("LifetimeEarned")) or 0) > 0 then
+		p:SetAttribute("Save_FreeHatch9", true)
+		p:SetAttribute("Save_FreeAutoHatch", true)
+	end
+end
+local function whenReady(p: Player, f)
+	if p:GetAttribute("ProfileReady") then
+		f(p)
+		return
+	end
+	local conn
+	conn = p:GetAttributeChangedSignal("ProfileReady"):Connect(function()
+		if p:GetAttribute("ProfileReady") then
+			conn:Disconnect()
+			f(p)
+		end
+	end)
+end
 local function onJoin(p: Player)
+	whenReady(p, grandfather)
 	task.spawn(checkPolicy, p)
 	checkPasses(p)
 end

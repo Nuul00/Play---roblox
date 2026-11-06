@@ -19,6 +19,7 @@ local function short(n)
  return tostring(math.floor(n + 0.5))
 end
 local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
+local StoreConfig = require(ReplicatedStorage:WaitForChild("StoreConfig"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
 if world:GetAttribute("ServerRunning") then return end
 world:SetAttribute("ServerRunning", true)
@@ -335,6 +336,7 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
  if kind == "egg" then
   amount = amount == nil and 1 or amount
   if amount ~= 1 and amount ~= 3 and amount ~= 9 then return end -- ×1 [E], ×3 [R], ×9 [T]
+  if amount == 9 and not StoreConfig.HasPassFeature(p, "Hatch9") then notify(p, "×9 Hatch is a gamepass — get it in the STORE"); return end
  end
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
  if kind == "magnettool" or kind == "potion" then

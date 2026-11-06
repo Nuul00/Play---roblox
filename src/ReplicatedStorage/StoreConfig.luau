@@ -10,6 +10,10 @@ StoreConfig.Passes = {
 	{ Key = "FastHatch", Id = 2068076497, Name = "Fast Hatch", Desc = "Eggs hatch 3x faster", Color = Color3.fromRGB(120, 200, 255) },
 	{ Key = "SuperMagnet", Id = 2070158347, Name = "Super Magnet", Desc = "2x magnet radius (up to 80 studs)", Color = Color3.fromRGB(110, 140, 255) },
 	{ Key = "SuperLuck", Id = 2067554513, Name = "Super Luck", Desc = "+2 egg rolls · 2x Super Secret chance", Random = true, Color = Color3.fromRGB(90, 170, 255) },
+	-- Открытие ×9 и автооткрытие яиц. Id = 0, пока пасс не создан в Creator Dashboard — тогда
+	-- функции бесплатны для всех. Кто играл до введения пассов, получает их бесплатно навсегда.
+	{ Key = "Hatch9", Id = 0, Name = "×9 Hatch", Desc = "Open 9 eggs at once", Color = Color3.fromRGB(190, 120, 255) },
+	{ Key = "AutoHatch", Id = 0, Name = "Auto Hatch", Desc = "Eggs open automatically while you stand by them", Color = Color3.fromRGB(255, 120, 170) },
 	{ Key = "MythicLuck", Id = 2067596576, Name = "Mythic Luck", Desc = "+3 egg rolls · 3x Super Secret chance (best luck pass)", Random = true, Color = Color3.fromRGB(240, 90, 220) },
 }
 
@@ -26,6 +30,15 @@ StoreConfig.Products = {
 	{ Key = "StarterPack", Id = 0, Name = "Starter Pack", Desc = "One time: 3 Luck + 3 Coin potions and coins = 20% of all you've earned", Kind = "starter", Share = 0.2, Min = 5000, Count = 3, Random = true, Color = Color3.fromRGB(255, 120, 170) },
 	{ Key = "LuckBoost", Id = 3728499085, Name = "Luck Boost", Desc = "x2 egg luck for 15 minutes", Kind = "luck", Seconds = 900, Random = true, Color = Color3.fromRGB(90, 220, 110) },
 }
+
+-- Есть ли у игрока функция пасса: куплен, выдан старому игроку бесплатно, или пасс ещё не создан.
+function StoreConfig.HasPassFeature(p: Player, key: string): boolean
+	local def = StoreConfig.PassByKey(key)
+	if not def or (def.Id or 0) <= 0 then
+		return true
+	end
+	return p:GetAttribute("Pass_" .. key) == true or p:GetAttribute("Save_Free" .. key) == true
+end
 
 function StoreConfig.PassByKey(key: string)
 	for _, p in ipairs(StoreConfig.Passes) do
