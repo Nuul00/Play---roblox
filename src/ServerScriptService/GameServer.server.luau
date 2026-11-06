@@ -546,35 +546,6 @@ do
  end
  fill(world, 115)
  fill(city, 90)
- -- Дорожка монет от спавна (0, y, 185) вперёд по тропинке: первый квест «собери 10 монет»
- -- выполняется сразу, а не через 10 секунд поиска монет на траве.
- local list, maxN = {}, 0
- for _, c in ipairs(world:GetChildren()) do
-  if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then
-   table.insert(list, c)
-   maxN = math.max(maxN, tonumber(string.match(c.Name, "%d+")) or 0)
-  end
- end
- local t = list[1]
- if t then
-  rayP.FilterDescendantsInstances = list
-  local g = workspace:Raycast(t.Position + Vector3.new(0, 2, 0), Vector3.new(0, -60, 0), rayP)
-  local lift = g and (t.Position.Y - g.Position.Y) or 2.6
-  for k = 0, 11 do
-   local x, z = (k % 2 == 0) and -2.5 or 2.5, 177 - k * 4.5
-   local hit = workspace:Raycast(Vector3.new(x, 80, z), Vector3.new(0, -160, 0), rayP)
-   if hit then
-    maxN += 1
-    local c = t:Clone()
-    c.Name = "Coin_" .. maxN
-    c.Position = Vector3.new(x, hit.Position.Y + lift, z)
-    for _, d in ipairs(c:GetChildren()) do
-     if d:IsA("Light") or d:IsA("ParticleEmitter") then d:Destroy() end
-    end
-    c.Parent = world
-   end
-  end
- end
 end
 for zone, worldId in pairs({[world] = "Meadow", [city] = "Neon"}) do
  for _, coin in ipairs(zone:GetChildren()) do
