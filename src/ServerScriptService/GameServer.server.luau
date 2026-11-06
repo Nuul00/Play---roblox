@@ -293,7 +293,11 @@ local UPGRADES = {
   get = function(p) return p:GetAttribute("DoubleLevel") or 0 end,
   set = function(p, _s, v) p:SetAttribute("DoubleLevel", v) end },
 }
+local buyRate = {}
+Players.PlayerRemoving:Connect(function(p) buyRate[p] = nil end)
 buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
+ -- не больше ~12 запросов в секунду до любой работы (запросы издалека раньше не ограничивались)
+ do local now = os.clock(); local r = buyRate[p]; if not r or now - r.t > 1 then r = {t = now, n = 0}; buyRate[p] = r end; r.n += 1; if r.n > 12 then return end end
  if kind == "egg" then
   amount = amount == nil and 1 or amount
   if amount ~= 1 and amount ~= 3 and amount ~= 9 then return end -- ×1 [E], ×3 [R], ×9 [T]
@@ -390,7 +394,8 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- Геймпассы «Super Luck» (+2 броска, шанс супер-секреток ×2) и «Mythic Luck» (+1 бросок, ×5).
   if p:GetAttribute("Pass_SuperLuck") then extraLuck+=2 end
   if p:GetAttribute("Pass_MythicLuck") then extraLuck+=1 end
-  local superMult=(p:GetAttribute("Pass_SuperLuck") and 2 or 1)*(p:GetAttribute("Pass_MythicLuck") and 5 or 1)
+  -- пассы удачи ускоряют секретки, но не больше чем в 3 раза (было x10 — pay-to-win)
+  local superMult=math.min(3,(p:GetAttribute("Pass_SuperLuck") and 2 or 1)*(p:GetAttribute("Pass_MythicLuck") and 2 or 1))
   if RunService:IsStudio() then superMult*=tonumber(workspace:GetAttribute("DebugSuperOdds")) or 1 end
   local superHits={}
   for _=1,amount do

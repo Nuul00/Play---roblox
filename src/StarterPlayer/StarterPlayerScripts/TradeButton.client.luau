@@ -1,5 +1,11 @@
 -- Кнопка TRADE справа от «≡»: торговля питомцами пока в разработке («coming soon»).
 -- Оформление как у TRAILS: цвета HUD-скина текущего мира, ленточка SOON.
+-- Пока торговли нет, кнопку не показываем (заглушка «SOON» в главной панели путала игроков).
+-- Когда трейд будет готов — поставить TRADE_ENABLED = true.
+local TRADE_ENABLED = false
+if not TRADE_ENABLED then
+	return
+end
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer

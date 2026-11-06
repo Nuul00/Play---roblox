@@ -10,15 +10,15 @@ StoreConfig.Passes = {
 	{ Key = "FastHatch", Id = 2068076497, Name = "Fast Hatch", Desc = "Eggs hatch 3x faster", Color = Color3.fromRGB(120, 200, 255) },
 	{ Key = "SuperMagnet", Id = 2070158347, Name = "Super Magnet", Desc = "2x magnet radius (up to 60 studs)", Color = Color3.fromRGB(110, 140, 255) },
 	{ Key = "SuperLuck", Id = 2067554513, Name = "Super Luck", Desc = "+2 egg rolls · 2x Super Secret chance", Color = Color3.fromRGB(90, 170, 255) },
-	{ Key = "MythicLuck", Id = 2067596576, Name = "Mythic Luck", Desc = "5x Super Secret chance · +1 egg roll", Color = Color3.fromRGB(240, 90, 220) },
+	{ Key = "MythicLuck", Id = 2067596576, Name = "Mythic Luck", Desc = "2x Super Secret chance · +1 egg roll", Color = Color3.fromRGB(240, 90, 220) },
 }
 
 -- Монеты в паках считаются от прогресса игрока: доля от всех заработанных монет (не меньше Min),
 -- чтобы пак был полезен и новичку, и тому, кто уже далеко.
 StoreConfig.Products = {
-	{ Key = "CoinsSmall", Id = 3728499048, Name = "Coin Pack", Desc = "Coins = 10% of all you've earned", Kind = "coins", Share = 0.10, Min = 2500, Color = Color3.fromRGB(255, 200, 60) },
-	{ Key = "CoinsMedium", Id = 3728499058, Name = "Big Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Min = 10000, Color = Color3.fromRGB(255, 170, 40) },
-	{ Key = "CoinsHuge", Id = 3728499068, Name = "Huge Coin Pack", Desc = "Coins = 100% of all you've earned", Kind = "coins", Share = 1.0, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
+	{ Key = "CoinsSmall", Id = 3728499048, Name = "Coin Pack", Desc = "Coins = 5% of all you've earned", Kind = "coins", Share = 0.05, Min = 2500, Color = Color3.fromRGB(255, 200, 60) },
+	{ Key = "CoinsMedium", Id = 3728499058, Name = "Big Coin Pack", Desc = "Coins = 15% of all you've earned", Kind = "coins", Share = 0.15, Min = 10000, Color = Color3.fromRGB(255, 170, 40) },
+	{ Key = "CoinsHuge", Id = 3728499068, Name = "Huge Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
 	{ Key = "Potions", Id = 3728499075, Name = "Potion Pack", Desc = "3 Coin, 3 Speed and 3 Luck potions", Kind = "potions", Count = 3, Color = Color3.fromRGB(180, 120, 255) },
 	{ Key = "LuckBoost", Id = 3728499085, Name = "Luck Boost", Desc = "x2 egg luck for 15 minutes", Kind = "luck", Seconds = 900, Color = Color3.fromRGB(90, 220, 110) },
 }

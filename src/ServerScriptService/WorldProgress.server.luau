@@ -58,17 +58,19 @@ local function load(p)
  -- Замок профиля — на сессию игрока, а не на сервер: быстрый перезаход на тот же сервер
  -- ждёт, пока старая сессия сохранится и снимет замок (иначе сохранения новой молча отбрасывались).
  local myToken=token..":"..game:GetService("HttpService"):GenerateGUID(false)
- for attempt=1,6 do
+ -- ждём дольше, чем живёт чужой замок (120 с): после падения сервера игрок всё равно зайдёт
+ for attempt=1,15 do
   local ok,data=pcall(function()
    return store:UpdateAsync(tostring(p.UserId),function(old)
-    old=type(old)=="table" and old or {}
-    if old.Session and old.Session~=myToken and os.time()-(old.Lease or 0)<180 then return nil end
+    if old~=nil and type(old)~="table" then return nil end -- битая запись: не затираем новым профилем
+    old=old or {}
+    if old.Session and old.Session~=myToken and os.time()-(old.Lease or 0)<120 then return nil end
     old.Session=myToken;old.Lease=os.time();return old
    end)
   end)
   if ok and data and data.Session==myToken then loaded=data;break end
   if p.Parent~=Players then break end
-  task.wait(attempt*2)
+  task.wait(math.min(attempt*2,10))
  end
  -- игрок ушёл, пока профиль грузился: сразу снимаем замок, иначе он висел бы до конца жизни сервера
  if loaded and p.Parent~=Players then
@@ -132,15 +134,18 @@ local function save(p,release)
  local session=sessions[p]
  if not session then return true end
  session.release=session.release or release
- if session.busy then if not release then return false end;repeat task.wait(0.1) until not session.busy end
+ -- автосейв в процессе: ждём его и сами пишем релиз (автосейв больше не снимает сессию за нас,
+ -- иначе BindToClose мог закончиться раньше, чем замок реально снят)
+ if session.busy then if not release then return false end;repeat task.wait(0.1) until not session.busy;if sessions[p]~=session then return true end end
  session.busy=true
+ local releasing=session.release -- что именно пишем: релиз замка или обычный автосейв
  local okSnap,data=pcall(snapshot,p)
  if not okSnap then session.busy=false;warn("[Profiles] Snapshot failed: "..tostring(data));return false end
- if session.release then data.Session=nil else data.Session=session.token end
+ if releasing then data.Session=nil else data.Session=session.token end
  data.Lease=os.time()
  -- при выходе и выключении сервера пробуем несколько раз с паузой: прогресс не должен теряться
  local ok,err
- for attempt=1,(session.release and 4 or 1) do
+ for attempt=1,(releasing and 4 or 1) do
   local rejected=false
   ok,err=pcall(function()
    store:UpdateAsync(tostring(p.UserId),function(old)
@@ -155,7 +160,12 @@ local function save(p,release)
  end
  session.busy=false
  if not ok then warn("[Profiles] Save failed: "..tostring(err));pcall(function() p:SetAttribute("SaveStatus","SAVE RETRY PENDING") end) end
- if session.release and ok then sessions[p]=nil end
+ if releasing and ok then
+  sessions[p]=nil
+ elseif err=="session lock lost" then
+  -- замок у другого сервера: дальше сохранять нечего, иначе вечные повторы и утечка игрока
+  sessions[p]=nil
+ end
  return ok
 end
 -- Монетизация просит сохранить профиль сразу после покупки (чтобы купленное не пропало при падении сервера).

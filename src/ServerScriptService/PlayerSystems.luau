@@ -180,7 +180,7 @@ function PlayerSystems.CheckBadges(p)
 		local key = "Badge" .. badge.Id
 		if not p:GetAttribute(key) and (p:GetAttribute(badge.Stat) or 0) >= badge.Goal then
 			p:SetAttribute(key, true)
-			notifyFn(p, "🏅 Achievement: " .. badge.Name .. " · x1.05 coins forever!", true)
+			notifyFn(p, "🏅 Achievement: " .. badge.Name .. " · x" .. ShopConfig.BadgeBonus .. " coins forever!", true)
 		end
 		if p:GetAttribute(key) then
 			unlocked += 1

@@ -87,6 +87,14 @@ function CoinTypes.AddGlow(coin: BasePart, color: Color3, rarity: number)
 	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) })
 	sparks.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) })
 	sparks.Parent = coin
+	-- Производительность: в мире ~100–140 монет. Обычные — только искры; ореол и свет — у редких,
+	-- иначе на телефоне горит сотня PointLight разом.
+	if rarity <= 1 then
+		local old = coin:FindFirstChildWhichIsA("PointLight")
+		if old then old:Destroy() end
+		sparks.Rate = 2
+		return
+	end
 	local aura = Instance.new("ParticleEmitter")
 	aura.Name = "Aura"
 	aura.Texture = "rbxasset://textures/particles/sparkles_main.dds"

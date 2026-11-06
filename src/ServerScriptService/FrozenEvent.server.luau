@@ -100,6 +100,12 @@ local function makeCrystal(pos: Vector3)
 		if not p:GetAttribute("ProfileReady") or not unlocked(p, "Frozen Peaks") then
 			return
 		end
+		-- не больше 8 кристаллов одному игроку за метель (иначе скрипт-телепорт собирал все 24)
+		local cap = folder:GetAttribute("Cap_" .. p.UserId) or 0
+		if cap >= 8 then
+			return
+		end
+		folder:SetAttribute("Cap_" .. p.UserId, cap + 1)
 		taken = true
 		local earned = math.floor(BASE_VALUE * REWARD_COINS * PlayerSystems.CoinMultiplier(p))
 		stats.Coins.Value += earned
@@ -134,6 +140,9 @@ local function storm()
 	end
 	task.wait(math.max(0, DURATION - 30))
 	folder:ClearAllChildren()
+	for name in folder:GetAttributes() do
+		if string.sub(name, 1, 4) == "Cap_" then folder:SetAttribute(name, nil) end
+	end
 end
 
 task.wait(FIRST)

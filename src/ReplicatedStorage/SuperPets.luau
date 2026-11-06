@@ -13,7 +13,7 @@ local WORLD_ORDER = { "island", "neon", "sky", "volcano", "galaxy", "frozen" }
 local SUPER_BASE = 154
 
 -- Мифические секретки (id 172-179, закреплены): 8 уникальных питомцев с собственным обликом.
--- Шесть — по одному на мир (1 на 15 млн), две «космические» — из любого яйца (1 на 50 млн).
+-- Шесть — по одному на мир (1 на 15 млн), две «космические» — только из яиц Galaxy (1 на 50 млн).
 -- Base — чья модель берётся, Look — особый облик (PetVisuals.ApplyLook), Mult — от силы основы.
 local SPECIALS = {
 	{ Id = 172, Name = "Blossom Hologram", Base = 42, Look = "hologram", World = "island", Odds = 15_000_000, Mult = 25 },
@@ -22,8 +22,8 @@ local SPECIALS = {
 	{ Id = 175, Name = "Frostbite Wyvern", Base = 145, Look = "frost", World = "frozen", Odds = 15_000_000, Mult = 25 },
 	{ Id = 176, Name = "Molten Colossus", Base = 97, Look = "molten", World = "volcano", Odds = 15_000_000, Mult = 25 },
 	{ Id = 177, Name = "Void Phoenix", Base = 121, Look = "shadow", World = "galaxy", Odds = 15_000_000, Mult = 25 },
-	{ Id = 178, Name = "Prism Phoenix King", Base = 89, Look = "prism", World = nil, Odds = 50_000_000, Mult = 120 },
-	{ Id = 179, Name = "Empress of Eternity", Base = 81, Look = "blossom", World = nil, Odds = 50_000_000, Mult = 600 },
+	{ Id = 178, Name = "Prism Phoenix King", Base = 89, Look = "prism", World = "galaxy", Odds = 50_000_000, Mult = 24 },
+	{ Id = 179, Name = "Empress of Eternity", Base = 81, Look = "blossom", World = "galaxy", Odds = 50_000_000, Mult = 60 },
 }
 
 return function(Config)

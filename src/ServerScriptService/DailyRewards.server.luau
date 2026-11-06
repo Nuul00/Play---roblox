@@ -2,7 +2,11 @@
 local RS=game:GetService("ReplicatedStorage")
 local D=require(RS:WaitForChild("DailyConfig"))
 local remote=Instance.new("RemoteFunction");remote.Name="DailyRewardClaim";remote.Parent=RS
+local lastClaim={}
+game:GetService("Players").PlayerRemoving:Connect(function(p) lastClaim[p]=nil end)
 remote.OnServerInvoke=function(p)
+ if os.clock()-(lastClaim[p] or -1e9)<0.5 then return {Ok=false,Message="Please wait"} end
+ lastClaim[p]=os.clock()
  if not p:GetAttribute("ProfileReady") then return {Ok=false,Message="Your profile is loading"} end
  local stats=p:FindFirstChild("leaderstats")
  if not stats then return {Ok=false,Message="Your profile is loading"} end

@@ -139,8 +139,10 @@ local rewardText = label(card, 12, 130, W - 24, 20, 14, rgb(255, 230, 120))
 
 -- Кнопка CLAIM: пульсирует и светится, когда цель выполнена (занимает место полоски).
 local claimBtn = Instance.new("TextButton")
-claimBtn.Position = UDim2.fromOffset(12, 101) -- ровно на месте полоски прогресса, того же размера
-claimBtn.Size = UDim2.fromOffset(BAR_W, 24)
+-- на месте полоски прогресса, но выше: на телефоне по ней должно быть легко попасть пальцем
+local TOUCH = game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled
+claimBtn.Position = UDim2.fromOffset(12, TOUCH and 97 or 101)
+claimBtn.Size = UDim2.fromOffset(BAR_W, TOUCH and 36 or 24)
 claimBtn.BackgroundColor3 = WHITE
 claimBtn.Text = ""
 claimBtn.AutoButtonColor = false
@@ -152,7 +154,7 @@ grad(claimBtn, rgb(255, 235, 110), rgb(255, 150, 30))
 local claimStroke = stroke(claimBtn, WHITE, 2.5)
 local claimScale = Instance.new("UIScale")
 claimScale.Parent = claimBtn
-local shine = frame(claimBtn, 0, 0, BAR_W, 24, WHITE, 12)
+local shine = frame(claimBtn, 0, 0, BAR_W, TOUCH and 36 or 24, WHITE, 12)
 shine.ZIndex = 5
 local shineGrad = Instance.new("UIGradient")
 shineGrad.Rotation = 20
@@ -164,7 +166,7 @@ shineGrad.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(1, 1),
 })
 shineGrad.Parent = shine
-local claimLabel = label(claimBtn, 0, 2, BAR_W, 20, 16, WHITE, Enum.TextXAlignment.Center)
+local claimLabel = label(claimBtn, 0, TOUCH and 5 or 2, BAR_W, TOUCH and 26 or 20, TOUCH and 20 or 16, WHITE, Enum.TextXAlignment.Center)
 claimLabel.Text = "🎁 CLAIM!"
 claimLabel.ZIndex = 6
 claimLabel:FindFirstChildOfClass("UIStroke").Color = rgb(120, 60, 10)
@@ -571,7 +573,7 @@ render()
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
-		rootScale.Scale = math.clamp(camera.ViewportSize.Y / 720, 0.6, 1.1)
+		rootScale.Scale = math.clamp(camera.ViewportSize.Y / 720, TOUCH and 0.8 or 0.6, 1.1)
 	end
 	local t = os.clock()
 	if readyNow and root.Visible then

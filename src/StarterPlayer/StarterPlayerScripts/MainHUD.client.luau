@@ -31,6 +31,13 @@ list.SortOrder = Enum.SortOrder.LayoutOrder
 list.Parent = column
 local uiScale = Instance.new("UIScale")
 uiScale.Parent = column
+-- На телефоне левый нижний угол занимает джойстик: колонку статов переносим к правому краю по центру
+-- (справа внизу — кнопка прыжка, справа вверху — настройки).
+if game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled then
+	column.AnchorPoint = Vector2.new(1, 0.5)
+	column.Position = UDim2.new(1, -14, 0.5, 0)
+	list.HorizontalAlignment = Enum.HorizontalAlignment.Right
+end
 
 local function abbreviate(n: number): string
 	local units = { { 1e21, "Sx" }, { 1e18, "Qi" }, { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
@@ -191,7 +198,8 @@ RunService.RenderStepped:Connect(function(dt)
 	if math.abs(target - shown) < 0.05 then
 		shown = target
 	end
-	coinText.Text = abbreviate(shown)
+	local txt = abbreviate(shown)
+	if coinText.Text ~= txt then coinText.Text = txt end
 	local camera = workspace.CurrentCamera
 	if camera then
 		uiScale.Scale = math.clamp(camera.ViewportSize.Y / 720, 0.6, 1.1)
