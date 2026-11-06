@@ -38,3 +38,10 @@
 2622=23030d8b-bd95-4282-b8b6-b8c579408da3
 2623=8603a9bd-b09c-49f3-b0b3-c8c781a3dd12
 2701=81d5fe0e-1bdb-4229-bb0f-096ef8f3c769#LeaderboardPodium (Tripo, single podium for all worlds)
+RoyalEgg=4fceab24-7e42-4776-b785-efbfc226e50a#RoyalEgg
+RoyalEgg1=f5abe8ce-fe15-41be-9d13-ae3b14b42982#CrownPup
+RoyalEgg2=6c79571f-c946-4468-9a43-21d893f44701#VelvetFox
+RoyalEgg3=92d5cfcc-88ad-4ef5-92e5-cda908fd41fa#SapphireOwl
+RoyalEgg4=c0b82d24-223d-4e96-abf5-bef8d6df3456#EmeraldGriffin
+RoyalEgg5=126deab4-ff44-4937-8ef4-3a93e0ab35e5#GoldenPhoenix
+RoyalEgg6=ef62f3ea-871d-4e52-ae05-53824f785975#ImperialDragon
