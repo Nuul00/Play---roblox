@@ -169,6 +169,44 @@ local function grant(p: Player, def): boolean
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + def.Count)
 		end
 		return true
+	elseif def.Kind == "royalegg" then
+		local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
+		local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))
+		local SHORT = { ["Meadow Isles"] = "island", ["Neon District"] = "neon", ["Sky Isles"] = "sky", ["Frozen Peaks"] = "frozen", ["Magma Volcano"] = "volcano", ["Cosmic Galaxy"] = "galaxy" }
+		local best = "island"
+		for _, w in ipairs(Worlds.Worlds) do
+			if w.Open and SHORT[w.Id] and ((w.Cost or 0) <= 0 or p:GetAttribute(Worlds.UnlockKey(w.Id))) then
+				best = SHORT[w.Id]
+			end
+		end
+		local rng = Random.new()
+		local results = {}
+		for _ = 1, def.Count or 1 do
+			local id = Config.RollRobuxEgg(best, rng:NextNumber() * 100)
+			local count = (p:GetAttribute("PetOwned" .. id) or 0) + 1
+			p:SetAttribute("PetOwned" .. id, count)
+			PlayerSystems.OnHatched(p, id)
+			table.insert(results, { Pet = id, Count = count, Deleted = false, Forced = false })
+		end
+		p:SetAttribute("Save_RoyalEggs", (p:GetAttribute("Save_RoyalEggs") or 0) + #results)
+		task.delay(0.3, function()
+			if p.Parent ~= Players then
+				return
+			end
+			local hatched = ReplicatedStorage:FindFirstChild("GameHatched")
+			if hatched then
+				hatched:FireClient(p, results, "royal")
+			end
+			-- Legendary и Secret из Royal Egg видят все на сервере
+			local announce = ReplicatedStorage:FindFirstChild("GameAnnounce")
+			for _, r in ipairs(results) do
+				local d = Config.Pets[r.Pet]
+				if announce and d and (d.Rarity == "Legendary" or d.Rarity == "Secret") then
+					announce:FireAllClients(p.DisplayName, r.Pet, false)
+				end
+			end
+		end)
+		return true
 	elseif def.Kind == "pet" then
 		local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 		local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))

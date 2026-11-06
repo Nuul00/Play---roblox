@@ -197,7 +197,7 @@ local function buildPets()
 		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
 		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
-		label(card, (def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
+		label(card, (def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
 		-- Способность питомца и (у Legendary/Secret) значок супер-способности.
 		local ability = PetAbilities.Get(baseId, tier)
 		local abilityLine = label(card, ability.Text, UDim2.fromOffset(6, 133), UDim2.fromOffset(126, 15), 13, Color3.fromRGB(255, 235, 160))

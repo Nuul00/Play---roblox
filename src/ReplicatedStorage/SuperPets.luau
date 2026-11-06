@@ -131,6 +131,72 @@ return function(Config)
 			Config.Exclusives[world] = id
 		end
 	end
+	-- Royal Egg — яйцо за Robux (id питомцев 186-221, закреплены: 186 + (мир−1)·6 + (ступень−1)).
+	-- 6 питомцев; сила — доля от главной Secret лучшего открытого мира игрока, поэтому яйцо полезно
+	-- на любом этапе. Шансы фиксированы (их показывает окно яйца). В индекс и машины не входят.
+	local ROYAL = {
+		{ Rarity = "Common", Chance = 50, Pct = 0.5, Name = "Crown Pup", Model = "RoyalEgg1" },
+		{ Rarity = "Uncommon", Chance = 30, Pct = 0.8, Name = "Velvet Fox", Model = "RoyalEgg2" },
+		{ Rarity = "Rare", Chance = 13.9, Pct = 1.1, Name = "Sapphire Owl", Model = "RoyalEgg3" },
+		{ Rarity = "Epic", Chance = 5, Pct = 1.4, Name = "Emerald Griffin", Model = "RoyalEgg4" },
+		{ Rarity = "Legendary", Chance = 1, Pct = 2, Name = "Golden Phoenix", Model = "RoyalEgg5" },
+		{ Rarity = "Secret", Chance = 0.1, Pct = 3, Name = "Imperial Dragon", Model = "RoyalEgg6" },
+	}
+	-- пока нет моделей Tripo — облик берём у питомцев последнего яйца мира (по редкости)
+	local FALLBACK_SLOT = { 1, 3, 5, 6, 7, 8 }
+	local ROYAL_LOOK = { nil, nil, "prism", "frost", "blossom", "starlight" }
+	Config.RobuxEgg = { Name = "Royal Egg", Color = Color3.fromRGB(255, 200, 70), World = "royal", Tiers = ROYAL, ByWorld = {} }
+	for worldIndex, world in ipairs(WORLD_ORDER) do
+		local list = Config.SuperByWorld[world]
+		local topId = list and Config.Pets[list[1]] and Config.Pets[list[1]].Base
+		local top = topId and Config.Pets[topId]
+		local lastEgg
+		for id, egg in ipairs(Config.Eggs) do
+			if egg.World == world then
+				lastEgg = id
+			end
+		end
+		if top and lastEgg then
+			local ids = {}
+			for t, tier in ipairs(ROYAL) do
+				local id = 185 + (worldIndex - 1) * 6 + t
+				assert(Config.Pets[id] == nil, "SuperPets: royal egg id " .. id)
+				local pool = Config.Eggs[lastEgg].Pool
+				local base = pool[math.min(FALLBACK_SLOT[t], #pool)].Pet
+				local b = Config.Pets[base]
+				Config.Pets[id] = {
+					Name = tier.Name,
+					Rarity = tier.Rarity,
+					Multiplier = math.floor(top.Multiplier * tier.Pct * 100 + 0.5) / 100,
+					Visual = b.Visual,
+					Color = b.Color,
+					EggId = lastEgg,
+					Base = base,
+					Template = tier.Model,
+					Super = 4,
+					SuperKey = "Royal",
+					Scale = 1.1 + t * 0.05,
+					Look = ROYAL_LOOK[t] or 1, -- 1 = золотая отделка (ApplyVariant)
+					World = world,
+					Exclusive = true,
+					RoyalTier = t,
+				}
+				ids[t] = id
+			end
+			Config.RobuxEgg.ByWorld[world] = ids
+		end
+	end
+	function Config.RollRobuxEgg(world, r100)
+		local ids = Config.RobuxEgg.ByWorld[world] or Config.RobuxEgg.ByWorld.island
+		local acc = 0
+		for t = #ROYAL, 1, -1 do -- сначала редкие: при сумме 100 порядок не важен, но так нагляднее
+			acc += ROYAL[t].Chance
+			if r100 <= acc then
+				return ids[t]
+			end
+		end
+		return ids[1]
+	end
 	function Config.RollSuper(eggId, r01, luckMult)
 		local egg = Config.Eggs[eggId]
 		local list = egg and Config.SuperByWorld[egg.World]

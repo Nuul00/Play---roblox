@@ -76,7 +76,10 @@ local function showNext()
 	gradient.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.25), color:Lerp(Color3.new(0, 0, 0), 0.25))
 	gradient.Rotation = 90
 	local icon = rarity == "Secret" and "✨" or "🌟"
-	if def and def.Super then
+	if def and def.Exclusive then
+		icon = "👑"
+		text.Text = string.format("%s <b>%s</b> got <b>%s</b>! (ROYAL %s) %s", icon, item.name, def.Name, string.upper(rarity), icon)
+	elseif def and def.Super then
 		icon = Config.SuperTiers[def.Super].Icon
 		text.Text = string.format("%s <b>%s</b> hatched <b>%s</b>! (%s SECRET · %s) %s", icon, item.name, def.Name, string.upper(def.SuperKey), Config.FormatOdds(def.Odds), icon)
 	else

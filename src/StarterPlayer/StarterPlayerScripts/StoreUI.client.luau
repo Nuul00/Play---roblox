@@ -322,7 +322,7 @@ if anyProduct then
 	section("⚡ BOOSTS", 3)
 	local prodGrid = grid(4)
 	for i, def in ipairs(StoreConfig.Products) do
-		if def.Id > 0 then
+		if def.Id > 0 and not def.Hidden then
 			card(prodGrid, def, false, i)
 		end
 	end

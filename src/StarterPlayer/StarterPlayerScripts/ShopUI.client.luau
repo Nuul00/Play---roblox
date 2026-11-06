@@ -608,6 +608,19 @@ for id, egg in ipairs(Config.Eggs) do
 		end
 	end)
 end
+-- Royal Egg (за Robux): своя модель, открытие приходит с sourceEgg = "royal".
+do
+	local ok, m = pcall(function()
+		return require(game:GetService("ReplicatedStorage"):WaitForChild("RoyalEggModel")).Build()
+	end)
+	if ok and m then
+		local size = m:GetExtentsSize()
+		displays.royal = { model = m, base = m:GetPivot(), radius = math.max(size.X, size.Z) / 2 }
+	end
+end
+local function eggConfig(id)
+	return id == "royal" and Config.RobuxEgg or Config.Eggs[id]
+end
 -- ===== 3D-открытие яйца =====
 -- Яйцо (клон модели Tripo со стенда) падает с отскоком, качается и подпрыгивает, на нём проступают
 -- светящиеся трещины (свет внутри намекает на редкость с Epic), затем вспышка: скорлупа разлетается
@@ -1100,7 +1113,7 @@ end
 
 function H.start(batch, sourceEgg, auto)
 	H.cleanup()
-	local eggCfg = Config.Eggs[sourceEgg]
+	local eggCfg = eggConfig(sourceEgg)
 	local n = #batch
 	H.auto, H.titled, H.titleAt, H.eggColor = auto, false, nil, eggCfg.Color
 	-- Тайминги: обычное ~4.9 с, Legendary ~7 с, Secret ~7.3 с; автооткрытие примерно вдвое быстрее.
@@ -1143,7 +1156,7 @@ function H.burst(e)
 	end
 	local def, result = e.def, e.result
 	e.label.TextColor3 = e.rc
-	e.label.Text = string.format("%s\n%s · ×%g\n%s", def.Name, def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity:upper(), def.Multiplier, result.Deleted and "AUTO-DELETED" or ("OWNED ×" .. result.Count))
+	e.label.Text = string.format("%s\n%s · ×%g\n%s", def.Name, def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity:upper(), def.Multiplier, result.Deleted and "AUTO-DELETED" or ("OWNED ×" .. result.Count))
 	stroke(e.label, INK, 2, 0)
 	for _, sp in ipairs(e.sparks) do
 		sp.frame.BackgroundColor3 = e.ri >= 7 and Color3.fromHSV((sp.angle / (math.pi * 2)) % 1, 0.45, 1) or (e.ri == 6 and H.GOLD:Lerp(WHITE, (sp.angle * 3) % 1 * 0.5) or e.rc)
@@ -1161,7 +1174,7 @@ function H.onBest(t)
 	local superDef
 	for _, e in ipairs(H.eggs) do
 		local d = e.result and Config.Pets[e.result.Pet]
-		if d and d.Super and (not superDef or d.Super > superDef.Super) then
+		if d and d.Super and not d.Exclusive and (not superDef or d.Super > superDef.Super) then
 			superDef = d
 		end
 	end
@@ -1436,9 +1449,9 @@ RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 		end
 	end
 	H.bestIdx, H.bestName = bestIdx, bestName
-	revealStroke.Color = Config.Eggs[sourceEgg].Color
+	revealStroke.Color = eggConfig(sourceEgg).Color
 	-- Яйца Sky Isles открываются на пастельном фоне-небе, каждое на облачке, искры радужные.
-	local skyHatch = Config.Eggs[sourceEgg].World == "sky"
+	local skyHatch = eggConfig(sourceEgg).World == "sky"
 	dim.BackgroundColor3 = skyHatch and WHITE or Color3.fromRGB(8, 6, 20) -- у неба цвет даёт градиент
 	dim.BackgroundTransparency = 1
 	dimGrad.Enabled = skyHatch

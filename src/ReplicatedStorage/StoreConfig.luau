@@ -29,6 +29,9 @@ StoreConfig.Products = {
 	{ Key = "CoinsMedium", Id = 3728499058, Name = "Big Coin Pack", Desc = "Coins = 15% of all you've earned", Kind = "coins", Share = 0.15, Random = true, Min = 10000, Color = Color3.fromRGB(255, 170, 40) },
 	{ Key = "CoinsHuge", Id = 3728499068, Name = "Huge Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Random = true, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
 	{ Key = "Potions", Id = 3728499075, Name = "Potion Pack", Desc = "3 Coin, 3 Speed and 3 Luck potions", Kind = "potions", Count = 3, Random = true, Color = Color3.fromRGB(180, 120, 255) },
+	-- Royal Egg за Robux: ×1 и ×3 открытия (случайно — шансы в окне яйца; Random = true).
+	{ Key = "RoyalEgg1", Id = 0, Name = "Royal Egg ×1", Desc = "Open 1 Royal Egg", Kind = "royalegg", Count = 1, Random = true, Hidden = true, Color = Color3.fromRGB(255, 200, 70) },
+	{ Key = "RoyalEgg3", Id = 0, Name = "Royal Egg ×3", Desc = "Open 3 Royal Eggs", Kind = "royalegg", Count = 3, Random = true, Hidden = true, Color = Color3.fromRGB(255, 170, 50) },
 	-- Эксклюзивный питомец (не случайный): питомец «Royal …» лучшего открытого мира игрока.
 	{ Key = "ExclusivePet", Id = 0, Name = "Royal Pet", Desc = "Exclusive Royal pet of your best world (x1.5 its top Secret)", Kind = "pet", Color = Color3.fromRGB(255, 210, 90) },
 	-- Разовый набор новичка (R$49–99). Id = 0, пока продукт не создан в Creator Dashboard.

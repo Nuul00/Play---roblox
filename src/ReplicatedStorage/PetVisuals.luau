@@ -30,6 +30,20 @@ local function fromTemplate(selected,def)
 end
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
+ -- Royal Egg: своя модель из Tripo (ReplicatedStorage.TripoPets/<Template>), если она уже вставлена.
+ if def.Template then
+  local tf=script.Parent:FindFirstChild("TripoPets")
+  local t=tf and tf:FindFirstChild(def.Template)
+  if t then
+   local model,parts=fromTemplate(t,def)
+   if model then
+    model.Name=def.Name
+    pcall(function() model:ScaleTo(model:GetScale()*(def.Scale or 1.2)) end)
+    model:SetAttribute("SuperSecret",def.Super)
+    return model,parts
+   end
+  end
+ end
  -- Супер-секретка: модель основы, крупнее и в особом облике (алмаз / золото / радуга).
  if def.Base and def.Base~=id then
   local model,parts=PetVisuals.Build(def.Base)

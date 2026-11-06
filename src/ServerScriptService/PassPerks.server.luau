@@ -69,11 +69,11 @@ local function dress(p: Player)
 	clear(char)
 	local vip, royal = p:GetAttribute("Pass_VIP") == true, p:GetAttribute("Pass_RoyalAura") == true
 	if vip then
-		tag(head, "[VIP]", Color3.fromRGB(255, 215, 80), 2.8, 34)
+		tag(head, "[VIP]", Color3.fromRGB(255, 215, 80), 1.7, 30)
 		sparks(root, Color3.fromRGB(255, 210, 90), 10, "VipSparks")
 	end
 	if royal then
-		tag(head, "👑", Color3.fromRGB(255, 225, 120), vip and 4.6 or 3, 40)
+		tag(head, "👑", Color3.fromRGB(255, 225, 120), vip and 2.9 or 1.8, 36)
 		sparks(root, Color3.fromRGB(255, 240, 150), 26, "RoyalSparks")
 	end
 end
