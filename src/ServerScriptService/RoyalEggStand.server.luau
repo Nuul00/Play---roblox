@@ -4,6 +4,25 @@
 -- света и круг входа — встал на круг, открылось окно Royal Egg.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+local StoreConfig = require(ReplicatedStorage:WaitForChild("StoreConfig"))
+-- пока товар Royal Egg не создан в Roblox (Id = 0), в живой игре место не ставим — иначе
+-- игрок встанет на круг, а купить нельзя. В Studio ставим всегда (для проверки).
+do
+	local live = false
+	for _, list in pairs(StoreConfig) do
+		if type(list) == "table" then
+			for _, def in pairs(list) do
+				if type(def) == "table" and def.Key == "RoyalEgg1" and (def.Id or 0) > 0 then
+					live = true
+				end
+			end
+		end
+	end
+	if not live and not RunService:IsStudio() then
+		return
+	end
+end
 local world = workspace:WaitForChild("CoinSpeedWorld")
 local RoyalEggModel = require(ReplicatedStorage:WaitForChild("RoyalEggModel"))
 
