@@ -197,21 +197,32 @@ Config.Eggs={
 [17]={Id=17,Name="Aurora Egg",World="frozen",Cost=6e10,Position=Vector3.new(3000,2,112),Color=Color3.fromRGB(110,230,190),Pool={{Pet=138,Chance=30,Weight=30000},{Pet=139,Chance=25,Weight=25000},{Pet=140,Chance=18,Weight=18000},{Pet=141,Chance=12,Weight=12000},{Pet=142,Chance=8,Weight=8000},{Pet=143,Chance=5,Weight=5000},{Pet=144,Chance=1.9,Weight=1900},{Pet=145,Chance=0.1,Weight=100}}},
 [18]={Id=18,Name="Glacier Egg",World="frozen",Cost=2.5e11,Position=Vector3.new(3052,2,112),Color=Color3.fromRGB(90,170,255),Pool={{Pet=146,Chance=30,Weight=30000},{Pet=147,Chance=25,Weight=25000},{Pet=148,Chance=18,Weight=18000},{Pet=149,Chance=12,Weight=12000},{Pet=150,Chance=8,Weight=8000},{Pet=151,Chance=5,Weight=5000},{Pet=152,Chance=1.9,Weight=1900},{Pet=153,Chance=0.1,Weight=100}}},
 }
--- Цена уровня растёт по экспоненте, а на границах миров (10 и 25) умножается: x3 и x8.
-local function tierMult(level) if level>=100 then return 300 elseif level>=75 then return 90 elseif level>=50 then return 25 elseif level>=25 then return 8 elseif level>=10 then return 3 end return 1 end
--- После 50 уровня цена растёт мягче (x1.18 за уровень), зато на границах миров — скачки.
-local function upCost(base,growth,level) local g=level>50 and growth^50*1.18^(level-50) or growth^level return math.floor(base*g*tierMult(level)+0.5) end
-function Config.GetUpgradeCost(level) return upCost(10,1.34,level) end
--- Баланс 2026-11: скорость растёт мягко (16 → 36 к 10 ур. → 60 к 50 → 69 к 125); каждый уровень ещё даёт +1% монет.
+-- Экономика 2026-11 (v2): цена уровня привязана к деньгам мира, где этот уровень продаётся
+-- (ZoneMax: Meadow до 10, Neon до 25, Sky до 50, Frozen до 75, Volcano до 100, Galaxy до 125).
+-- Опорные точки — log10 цены: последний уровень мира стоит примерно как его самое дорогое яйцо ×2,
+-- поэтому прокачка остаётся заметной тратой всю игру, а не копейками рядом с миллионами.
+local UP_ANCHORS = { {0, 1.2}, {10, 3.1}, {25, 7.1}, {50, 10.2}, {75, 11.9}, {100, 14.1}, {125, 16.2}, {200, 19} }
+local function upCost(mult, level)
+	local a, b = UP_ANCHORS[1], UP_ANCHORS[#UP_ANCHORS]
+	for i = 1, #UP_ANCHORS - 1 do
+		if level <= UP_ANCHORS[i + 1][1] then a, b = UP_ANCHORS[i], UP_ANCHORS[i + 1] break end
+	end
+	local k = (level - a[1]) / math.max(1, b[1] - a[1])
+	local x = 10 ^ (a[2] + (b[2] - a[2]) * k) * mult
+	if x < 100 then return math.floor(x + 0.5) end
+	local mag = 10 ^ (math.floor(math.log10(x)) - 1)
+	return math.floor(x / mag + 0.5) * mag
+end
+function Config.GetUpgradeCost(level) return upCost(1, level) end
 function Config.GetWalkSpeed(level) return math.floor((Config.BaseWalkSpeed+2*math.min(level,10)+0.6*math.clamp(level-10,0,40)+0.12*math.clamp(level-50,0,75))*10+0.5)/10 end
 function Config.GetSpeedCoinBonus(level) return 1+0.01*level end
 function Config.GetMagnetRadius(level) return Config.BaseMagnetRadius+0.12*level end
-function Config.GetMagnetUpgradeCost(level) return upCost(8,1.34,level) end
+function Config.GetMagnetUpgradeCost(level) return upCost(0.8, level) end
 function Config.GetIncomeMultiplier(level) return 1+0.25*level end
-function Config.GetIncomeUpgradeCost(level) return upCost(20,1.36,level) end
+function Config.GetIncomeUpgradeCost(level) return upCost(1.6, level) end
 -- Шанс, что подобранная монета даст двойную награду.
 function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(0.9,0.75+0.002*(level-50)) end
-function Config.GetDoubleUpgradeCost(level) return upCost(40,1.36,level) end
+function Config.GetDoubleUpgradeCost(level) return upCost(2.5, level) end
 -- Ребёрс: за монеты И яйца, открытые с прошлого ребёрса, сбрасывает прокачку,
 -- но даёт постоянный множитель монет, удачу яиц и награды на вехах (дорога наград).
 Config.MaxRebirths=50
@@ -220,7 +231,7 @@ Config.RebirthStartSpeed=6
 local function niceRound(x) if x<100 then return math.floor(x+0.5) end local mag=10^(math.floor(math.log10(x))-1) return math.floor(x/mag+0.5)*mag end
 -- Цена в монетах: плавная кривая, рост за ребёрс от x2.6 в начале до x1.35 к 50-му.
 -- Баланс 2026-11: первый ребёрс ~316M (примерно в Sky Isles), дальше ×2.1 → ×1.3 за ребёрс.
-function Config.GetRebirthCost(r) return niceRound(10^(8.5+0.33*r-0.001*r*r)) end
+function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.33*r-0.001*r*r)) end -- 1-й ребёрс 250M: ~10-я минута первой сессии
 -- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
 function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+15*r+1.2*r*r)/5+0.5)*5) end
 -- Множитель монет: первые 10 как раньше (+0.75), дальше ускоряется.
