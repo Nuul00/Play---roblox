@@ -73,52 +73,95 @@ tab.MouseLeave:Connect(function()
 	Tween:Create(tabScale, TweenInfo.new(0.1), { Scale = 1 }):Play()
 end)
 
------------------------------------------------------------------- панель
-local PW = 318
-local ROW = 56
+------------------------------------------------------------------ выдвижная полоса
+-- Полоса выезжает прямо из вкладки (та же высота, как продолжение вкладки): в ней все зелья
+-- кружками. Клик — выпить, наведение — подсказка с названием и эффектом. Высота полосы та же,
+-- что у вкладки, а вкладка стоит только на свободном месте — значит, полоса ничего не закрывает.
 local list = ShopConfig.AllPotions
-local PH = 52 + #list * (ROW + 6) + 22
-local panel = K.frame(root, UDim2.fromOffset(-8, 0), UDim2.fromOffset(PW, PH), Color3.new(1, 1, 1), 20)
+local CELL, GAP = 58, 4
+local DW = 14 + #list * (CELL + GAP) + 14 + 10
+local panel = K.frame(root, UDim2.fromOffset(10, 0), UDim2.fromOffset(DW, TAB_H), Color3.new(1, 1, 1), 18)
+panel.Name = "Drawer"
 panel.AnchorPoint = Vector2.new(1, 0)
 panel.Visible = false
-panel.Active = true -- клики по панели не считаются «мимо»
-K.grad(panel, rgb(62, 36, 130), rgb(20, 12, 52))
-K.stroke(panel, INK, 4)
-local title = K.text(panel, "🧪 MY POTIONS", UDim2.fromOffset(14, 8), UDim2.new(1, -28, 0, 30), 24, nil, 2.5)
-title.TextXAlignment = Enum.TextXAlignment.Left
-local hint = K.text(panel, "Super potions come from rewards only", UDim2.new(0, 14, 1, -22), UDim2.new(1, -28, 0, 16), 13, rgb(190, 175, 235), 0)
-hint.TextXAlignment = Enum.TextXAlignment.Left
-local panelScale = Instance.new("UIScale")
-panelScale.Parent = panel
+panel.Active = true -- клики по полосе не считаются «мимо»
+panel.ClipsDescendants = true
+panel.ZIndex = 1
+tab.ZIndex = 2
+K.grad(panel, rgb(70, 42, 145), rgb(26, 16, 64))
+K.stroke(panel, INK, 3)
+local inner = Instance.new("Frame")
+inner.Name = "Items"
+inner.BackgroundTransparency = 1
+inner.Size = UDim2.fromOffset(DW, TAB_H)
+inner.Parent = panel
+local tip = K.text(root, "", UDim2.fromOffset(0, -30), UDim2.fromOffset(260, 26), 16, nil, 2)
+tip.BackgroundTransparency = 0.1
+tip.BackgroundColor3 = INK
+tip.Visible = false
+tip.ZIndex = 5
+K.corner(tip, 10)
+local tipStroke = K.stroke(tip, K.GOLD, 2)
 
 local rows = {}
 for i, name in ipairs(list) do
 	local def = ShopConfig.Potions[name]
-	local y = 46 + (i - 1) * (ROW + 6)
-	local row = K.frame(panel, UDim2.fromOffset(10, y), UDim2.fromOffset(PW - 20, ROW), Color3.new(1, 1, 1), 14)
-	K.grad(row, def.Color:Lerp(K.CARD, def.Super and 0.6 or 0.78), K.CARD2)
-	local rs = K.stroke(row, def.Super and K.GOLD or def.Color, def.Super and 2.5 or 1.5)
-	rs.Transparency = 0.15
+	local x = 12 + (i - 1) * (CELL + GAP) + (def.Super and 14 or 0)
+	local cell = Instance.new("TextButton")
+	cell.Name = name
+	cell.Text = ""
+	cell.AutoButtonColor = false
+	cell.BackgroundTransparency = 1
+	cell.Position = UDim2.fromOffset(x, 4)
+	cell.Size = UDim2.fromOffset(CELL, TAB_H - 8)
+	cell.Parent = inner
+	local ring = K.frame(cell, UDim2.fromOffset(CELL / 2, 27), UDim2.fromOffset(50, 50), def.Color, UDim.new(1, 0))
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.BackgroundTransparency = 0.6
+	local rs = K.stroke(ring, def.Super and K.GOLD or def.Color:Lerp(INK, 0.3), def.Super and 2.5 or 2)
 	local img = Instance.new("ImageLabel")
 	img.BackgroundTransparency = 1
+	img.AnchorPoint = Vector2.new(0.5, 0.5)
+	img.Position = UDim2.fromOffset(CELL / 2, 27)
+	img.Size = UDim2.fromOffset(48, 48)
 	img.Image = def.Image or ""
-	img.Position = UDim2.fromOffset(4, 3)
-	img.Size = UDim2.fromOffset(50, 50)
-	img.Parent = row
-	local nm = K.text(row, def.Short or def.Name, UDim2.fromOffset(58, 6), UDim2.fromOffset(140, 22), 17, def.Super and rgb(255, 225, 120) or nil, 2)
-	nm.TextXAlignment = Enum.TextXAlignment.Left
-	local eff = K.text(row, def.Effect, UDim2.fromOffset(58, 30), UDim2.fromOffset(140, 18), 14, def.Color:Lerp(Color3.new(1, 1, 1), 0.4), 0)
-	eff.TextXAlignment = Enum.TextXAlignment.Left
-	local count = K.text(row, "×0", UDim2.fromOffset(170, 6), UDim2.fromOffset(38, 22), 18, nil, 2)
-	local timer = K.text(row, "", UDim2.fromOffset(160, 32), UDim2.fromOffset(52, 18), 14, rgb(140, 255, 140), 1.5)
-	local use, useLabel, useColor = K.button(row, "USE", UDim2.fromOffset(PW - 20 - 84, 10), UDim2.fromOffset(76, 36), K.GREEN, 18)
-	use.Activated:Connect(function()
+	img.Parent = cell
+	local count = K.text(cell, "0", UDim2.new(1, -22, 0, -1), UDim2.fromOffset(24, 18), 14, nil, 1.5)
+	count.BackgroundTransparency = 0
+	count.BackgroundColor3 = def.Super and rgb(230, 140, 30) or rgb(90, 70, 170)
+	count.ZIndex = 3
+	K.corner(count, 9)
+	K.stroke(count, INK, 1.5)
+	local timer = K.text(cell, "", UDim2.new(0.5, -27, 1, -16), UDim2.fromOffset(54, 16), 13, rgb(150, 255, 150), 1.5)
+	timer.BackgroundTransparency = 0.15
+	timer.BackgroundColor3 = INK
+	timer.ZIndex = 3
+	K.corner(timer, 7)
+	local sc = Instance.new("UIScale")
+	sc.Parent = cell
+	cell.MouseEnter:Connect(function()
+		Tween:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Back), { Scale = 1.1 }):Play()
+		local have = player:GetAttribute("Potion" .. name) or 0
+		tip.Text = def.Name .. " · " .. def.Effect .. (have > 0 and "" or (def.Super and " · from rewards" or " · buy in shop"))
+		tipStroke.Color = def.Super and K.GOLD or def.Color
+		tip.Visible = true
+	end)
+	cell.MouseLeave:Connect(function()
+		Tween:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+		tip.Visible = false
+	end)
+	cell.Activated:Connect(function()
 		if (player:GetAttribute("Potion" .. name) or 0) > 0 then
 			action:FireServer("potion", name)
+			sc.Scale = 0.8
+			Tween:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 		end
 	end)
-	rows[name] = { img = img, count = count, timer = timer, use = use, useLabel = useLabel, useColor = useColor, row = row, nm = nm }
+	rows[name] = { img = img, count = count, timer = timer, ring = ring }
 end
+-- золотая черта между обычными и СУПЕР
+local divider = K.frame(inner, UDim2.fromOffset(12 + 3 * (CELL + GAP) + 3, 12), UDim2.fromOffset(3, TAB_H - 24), K.GOLD, 2)
+divider.BackgroundTransparency = 0.3
 
 ------------------------------------------------------------------ активные зелья (под вкладкой)
 local active = Instance.new("Frame")
@@ -256,51 +299,6 @@ local function nearestFree(y: number): number
 	end
 	return y -- свободного места нет: оставляем, где просили
 end
-local function panelY(): number
-	-- панель не вылезает за низ/верх экрана
-	local size = vp()
-	local s = rootScale.Scale
-	local y = 0
-	if dockY + PH * s > size.Y - 6 then
-		y = (size.Y - 6 - dockY) / s - PH
-	end
-	return math.max(y, (6 - dockY) / s)
-end
--- панель открывается в свободное место: правее (или левее) всех кнопок этого края
--- в её высоте — ROYAL EGG, TRADE, плитки статов и т.п. не закрываются
-local function panelX(): number
-	local size = vp()
-	local sc = rootScale.Scale
-	local right = side() == "R"
-	local y0 = dockY + panelY() * sc
-	local y1 = y0 + PH * sc
-	local pg = player.PlayerGui
-	local reach = right and size.X or 0 -- самый дальний от края край чужих кнопок
-	local limit = size.X * 0.45
-	for y = math.max(4, y0), math.min(size.Y - 4, y1), 22 do
-		for d = TAB_W * sc + 4, limit, 18 do
-			local x = right and (size.X - d) or d
-			for _, o in ipairs(pg:GetGuiObjectsAtPosition(x, y)) do
-				if solid(o, size) then
-					local a, b = o.AbsolutePosition.X, o.AbsolutePosition.X + o.AbsoluteSize.X
-					if right then
-						reach = math.min(reach, a)
-					else
-						reach = math.max(reach, b)
-					end
-					break
-				end
-			end
-		end
-	end
-	if right then
-		local edge = math.min(reach, size.X - (TAB_W + 8) * sc) - 8
-		return (edge - size.X) / sc + TAB_W -- в координатах дока (якорь панели справа)
-	else
-		local edge = math.max(reach, (TAB_W + 8) * sc) + 8
-		return edge / sc
-	end
-end
 local function applySide()
 	local right = side() == "R"
 	root.AnchorPoint = Vector2.new(right and 1 or 0, 0)
@@ -308,6 +306,10 @@ local function applySide()
 	flat.Position = right and UDim2.new(1, -16, 0, 0) or UDim2.fromOffset(0, 0)
 	badge.Position = right and UDim2.fromOffset(-10, TAB_H - 22) or UDim2.new(1, -20, 0, TAB_H - 22)
 	panel.AnchorPoint = Vector2.new(right and 1 or 0, 0)
+	panel.Position = UDim2.fromOffset(right and 10 or TAB_W - 10, 0)
+	inner.Position = UDim2.fromOffset(right and 0 or 10, 0)
+	tip.AnchorPoint = Vector2.new(right and 1 or 0, 1)
+	tip.Position = UDim2.fromOffset(right and 0 or TAB_W, -4)
 	active.AnchorPoint = Vector2.new(right and 1 or 0, 0)
 	active.Position = UDim2.fromOffset(right and -8 or TAB_W + 8, 3)
 	lay.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
@@ -316,9 +318,6 @@ end
 local function place()
 	local size = vp()
 	root.Position = UDim2.new(side() == "R" and 1 or 0, 0, 0, dockY)
-	if open then
-		panel.Position = UDim2.fromOffset(panelX(), panelY())
-	end
 	local _ = size
 end
 
@@ -327,14 +326,13 @@ local function setOpen(v)
 	local right = side() == "R"
 	arrow.Text = (v == right) and "▶" or "◀"
 	if v then
+		-- полоса «выдвигается» из вкладки
 		panel.Visible = true
-		panelScale.Scale = 1
-		local px = panelX()
-		local dir = panel.AnchorPoint.X == 1 and 1 or -1
-		panel.Position = UDim2.fromOffset(px + dir * 40, panelY())
-		Tween:Create(panel, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Position = UDim2.fromOffset(px, panelY()) }):Play()
+		panel.Size = UDim2.fromOffset(TAB_W, TAB_H)
+		Tween:Create(panel, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(DW, TAB_H) }):Play()
 	else
 		panel.Visible = false
+		tip.Visible = false
 	end
 	active.Visible = not v -- панель сама показывает таймеры
 	gui.DisplayOrder = v and 55 or 13 -- открытая панель поверх кнопок ROYAL EGG / TRADE
@@ -448,15 +446,14 @@ Run.RenderStepped:Connect(function(dt)
 		local left = (player:GetAttribute("PotionEnd" .. name) or 0) - now
 		local on = left > 0
 		local timeText = on and string.format("%d:%02d", math.floor(left / 60), left % 60) or ""
-		-- строка в панели
+		-- кружок в полосе
 		local r = rows[name]
-		r.count.Text = "×" .. have
+		r.count.Text = have > 99 and "99+" or tostring(have)
+		r.count.Visible = have > 0
 		r.timer.Text = timeText
-		r.img.ImageTransparency = (have > 0 or on) and 0 or 0.55
-		r.nm.TextTransparency = (have > 0 or on) and 0 or 0.4
-		r.use.Active = have > 0
-		r.useLabel.Text = have > 0 and "USE" or "—"
-		r.useColor(have > 0 and K.GREEN or K.GRAY)
+		r.timer.Visible = on
+		r.img.ImageTransparency = (have > 0 or on) and 0 or 0.6
+		r.ring.BackgroundTransparency = on and (0.35 + 0.15 * math.sin(t * 3)) or 0.6
 		-- кружок активного зелья
 		local c = chips[name]
 		if on and not c.chip.Visible then
