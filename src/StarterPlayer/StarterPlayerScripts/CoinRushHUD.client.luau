@@ -248,6 +248,32 @@ local function updatePrompt()
 		local cost = player:GetAttribute("RushKeyCost") or 0
 		prompt.ObjectText = cost <= 0 and "FREE run today!" or ("🔑 Key: " .. NumberFormat.Short(cost) .. " coins")
 	end
+	local sign = portal and portal:FindFirstChild("RushSign", true)
+	local sub = sign and sign:FindFirstChild("Sub")
+	if sub then
+		local cost = player:GetAttribute("RushKeyCost") or 0
+		sub.Text = cost <= 0 and "✨ FREE RUN TODAY ✨" or ("🔑 " .. NumberFormat.Short(cost) .. " coins")
+	end
 end
+-- вихрь портала крутится (только у себя)
+task.spawn(function()
+	local portal = workspace:WaitForChild("CoinSpeedWorld"):WaitForChild("CoinRushPortal", 60)
+	if not portal then
+		return
+	end
+	local field, core = portal:WaitForChild("Field", 10), portal:WaitForChild("Core", 10)
+	if not field then
+		return
+	end
+	local f0, c0 = field.CFrame, core and core.CFrame
+	RunService.RenderStepped:Connect(function()
+		local t = os.clock()
+		field.CFrame = f0 * CFrame.Angles(t * 1.5, 0, 0)
+		if core then
+			core.CFrame = c0 * CFrame.Angles(-t * 2.2, 0, 0)
+			core.Transparency = 0.5 + 0.1 * math.sin(t * 3)
+		end
+	end)
+end)
 player:GetAttributeChangedSignal("RushKeyCost"):Connect(updatePrompt)
 task.delay(5, updatePrompt)

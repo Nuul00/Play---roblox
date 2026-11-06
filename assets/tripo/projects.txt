@@ -60,3 +60,4 @@ RushVault  2e2d8119-1318-464b-bdd0-ccf6c669fb25
 RushGold   bcbf4f74-3248-477c-8bd3-877e96124da4
 RushChest  9b97eeae-949b-4a8d-b769-ec16176ccb6a
 RushCoin   aa7a54ce-6518-4f58-af1a-f93c36ff6332
+RushPortal 71275419-4dae-4e14-afcf-c4e9a915d834

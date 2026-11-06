@@ -26,7 +26,10 @@ R.VAULT_NEED = 0.55 -- доля от всех монет забега (в «ве
 R.HIT_LOSS = 0.15
 R.KEY_COINS = 80 -- ключ стоит столько «монет» лучшего мира игрока
 R.COOLDOWN = 120
-R.PORTAL = { Pos = Vector3.new(-38, 0, 186), Face = Vector3.new(0, 0, 186) } -- свободная поляна слева от спавна
+-- поляна справа от главной дороги перед рядом яиц (видно со спавна), лицом к дороге.
+-- Слева на той же высоте стоит UpgradeShop (его детали не видны запросам CanQuery=false).
+-- Yaw — поворот модели Tripo, если её «лицо» смотрит не туда.
+R.PORTAL = { Pos = Vector3.new(44, 0, 96), Face = Vector3.new(0, 0, 96), Yaw = 0, Size = 34 }
 
 local remote = Instance.new("RemoteEvent")
 remote.Name = "CoinRushEvent"
@@ -257,69 +260,112 @@ do
 	local base = Vector3.new(R.PORTAL.Pos.X, gy, R.PORTAL.Pos.Z)
 	local face = CFrame.lookAt(base, Vector3.new(R.PORTAL.Face.X, gy, R.PORTAL.Face.Z))
 	local GOLD, DARK = Color3.fromRGB(255, 200, 60), Color3.fromRGB(45, 35, 70)
-	part(portal, "Step", Vector3.new(18, 1, 8), face * CFrame.new(0, 0.5, 0), DARK, Enum.Material.Slate)
-	for _, x in ipairs({ -7, 7 }) do
-		part(portal, "Post", Vector3.new(2.5, 16, 2.5), face * CFrame.new(x, 8.5, 0), DARK, Enum.Material.Slate)
-		part(portal, "PostGlow", Vector3.new(2.7, 0.5, 2.7), face * CFrame.new(x, 14, 0), GOLD, Enum.Material.Neon)
+	-- арка из Tripo (золотой вход в сокровищницу); без модели — простая арка из деталей
+	local arch = tripo("RushPortal", R.PORTAL.Size, portal, face * CFrame.Angles(0, math.rad(R.PORTAL.Yaw), 0))
+	local h, w
+	if arch then
+		arch.Name = "Arch"
+		for _, d in ipairs(arch:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CanCollide = false -- в арку можно зайти
+			end
+		end
+		local _, sz = arch:GetBoundingBox()
+		h, w = sz.Y, math.max(sz.X, sz.Z)
+	else
+		h, w = 18, 16
+		for _, x in ipairs({ -7, 7 }) do
+			part(portal, "Post", Vector3.new(2.5, 16, 2.5), face * CFrame.new(x, 8.5, 0), DARK, Enum.Material.Slate)
+		end
+		part(portal, "Top", Vector3.new(17, 2.5, 3), face * CFrame.new(0, 17.5, 0), DARK, Enum.Material.Slate)
 	end
-	part(portal, "Top", Vector3.new(17, 2.5, 3), face * CFrame.new(0, 17.5, 0), DARK, Enum.Material.Slate)
-	local field = part(portal, "Field", Vector3.new(11.5, 15, 0.4), face * CFrame.new(0, 8.5, 0), GOLD, Enum.Material.ForceField, { CanCollide = false, Transparency = 0.15 })
-	-- воронка: искры затягиваются в портал, золотой свет, кольцо по контуру
+	-- золотой вихрь в проёме: мерцающее поле + светящийся центр + затягивающиеся искры
+	local r = math.min(w, h) * 0.26
+	local cy = h * 0.42
+	local diskCF = face * CFrame.new(0, cy, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local field = part(portal, "Field", Vector3.new(0.3, r * 2, r * 2), diskCF, GOLD, Enum.Material.ForceField, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.1 })
+	part(portal, "Core", Vector3.new(0.2, r * 1.6, r * 1.6), diskCF, Color3.fromRGB(255, 225, 140), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, Transparency = 0.55 })
+	field:SetAttribute("Spin", true)
 	local swirl = Instance.new("ParticleEmitter")
 	swirl.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	swirl.Color = ColorSequence.new(GOLD, Color3.fromRGB(255, 240, 180))
+	swirl.Color = ColorSequence.new(GOLD, Color3.fromRGB(255, 245, 200))
 	swirl.LightEmission = 1
-	swirl.Rate = 40
-	swirl.Lifetime = NumberRange.new(1, 1.6)
-	swirl.Speed = NumberRange.new(1, 3)
+	swirl.Rate = 60
+	swirl.Lifetime = NumberRange.new(0.8, 1.4)
+	swirl.Speed = NumberRange.new(-6, -3) -- к центру
 	swirl.SpreadAngle = Vector2.new(180, 180)
-	swirl.RotSpeed = NumberRange.new(-180, 180)
-	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+	swirl.RotSpeed = NumberRange.new(-200, 200)
+	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+	pcall(function()
+		swirl.Shape = Enum.ParticleEmitterShape.Disc
+		swirl.ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface
+	end)
 	swirl.Parent = field
 	local glow = Instance.new("PointLight")
 	glow.Color = GOLD
-	glow.Range = 24
-	glow.Brightness = 2.5
+	glow.Range = 30
+	glow.Brightness = 2
 	glow.Parent = field
-	for k = 0, 15 do
-		local a = k / 16 * math.pi * 2
-		part(portal, "Rim", Vector3.new(0.9, 0.9, 0.9), face * CFrame.new(math.cos(a) * 6.2, 8.5 + math.sin(a) * 7.4, 0), GOLD, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false })
+	-- табличка над аркой: название и цена (цену пишет клиент)
+	local anchor = part(portal, "SignAnchor", Vector3.new(1, 1, 1), face * CFrame.new(0, h + 3.5, 0), GOLD, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "RushSign"
+	bb.Size = UDim2.fromOffset(300, 92)
+	bb.MaxDistance = 220
+	bb.LightInfluence = 0
+	bb.AlwaysOnTop = false
+	bb.Parent = anchor
+	local function lbl(text, y, hh, color)
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.Position = UDim2.fromOffset(0, y)
+		l.Size = UDim2.new(1, 0, 0, hh)
+		l.Text = text
+		l.TextScaled = true
+		l.Font = Enum.Font.FredokaOne
+		l.TextColor3 = color
+		l.Parent = bb
+		local st = Instance.new("UIStroke")
+		st.Thickness = 3
+		st.Color = Color3.fromRGB(70, 35, 10)
+		st.Parent = l
+		return l
 	end
-	for _, x in ipairs({ -10.5, 10.5 }) do
-		part(portal, "CoinPile", Vector3.new(1.2, 3, 3), face * CFrame.new(x, 1.6, 1) * CFrame.Angles(0, 0, math.rad(90)), GOLD, Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
-		part(portal, "CoinPile", Vector3.new(2.4, 0.5, 2.4), face * CFrame.new(x, 2.4, 1), Color3.fromRGB(255, 220, 90), Enum.Material.Neon)
+	lbl("💰 COIN RUSH", 0, 48, GOLD)
+	local sub = lbl("Treasure Dungeon", 48, 26, Color3.new(1, 1, 1))
+	sub.Name = "Sub"
+	-- золотая дорожка от главной дороги к порталу и фонари по бокам
+	local front = face * CFrame.new(0, 0, -6)
+	local roadX = (R.PORTAL.Pos.X > 0 and 1 or -1) * 10 -- край главной дороги
+	local len = math.max(8, math.abs(front.Position.X - roadX))
+	local mid = (front.Position + Vector3.new(roadX, front.Position.Y, front.Position.Z)) / 2
+	local walk = CFrame.lookAt(Vector3.new(mid.X, gy + 0.35, mid.Z), Vector3.new(roadX, gy + 0.35, front.Position.Z))
+	part(portal, "GoldPath", Vector3.new(7, 0.16, len), walk, Color3.fromRGB(230, 180, 70), Enum.Material.Cobblestone, { CanCollide = false })
+	for _, x in ipairs({ -3.8, 3.8 }) do
+		part(portal, "PathEdge", Vector3.new(0.5, 0.2, len), walk * CFrame.new(x, 0.02, 0), GOLD, Enum.Material.Neon, { CanCollide = false, Transparency = 0.3 })
 	end
-	local sign = part(portal, "Sign", Vector3.new(18, 5, 0.6), face * CFrame.new(0, 21.5, 0), DARK, Enum.Material.SmoothPlastic)
-	local sg = Instance.new("SurfaceGui")
-	sg.Face = Enum.NormalId.Back
-	sg.LightInfluence = 0
-	sg.PixelsPerStud = 30
-	sg.Parent = sign
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundTransparency = 1
-	t.Text = "💰 COIN RUSH"
-	t.TextScaled = true
-	t.Font = Enum.Font.FredokaOne
-	t.TextColor3 = GOLD
-	t.Parent = sg
-	local st = Instance.new("UIStroke")
-	st.Thickness = 3
-	st.Parent = t
-	local sg2 = sg:Clone()
-	sg2.Face = Enum.NormalId.Front
-	sg2.Parent = sign
+	for k = 0, 2 do
+		for _, x in ipairs({ -5.5, 5.5 }) do
+			local lp = walk * CFrame.new(x, 0, -len / 2 + 4 + k * (len - 8) / 2)
+			part(portal, "LampPost", Vector3.new(0.6, 7, 0.6), lp * CFrame.new(0, 3.5, 0), DARK, Enum.Material.Metal)
+			local lamp = part(portal, "Lantern", Vector3.new(1.4, 1.4, 1.4), lp * CFrame.new(0, 7.5, 0), GOLD, Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false })
+			local ll = Instance.new("PointLight")
+			ll.Color = GOLD
+			ll.Range = 14
+			ll.Brightness = 1.2
+			ll.Parent = lamp
+		end
+	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Enter Coin Rush"
-	prompt.ObjectText = "Dungeon"
+	prompt.ObjectText = "Treasure Dungeon"
 	prompt.HoldDuration = 0.3
-	prompt.MaxActivationDistance = 14
+	prompt.MaxActivationDistance = 16
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = field
-	portal:SetAttribute("Spawn", face * CFrame.new(0, 4, -8))
 	portal.Parent = world
 	R.Prompt = prompt
-	R.ReturnCF = face * CFrame.new(0, 4, -10) * CFrame.Angles(0, math.pi, 0)
+	R.ReturnCF = face * CFrame.new(0, 4, -12) * CFrame.Angles(0, math.pi, 0)
 end
 
 -- ===== забеги =====
