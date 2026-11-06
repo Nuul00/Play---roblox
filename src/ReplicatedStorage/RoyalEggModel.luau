@@ -19,9 +19,18 @@ local function part(m, shape, size, cf, color, mat)
 	return p
 end
 
-function RoyalEggModel.Build(): Model
+-- stage: 1 — обычное Royal Egg, 2 — «треснувшее с кристаллами», 3 — божественное с крыльями и нимбом
+-- (ступени эволюции при открытии, RoyalHatch). Нет модели ступени — берётся предыдущая.
+local STAGE_NAME = { "RoyalEgg", "RoyalEggStage2", "RoyalEggStage3" }
+function RoyalEggModel.Build(stage: number?): Model
 	local folder = script.Parent:FindFirstChild("TripoEggs")
-	local t = folder and folder:FindFirstChild("RoyalEgg")
+	local t
+	for s = math.clamp(stage or 1, 1, 3), 1, -1 do
+		t = folder and folder:FindFirstChild(STAGE_NAME[s])
+		if t then
+			break
+		end
+	end
 	if t then
 		local m = t:Clone()
 		if m:IsA("Model") then

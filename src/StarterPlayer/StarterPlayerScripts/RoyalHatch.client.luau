@@ -63,12 +63,19 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	local color = RARITY[def.Rarity] or RARITY.Common
 	local rank = RANK[def.Rarity] or 1
 	task.wait(delayStart)
-	local egg = RoyalEggModel.Build()
-	anchorAll(egg)
-	local _, s = egg:GetBoundingBox()
-	egg:ScaleTo(egg:GetScale() * 4.2 / math.max(s.Y, 0.1))
+	-- Сколько раз яйцо эволюционирует: Common/Uncommon — нет, Rare/Epic — 1 раз, Legendary/Secret — 2.
+	-- Игрок видит эволюцию и понимает: будет что-то редкое (наша фишка).
+	local stages = rank >= 5 and 3 or rank >= 3 and 2 or 1
+	local function makeEgg(stage: number, height: number)
+		local m = RoyalEggModel.Build(stage)
+		anchorAll(m)
+		local _, s0 = m:GetBoundingBox()
+		m:ScaleTo(m:GetScale() * height / math.max(s0.Y, 0.1))
+		m.Parent = folder
+		return m
+	end
+	local egg = makeEgg(1, 4.2)
 	local _, size = egg:GetBoundingBox()
-	egg.Parent = folder
 	local function put(pos: Vector3, rot: CFrame)
 		local cf, sz = egg:GetBoundingBox()
 		local off = egg:GetPivot():ToObjectSpace(cf) -- центр габарита относительно опоры
@@ -107,6 +114,143 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	ring.Parent = folder
 	TweenService:Create(ring, TweenInfo.new(0.6), { Size = Vector3.new(0.2, 16, 16), Transparency = 1 }):Play()
 
+	-- надпись над яйцом (стадии)
+	local tagGui = Instance.new("BillboardGui")
+	tagGui.Size = UDim2.fromOffset(240, 50)
+	tagGui.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+	tagGui.AlwaysOnTop = true
+	tagGui.LightInfluence = 0
+	tagGui.Adornee = dust
+	tagGui.Parent = folder
+	local tagText = Instance.new("TextLabel")
+	tagText.BackgroundTransparency = 1
+	tagText.Size = UDim2.fromScale(1, 1)
+	tagText.TextScaled = true
+	tagText.Font = Enum.Font.FredokaOne
+	tagText.Text = ""
+	tagText.Parent = tagGui
+	local tagStroke = Instance.new("UIStroke")
+	tagStroke.Thickness = 3
+	tagStroke.Color = Color3.fromRGB(30, 10, 50)
+	tagStroke.Parent = tagText
+	local tagScale = Instance.new("UIScale", tagText)
+	local function say(text: string, c: Color3)
+		tagText.Text = text
+		tagText.TextColor3 = c
+		tagScale.Scale = 0.3
+		TweenService:Create(tagScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	end
+	local function shake(sec: number, amp: number, freq: number)
+		local s0 = os.clock()
+		while os.clock() - s0 < sec do
+			local e = os.clock() - s0
+			put(landPos, CFrame.Angles(0, e * 2, math.sin(e * freq) * math.rad(amp)))
+			RunService.RenderStepped:Wait()
+		end
+	end
+	-- шар света вокруг яйца в момент превращения
+	local function orb(c: Color3)
+		local b = Instance.new("Part")
+		b.Shape = Enum.PartType.Ball
+		b.Anchored, b.CanCollide, b.CanQuery, b.CanTouch, b.CastShadow = true, false, false, false, false
+		b.Material = Enum.Material.Neon
+		b.Color = c
+		b.Transparency = 0.1
+		b.Size = Vector3.new(1, 1, 1)
+		b.Position = landPos + Vector3.new(0, size.Y / 2, 0)
+		b.Parent = folder
+		TweenService:Create(b, TweenInfo.new(0.55, Enum.EasingStyle.Quad), { Size = Vector3.new(9, 9, 9), Transparency = 1 }):Play()
+		local cc = Instance.new("ColorCorrectionEffect")
+		cc.Brightness = 0.25
+		cc.TintColor = c:Lerp(Color3.new(1, 1, 1), 0.5)
+		cc.Parent = Lighting
+		TweenService:Create(cc, TweenInfo.new(0.5), { Brightness = 0, TintColor = Color3.new(1, 1, 1) }):Play()
+		task.delay(0.55, function()
+			cc:Destroy()
+		end)
+	end
+	-- смена модели: старое яйцо крутится и сжимается, новое вырастает с отскоком
+	local function evolve(stage: number, height: number, c: Color3)
+		local s0 = os.clock()
+		local scale0 = egg:GetScale()
+		while os.clock() - s0 < 0.35 do
+			local k = (os.clock() - s0) / 0.35
+			pcall(function()
+				egg:ScaleTo(math.max(scale0 * (1 - k * 0.9), 0.01))
+			end)
+			put(landPos, CFrame.Angles(0, k * math.pi * 3, 0))
+			RunService.RenderStepped:Wait()
+		end
+		orb(c)
+		puff:Emit(40)
+		UISounds.Play("reward")
+		egg:Destroy()
+		egg = makeEgg(stage, height)
+		local _, sz = egg:GetBoundingBox()
+		size = sz
+		local target = egg:GetScale()
+		s0 = os.clock()
+		while os.clock() - s0 < 0.45 do
+			local k = (os.clock() - s0) / 0.45
+			local over = 1 + math.sin(k * math.pi) * 0.25 -- перелёт и возврат
+			pcall(function()
+				egg:ScaleTo(math.max(target * k * over, 0.01))
+			end)
+			put(landPos, CFrame.Angles(0, (1 - k) * math.pi * 2, 0))
+			RunService.RenderStepped:Wait()
+		end
+		pcall(function()
+			egg:ScaleTo(target)
+		end)
+	end
+	if stages >= 2 then
+		say("✨ EVOLVING...", Color3.fromRGB(150, 230, 255))
+		shake(1.1, 14, 22)
+		evolve(2, 4.8, Color3.fromRGB(120, 220, 255))
+		say("💎 EVOLVED!", Color3.fromRGB(120, 220, 255))
+		shake(0.9, 8, 16)
+	end
+	if stages >= 3 then
+		say("✨ EVOLVING AGAIN...", Color3.fromRGB(255, 220, 120))
+		shake(1.2, 20, 28)
+		-- из земли поднимается королевский пьедестал, яйцо взлетает на него
+		local ped
+		local f = ReplicatedStorage:FindFirstChild("TripoEggs")
+		local pt = f and f:FindFirstChild("RoyalPedestal")
+		if pt then
+			ped = pt:Clone()
+			anchorAll(ped)
+			local _, ps0 = ped:GetBoundingBox()
+			ped:ScaleTo(ped:GetScale() * 6 / math.max(ps0.X, ps0.Z, 0.1))
+			ped.Parent = folder
+			local pcf, psz = ped:GetBoundingBox()
+			local off = ped:GetPivot():ToObjectSpace(pcf)
+			local s0 = os.clock()
+			while os.clock() - s0 < 0.6 do
+				local k = (os.clock() - s0) / 0.6
+				ped:PivotTo(CFrame.new(landPos + Vector3.new(0, psz.Y / 2 - psz.Y * (1 - k), 0)) * off:Inverse())
+				put(landPos + Vector3.new(0, psz.Y * k, 0), CFrame.Angles(0, k * 4, 0))
+				RunService.RenderStepped:Wait()
+			end
+			landPos = landPos + Vector3.new(0, psz.Y * 0.95, 0)
+			dust.Position = landPos + Vector3.new(0, 0.3, 0)
+		end
+		evolve(3, 5.6, Color3.fromRGB(255, 225, 130))
+		say("👑 DIVINE EGG!", Color3.fromRGB(255, 215, 90))
+		-- луч с неба на яйцо
+		local sky = Instance.new("Part")
+		sky.Anchored, sky.CanCollide, sky.CanQuery, sky.CanTouch, sky.CastShadow = true, false, false, false, false
+		sky.Shape = Enum.PartType.Cylinder
+		sky.Material = Enum.Material.Neon
+		sky.Color = Color3.fromRGB(255, 240, 190)
+		sky.Transparency = 0.6
+		sky.Size = Vector3.new(80, 6, 6)
+		sky.CFrame = CFrame.new(landPos + Vector3.new(0, 40, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		sky.Parent = folder
+		TweenService:Create(sky, TweenInfo.new(1.2), { Transparency = 0.85, Size = Vector3.new(80, 3, 3) }):Play()
+		shake(0.8, 6, 12)
+	end
+
 	-- 2) качание с нарастанием (чем реже питомец, тем дольше), свет усиливается
 	local glow = Instance.new("PointLight")
 	glow.Color = color
@@ -115,7 +259,7 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 	glow.Parent = dust
 	local aura = emitter(dust, color, { Rate = 0, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(1, 3), SpreadAngle = Vector2.new(180, 180), Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }) })
 	aura.Enabled = true
-	local wobble = 1.6 + rank * 0.25
+	local wobble = (stages > 1 and 1.2 or 1.6) + rank * 0.2
 	t0 = os.clock()
 	local rays = {}
 	while os.clock() - t0 < wobble do
@@ -174,6 +318,7 @@ local function playOne(result, startPos: Vector3, landPos: Vector3, delayStart: 
 		cc:Destroy()
 	end)
 	egg:Destroy()
+	tagGui:Destroy()
 	aura.Enabled = false
 	UISounds.Play(rank >= 5 and "rare" or "hatch")
 
@@ -282,7 +427,8 @@ ReplicatedStorage:WaitForChild("GameHatched").OnClientEvent:Connect(function(bat
 	local prevType = cam and cam.CameraType
 	if cam then
 		cam.CameraType = Enum.CameraType.Scriptable
-		local goal = CFrame.lookAt(root.Position - look * 7 + right * 3 + Vector3.new(0, 8, 0), focus + Vector3.new(0, 2, 0))
+		-- сбоку от игрока, чтобы персонаж не заслонял яйцо
+		local goal = CFrame.lookAt(root.Position - look * 3 + right * 9 + Vector3.new(0, 7, 0), focus + Vector3.new(0, 2.5, 0))
 		TweenService:Create(cam, TweenInfo.new(0.7, Enum.EasingStyle.Sine), { CFrame = goal }):Play()
 	end
 	local done = 0

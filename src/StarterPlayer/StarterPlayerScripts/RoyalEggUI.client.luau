@@ -171,7 +171,7 @@ local eggView = Instance.new("ViewportFrame")
 eggView.BackgroundTransparency = 1
 eggView.Position = UDim2.fromOffset(20, 92)
 eggView.Size = UDim2.fromOffset(260, 300)
-eggView.Ambient = Color3.fromRGB(230, 210, 180)
+eggView.Ambient = Color3.fromRGB(255, 240, 225) -- светлее: яйцо освещено со всех сторон
 eggView.LightColor = Color3.fromRGB(255, 240, 210)
 eggView.LightDirection = Vector3.new(-1, -1, -2)
 eggView.Parent = panel
@@ -186,6 +186,23 @@ eggCam.CFrame = CFrame.lookAt(ecf.Position + Vector3.new(0, esize.Y * 0.1, -dist
 eggCam.Parent = eggView
 eggView.CurrentCamera = eggCam
 local eggBase = egg:GetPivot()
+-- в окне яйцо по кругу показывает свои ступени эволюции (1 → 2 → 3), подпись снизу
+local stageNames = { "ROYAL EGG", "💎 EVOLVED", "👑 DIVINE" }
+local stageText = text(panel, "Evolves up to 2 times while opening — rarer pet!", UDim2.fromOffset(20, 388), UDim2.fromOffset(260, 36), 13, Color3.fromRGB(255, 225, 140), Enum.Font.GothamBold)
+local stageTag = text(panel, stageNames[1], UDim2.fromOffset(20, 96), UDim2.fromOffset(260, 26), 18, Color3.fromRGB(255, 230, 150))
+local stage, stageAt, eggScale0 = 1, 0, egg:GetScale()
+local function showStage(n)
+	local m = RoyalEggModel.Build(n)
+	local _, sz = m:GetBoundingBox()
+	m:ScaleTo(m:GetScale() * esize.Y / math.max(sz.Y, 0.1))
+	m:PivotTo(eggBase)
+	egg:Destroy()
+	egg = m
+	egg.Parent = eggWorld
+	eggScale0 = egg:GetScale()
+	stageTag.Text = stageNames[n]
+end
+local _ = stageText
 
 -- карточки питомцев
 local cards = {}
@@ -358,6 +375,19 @@ RunService.RenderStepped:Connect(function(dt)
 		return
 	end
 	rays.Rotation = (t * 12) % 360
+	-- свет обходит яйцо по кругу — блики бегут по глянцу
+	eggView.LightDirection = Vector3.new(math.cos(t * 0.8), -0.6, math.sin(t * 0.8))
+	-- смена ступени каждые 3 с: «сжатие → вспышка → новая модель с отскоком»
+	if t - stageAt > 3 then
+		stageAt = t
+		stage = stage % 3 + 1
+		showStage(stage)
+	end
+	local since = t - stageAt
+	local pop = since < 0.4 and (1 + math.sin(since / 0.4 * math.pi) * 0.2) or 1
+	pcall(function()
+		egg:ScaleTo(eggScale0 * pop)
+	end)
 	egg:PivotTo(eggBase * CFrame.new(0, math.sin(t * 2) * 0.25, 0) * CFrame.Angles(0, t * 0.9, math.sin(t * 1.6) * 0.08))
 	for i, c in ipairs(cards) do
 		if c.model then
