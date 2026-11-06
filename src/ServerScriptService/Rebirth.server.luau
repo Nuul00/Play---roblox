@@ -257,11 +257,7 @@ remote.OnServerEvent:Connect(function(p)
 	p:SetAttribute(EGGS_ATTR, 0)
 	p:SetAttribute("Rebirths", count + 1) -- applyRewards сработает через сигнал атрибута
 	PlayerSystems.ApplySpeed(p)
-	-- Возвращаем на старт Meadow Isles.
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root then
-		character:PivotTo(CFrame.new(0, 4 + (world:GetAttribute("GroundY") or 0), 180))
-		root.AssemblyLinearVelocity = Vector3.zero
-		p:SetAttribute("CurrentWorld", "Meadow Isles")
-	end
+	-- Игрок остаётся в своём мире (открытые миры не сбрасываются): ребёрс ощущается как рывок силы —
+	-- дешёвые первые уровни прокачки здесь же, богатые монеты мира и новый множитель. Раньше кидало
+	-- в Meadow, и приходилось вручную лететь обратно через TELEPORT.
 end)

@@ -2,7 +2,8 @@
 -- Ведёт себя как обычный игрок: бегает за ближайшими монетами, покупает новые яйца и прокачку,
 -- надевает лучших питомцев, забирает награды квестов, открывает следующий мир, когда хватает монет.
 -- Запуск (Play → Client command bar): require(game.ReplicatedStorage.DevBot)(900)
-return function(duration)
+return function(duration, mode)
+	mode = mode or "player"
 	assert(game:GetService("RunService"):IsStudio(), "Studio only")
 	duration = duration or 900
 	local Players = game:GetService("Players")
@@ -69,7 +70,13 @@ return function(duration)
 		local t = os.clock()
 		while os.clock() - t < (timeout or 8) do
 			if ((root.Position - pos) * Vector3.new(1, 0, 1)).Magnitude <= (near or 3) then return true end
-			if h.Sit then h.Jump = true end -- сел на лавку — встаём
+			if h.Sit then -- сел на лавку — встаём
+				local seat = h.SeatPart
+				local weld = seat and seat:FindFirstChild("SeatWeld")
+				if weld then weld:Destroy() end
+				h.Sit = false
+				h.Jump = true
+			end
 			h:MoveTo(pos)
 			task.wait(0.25)
 			if h.FloorMaterial == Enum.Material.Air and math.random() < 0.15 then h.Jump = true end
@@ -118,6 +125,23 @@ return function(duration)
 		{ "magnet", function() return P:GetAttribute("MagnetLevel") or 0 end, Config.GetMagnetUpgradeCost },
 		{ "double", function() return P:GetAttribute("DoubleLevel") or 0 end, Config.GetDoubleUpgradeCost },
 	}
+	-- выбор прокачки. "cheap": самая дешёвая. "player": как обычный игрок — держит уровни ровно с упором
+	-- на монеты и скорость, и тратит на один уровень не больше 25% кошелька, остальное копит на цель.
+	local WEIGHT = { income = 1, speed = 0.85, double = 0.7, magnet = 0.6 }
+	local maxedAt = {}
+	local function pickUpgrade()
+		local best, bc, bs
+		for _, u in UP do
+			local lvl = u[2]()
+			local cost = u[3](lvl)
+			if maxedAt[u[1]] ~= lvl then
+				local score = mode == "cheap" and cost or (lvl + 1) / WEIGHT[u[1]]
+				if not bs or score < bs then best, bc, bs = u[1], cost, score end
+			end
+		end
+		if mode ~= "cheap" and best and bc > coins() * 0.25 then return nil end
+		return best, bc
+	end
 	local opened = {}
 	local function eggsHere()
 		local list = {}
@@ -136,16 +160,14 @@ return function(duration)
 		-- как живой игрок: у прилавка покупает подряд всё, на что хватает (самое дешёвое первым)
 		local n, spent = 0, 0
 		for _ = 1, 40 do
-			local best, bc
-			for _, u in UP do
-				local c = u[3](u[2]())
-				if not bc or c < bc then best, bc = u[1], c end
-			end
+			local best, bc = pickUpgrade()
 			if not best or coins() < bc then break end
 			local before = coins()
+			local lvlBefore
+			for _, u in UP do if u[1] == best then lvlBefore = u[2]() end end
 			buy:FireServer(best, zoneId())
 			task.wait(0.5)
-			if coins() >= before then break end
+			if coins() >= before then maxedAt[best] = lvlBefore break end
 			n += 1
 			spent += before - coins()
 		end
@@ -184,12 +206,12 @@ return function(duration)
 			tostring(P:GetAttribute("CurrentWorld")), tostring(eq), tostring(P:GetAttribute("QuestStep") or P:GetAttribute("QuestLineStep") or "?"),
 			tostring(s:FindFirstChild("Rebirths") and s.Rebirths.Value or P:GetAttribute("Rebirths") or 0)))
 	end
-	log("bot start, duration " .. duration .. "s")
+	log("bot start, mode " .. mode .. ", duration " .. duration .. "s")
 	refreshCoins()
 	local earnedAt = {}
 	while os.clock() - t0 < duration do
 		local now = os.clock() - t0
-		if now - lastStatus >= 60 then lastStatus = now status() end
+		if now - lastStatus >= 60 then lastStatus = now status() table.clear(maxedAt) end
 		if quest then quest:FireServer("claim") end
 		if coinZone ~= zoneId() then refreshCoins() end
 		if now - lastDecide >= 6 then
@@ -207,7 +229,21 @@ return function(duration)
 				_G.botLastReb = now
 				reb:FireServer()
 				task.wait(2)
+				table.clear(maxedAt)
 				log(("REBIRTH try (cost %s) → coins %s"):format(short(rcost), short(coins())))
+			end
+			-- как игрок: после ребёрса (он кидает в Meadow) летим в самый дальний открытый мир
+			local bestOpen = "Meadow Isles"
+			for _, d in Worlds.Worlds do
+				if (d.Cost or 0) == 0 or P:GetAttribute(Worlds.UnlockKey(d.Id)) then bestOpen = d.Id end
+			end
+			if tele and P:GetAttribute("CurrentWorld") ~= bestOpen and now - (_G.botLastHop or -1e9) > 20 then
+				_G.botLastHop = now
+				pcall(tele.InvokeServer, tele, bestOpen)
+				task.wait(3)
+				table.clear(maxedAt)
+				refreshCoins()
+				log("HOP to " .. bestOpen)
 			end
 			if nextW and c >= nextW.Cost and tele and now - lastWorldTry > 30 then
 				lastWorldTry = now
@@ -224,16 +260,22 @@ return function(duration)
 					if not opened[e.Id] and c >= e.Cost then bought = doBuyEgg(e) break end
 				end
 				if not bought then
-					local best, bc
-					for _, u in UP do
-						local cost = u[3](u[2]())
-						if not bc or cost < bc then best, bc = u[1], cost end
-					end
+					local best, bc = pickUpgrade()
 					if best and c >= bc then
 						bought = doBuyUpgrade(best, bc)
 					end
 				end
-				if not bought then
+				if not bought and mode ~= "cheap" then
+					-- копим на ближайшую цель (новое яйцо / мир), а лишние деньги крутим в лучшем яйце
+					local goal
+					for _, e in eggs do if not opened[e.Id] then goal = e.Cost break end end
+					if nextW then goal = goal and math.min(goal, nextW.Cost) or nextW.Cost end
+					local bestEgg
+					for i = #eggs, 1, -1 do if opened[eggs[i].Id] then bestEgg = eggs[i] break end end
+					if bestEgg and c >= bestEgg.Cost * 2 and (not goal or c - bestEgg.Cost >= goal or c < goal * 0.25) and (opened[bestEgg.Id] or 0) < 40 then
+						doBuyEgg(bestEgg)
+					end
+				elseif not bought then
 					for i = #eggs, 1, -1 do
 						local e = eggs[i]
 						if c >= e.Cost * 3 and (opened[e.Id] or 0) < 12 then doBuyEgg(e) break end
