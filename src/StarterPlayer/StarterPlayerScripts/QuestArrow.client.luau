@@ -76,27 +76,72 @@ endAtt.Parent = holder
 local beam = Instance.new("Beam")
 beam.Attachment1 = endAtt
 beam.FaceCamera = true
-beam.Width0, beam.Width1 = 0.5, 0.9
-beam.LightEmission = 1
-beam.Color = ColorSequence.new(Color3.fromRGB(255, 230, 90), Color3.fromRGB(120, 255, 140))
+-- бегущие шевроны: видно и направление, и что подсказка «живая»
+beam.Texture = "rbxassetid://119363361632569"
+beam.TextureMode = Enum.TextureMode.Static
+beam.TextureLength = 2
+beam.TextureSpeed = 1.6
+beam.Width0, beam.Width1 = 1.6, 1.6
+beam.LightEmission = 0.8
+beam.Brightness = 2
+beam.Color = ColorSequence.new(Color3.fromRGB(255, 225, 80), Color3.fromRGB(255, 160, 60))
 beam.Segments = 12
 beam.CurveSize0, beam.CurveSize1 = 0, 0
 beam.Parent = holder
+-- кольцо на земле у цели
+local ring = Instance.new("Part")
+ring.Name = "QuestRing"
+ring.Shape = Enum.PartType.Cylinder
+ring.Anchored = true
+ring.CanCollide = false
+ring.CanQuery = false
+ring.CanTouch = false
+ring.Material = Enum.Material.Neon
+ring.Color = Color3.fromRGB(255, 215, 70)
+ring.Size = Vector3.new(0.2, 8, 8)
+ring.Parent = holder
 local tag = Instance.new("BillboardGui")
-tag.Size = UDim2.fromOffset(60, 60)
+tag.Size = UDim2.fromOffset(96, 118)
 tag.StudsOffsetWorldSpace = Vector3.new(0, 7, 0)
 tag.AlwaysOnTop = true
 tag.LightInfluence = 0
 tag.Adornee = holder
-local arrow = Instance.new("TextLabel")
-arrow.BackgroundTransparency = 1
-arrow.Size = UDim2.fromScale(1, 1)
-arrow.Text = "▼"
-arrow.TextScaled = true
-arrow.Font = Enum.Font.FredokaOne
-arrow.TextColor3 = Color3.fromRGB(255, 230, 90)
-arrow.TextStrokeTransparency = 0.2
-arrow.Parent = tag
+-- значок: золотой круг с «!» и стрелкой, под ним расстояние
+local badge = Instance.new("Frame")
+badge.AnchorPoint = Vector2.new(0.5, 0)
+badge.Position = UDim2.new(0.5, 0, 0, 0)
+badge.Size = UDim2.fromOffset(62, 62)
+badge.BackgroundColor3 = Color3.new(1, 1, 1)
+badge.Parent = tag
+Instance.new("UICorner", badge).CornerRadius = UDim.new(1, 0)
+local bg = Instance.new("UIGradient")
+bg.Rotation = 90
+bg.Color = ColorSequence.new(Color3.fromRGB(255, 235, 120), Color3.fromRGB(245, 150, 40))
+bg.Parent = badge
+local bs = Instance.new("UIStroke")
+bs.Thickness = 4
+bs.Color = Color3.fromRGB(30, 16, 60)
+bs.Parent = badge
+local function txt(parent, s2, pos, size)
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Position = pos
+	l.Size = size
+	l.Text = s2
+	l.TextScaled = true
+	l.Font = Enum.Font.FredokaOne
+	l.TextColor3 = Color3.new(1, 1, 1)
+	l.Parent = parent
+	local st = Instance.new("UIStroke")
+	st.Thickness = 2.5
+	st.Color = Color3.fromRGB(30, 16, 60)
+	st.Parent = l
+	return l
+end
+txt(badge, "!", UDim2.fromOffset(6, 4), UDim2.new(1, -12, 1, -8))
+local arrow = txt(tag, "▼", UDim2.new(0.5, -16, 0, 60), UDim2.fromOffset(32, 26))
+arrow.TextColor3 = Color3.fromRGB(255, 215, 70)
+local distLabel = txt(tag, "", UDim2.new(0, 0, 0, 88), UDim2.new(1, 0, 0, 26))
 tag.Parent = holder
 
 local startAtt: Attachment? = nil
@@ -128,9 +173,17 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 	holder.Position = current + Vector3.new(0, 0.5, 0)
-	local pulse = 0.35 + 0.25 * math.sin(os.clock() * 4)
-	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(0.15, pulse), NumberSequenceKeypoint.new(1, pulse) })
-	tag.StudsOffsetWorldSpace = Vector3.new(0, 7 + math.sin(os.clock() * 3) * 0.6, 0)
+	local t = os.clock()
+	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.08, 0.15), NumberSequenceKeypoint.new(0.9, 0.15), NumberSequenceKeypoint.new(1, 0.6) })
+	tag.StudsOffsetWorldSpace = Vector3.new(0, 8 + math.abs(math.sin(t * 3)) * 1.4, 0)
+	distLabel.Text = math.floor(d) .. "m"
+	-- кольцо расходится волной от цели
+	local k = (t * 0.8) % 1
+	local r = 5 + k * 9
+	local ground = current
+	ring.Size = Vector3.new(0.15, r, r)
+	ring.CFrame = CFrame.new(ground.X, ground.Y - 0.2, ground.Z) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Transparency = 0.35 + k * 0.65
 	if holder.Parent ~= workspace then
 		holder.Parent = workspace
 	end

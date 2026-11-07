@@ -109,6 +109,18 @@ local function viewport(parent, x, y, w, h)
 	v.CurrentCamera = camera
 	return Instance.new("WorldModel", v)
 end
+-- камера по размеру модели: питомцы разного размера заполняют окошко одинаково
+local function frameModel(scene, model)
+	local cam = scene.Parent and scene.Parent.CurrentCamera
+	if not cam then
+		return
+	end
+	local cf, size = model:GetBoundingBox()
+	local r = math.max(size.X, size.Y, size.Z) * 0.5
+	local dist = r / math.tan(math.rad(cam.FieldOfView / 2)) * 1.05 + r * 0.4
+	local dir = Vector3.new(0.45, 0.25, -1).Unit
+	cam.CFrame = CFrame.lookAt(cf.Position + dir * dist, cf.Position)
+end
 
 -- ===== Окно яйца =====
 local panel = box(gui, 0, 0, 660, 664, Color3.fromRGB(30, 24, 52))
@@ -408,7 +420,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, processed
 	end
 end)
 -- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
-hint.Text = (TOUCH_ONLY and "" or "⌨ E ×1  R ×3  T ×9   ·   ") .. "✓ KEEP / ✕ AUTO-DELETE copies   ·   🌌 Super Secret odds — scroll down"
+hint.Text = (TOUCH_ONLY and "" or "E ×1 · R ×3 · T ×9   |   ") .. "tap KEEP to auto-delete copies   |   super secrets ↓"
 hint.TextScaled = true
 do
 	local c = Instance.new("UITextSizeConstraint")
@@ -459,10 +471,11 @@ local function showEgg(id)
 		local grad = Instance.new("UIGradient", cell)
 		grad.Color = sky and ColorSequence.new(c:Lerp(WHITE, 0.45), Color3.fromRGB(236, 232, 255)) or ColorSequence.new(c:Lerp(Color3.fromRGB(46, 38, 72), 0.55), Color3.fromRGB(36, 30, 58))
 		grad.Rotation = 90
-		local scene = viewport(cell, 2, 18, 112, cellH - 58)
+		local scene = viewport(cell, 0, 16, 116, cellH - 52)
 		local ok, model = pcall(PetVisuals.Build, entry.Pet)
 		if ok and model then
 			model.Parent = scene
+			frameModel(scene, model)
 		end
 		local pill = box(cell, 6, 5, 100, 18, c)
 		corner(pill, 9)

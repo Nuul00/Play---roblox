@@ -221,7 +221,7 @@ Run.RenderStepped:Connect(function(dt)
 	local left = def and ((workspace:GetAttribute(E.AttrEnd(worldName)) or 0) - now) or 0
 	local active = def ~= nil and left > 0
 	local soon = def and not active and (E.NextStart(worldName, now) - now) or math.huge
-	local show = active or soon <= 30
+	local show = (active or soon <= 30) and (player:GetAttribute("UIScreen") or "") == ""
 
 	-- заставка при старте
 	if active and not wasActive and left > E.Duration - 5 then
@@ -298,7 +298,7 @@ Run.RenderStepped:Connect(function(dt)
 	-- стрелки у краёв экрана на ближайшие бонусы своего мира
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local list = {}
-	if active and root and cam then
+	if active and root and cam and (player:GetAttribute("UIScreen") or "") == "" then
 		for m, base in pairs(spinning) do
 			if m.Parent and m:GetAttribute("World") == worldName then
 				table.insert(list, { pos = base.Position, d = (base.Position - root.Position).Magnitude })
