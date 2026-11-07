@@ -324,11 +324,13 @@ Run.RenderStepped:Connect(function(dt)
 		if item and cam and item.d > 12 then
 			local sp, onScreen = cam:WorldToViewportPoint(item.pos)
 			local vp = cam.ViewportSize
-			local margin = 110
-			local inside = onScreen and sp.X > margin and sp.X < vp.X - margin and sp.Y > margin and sp.Y < vp.Y - margin
+			-- рамка, по которой ездят стрелки: внутри неё нет кнопок HUD (слева плитки, снизу панель)
+			local L, R = 190 * uiScale, vp.X - 120 * uiScale
+			local T, B = 120 * uiScale, vp.Y - 170 * uiScale
+			local inside = onScreen and sp.X > L and sp.X < R and sp.Y > T and sp.Y < B
 			if not inside then
-				-- направление на бонус от центра экрана; если он сзади — разворачиваем
-				local c = vp / 2
+				-- направление на бонус от центра рамки; если он сзади — разворачиваем
+				local c = Vector2.new((L + R) / 2, (T + B) / 2)
 				local dir = Vector2.new(sp.X, sp.Y) - c
 				if sp.Z < 0 then
 					dir = -dir
@@ -336,8 +338,8 @@ Run.RenderStepped:Connect(function(dt)
 				if dir.Magnitude < 1 then
 					dir = Vector2.new(0, 1)
 				end
-				local sx = (vp.X / 2 - margin) / math.max(math.abs(dir.X), 1e-3)
-				local sy = (vp.Y / 2 - margin) / math.max(math.abs(dir.Y), 1e-3)
+				local sx = ((R - L) / 2) / math.max(math.abs(dir.X), 1e-3)
+				local sy = ((B - T) / 2) / math.max(math.abs(dir.Y), 1e-3)
 				local p = c + dir * math.min(sx, sy)
 				ptr.f.Position = UDim2.fromOffset(p.X, p.Y)
 				ptr.arrow.Rotation = math.deg(math.atan2(dir.Y, dir.X)) + 90
