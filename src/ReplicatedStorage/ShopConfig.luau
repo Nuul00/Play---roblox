@@ -159,6 +159,15 @@ ShopConfig.Potions = {
 }
 
 -- Иконки наград (ChatGPT, загружены через Open Cloud): мешок монет, гора монет, подарок-джекпот.
+-- иконки прокачки (ChatGPT, assets/hud/upgrades)
+ShopConfig.UpgradeImages = {
+	speed = "rbxassetid://122277196608181",
+	magnet = "rbxassetid://80575557127176",
+	income = "rbxassetid://96054102814496",
+	double = "rbxassetid://78844318379843",
+	kiosk = "rbxassetid://84609368278974",
+	lock = "rbxassetid://71566794632445",
+}
 ShopConfig.RewardImages = {
 	CoinBag = "rbxassetid://87157540094531",
 	CoinPile = "rbxassetid://136423613777895",

@@ -12,7 +12,7 @@ local GUIS = {
 	PetIndexBook = true,
 	RebirthUI = true,
 	TeleportUI = true,
-	ShopPanels = true,
+	-- ShopPanels: своё оформление (UIKit)
 	WorkshopUI = true,
 	PetMachineUI = true,
 	CoinSprintHUD = true,

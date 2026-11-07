@@ -148,35 +148,63 @@ local function fmt(n)
 	return NumberFormat.Short(n)
 end
 
-local window = Instance.new("Frame")
-window.AnchorPoint = Vector2.new(1, 0.5)
-window.Position = UDim2.new(1, -20, 0.5, 0)
-window.Size = UDim2.fromOffset(640, 430)
-window.BackgroundColor3 = Color3.new(1, 1, 1)
-window.Visible = false
-window:SetAttribute("NoTheme", true) -- фиолетовый стиль всех окон (как DAILY / инвентарь)
-do
-	local g = Instance.new("UIGradient")
-	g.Rotation = 90
-	g.Color = ColorSequence.new(Color3.fromRGB(62, 36, 130), Color3.fromRGB(20, 12, 52))
-	g.Parent = window
+-- Два окна в стиле UIKit (как DAILY / инвентарь): широкое для киоска прокачки и узкое для магазина магнитов.
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
+local rgb = Color3.fromRGB
+local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
+local COIN_IMG = ShopConfig.RewardImages.CoinPile
+local panels = {}
+local function makePanel(key, w, pillW, titleColors)
+	local p, cl, sc, tl = K.window(gui, "Shop_" .. key, w, 452, "UPGRADE KIOSK", titleColors, pillW)
+	p.AnchorPoint = Vector2.new(1, 0.5)
+	p.Position = UDim2.new(1, -20, 0.5, 16)
+	panels[key] = { panel = p, close = cl, scale = sc, title = tl }
+	return panels[key]
 end
-window.Parent = gui
-corner(window, 20)
-stroke(window, 4)
-local scale = Instance.new("UIScale", window)
-local title = label(window, "", UDim2.fromOffset(20, 8), UDim2.fromOffset(420, 44), 28, Color3.fromRGB(255, 230, 150))
-title.TextXAlignment = Enum.TextXAlignment.Left
-local wallet = label(window, "", UDim2.fromOffset(330, 12), UDim2.fromOffset(240, 36), 20, Color3.fromRGB(255, 215, 80))
-wallet.TextXAlignment = Enum.TextXAlignment.Right
-local close = button(window, "×", UDim2.new(1, -52, 0, 10), UDim2.fromOffset(40, 40), Color3.fromRGB(220, 70, 70))
-close.TextSize = 28
-close.Modal = true
+makePanel("upgrades", 860, 380, K.ORANGE)
+do
+	local pill = panels.upgrades.panel:FindFirstChild("TitlePill")
+	local em = Instance.new("ImageLabel")
+	em.BackgroundTransparency = 1
+	em.Image = ShopConfig.UpgradeImages.kiosk
+	em.Position = UDim2.fromOffset(-34, -18)
+	em.Size = UDim2.fromOffset(88, 88)
+	em.Rotation = -10
+	em.ZIndex = 3
+	em.Parent = pill
+	panels.upgrades.title.Position = UDim2.fromOffset(46, 6)
+	panels.upgrades.title.Size = UDim2.new(1, -56, 1, -10)
+end
+makePanel("magnets", 640, 320, K.RED)
+local window, title, scale, close = panels.upgrades.panel, panels.upgrades.title, panels.upgrades.scale, panels.upgrades.close
+-- кошелёк: плашка с монетами слева от заголовка
+local walletChip = K.frame(window, UDim2.fromOffset(22, 18), UDim2.fromOffset(170, 40), WHITE, 20)
+K.grad(walletChip, rgb(70, 46, 140), rgb(36, 22, 80))
+K.stroke(walletChip, K.GOLD, 2.5)
+local walletIcon = Instance.new("ImageLabel")
+walletIcon.BackgroundTransparency = 1
+walletIcon.Position = UDim2.fromOffset(-8, -8)
+walletIcon.Size = UDim2.fromOffset(54, 54)
+walletIcon.Image = COIN_IMG
+walletIcon.Parent = walletChip
+local wallet = K.text(walletChip, "", UDim2.fromOffset(46, 4), UDim2.new(1, -54, 1, -8), 24, K.GOLD, 2)
+wallet.TextXAlignment = Enum.TextXAlignment.Left
 local body = Instance.new("Frame")
 body.BackgroundTransparency = 1
-body.Position = UDim2.fromOffset(14, 60)
-body.Size = UDim2.fromOffset(612, 360)
+body.Position = UDim2.fromOffset(14, 72)
+body.Size = UDim2.fromOffset(832, 366)
 body.Parent = window
+local function usePanel(key)
+	local P = panels[key]
+	for k, o in pairs(panels) do
+		if k ~= key then
+			o.panel.Visible = false
+		end
+	end
+	window, title, scale, close = P.panel, P.title, P.scale, P.close
+	body.Parent = window
+	walletChip.Parent = window
+end
 
 local mode, zoneId
 local zonePart
@@ -185,70 +213,121 @@ local spinning = {}
 -- Карточка прокачки: иконка в круге цвета ступени, уровень «N / предел мира», значения до/после, кнопка.
 -- Предел зависит от магазина: Meadow 10, Neon 25, Sky 50 (Config.ZoneMax); цены растут с уровнем.
 local upgradeDefs = {
-	speed = { Title = "SPEED", Icon = "⚡", Accent = Color3.fromRGB(80, 170, 255), Global = Config.MaxSpeedLevel,
+	speed = { Title = "SPEED", Image = ShopConfig.UpgradeImages.speed, Icon = "⚡", Accent = Color3.fromRGB(80, 170, 255), Global = Config.MaxSpeedLevel,
 		Level = function() return speed.Value end, Cost = Config.GetUpgradeCost,
-		Value = function(l) return tostring(Config.GetWalkSpeed(l)) .. " (+" .. l .. "% coins)" end, Unit = "walk speed" },
-	magnet = { Title = "MAGNET", Icon = "🧲", Accent = Color3.fromRGB(230, 80, 90), Global = Config.MaxMagnetLevel,
+		Value = function(l) return tostring(Config.GetWalkSpeed(l)) end, Unit = "walk speed · +1% coins / lv" },
+	magnet = { Title = "MAGNET", Image = ShopConfig.UpgradeImages.magnet, Icon = "🧲", Accent = Color3.fromRGB(230, 80, 90), Global = Config.MaxMagnetLevel,
 		Level = function() return player:GetAttribute("MagnetLevel") or 0 end, Cost = Config.GetMagnetUpgradeCost,
 		Value = function(l) return string.format("%.1f", Config.GetMagnetRadius(l)) end, Unit = "studs radius" },
-	income = { Title = "COINS", Icon = "💰", Accent = Color3.fromRGB(255, 190, 40), Global = Config.MaxIncomeLevel,
+	income = { Title = "COINS", Image = ShopConfig.UpgradeImages.income, Icon = "💰", Accent = Color3.fromRGB(255, 190, 40), Global = Config.MaxIncomeLevel,
 		Level = function() return player:GetAttribute("IncomeLevel") or 0 end, Cost = Config.GetIncomeUpgradeCost,
 		Value = function(l) return "x" .. string.format("%g", Config.GetIncomeMultiplier(l)) end, Unit = "coin income" },
-	double = { Title = "DOUBLE", Icon = "✨", Accent = Color3.fromRGB(190, 110, 255), Global = Config.MaxDoubleLevel,
+	double = { Title = "DOUBLE", Image = ShopConfig.UpgradeImages.double, Icon = "✨", Accent = Color3.fromRGB(190, 110, 255), Global = Config.MaxDoubleLevel,
 		Level = function() return player:GetAttribute("DoubleLevel") or 0 end, Cost = Config.GetDoubleUpgradeCost,
 		Value = function(l) return string.format("%g%%", math.floor(Config.GetDoubleChance(l) * 1000 + 0.5) / 10) end, Unit = "double coin chance" },
 }
+local function orbIcon(card, d, size, y)
+	local holder = Instance.new("Frame")
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0)
+	holder.Position = UDim2.new(0.5, 0, 0, y)
+	holder.Size = UDim2.fromOffset(size, size)
+	holder.Parent = card
+	local glow = K.frame(holder, UDim2.fromScale(0.5, 0.5), UDim2.fromScale(1.22, 1.22), d.Accent, UDim.new(1, 0))
+	glow.AnchorPoint = Vector2.new(0.5, 0.5)
+	glow.BackgroundTransparency = 0.7
+	TweenService:Create(glow, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { BackgroundTransparency = 0.88, Size = UDim2.fromScale(1.38, 1.38) }):Play()
+	local orb = K.frame(holder, UDim2.new(), UDim2.fromScale(1, 1), WHITE, UDim.new(1, 0))
+	K.grad(orb, d.Accent:Lerp(WHITE, 0.55), d.Accent:Lerp(BLACK, 0.35))
+	K.stroke(orb, WHITE, 3.5)
+	local shine = K.frame(orb, UDim2.fromScale(0.18, 0.08), UDim2.fromScale(0.64, 0.34), WHITE, UDim.new(1, 0))
+	shine.BackgroundTransparency = 0.72
+	local icon
+	if d.Image then
+		icon = Instance.new("ImageLabel")
+		icon.BackgroundTransparency = 1
+		icon.Image = d.Image
+		icon.AnchorPoint = Vector2.new(0.5, 0.5)
+		icon.Position = UDim2.fromScale(0.5, 0.5)
+		icon.Size = UDim2.fromOffset(size - 10, size - 10)
+		icon.Parent = orb
+	else
+		icon = K.text(orb, d.Icon, UDim2.fromScale(0.1, 0.1), UDim2.fromScale(0.8, 0.8), math.floor(size * 0.6), nil, 0)
+	end
+	icon.Rotation = -6
+	TweenService:Create(icon, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = 6 }):Play()
+	local pop = Instance.new("UIScale")
+	pop.Parent = holder
+	return holder, pop
+end
+
 local function upgradeCard(parent, kind, pos, size)
 	local d = upgradeDefs[kind]
 	local level = d.Level()
 	local cap = math.min(d.Global, Config.ZoneMax[zoneId] or Config.BaseMaxLevel)
-	local tier = ShopConfig.TierColor(level, d.Global)
-	local card = Instance.new("Frame")
-	card.Position = pos
-	card.Size = size
-	card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
-	card.Parent = parent
-	corner(card, 16)
-	stroke(card, 3, tier)
-	gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
-	local head = Instance.new("Frame")
-	head.Size = UDim2.new(1, 0, 0, 38)
-	head.BackgroundColor3 = d.Accent
-	head.Parent = card
-	corner(head, 16)
-	gradient(head, d.Accent, 0.3, 0.2)
-	local headText = label(head, d.Title, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 22)
-	headText.TextStrokeTransparency = 0.3
-	-- Иконка растёт и меняет цвет кольца по мере прокачки.
-	local iconSize = 78 + math.floor(level / math.max(d.Global, 1) * 14)
-	local ring = juicyIcon(card, d.Icon, d.Accent, tier, iconSize, UDim2.new(0.5, 0, 0, 48))
-	label(card, string.format("LEVEL %d / %d", level, cap), UDim2.fromOffset(0, 144), UDim2.new(1, 0, 0, 26), 20, tier)
+	local atCap = level >= cap
+	local card = K.frame(parent, pos, size, WHITE, 20)
+	K.grad(card, K.CARD:Lerp(d.Accent, 0.16), K.CARD2)
+	K.stroke(card, d.Accent, 3)
+	-- цветная шапка
+	local band = K.frame(card, UDim2.new(), UDim2.new(1, 0, 0, 42), WHITE, 20)
+	K.grad(band, d.Accent:Lerp(WHITE, 0.3), d.Accent:Lerp(BLACK, 0.15))
+	local bandFill = K.frame(band, UDim2.new(0, 0, 1, -14), UDim2.new(1, 0, 0, 14), WHITE)
+	K.grad(bandFill, d.Accent:Lerp(BLACK, 0.08), d.Accent:Lerp(BLACK, 0.15))
+	K.text(band, d.Title, UDim2.fromOffset(8, 5), UDim2.new(1, -16, 1, -10), 24, nil, 2.5)
+	-- иконка в светящемся шаре
+	local _, pop = orbIcon(card, d, 100, 54)
+	-- уровень: плашка и полоска прогресса до предела мира
+	local lv = K.frame(card, UDim2.new(0.5, -58, 0, 160), UDim2.fromOffset(116, 26), WHITE, 13)
+	K.grad(lv, rgb(80, 56, 150), rgb(44, 28, 96))
+	K.stroke(lv, d.Accent, 2)
+	K.text(lv, atCap and level >= d.Global and "MAX LEVEL" or string.format("LV %d / %d", level, cap), UDim2.fromOffset(6, 2), UDim2.new(1, -12, 1, -4), 18, nil, 1.5)
+	local bar = K.frame(card, UDim2.new(0, 16, 0, 194), UDim2.new(1, -32, 0, 12), rgb(20, 12, 46), 6)
+	K.stroke(bar, K.INK, 2)
+	local fill = K.frame(bar, UDim2.new(), UDim2.fromScale(math.clamp(level / math.max(cap, 1), 0, 1), 1), WHITE, 6)
+	K.grad(fill, d.Accent:Lerp(WHITE, 0.45), d.Accent, 0)
+	if cap <= 12 then
+		for k = 1, cap - 1 do
+			local tick = K.frame(bar, UDim2.new(k / cap, -1, 0, 2), UDim2.new(0, 2, 1, -4), K.INK)
+			tick.BackgroundTransparency = 0.4
+		end
+	end
+	-- было → станет
 	local nowText = d.Value(level)
 	local nextText = level < d.Global and d.Value(level + 1) or nowText
-	label(card, level < cap and (nowText .. "  →  " .. nextText) or (nowText .. "  MAX"), UDim2.fromOffset(0, 174), UDim2.new(1, 0, 0, 30), 24)
-	label(card, d.Unit, UDim2.fromOffset(0, 202), UDim2.new(1, 0, 0, 20), 14, Color3.fromRGB(200, 205, 220), Enum.Font.GothamMedium)
-	local atCap = level >= cap
+	local val = K.text(card, "", UDim2.fromOffset(8, 214), UDim2.new(1, -16, 0, 32), 26, nil, 2)
+	val.RichText = true
+	val.Text = atCap and (nowText .. ' <font color="#FFD24A">MAX</font>') or (nowText .. ' <font color="#9CFF7A">→ ' .. nextText .. "</font>")
+	K.text(card, string.upper(d.Unit), UDim2.fromOffset(8, 246), UDim2.new(1, -16, 0, 18), 14, rgb(190, 180, 235), 0)
+	if atCap and level < d.Global then
+		K.text(card, "more levels in the next world!", UDim2.fromOffset(8, 266), UDim2.new(1, -16, 0, 18), 14, K.GOLD, 1.5)
+	end
+	-- кнопки
 	local price = atCap and 0 or d.Cost(level)
 	local affordable = coins.Value >= price
-	local text = level >= d.Global and "MAXED" or atCap and "MAX HERE" or ("BUY  💰 " .. fmt(price))
-	local b = button(card, text, UDim2.new(0, 12, 1, -58), UDim2.new(1, atCap and -24 or -92, 0, 46),
-		atCap and Color3.fromRGB(120, 120, 130) or (affordable and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)))
+	local b, lbl = K.button(card, level >= d.Global and "MAXED" or atCap and "MAX HERE" or fmt(price),
+		UDim2.new(0, 10, 1, -58), UDim2.new(1, atCap and -20 or -86, 0, 48), atCap and K.GRAY or (affordable and K.GREEN or K.RED), 24)
 	if not atCap then
-		-- MAX: сразу все уровни, на которые хватает монет
-		local mx = button(card, "MAX", UDim2.new(1, -76, 1, -58), UDim2.fromOffset(64, 46), affordable and Color3.fromRGB(255, 170, 40) or Color3.fromRGB(150, 110, 80))
-		mx.TextSize = 20
+		local ci = Instance.new("ImageLabel")
+		ci.BackgroundTransparency = 1
+		ci.Image = COIN_IMG
+		ci.Position = UDim2.fromOffset(4, 4)
+		ci.Size = UDim2.fromOffset(40, 40)
+		ci.Parent = b
+		lbl.Position = UDim2.fromOffset(42, 2)
+		lbl.Size = UDim2.new(1, -48, 1, -4)
+		local mx = K.button(card, "MAX", UDim2.new(1, -72, 1, -58), UDim2.fromOffset(62, 48), affordable and K.ORANGE or K.GRAY, 20)
 		mx.Activated:Connect(function()
 			buy:FireServer(kind, zoneId, "max")
-			TweenService:Create(ring, TweenInfo.new(0.12), { Size = UDim2.fromOffset(iconSize + 16, iconSize + 16) }):Play()
+			pop.Scale = 1.2
+			TweenService:Create(pop, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 		end)
-	end
-	if atCap and level < d.Global then
-		label(card, "more levels in the next world", UDim2.fromOffset(0, 226), UDim2.new(1, 0, 0, 18), 13, Color3.fromRGB(255, 215, 120), Enum.Font.GothamMedium)
 	end
 	b.Activated:Connect(function()
 		if not atCap then
 			buy:FireServer(kind, zoneId)
-			TweenService:Create(ring, TweenInfo.new(0.12), { Size = UDim2.fromOffset(iconSize + 10, iconSize + 10) }):Play()
+			pop.Scale = 1.15
+			TweenService:Create(pop, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 		end
 	end)
 end
@@ -271,9 +350,9 @@ local function magnetViewport(parent, tier, pos, size)
 end
 
 local function renderUpgrades()
-	title.Text = "⬆ UPGRADE KIOSK"
+	title.Text = "UPGRADE KIOSK"
 	for i, kind in ipairs({ "speed", "magnet", "income", "double" }) do
-		upgradeCard(body, kind, UDim2.fromOffset((i - 1) * 208, 0), UDim2.fromOffset(200, 340))
+		upgradeCard(body, kind, UDim2.fromOffset((i - 1) * 208 + 2, 0), UDim2.fromOffset(198, 362))
 	end
 end
 
@@ -293,13 +372,13 @@ local function buildMagnetPanel()
 	magnetPanel.Parent = body
 	local tabs = { { "magnets", "MAGNETS" }, { "potions", "POTIONS" } }
 	for i, t in ipairs(tabs) do
-		local b = button(magnetPanel, t[2], UDim2.fromOffset((i - 1) * 140, 0), UDim2.fromOffset(132, 34), Color3.fromRGB(70, 80, 110))
-		b.TextSize = 16
+		local b, _, setC = K.button(magnetPanel, t[2], UDim2.fromOffset((i - 1) * 144 + 4, 0), UDim2.fromOffset(134, 36), K.GRAY, 18)
+		b:SetAttribute("Tab", t[1])
+		tabButtons[t[1] .. "_set"] = setC
 		b.Activated:Connect(function()
 			magnetTab = t[1]
-			window:SetAttribute("Dirty", true)
+			gui:SetAttribute("Dirty", true)
 		end)
-		tabButtons[t[1]] = b
 	end
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
@@ -319,12 +398,10 @@ local function buildMagnetPanel()
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.Parent = scroll
 	for i, def in ipairs(ShopConfig.Magnets) do
-		local card = Instance.new("Frame")
+		local card = K.frame(scroll, UDim2.new(), UDim2.new(), WHITE, 16)
 		card.LayoutOrder = i
-		card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
-		card.Parent = scroll
-		corner(card, 14)
-		stroke(card, 3, def.Body)
+		local cg = K.grad(card, K.CARD:Lerp(def.Body, 0.18), K.CARD2)
+		K.stroke(card, def.Body, 3)
 		label(card, "#" .. i, UDim2.fromOffset(6, 2), UDim2.fromOffset(30, 16), 12, Color3.fromRGB(200, 205, 220))
 		label(card, def.Name, UDim2.fromOffset(4, 110), UDim2.fromOffset(132, 26), 15)
 		local sub = def.Bonus > 0 and ("+" .. def.Bonus .. " radius") or "basic pull"
@@ -332,14 +409,22 @@ local function buildMagnetPanel()
 			sub = sub .. " · " .. string.split(def.World, " ")[1]
 		end
 		label(card, sub, UDim2.fromOffset(4, 136), UDim2.fromOffset(132, 16), 12, def.Body:Lerp(Color3.new(1, 1, 1), 0.55))
-		local b = button(card, "", UDim2.fromOffset(8, 158), UDim2.fromOffset(124, 30), Color3.fromRGB(80, 80, 90))
-		b.TextSize = 13
+		local b, blbl, bset = K.button(card, "", UDim2.fromOffset(8, 156), UDim2.fromOffset(124, 34), K.GRAY, 16)
 		b.Activated:Connect(function()
 			if i <= (player:GetAttribute("MagnetTier") or 1) + 1 then
 				buy:FireServer("magnettool", "magnets", i)
 			end
 		end)
-		magnetCards[i] = { card = card, button = b }
+		local lockImg = Instance.new("ImageLabel")
+		lockImg.BackgroundTransparency = 1
+		lockImg.Image = ShopConfig.UpgradeImages.lock
+		lockImg.AnchorPoint = Vector2.new(0.5, 0.5)
+		lockImg.Position = UDim2.fromOffset(112, 30)
+		lockImg.Size = UDim2.fromOffset(44, 44)
+		lockImg.ZIndex = 5
+		lockImg.Visible = false
+		lockImg.Parent = card
+		magnetCards[i] = { lock = lockImg, card = card, button = b, label = blbl, set = bset, grad = cg, body = def.Body }
 		table.insert(buildQueue, { card = card, tier = i })
 	end
 	potionArea = Instance.new("Frame")
@@ -384,14 +469,9 @@ local function renderPotions()
 	potionArea:ClearAllChildren()
 	for i, name in ipairs(ShopConfig.PotionOrder) do
 		local def = ShopConfig.Potions[name]
-		local card = Instance.new("Frame")
-		card.Position = UDim2.fromOffset((i - 1) * 206, 0)
-		card.Size = UDim2.fromOffset(196, 312)
-		card.BackgroundColor3 = Color3.fromRGB(54, 62, 90)
-		card.Parent = potionArea
-		corner(card, 16)
-		stroke(card, 3, def.Color)
-		gradient(card, Color3.fromRGB(62, 72, 108), 0.1, 0.3)
+		local card = K.frame(potionArea, UDim2.fromOffset((i - 1) * 204 + 4, 0), UDim2.fromOffset(196, 312), WHITE, 18)
+		K.grad(card, K.CARD:Lerp(def.Color, 0.18), K.CARD2)
+		K.stroke(card, def.Color, 3)
 		if def.Image then
 			local img = Instance.new("ImageLabel")
 			img.BackgroundTransparency = 1
@@ -407,7 +487,7 @@ local function renderPotions()
 		label(card, def.Effect .. " · 5 min", UDim2.fromOffset(0, 146), UDim2.new(1, 0, 0, 22), 15, def.Color)
 		label(card, "You have: " .. (player:GetAttribute("Potion" .. name) or 0), UDim2.fromOffset(0, 176), UDim2.new(1, 0, 0, 22), 16, Color3.fromRGB(220, 225, 235), Enum.Font.GothamBold)
 		local price = ShopConfig.PotionCost(name, player:GetAttribute("LifetimeEarned"))
-		local b = button(card, "BUY  💰 " .. fmt(price), UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46), coins.Value >= price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80))
+		local b = K.button(card, "BUY  💰 " .. fmt(price), UDim2.new(0, 12, 1, -58), UDim2.new(1, -24, 0, 46), coins.Value >= price and K.GREEN or K.RED, 20)
 		b.Activated:Connect(function()
 			buy:FireServer("potion", "magnets", name)
 		end)
@@ -423,8 +503,8 @@ local function renderMagnets()
 		buildMagnetPanel()
 	end
 	magnetPanel.Visible = true
-	for key, b in pairs(tabButtons) do
-		b.BackgroundColor3 = key == magnetTab and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(70, 80, 110)
+	for _, key in ipairs({ "magnets", "potions" }) do
+		tabButtons[key .. "_set"](key == magnetTab and K.ORANGE or K.GRAY)
 	end
 	magnetArea.Visible = magnetTab == "magnets"
 	potionArea.Visible = magnetTab == "potions"
@@ -449,21 +529,22 @@ local function renderMagnets()
 				targetIndex = visibleIndex
 			end
 		end
-		c.card.BackgroundColor3 = i == equipped and Color3.fromRGB(60, 110, 70) or Color3.fromRGB(54, 62, 90)
+		c.grad.Color = ColorSequence.new(i == equipped and rgb(50, 130, 80) or K.CARD:Lerp(c.body, 0.18), K.CARD2)
 		local text, color
 		if i == equipped then
-			text, color = "TAKE OFF", Color3.fromRGB(215, 120, 60)
+			text, color = "TAKE OFF", K.ORANGE
 		elseif i <= ownedTier then
-			text, color = "EQUIP", Color3.fromRGB(70, 140, 220)
+			text, color = "EQUIP", K.BLUE
 		elseif i == ownedTier + 1 then
-			text, color = "💰 " .. fmt(def.Price), coins.Value >= def.Price and Color3.fromRGB(70, 180, 90) or Color3.fromRGB(150, 80, 80)
+			text, color = "💰 " .. fmt(def.Price), coins.Value >= def.Price and K.GREEN or K.RED
 		else
-			text, color = "🔒 LOCKED", Color3.fromRGB(80, 80, 90)
+			text, color = "LOCKED", K.GRAY
 		end
-		if c.button.Text ~= text then
-			c.button.Text = text
+		c.lock.Visible = text == "LOCKED"
+		if c.label.Text ~= text then
+			c.label.Text = text
 		end
-		c.button.BackgroundColor3 = color
+		c.set(color)
 		-- крутятся только надетый и следующий для покупки
 		if c.model and (i == equipped or i == ownedTier + 1) then
 			table.insert(spinning, c.model)
@@ -502,12 +583,9 @@ function renderInner()
 	if mode ~= "magnets" then
 		spinning = {}
 	end
-	wallet.Text = "💰 " .. fmt(coins.Value)
+	wallet.Text = fmt(coins.Value)
 	local wide = mode == "upgrades"
-	window.Size = UDim2.fromOffset(wide and 860 or 640, 430)
-	body.Size = UDim2.fromOffset(wide and 832 or 612, 360)
-	wallet.Position = UDim2.fromOffset(wide and 550 or 330, 12)
-	close.Position = UDim2.new(1, -52, 0, 10)
+	body.Size = UDim2.fromOffset(wide and 832 or 612, 366)
 	if mode == "upgrades" then
 		renderUpgrades()
 	elseif mode == "magnets" then
@@ -523,7 +601,9 @@ local function hide()
 		player:SetAttribute("UIScreen", "")
 	end
 end
-close.Activated:Connect(hide)
+for _, P in pairs(panels) do
+	P.close.Activated:Connect(hide)
+end
 
 ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode, newZone)
 	if newMode ~= "upgrades" and newMode ~= "magnets" then
@@ -542,7 +622,11 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 		zonePart = zone.UpgradeShop:FindFirstChild("ShopZone") or zone.UpgradeShop:FindFirstChild("Counter")
 	end
 	player:SetAttribute("UIScreen", newMode)
-	window.Visible = true
+	usePanel(newMode)
+	if not window.Visible then
+		window.Visible = true
+		scale.Scale = 0.6
+	end
 	render()
 end)
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
@@ -554,7 +638,7 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 end)
 local function dirty()
 	if window.Visible then
-		window:SetAttribute("Dirty", true)
+		gui:SetAttribute("Dirty", true)
 	end
 end
 local lastCoins = coins.Value
@@ -579,16 +663,17 @@ local spin, check, lastRender = 0, 0, 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
-		scale.Scale = math.clamp(math.min(camera.ViewportSize.X / (window.Size.X.Offset + 60), camera.ViewportSize.Y / 500), 0.35, 1)
+		local target = math.clamp(math.min(camera.ViewportSize.X / (window.Size.X.Offset + 60), camera.ViewportSize.Y / 530), 0.35, 1)
+		scale.Scale += (target - scale.Scale) * math.min(dt * 14, 1) -- мягкое появление
 	end
 	if not window.Visible then
 		return
 	end
 	-- Обновляем окно не чаще 4 раз в секунду (монеты меняются постоянно); кошелёк — сразу.
-	wallet.Text = "💰 " .. fmt(coins.Value)
-	if window:GetAttribute("Dirty") and os.clock() - lastRender > 0.25 then
+	wallet.Text = fmt(coins.Value)
+	if gui:GetAttribute("Dirty") and os.clock() - lastRender > 0.25 then
 		lastRender = os.clock()
-		window:SetAttribute("Dirty", false)
+		gui:SetAttribute("Dirty", false)
 		render()
 	end
 	spin += dt
