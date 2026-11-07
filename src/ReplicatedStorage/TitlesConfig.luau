@@ -78,10 +78,12 @@ T.List = {
 		Has = function(p) return badgeCount(p) >= #ShopConfig.Badges end },
 }
 -- герб для карточки титула (картинки достижений)
-local IMG = { VIP = "Legend", Coins = "CoinsCollected", Eggs = "EggsOpened", Rich = "LifetimeEarned", Index = "PetsDiscovered", Reborn = "Rebirths",
-	Magnet = "MagnetTier", Vault = "Save_RushRuns", Combo = "Save_BestCombo", Hunter = "Legend", Legend = "Legend" }
+local IMG = { VIP = { "Legend" }, Coins = { "CoinsCollected", 5 }, Eggs = { "EggsOpened", 4 }, Rich = { "LifetimeEarned", 5 }, Index = { "PetsDiscovered", 5 },
+	Reborn = { "Rebirths", 4 }, Magnet = { "MagnetTier", 4 }, Vault = { "Save_RushRuns", 3 }, Combo = { "Save_BestCombo", 4 }, Hunter = { "Legend" }, Legend = { "Legend" } }
 for _, t in ipairs(T.List) do
-	t.Image = IMG[t.Id] and ShopConfig.BadgeImages[IMG[t.Id]] or nil
+	local m = IMG[t.Id]
+	-- герб той стадии, на которой титул открывается
+	t.Image = m and (m[2] and ShopConfig.BadgeImage(m[1], m[2]) or ShopConfig.BadgeImages[m[1]]) or nil
 end
 T.ById = {}
 for i, t in ipairs(T.List) do

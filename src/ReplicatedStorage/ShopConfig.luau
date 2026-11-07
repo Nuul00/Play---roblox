@@ -211,6 +211,18 @@ ShopConfig.BadgeImages = {
 	Save_BestCombo = "rbxassetid://124037883612626",
 	Legend = "rbxassetid://94631015871509",
 }
+-- Эволюция гербов: 4 стадии на цепочку (бронза, серебро + корона, золото + лавры, алмаз + крылья),
+-- число звёзд на ленте = стадия. Заполняется ниже; если стадий нет — обычный герб.
+ShopConfig.BadgeStages = {
+	CoinsCollected = { "rbxthumb://type=Asset&id=117932362034745&w=420&h=420", "rbxthumb://type=Asset&id=136197958483533&w=420&h=420", "rbxthumb://type=Asset&id=130437590396556&w=420&h=420", "rbxthumb://type=Asset&id=133331082810904&w=420&h=420" },
+	EggsOpened = { "rbxthumb://type=Asset&id=74366842547108&w=420&h=420", "rbxthumb://type=Asset&id=119773508547446&w=420&h=420", "rbxthumb://type=Asset&id=99437759020090&w=420&h=420", "rbxthumb://type=Asset&id=76263222872859&w=420&h=420" },
+	LifetimeEarned = { "rbxthumb://type=Asset&id=94421956713409&w=420&h=420", "rbxthumb://type=Asset&id=89229877006624&w=420&h=420", "rbxthumb://type=Asset&id=124562033311975&w=420&h=420", "rbxthumb://type=Asset&id=140267202915771&w=420&h=420" },
+	PetsDiscovered = { "rbxthumb://type=Asset&id=127931002829123&w=420&h=420", "rbxthumb://type=Asset&id=74655619116214&w=420&h=420", "rbxthumb://type=Asset&id=105896362681905&w=420&h=420", "rbxthumb://type=Asset&id=126209690668246&w=420&h=420" },
+	Rebirths = { "rbxthumb://type=Asset&id=114158291165345&w=420&h=420", "rbxthumb://type=Asset&id=112950993197239&w=420&h=420", "rbxthumb://type=Asset&id=90183833025784&w=420&h=420", "rbxthumb://type=Asset&id=107385436274036&w=420&h=420" },
+	Save_RushRuns = { "rbxthumb://type=Asset&id=139902577688591&w=420&h=420", "rbxthumb://type=Asset&id=86039840336169&w=420&h=420", "rbxthumb://type=Asset&id=126043958607781&w=420&h=420", "rbxthumb://type=Asset&id=87374585751925&w=420&h=420" },
+	MagnetTier = { "rbxthumb://type=Asset&id=79774502058122&w=420&h=420", "rbxthumb://type=Asset&id=140160659424665&w=420&h=420", "rbxthumb://type=Asset&id=89925473951232&w=420&h=420", "rbxthumb://type=Asset&id=77900612723733&w=420&h=420" },
+	Save_BestCombo = { "rbxthumb://type=Asset&id=89397881626415&w=420&h=420", "rbxthumb://type=Asset&id=95104157927470&w=420&h=420", "rbxthumb://type=Asset&id=93209271181694&w=420&h=420", "rbxthumb://type=Asset&id=137112542327418&w=420&h=420" },
+}
 ShopConfig.BadgeBonus = 1.03
 ShopConfig.Badges = {}
 do
@@ -257,6 +269,20 @@ do
 			})
 		end
 	end
+end
+
+-- стадия герба (1–4) для уровня цепочки: длинные цепочки делятся на 4 части
+local chainMax = {}
+for _, b in ipairs(ShopConfig.Badges) do
+	chainMax[b.Chain] = math.max(chainMax[b.Chain] or 0, b.Level)
+end
+function ShopConfig.BadgeStage(chain: string, level: number): number
+	local max = chainMax[chain] or 4
+	return math.clamp(math.ceil(level * 4 / max), 1, 4)
+end
+function ShopConfig.BadgeImage(chain: string, level: number): string?
+	local st = ShopConfig.BadgeStages[chain]
+	return st and st[ShopConfig.BadgeStage(chain, level)] or ShopConfig.BadgeImages[chain]
 end
 
 -- Уровни прокачки красятся по ступеням: бронза, серебро, золото, алмаз.

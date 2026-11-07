@@ -417,7 +417,7 @@ local function buildBadges()
 		corner(row, 14)
 		stroke(row, 3, done and Color3.fromRGB(255, 210, 80) or dark)
 		-- герб цепочки; ступень (I–II бронза, III–IV серебро, V–VI золото, VII+ алмаз) — цвет подложки
-		local tierColor = ({ Color3.fromRGB(205, 127, 50), Color3.fromRGB(200, 205, 215), Color3.fromRGB(255, 200, 50), Color3.fromRGB(110, 230, 255) })[math.clamp(math.ceil(b.Level / 2), 1, 4)]
+		local tierColor = ({ Color3.fromRGB(205, 127, 50), Color3.fromRGB(200, 205, 215), Color3.fromRGB(255, 200, 50), Color3.fromRGB(110, 230, 255) })[ShopConfig.BadgeStage(b.Chain, b.Level)]
 		local glow = Instance.new("Frame")
 		glow.Position = UDim2.fromOffset(10, 10)
 		glow.Size = UDim2.fromOffset(84, 84)
@@ -425,7 +425,7 @@ local function buildBadges()
 		glow.BackgroundTransparency = done and 0.55 or 0.3
 		glow.Parent = row
 		corner(glow, 42)
-		local img = ShopConfig.BadgeImages[b.Chain]
+		local img = ShopConfig.BadgeImage(b.Chain, b.Level) -- герб «растёт» с уровнем
 		if img then
 			local mi = Instance.new("ImageLabel")
 			mi.BackgroundTransparency = 1
