@@ -30,12 +30,12 @@ StoreConfig.Products = {
 	{ Key = "CoinsHuge", Id = 3728499068, Name = "Huge Coin Pack", Desc = "Coins = 35% of all you've earned", Kind = "coins", Share = 0.35, Random = true, Min = 50000, Color = Color3.fromRGB(255, 130, 30) },
 	{ Key = "Potions", Id = 3728499075, Name = "Super Potion Pack", Desc = "3 SUPER Coin (x3), 3 SUPER Speed and 3 SUPER Luck potions, 10 min each", Kind = "potions", Count = 3, Random = true, Color = Color3.fromRGB(180, 120, 255) },
 	-- Royal Egg за Robux: ×1 и ×3 открытия (случайно — шансы в окне яйца; Random = true).
-	{ Key = "RoyalEgg1", Id = 0, Name = "Royal Egg ×1", Desc = "Open 1 Royal Egg", Kind = "royalegg", Count = 1, Random = true, Hidden = true, Color = Color3.fromRGB(255, 200, 70) },
-	{ Key = "RoyalEgg3", Id = 0, Name = "Royal Egg ×3", Desc = "Open 3 Royal Eggs", Kind = "royalegg", Count = 3, Random = true, Hidden = true, Color = Color3.fromRGB(255, 170, 50) },
+	{ Key = "RoyalEgg1", Id = 3729119684, Name = "Royal Egg ×1", Desc = "Open 1 Royal Egg", Kind = "royalegg", Count = 1, Random = true, Hidden = true, Color = Color3.fromRGB(255, 200, 70) },
+	{ Key = "RoyalEgg3", Id = 3729119716, Name = "Royal Egg ×3", Desc = "Open 3 Royal Eggs", Kind = "royalegg", Count = 3, Random = true, Hidden = true, Color = Color3.fromRGB(255, 170, 50) },
 	-- Эксклюзивный питомец (не случайный): питомец «Royal …» лучшего открытого мира игрока.
-	{ Key = "ExclusivePet", Id = 0, Name = "Royal Pet", Desc = "Exclusive Royal pet of your best world (x1.5 its top Secret)", Kind = "pet", Color = Color3.fromRGB(255, 210, 90) },
+	{ Key = "ExclusivePet", Id = 3729119718, Name = "Royal Pet", Desc = "Exclusive Royal pet of your best world (x1.5 its top Secret)", Kind = "pet", Color = Color3.fromRGB(255, 210, 90) },
 	-- Разовый набор новичка (R$49–99). Id = 0, пока продукт не создан в Creator Dashboard.
-	{ Key = "StarterPack", Id = 0, Name = "Starter Pack", Desc = "One time: 3 SUPER Luck + 3 SUPER Coin potions, 3 Coin Rush keys and coins = 20% of all you've earned", Kind = "starter", Share = 0.2, Min = 5000, Count = 3, Random = true, Color = Color3.fromRGB(255, 120, 170) },
+	{ Key = "StarterPack", Id = 3729119721, Name = "Starter Pack", Desc = "One time: 3 SUPER Luck + 3 SUPER Coin potions, 3 Coin Rush keys and coins = 20% of all you've earned", Kind = "starter", Share = 0.2, Min = 5000, Count = 3, Random = true, Color = Color3.fromRGB(255, 120, 170) },
 	{ Key = "LuckBoost", Id = 3728499085, Name = "Luck Boost", Desc = "x2 egg luck for 15 minutes", Kind = "luck", Seconds = 900, Random = true, Color = Color3.fromRGB(90, 220, 110) },
 }
 
@@ -77,6 +77,7 @@ local STORE_ICONS = {
 	CoinsSmall = 112986102639746,
 	CoinsMedium = 103975512112730,
 	CoinsHuge = 133705284255673,
+	ExclusivePet = 97295436279396, -- корона в сиянии (как Royal Aura)
 }
 for _, list in ipairs({ StoreConfig.Passes, StoreConfig.Products }) do
 	for _, def in ipairs(list) do
