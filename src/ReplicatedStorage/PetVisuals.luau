@@ -151,10 +151,53 @@ local VARIANT = {
 	[1] = { color = Color3.fromRGB(255, 196, 52), material = Enum.Material.Foil, sparkle = Color3.fromRGB(255, 236, 150) },
 	[2] = { color = Color3.fromRGB(150, 235, 255), material = Enum.Material.Glass, transparency = 0.12, sparkle = Color3.fromRGB(200, 250, 255) },
 	[3] = { material = Enum.Material.Neon, sparkle = Color3.fromRGB(255, 255, 255) },
+	-- Shiny (2026-11): родной облик остаётся (текстуры не трогаем), поверх — блеск, звёзды и свет
+	[4] = { shiny = true, sparkle = Color3.fromRGB(255, 245, 170) },
 }
+local function applyShiny(model: Model, v, withParticles: boolean?)
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") and d.Transparency < 0.95 then
+			-- детали без текстуры чуть светлее и «металлические» — питомец блестит, но узнаётся
+			local textured = d:IsA("MeshPart") and d.TextureID ~= "" or d:FindFirstChildWhichIsA("SurfaceAppearance") ~= nil
+			if not textured then
+				d.Color = d.Color:Lerp(Color3.fromRGB(255, 250, 220), 0.25)
+				d.Reflectance = math.max(d.Reflectance, 0.15)
+			end
+		end
+	end
+	model:SetAttribute("VariantTier", 4)
+	model:SetAttribute("Shiny", true)
+	local root = model.PrimaryPart
+	if withParticles and root then
+		local stars = Instance.new("ParticleEmitter")
+		stars.Name = "ShinyStars"
+		stars.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		stars.Color = ColorSequence.new(v.sparkle, Color3.new(1, 1, 1))
+		stars.LightEmission = 1
+		stars.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(0.5, 0.25), NumberSequenceKeypoint.new(1, 0) })
+		stars.Transparency = NumberSequence.new(0, 1)
+		stars.Lifetime = NumberRange.new(0.5, 0.9)
+		stars.Rate = 10
+		stars.Speed = NumberRange.new(0.2, 0.8)
+		stars.SpreadAngle = Vector2.new(180, 180)
+		stars.Rotation = NumberRange.new(0, 360)
+		stars.RotSpeed = NumberRange.new(-180, 180)
+		stars.Parent = root
+		local light = Instance.new("PointLight")
+		light.Name = "ShinyLight"
+		light.Color = v.sparkle
+		light.Range = 7
+		light.Brightness = 1.2
+		light.Parent = root
+	end
+end
 function PetVisuals.ApplyVariant(model: Model, tier: number, withParticles: boolean?)
 	local v = VARIANT[tier]
 	if not v then
+		return
+	end
+	if v.shiny then
+		applyShiny(model, v, withParticles)
 		return
 	end
 	local parts = {}

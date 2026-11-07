@@ -610,7 +610,7 @@ local modelScales, sparks = {}, {}
 local started, finished, revealLength = 0, false, 4.1
 local crackAt, rarityIdx, rayHolders, bestIdx = 2.1, {}, {}, 1
 local SKY_SPARKS = { Color3.fromRGB(255, 150, 210), Color3.fromRGB(150, 205, 255), Color3.fromRGB(190, 160, 255), Color3.fromRGB(255, 220, 130), Color3.fromRGB(160, 240, 210) }
-local RARITY_ORDER = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Mythic = 5, Legendary = 6, Secret = 7 }
+local RARITY_ORDER = ShopConfig.RarityRank -- Mythic выше Legendary (2026-11)
 local flash = Instance.new("Frame")
 flash.Name = "RevealFlash"
 flash.BackgroundColor3 = WHITE

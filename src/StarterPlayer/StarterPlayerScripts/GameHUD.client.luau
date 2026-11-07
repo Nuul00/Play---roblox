@@ -212,10 +212,10 @@ local function update()
  local pet=Config.Pets[player:GetAttribute("PetLevel") or 0]
  local owned=0
  local total=0
- for i=1,#Config.Pets do
+ for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end
   if not Config.Pets[i].Super then
    total+=1
-   for _,k in ipairs({"PetOwned","PetGold","PetDiamond","PetRainbow"}) do if (player:GetAttribute(k..i) or 0)>0 then owned=owned+1 break end end
+   for _,k in ipairs({"PetOwned","PetGold","PetDiamond","PetRainbow","PetShiny"}) do if (player:GetAttribute(k..i) or 0)>0 then owned=owned+1 break end end
   end
  end
  local function ab(n) return NumberFormat.Short(n) end

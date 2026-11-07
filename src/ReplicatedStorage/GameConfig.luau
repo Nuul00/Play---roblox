@@ -289,4 +289,45 @@ function Config.RollEgg(eggId,roll)
  error("Egg weights must total 100000")
 end
 require(script.Parent:WaitForChild("SuperPets"))(Config)
+
+-- ===== Mythic (2026-11): новая редкость между Legendary и Secret, по одному питомцу в каждом яйце =====
+-- Новых 3D-моделей нет: Mythic — модель Legendary этого яйца в особом облике мира (PetVisuals.ApplyLook),
+-- чуть крупнее. Сила — среднее геометрическое Legendary и Secret яйца. Шанс 0.4% — из самого частого
+-- питомца пула (сумма весов остаётся 100000). Id 240–257 закреплены (хранятся в профилях).
+-- Добавляется ПОСЛЕ SuperPets: Royal Egg берёт облики по номерам в пуле, порядок там не должен съехать.
+Config.MythicChance = 0.4
+Config.MythicPets = {}
+local MYTHIC = {
+ {240,1,"Dusk Seraph","blossom"},{241,2,"Sakura Kitsune","blossom"},{242,3,"Astral Unicorn","starlight"},
+ {243,4,"Disco Phantom","hologram"},{244,5,"Quantum Dragon","hologram"},{245,6,"Neon Wyvern","void"},
+ {246,7,"Storm Griffin","starlight"},{247,8,"Seraph Dragon","prism"},{248,9,"Crystal Phoenix","prism"},
+ {249,16,"Blizzard Fairy","frost"},{250,17,"Aurora Spirit","frost"},{251,18,"Frost Titan","frost"},
+ {252,10,"Inferno Drake","molten"},{253,11,"Magma Hydra Prime","molten"},{254,12,"Obsidian Wyrm","shadow"},
+ {255,13,"Nova Robot","void"},{256,14,"Nebula Serpent","void"},{257,15,"Supernova Phoenix","prism"},
+}
+for _,m in ipairs(MYTHIC) do
+ local id,eggId,name,look=m[1],m[2],m[3],m[4]
+ local egg=Config.Eggs[eggId]
+ local leg,sec
+ for _,e in ipairs(egg.Pool) do
+  local d=Config.Pets[e.Pet]
+  if d.Rarity=="Legendary" and (not leg or d.Multiplier>Config.Pets[leg].Multiplier) then leg=e.Pet
+  elseif d.Rarity=="Secret" then sec=e.Pet end
+ end
+ assert(leg and sec and Config.Pets[id]==nil,"Mythic: egg "..eggId)
+ local mult=math.sqrt(Config.Pets[leg].Multiplier*Config.Pets[sec].Multiplier)
+ mult=mult<100 and math.floor(mult*100+0.5)/100 or math.floor(mult+0.5)
+ Config.Pets[id]={Name=name,Rarity="Mythic",Multiplier=mult,Visual=Config.Pets[leg].Visual,Color=Config.Pets[leg].Color,EggId=eggId,Base=leg,Look=look,Scale=1.15}
+ local w=math.floor(Config.MythicChance*1000+0.5)
+ local first=egg.Pool[1]
+ first.Weight-=w
+ first.Chance=math.floor((first.Chance-Config.MythicChance)*100+0.5)/100
+ table.insert(egg.Pool,#egg.Pool,{Pet=id,Chance=Config.MythicChance,Weight=w}) -- перед Secret
+ table.insert(Config.MythicPets,id)
+end
+-- Наибольший id питомца. В Config.Pets есть пропуски (228–239), поэтому «#Config.Pets» не годится:
+-- длина таблицы с дырами не определена — циклы сохранения могли пропустить Mythic (240+).
+-- Все циклы по питомцам: for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end ...
+Config.MaxPetId=0
+for id in pairs(Config.Pets) do Config.MaxPetId=math.max(Config.MaxPetId,id) end
 return Config

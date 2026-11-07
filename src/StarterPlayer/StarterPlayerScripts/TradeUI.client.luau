@@ -311,7 +311,7 @@ local function render()
 	-- инвентарь: свободные питомцы, сильнейшие сначала
 	clear(inv)
 	local codes = {}
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		for tier = 0, #ShopConfig.Variants do
 			local code = ShopConfig.PetCode(id, tier)
 			local left = freeCount(code) - offered(code)

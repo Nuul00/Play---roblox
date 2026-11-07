@@ -304,7 +304,7 @@ local function init(p)
 		p:SetAttribute(A.Bonus, 1)
 	end
 	-- Текущие количества улучшенных питомцев — точка отсчёта для прироста.
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		for tier = 1, #ShopConfig.Variants do
 			local attr = ShopConfig.OwnedAttr(id, tier)
 			st.cache[attr] = num(p, attr)

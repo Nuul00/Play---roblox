@@ -184,7 +184,7 @@ local function setup(player)
  player:SetAttribute("LifetimeEarned", 0)
  player:SetAttribute("CoinsCollected", 0)
  player:SetAttribute("EggsOpened", 0)
- for i=1,#Config.Pets do player:SetAttribute("PetOwned" .. i, 0) end
+ for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end player:SetAttribute("PetOwned" .. i, 0) end
  for i=1,#Config.Eggs do player:SetAttribute("IndexClaimed" .. i, false) end
  player:SetAttribute("CurrentWorld", "Meadow Isles")
  local stats = Instance.new("Folder")
@@ -484,12 +484,17 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   -- геймпасс Golden Hatch: 5% — питомец сразу золотой (у супер-секреток ступеней нет)
   local golden = not deleted and not Config.Pets[result].Super and p:GetAttribute("Pass_GoldenHatch")==true and random:NextNumber()<0.05
   if golden then attribute = "PetGold" .. result end
+  -- 2026-11: Shiny — 1% любого открытия (не супер-секретки): ×2.5 и блестящий облик (ShopConfig.Variants[4])
+  local SHINY_TIER = 4
+  local shiny = not deleted and not golden and not Config.Pets[result].Super and random:NextNumber() < ShopConfig.ShinyChance
+  if shiny then attribute = ShopConfig.OwnedAttr(result, SHINY_TIER) end
   local count = (p:GetAttribute(attribute) or 0)+(deleted and 0 or 1)
   if not deleted then p:SetAttribute(attribute,count) end
   if golden then notify(p, "✨ Golden Hatch: " .. Config.Pets[result].Name .. " came out GOLDEN!", true) end
+  if shiny then notify(p, "🌟 SHINY! " .. Config.Pets[result].Name .. " came out Shiny (×" .. ShopConfig.VariantMult(SHINY_TIER) .. ")!", true) end
   -- Автоматически сопровождает самый сильный из открытых питомцев.
-  if not deleted then PlayerSystems.OnHatched(p, golden and ShopConfig.PetCode(result, 1) or result) end
-  table.insert(results,{Pet=result,Count=count,Deleted=deleted,Forced=forced})
+  if not deleted then PlayerSystems.OnHatched(p, golden and ShopConfig.PetCode(result, 1) or shiny and ShopConfig.PetCode(result, SHINY_TIER) or result) end
+  table.insert(results,{Pet=result,Count=count,Deleted=deleted,Forced=forced,Shiny=shiny or nil})
   end
   p:SetAttribute("EggsOpened",(p:GetAttribute("EggsOpened") or 0)+amount)
   hatched:FireClient(p,results,eggId)

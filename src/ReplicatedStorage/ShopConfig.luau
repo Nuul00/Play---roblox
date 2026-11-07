@@ -322,9 +322,11 @@ ShopConfig.Pity = {
 	{ Rarity = "Secret", Threshold = 2000 },
 	{ Rarity = "Legendary", Threshold = 100 },
 }
-ShopConfig.RarityRank = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Mythic = 5, Legendary = 6, Secret = 7 }
--- Объявление на весь сервер начиная с этой редкости.
-ShopConfig.AnnounceRank = 6
+-- 2026-11: Mythic — между Legendary и Secret (раньше ранг Mythic стоял ниже Legendary, но Mythic-питомцев
+-- не было). Гарантия «Legendary» теперь засчитывает и Mythic (ранг не ниже).
+ShopConfig.RarityRank = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Secret = 7 }
+-- Объявление на весь сервер начиная с этой редкости (Legendary и выше, как и было).
+ShopConfig.AnnounceRank = 5
 
 -- ===== Постоянные бонусы =====
 -- За каждую полностью собранную и забранную страницу индекса (все питомцы одного яйца).
@@ -341,7 +343,11 @@ ShopConfig.Variants = {
 	{ Key = "Gold", Name = "Golden", Mult = 2, Need = 5, World = "Meadow Isles", Color = Color3.fromRGB(255, 200, 50), Icon = "🟡" },
 	{ Key = "Diamond", Name = "Diamond", Mult = 3.5, Need = 5, World = "Neon District", Color = Color3.fromRGB(120, 230, 255), Icon = "💎" },
 	{ Key = "Rainbow", Name = "Rainbow", Mult = 6, Need = 5, World = "Sky Isles", Color = Color3.fromRGB(255, 120, 220), Icon = "🌈" },
+	-- 2026-11: Shiny — не из машины, а только из яйца: любой питомец с шансом ShinyChance выпадает
+	-- блестящим (×2.5, свой облик поверх родного). Need/World нет — машины эту ступень пропускают.
+	{ Key = "Shiny", Name = "Shiny", Mult = 2.5, Color = Color3.fromRGB(255, 240, 150), Icon = "🌟", HatchOnly = true },
 }
+ShopConfig.ShinyChance = 0.01 -- 1 из 100 открытий
 ShopConfig.VariantStep = 1000
 function ShopConfig.SplitPet(code: number): (number, number)
 	local tier = math.floor(code / ShopConfig.VariantStep)

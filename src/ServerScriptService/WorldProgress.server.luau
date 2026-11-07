@@ -19,9 +19,9 @@ local function snapshot(p)
  data.DailyDay=p:GetAttribute("DailyDay") or 0
  data.DailyClaimedAt=p:GetAttribute("DailyClaimedAt") or 0
  data.QuestState=p:GetAttribute("QuestState") or ""
- for i=1,#Config.Pets do data.AutoDelete[tostring(i)]=p:GetAttribute("AutoDelete"..i)==true end
+ for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end data.AutoDelete[tostring(i)]=p:GetAttribute("AutoDelete"..i)==true end
  for _,name in ipairs({"MagnetLevel","IncomeLevel","DoubleLevel","Rebirths","PetLevel","LifetimeEarned","CoinsCollected","EggsOpened"}) do data[name]=number(p:GetAttribute(name)) end
- for i=1,#Config.Pets do data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
+ for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end data.Owned[tostring(i)]=p:GetAttribute("PetOwned"..i) or 0 end
  data.Equipped=p:GetAttribute("Equipped") or ""
  data.Potions={};data.PotionLeft={}
  for _,name in ipairs(ShopConfig.AllPotions) do
@@ -37,7 +37,7 @@ local function snapshot(p)
  data.Variants={}
  for _,v in ipairs(ShopConfig.Variants) do
   local t={}
-  for i=1,#Config.Pets do local n=p:GetAttribute("Pet"..v.Key..i) or 0; if n>0 then t[tostring(i)]=n end end
+  for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end local n=p:GetAttribute("Pet"..v.Key..i) or 0; if n>0 then t[tostring(i)]=n end end
   data.Variants[v.Key]=t
  end
  data.Pity={}
@@ -93,10 +93,10 @@ local function load(p)
  -- Улучшенные питомцы (золото/алмаз/радуга) грузим до команды, чтобы их можно было надеть.
  for _,v in ipairs(ShopConfig.Variants) do
   local t=type(loaded.Variants)=="table" and type(loaded.Variants[v.Key])=="table" and loaded.Variants[v.Key] or {}
-  for i=1,#Config.Pets do p:SetAttribute("Pet"..v.Key..i,math.floor(number(t[tostring(i)]))) end
+  for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end p:SetAttribute("Pet"..v.Key..i,math.floor(number(t[tostring(i)]))) end
  end
  local best=0
- for i=1,#Config.Pets do
+ for i=1,Config.MaxPetId do if not Config.Pets[i] then continue end
   p:SetAttribute("AutoDelete"..i,type(loaded.AutoDelete)=="table" and loaded.AutoDelete[tostring(i)]==true)
   local count=math.floor(number(type(loaded.Owned)=="table" and loaded.Owned[tostring(i)]))
   p:SetAttribute("PetOwned"..i,count)

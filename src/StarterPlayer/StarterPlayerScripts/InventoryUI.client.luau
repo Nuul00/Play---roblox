@@ -180,7 +180,7 @@ local function buildPets()
 	grid.CellPadding = UDim2.fromOffset(10, 10)
 	grid.Parent = list
 	local ids = {}
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		for tier = 0, #ShopConfig.Variants do
 			local code = ShopConfig.PetCode(id, tier)
 			if count(code) > 0 then

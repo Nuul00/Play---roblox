@@ -141,7 +141,7 @@ local function render()
 	local fromTier = tier - 1
 	local fromName = fromTier == 0 and "normal" or ShopConfig.Variants[fromTier].Name
 	local ids = {}
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		if count(id, fromTier) > 0 and not Config.Pets[id].Super then -- супер-секретки не улучшаются
 			table.insert(ids, id)
 		end

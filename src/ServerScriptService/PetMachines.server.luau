@@ -193,7 +193,11 @@ local function build(tier: number)
 end
 
 local machines = {}
-for tier in ipairs(ShopConfig.Variants) do
+for tier, variant in ipairs(ShopConfig.Variants) do
+	-- Shiny (HatchOnly) — только из яиц, машины для неё нет
+	if variant.HatchOnly or not variant.World then
+		continue
+	end
 	task.spawn(function()
 		local ok, result = pcall(build, tier)
 		if ok then
@@ -218,7 +222,7 @@ fuse.OnServerEvent:Connect(function(p, tier, id)
 		return
 	end
 	local variant = ShopConfig.Variants[tier]
-	if not variant or not unlocked(p, variant.World) then
+	if not variant or variant.HatchOnly or not unlocked(p, variant.World) then
 		return
 	end
 	local machine = machines[tier]

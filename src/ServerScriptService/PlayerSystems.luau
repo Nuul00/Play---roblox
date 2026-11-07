@@ -91,7 +91,7 @@ end
 function PlayerSystems.EquipBest(p)
 	local maxEquipped = PlayerSystems.MaxEquipped(p)
 	local all = {}
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		for tier = 0, #ShopConfig.Variants do
 			local code = ShopConfig.PetCode(id, tier)
 			for _ = 1, math.min(owned(p, code), maxEquipped) do
@@ -176,7 +176,7 @@ end
 -- ===== Достижения =====
 function PlayerSystems.CheckBadges(p)
 	local discovered = 0
-	for id = 1, #Config.Pets do
+	for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end
 		if not Config.Pets[id].Super and ShopConfig.Discovered(p, id) then
 			discovered += 1
 		end

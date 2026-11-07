@@ -10,15 +10,17 @@ local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local PetAbilities = {}
 
 -- ===== Простые способности =====
--- Values — по рангу редкости (ShopConfig.RarityRank: 1 Common … 5 Mythic, 6 Legendary, 7 Secret).
+-- Values — по рангу редкости (ShopConfig.RarityRank: 1 Common … 5 Legendary, 6 Mythic, 7 Secret).
+-- 2026-11: Mythic встал выше Legendary — у Legendary прежние значения (были 6-м столбцом),
+-- у Mythic — между Legendary и Secret.
 -- Проценты хранятся долей (0.12 = +12%), магнит — в стадах.
 PetAbilities.Order = { "Coins", "Magnet", "Speed", "Luck", "Double" }
 PetAbilities.Kinds = {
-	Coins = { Icon = "💰", Attr = "AbilCoins", Label = "coins", Percent = true, Values = { 0.02, 0.03, 0.05, 0.08, 0.11, 0.15, 0.30 } },
-	Magnet = { Icon = "🧲", Attr = "AbilMagnet", Label = "magnet", Percent = false, Values = { 0.5, 0.8, 1.2, 1.8, 2.5, 3.5, 6 } },
-	Speed = { Icon = "⚡", Attr = "AbilSpeed", Label = "speed", Percent = true, Values = { 0.02, 0.03, 0.04, 0.06, 0.08, 0.10, 0.20 } },
-	Luck = { Icon = "🍀", Attr = "AbilLuck", Label = "egg luck", Percent = true, Values = { 0.02, 0.03, 0.05, 0.08, 0.11, 0.15, 0.30 } },
-	Double = { Icon = "✨", Attr = "AbilDouble", Label = "double coins", Percent = true, Values = { 0.005, 0.008, 0.012, 0.02, 0.03, 0.04, 0.06 } },
+	Coins = { Icon = "💰", Attr = "AbilCoins", Label = "coins", Percent = true, Values = { 0.02, 0.03, 0.05, 0.08, 0.15, 0.21, 0.30 } },
+	Magnet = { Icon = "🧲", Attr = "AbilMagnet", Label = "magnet", Percent = false, Values = { 0.5, 0.8, 1.2, 1.8, 3.5, 4.6, 6 } },
+	Speed = { Icon = "⚡", Attr = "AbilSpeed", Label = "speed", Percent = true, Values = { 0.02, 0.03, 0.04, 0.06, 0.10, 0.14, 0.20 } },
+	Luck = { Icon = "🍀", Attr = "AbilLuck", Label = "egg luck", Percent = true, Values = { 0.02, 0.03, 0.05, 0.08, 0.15, 0.21, 0.30 } },
+	Double = { Icon = "✨", Attr = "AbilDouble", Label = "double coins", Percent = true, Values = { 0.005, 0.008, 0.012, 0.02, 0.04, 0.05, 0.06 } },
 }
 -- Множитель способности по ступени: обычный, Golden, Diamond, Rainbow.
 PetAbilities.TierScale = { [0] = 1, [1] = 1.35, [2] = 1.7, [3] = 2.2 }
