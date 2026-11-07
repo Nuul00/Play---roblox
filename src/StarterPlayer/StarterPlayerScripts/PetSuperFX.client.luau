@@ -18,7 +18,7 @@ local random = Random.new()
 local function abbreviate(n: number): string
 	local units = { { 1e15, "Qa" }, { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
 	for _, u in ipairs(units) do
-		if n >= u[1] then
+		if n >= u[1] * 0.999995 then
 			return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2]
 		end
 	end

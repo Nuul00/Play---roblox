@@ -14,7 +14,7 @@ local function unlocked(p, worldName)
 end
 local function short(n)
  for _, u in ipairs({{1e21,"Sx"},{1e18,"Qi"},{1e15,"Qa"},{1e12,"T"},{1e9,"B"},{1e6,"M"},{1e3,"K"}}) do
-  if n >= u[1] then return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2] end
+  if n >= u[1] * 0.999995 then return (string.format("%.2f", n / u[1]):gsub("%.?0+$", "")) .. u[2] end
  end
  return tostring(math.floor(n + 0.5))
 end

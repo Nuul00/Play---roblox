@@ -63,7 +63,7 @@ local function mark(zone: BasePart)
 	-- табличка
 	local anchor = part(m, Vector3.new(0.5, 0.5, 0.5), CFrame.new(zone.Position + Vector3.new(0, 7, 0)), style.color, 1)
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromScale(11, 3) -- в студах: дальние таблички меньше и не налезают на ближние
+	bb.Size = UDim2.new(5.5, 50, 1.5, 14) -- в студах (+ пиксели): дальние таблички меньше и не налезают на ближние
 	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	bb.Adornee = anchor

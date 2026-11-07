@@ -183,11 +183,11 @@ K.grad(walletChip, rgb(70, 46, 140), rgb(36, 22, 80))
 K.stroke(walletChip, K.GOLD, 2.5)
 local walletIcon = Instance.new("ImageLabel")
 walletIcon.BackgroundTransparency = 1
-walletIcon.Position = UDim2.fromOffset(-8, -8)
-walletIcon.Size = UDim2.fromOffset(54, 54)
+walletIcon.Position = UDim2.fromOffset(5, 3) -- внутри плашки, не вылезает за край
+walletIcon.Size = UDim2.fromOffset(34, 34)
 walletIcon.Image = COIN_IMG
 walletIcon.Parent = walletChip
-local wallet = K.text(walletChip, "", UDim2.fromOffset(46, 4), UDim2.new(1, -54, 1, -8), 24, K.GOLD, 2)
+local wallet = K.text(walletChip, "", UDim2.fromOffset(44, 4), UDim2.new(1, -52, 1, -8), 24, K.GOLD, 2)
 wallet.TextXAlignment = Enum.TextXAlignment.Left
 local body = Instance.new("Frame")
 body.BackgroundTransparency = 1
@@ -311,8 +311,8 @@ local function upgradeCard(parent, kind, pos, size)
 		local ci = Instance.new("ImageLabel")
 		ci.BackgroundTransparency = 1
 		ci.Image = COIN_IMG
-		ci.Position = UDim2.fromOffset(4, 4)
-		ci.Size = UDim2.fromOffset(40, 40)
+		ci.Position = UDim2.fromOffset(7, 7)
+		ci.Size = UDim2.fromOffset(34, 34)
 		ci.Parent = b
 		lbl.Position = UDim2.fromOffset(42, 2)
 		lbl.Size = UDim2.new(1, -48, 1, -4)

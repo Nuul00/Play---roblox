@@ -11,7 +11,8 @@ function NumberFormat.Short(n: number?): string
 	local sign = n < 0 and "-" or ""
 	n = math.abs(n)
 	for _, u in ipairs(UNITS) do
-		if n >= u[1] then
+		-- 0.9995: 999 999 округляется до «1000K» — такие числа сразу показываем как 1M
+		if n >= u[1] * 0.9995 then
 			local v = n / u[1]
 			-- 3 значащие цифры: 1.25M, 12.5M, 125M
 			local f = v >= 100 and "%.0f" or v >= 10 and "%.1f" or "%.2f"
