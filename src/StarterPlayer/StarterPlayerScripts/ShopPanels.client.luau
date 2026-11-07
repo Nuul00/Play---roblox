@@ -604,7 +604,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if zonePart and root then
 			local o = root.Position - zonePart.Position
 			local radius = math.max(zonePart.Size.Y, zonePart.Size.Z) / 2
-			if Vector2.new(o.X, o.Z).Magnitude > radius + 3 then
+			if Vector2.new(o.X, o.Z).Magnitude > radius + 1.5 then -- вышел из круга — окно закрылось
 				hide()
 			end
 		elseif not root then

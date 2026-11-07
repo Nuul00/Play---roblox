@@ -1478,6 +1478,45 @@ RS:WaitForChild("GameHatched").OnClientEvent:Connect(function(batch, sourceEgg)
 	end
 end)
 
+-- Видимый круг зоны яйца (у себя): кольцо цвета яйца на земле + мягкая заливка
+local ringsById = {}
+local function eggRing(id, center: Vector3, r: number, bottom: number?)
+	if ringsById[id] then
+		ringsById[id]:Destroy() -- модель яйца заменили — перерисовываем круг
+	end
+	local egg = Config.Eggs[id]
+	local color = egg and egg.Color or Color3.fromRGB(255, 220, 120)
+	local y = bottom
+	if not y then
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { player.Character }
+		local hit = workspace:Raycast(center + Vector3.new(0, 2, 0), Vector3.new(0, -40, 0), params)
+		y = hit and hit.Position.Y or center.Y - 3
+	end
+	local m = Instance.new("Model")
+	m.Name = "EggZoneRing"
+	local n = math.clamp(math.floor(r * 2.2), 16, 40)
+	for k = 0, n - 1 do
+		local a = k / n * math.pi * 2
+		local seg = Instance.new("Part")
+		seg.Anchored = true
+		seg.CanCollide = false
+		seg.CanQuery = false
+		seg.CanTouch = false
+		seg.CastShadow = false
+		seg.Material = Enum.Material.Neon
+		seg.Color = color
+		seg.Transparency = 0.25
+		seg.Size = Vector3.new(0.22, 0.25, r * math.pi * 2 / n * 0.62)
+		seg.CFrame = CFrame.new(center.X + math.cos(a) * r, y + 0.12, center.Z + math.sin(a) * r) * CFrame.Angles(0, -a, 0)
+		seg.Parent = m
+	end
+	m.Parent = workspace
+	ringsById[id] = m
+	return m
+end
+
 local scan = 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
@@ -1498,24 +1537,34 @@ RunService.RenderStepped:Connect(function(dt)
 		local nearest, distance
 		if root then
 			for id, entry in pairs(displays) do
-				local offset = root.Position - entry.base.Position
-				local d = Vector2.new(offset.X, offset.Z).Magnitude - entry.radius
-				local reach = (mode == "egg" and eggId == id or autoEgg == id) and 6 or 2.2
-				local heightOk = math.abs(offset.Y) < entry.radius * 2 + 4
-				-- Яйцо на широком/высоком постаменте (вулкан, космос, Frozen): до самого яйца не дотянуться,
-				-- поэтому считаем расстояние от края постамента и разрешаем стоять у его подножия.
+				-- «Настоящая» зона яйца: видимый круг вокруг постамента (рисуем его здесь же).
+				-- Окно открывается, когда стоишь внутри круга ~0.35 с, и закрывается, когда вышел из него.
+				local center, zoneR, bottom = entry.base.Position, entry.radius + 2.5, nil
 				local stand = entry.stand
 				if stand and stand.Parent then
 					local cf, sz = stand:GetBoundingBox()
 					local standR = math.min(math.max(sz.X, sz.Z) / 2, 14)
-					local ds = Vector2.new(root.Position.X - cf.Position.X, root.Position.Z - cf.Position.Z).Magnitude - standR
-					if ds < d then
-						d = ds
+					if standR + 2 > zoneR then
+						center, zoneR = cf.Position, standR + 2
 					end
-					local bottom = cf.Position.Y - sz.Y / 2
-					heightOk = heightOk or (root.Position.Y > bottom - 2 and root.Position.Y < bottom + 10)
+					bottom = cf.Position.Y - sz.Y / 2
 				end
-				if d < reach and heightOk and (not distance or d < distance) then
+				if not entry.ring then
+					entry.ring = eggRing(id, center, zoneR, bottom)
+				end
+				local offset = root.Position - center
+				local d = Vector2.new(offset.X, offset.Z).Magnitude
+				local open = (mode == "egg" and eggId == id) or autoEgg == id
+				local heightOk = math.abs(root.Position.Y - entry.base.Position.Y) < entry.radius * 2 + 6
+					or (bottom and root.Position.Y > bottom - 2 and root.Position.Y < bottom + 10)
+				local inside = heightOk and d <= zoneR + (open and 1.5 or 0)
+				if inside then
+					entry.since = entry.since or os.clock()
+				else
+					entry.since = nil
+				end
+				local ready = inside and (open or os.clock() - entry.since >= 0.35)
+				if ready and (not distance or d < distance) then
 					nearest, distance = id, d
 				end
 			end

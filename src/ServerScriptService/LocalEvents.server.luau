@@ -42,6 +42,7 @@ local function baseValue(def): number
 	return w and w.Kinds and w.Kinds[1] and w.Kinds[1].Value or 5
 end
 
+local gives = setmetatable({}, { __mode = "k" }) -- модель бонуса → функция выдачи
 local holder = Instance.new("Folder")
 holder.Name = "LocalEventPickups"
 holder.Parent = world
@@ -139,33 +140,42 @@ local function makePickup(name: string, def, pos: Vector3, folder: Folder)
 	m:SetAttribute("World", name)
 	m:AddTag("LocalEventPickup")
 	local taken = false
-	core.Touched:Connect(function(hit)
+	-- выдать бонус игроку (касанием или магнитом)
+	local function give(p: Player): boolean
 		if taken then
-			return
+			return false
 		end
-		local char = hit:FindFirstAncestorOfClass("Model")
-		local p = char and Players:GetPlayerFromCharacter(char)
-		local stats = p and p:FindFirstChild("leaderstats")
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if not (stats and root) or (root.Position - core.Position).Magnitude > 12 then
-			return
-		end
-		if not p:GetAttribute("ProfileReady") or not unlocked(p, name) or p:GetAttribute("CurrentWorld") ~= name then
-			return
+		local stats = p:FindFirstChild("leaderstats")
+		if not stats or not p:GetAttribute("ProfileReady") or not unlocked(p, name) or p:GetAttribute("CurrentWorld") ~= name then
+			return false
 		end
 		local cap = folder:GetAttribute("Cap_" .. p.UserId) or 0
 		if cap >= E.Cap then
-			return
+			return false
 		end
 		folder:SetAttribute("Cap_" .. p.UserId, cap + 1)
+		p:SetAttribute("EventPickups", cap + 1) -- счётчик «3/8» в баннере
 		taken = true
 		local earned = math.floor(baseValue(def) * E.Reward * PlayerSystems.CoinMultiplier(p))
 		stats.Coins.Value += earned
 		p:SetAttribute("LifetimeEarned", (p:GetAttribute("LifetimeEarned") or 0) + earned)
-		holder:SetAttribute("LastPickup", core.Position) -- клиент проигрывает вспышку
 		holder:SetAttribute("LastPickupColor", def.Color)
+		holder:SetAttribute("LastPickupBy", p.UserId)
+		holder:SetAttribute("LastPickupAmount", earned)
+		holder:SetAttribute("LastPickup", core.Position) -- клиент: вспышка, «+монеты», звук
 		m:Destroy()
+		return true
+	end
+	core.Touched:Connect(function(hit)
+		local char = hit:FindFirstAncestorOfClass("Model")
+		local p = char and Players:GetPlayerFromCharacter(char)
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if p and root and (root.Position - core.Position).Magnitude <= 12 then
+			give(p)
+		end
 	end)
+	m:SetAttribute("Pos", core.Position)
+	gives[m] = give
 	m.Parent = folder
 end
 
@@ -173,7 +183,7 @@ local function run(name: string, def, ends: number)
 	workspace:SetAttribute(E.AttrEnd(name), ends)
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p:GetAttribute("CurrentWorld") == name then
-			feedback:FireClient(p, def.Icon .. " " .. def.Name .. "! x2 coins and " .. def.Item .. " for 60s!", true)
+			p:SetAttribute("EventPickups", 0)
 		end
 	end
 	local folder = Instance.new("Folder")
@@ -194,7 +204,34 @@ local function run(name: string, def, ends: number)
 	end
 	task.wait(math.max(0, ends - workspace:GetServerTimeNow()))
 	folder:Destroy()
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p:GetAttribute("CurrentWorld") == name then
+			p:SetAttribute("EventPickups", nil)
+		end
+	end
 end
+
+-- Магнит тянет и бонусы ивента: радиус магнита игрока (+3), чтобы не обегать каждый вплотную
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		for _, p in ipairs(Players:GetPlayers()) do
+			local w = p:GetAttribute("CurrentWorld")
+			local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if root and w and E.Worlds[w] and E.Active(w) then
+				local r = math.min((p:GetAttribute("MagnetRadius") or 6) + 3, 40)
+				for m, give in pairs(gives) do
+					if m.Parent and m:GetAttribute("World") == w then
+						local pos = m:GetAttribute("Pos")
+						if pos and (pos - root.Position).Magnitude <= r then
+							give(p)
+						end
+					end
+				end
+			end
+		end
+	end
+end)
 
 -- общий планировщик: раз в секунду смотрим, не пора ли какому-то миру начать ивент
 local running = {}

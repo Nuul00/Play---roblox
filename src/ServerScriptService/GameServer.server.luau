@@ -537,7 +537,7 @@ portal(world, "PortalToNeon", Vector3.new(neonX, 3, 180), 3, "Neon District")
 portal(city, "PortalToIsland", Vector3.new(0, 3+groundY, 180), 0, "Meadow Isles")
 
 -- Метки магазина: Cylinder-деталь ShopZone внутри UpgradeShop (ось цилиндра — X, диаметр — Size.Z).
-local shopZones, insideZone = {}, {}
+local shopZones, insideZone, zoneSince = {}, {}, {}
 for id, zone in pairs(zones) do
  local zonePart = zone.UpgradeShop:FindFirstChild("ShopZone")
  if zonePart then shopZones[id] = zonePart end
@@ -573,7 +573,7 @@ for _, d in ipairs(world:GetDescendants()) do
   end
  end
 end
-Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end end)
+Players.PlayerRemoving:Connect(function(p) for key in pairs(insideZone) do if string.find(key, ":" .. p.UserId, 1, true) then insideZone[key] = nil end end for key in pairs(zoneSince) do if string.find(key, ":" .. p.UserId, 1, true) then zoneSince[key] = nil end end end)
 
 -- Виды монет Meadow и Неонграда (CoinTypes): ценность, размер, цвет и сияние. Монеты стоят в месте,
 -- здесь им только раздаются виды; Sky Isles раздаёт виды сам при постройке.
@@ -864,12 +864,24 @@ task.spawn(function()
     -- Зелёная метка у киоска: зашёл в круг — меню магазина открылось (один раз на вход).
     for id, zonePart in pairs(shopZones) do
      local offset = root.Position - zonePart.Position
-     local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 and math.abs(offset.Y) < 8
+     -- «настоящая» зона: внутри видимого круга (а не рядом с ним) и простоял в нём ~0.4 с —
+     -- магазин не выскакивает, когда просто пробегаешь мимо
+     local inside = Vector2.new(offset.X, offset.Z).Magnitude <= zonePart.Size.Z / 2 - 0.5 and math.abs(offset.Y) < 8
      local key = id .. ":" .. p.UserId
-     if inside and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
+     if inside then
+      zoneSince[key] = zoneSince[key] or os.clock()
+     else
+      zoneSince[key] = nil
+     end
+     local settled = inside and os.clock() - zoneSince[key] >= 0.4
+     if settled and not insideZone[key] and stats.SpeedLevel.Value >= (SHOP_LEVEL[id] or 0) then
       if id == "magnets" then openMenu:FireClient(p, "magnets", "island") elseif id == "neonmagnets" then openMenu:FireClient(p, "magnets", "neon") elseif id == "skymagnets" then openMenu:FireClient(p, "magnets", "sky") elseif id == "frozenmagnets" then openMenu:FireClient(p, "magnets", "frozen") elseif id == "volcanomagnets" then openMenu:FireClient(p, "magnets", "volcano") elseif id == "galaxymagnets" then openMenu:FireClient(p, "magnets", "galaxy") else openMenu:FireClient(p, "upgrades", id) end
      end
-     insideZone[key] = inside or nil
+     if settled then
+      insideZone[key] = true
+     elseif not inside then
+      insideZone[key] = nil
+     end
     end
     local pw
     if root.Position.Y > 200 then
