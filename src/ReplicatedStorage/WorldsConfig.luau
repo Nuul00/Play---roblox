@@ -2,7 +2,7 @@
 local W = {}
 W.Worlds = {
 	{ Id = "Meadow Isles", Name = "Meadow Isles", Emoji = "🌴", Top = Color3.fromRGB(130, 235, 120), Bottom = Color3.fromRGB(40, 150, 70), Desc = "Coins, eggs and pets", Speed = 0, Open = true },
-	{ Id = "Neon District", Name = "Neon District", Emoji = "🌃", Top = Color3.fromRGB(230, 120, 255), Bottom = Color3.fromRGB(95, 40, 200), Desc = "Neon city and rare eggs", Speed = 0, Cost = 15000, Open = true },
+	{ Id = "Neon District", Name = "Neon District", Emoji = "🌃", Top = Color3.fromRGB(230, 120, 255), Bottom = Color3.fromRGB(95, 40, 200), Desc = "Neon city and rare eggs", Speed = 0, Cost = 60000, Open = true, QuestStep = 11, QuestChapter = "Meadow" },
 	{ Id = "Sky Isles", Name = "Sky Isles", Emoji = "☁️", Top = Color3.fromRGB(150, 215, 255), Bottom = Color3.fromRGB(110, 120, 240), Desc = "Cloud world, sky eggs and magnets", Speed = 0, Cost = 25e6, Open = true },
 	{ Id = "Frozen Peaks", Name = "Frozen Peaks", Emoji = "❄️", Top = Color3.fromRGB(170, 235, 255), Bottom = Color3.fromRGB(60, 140, 220), Desc = "Ice peaks, crystals and aurora", Speed = 0, Cost = 10e9, Open = true },
 	{ Id = "Magma Volcano", Name = "Magma Volcano", Emoji = "🌋", Top = Color3.fromRGB(255, 150, 60), Bottom = Color3.fromRGB(170, 40, 20), Desc = "Lava rivers, fire pets and magnets", Speed = 0, Cost = 1.2e12, Open = true },
@@ -12,6 +12,18 @@ W.Worlds = {
 -- (атрибут Save_Unlock_<ключ> сохраняется в профиле).
 function W.UnlockKey(id)
 	return "Save_Unlock_" .. string.gsub(id, "%s", "")
+end
+-- Ворота мира по квестам: QuestStep — сколько шагов квестовой линии нужно пройти (номер шага,
+-- который должен стать текущим). Так игрок проходит главу прошлого мира (яйца, прокачку),
+-- а не перепрыгивает её, накопив монеты. Возвращает: пройдено ли, сколько шагов сделано, сколько нужно.
+function W.QuestGate(p, def): (boolean, number, number)
+	local need = def and def.QuestStep
+	if not need then
+		return true, 0, 0
+	end
+	local step = p:GetAttribute("Save_QuestLineStep")
+	step = type(step) == "number" and step or 1
+	return step >= need, math.min(step - 1, need - 1), need - 1
 end
 function W.Find(id)
 	for _, w in ipairs(W.Worlds) do

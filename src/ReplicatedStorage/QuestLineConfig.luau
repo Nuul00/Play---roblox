@@ -52,17 +52,18 @@ Q.Steps = {
 	step(1, "Speedy Start", "Buy Speed at the upgrade kiosk.", { Type = "speed", N = 3 }, { Coins = 100 }),
 	step(1, "Your First Egg", "Egg stands are near the spawn!", { Type = "eggs", N = 1, Egg = 1 }, { Coins = 100, Potion = "Luck" }),
 	step(1, "Coin Hunter", "Keep running and collecting!", { Type = "collect", N = 60 }, { Coins = 200 }),
-	step(1, "Magnet Power", "A bigger magnet pulls coins from afar.", { Type = "magnet", N = 3 }, { Coins = 250 }),
-	step(1, "Egg Collector", "More eggs, more pets!", { Type = "eggs", N = 5, Egg = 1 }, { Coins = 300, Potion = "Coins" }),
-	step(1, "Sakura Season", "Sakura pets are twice as strong.", { Type = "eggs", N = 3, Egg = 2 }, { Coins = 600 }),
-	step(1, "Pet Explorer", "Every new pet fills your Pet Index.", { Type = "discover", N = 6 }, { Coins = 800 }),
-	step(1, "Income Boost", "Income multiplies every coin.", { Type = "income", N = 5 }, { Coins = 1000 }),
-	step(1, "Golden Touch", "Fuse 5 same pets in the golden machine.", { Type = "variant", N = 1, Key = "Gold" }, { Coins = 1500, Potion = "Luck" }),
-	step(1, "Starlight Wish", "The rarest egg of the meadow!", { Type = "eggs", N = 3, Egg = 3 }, { Coins = 2000 }),
-	step(1, "Meadow Master", "Finish the chapter for a big prize!", { Type = "earn", N = 10000 }, { Coins = 3000, Hatch = 3, Bonus = 0.05 }),
+	step(1, "Egg Collector", "More eggs, more pets! Equip the best ones.", { Type = "eggs", N = 7, Egg = 1 }, { Coins = 400, Potion = "Coins" }),
+	step(1, "Magnet Power", "A bigger magnet pulls coins from afar.", { Type = "magnet", N = 3 }, { Coins = 300 }),
+	step(1, "Sakura Season", "Sakura pets are much stronger.", { Type = "eggs", N = 10, Egg = 2 }, { Coins = 2000 }),
+	step(1, "Pet Explorer", "Every new pet fills your Pet Index.", { Type = "discover", N = 10 }, { Coins = 1500 }),
+	step(1, "Income Boost", "Income multiplies every coin.", { Type = "income", N = 5 }, { Coins = 2500 }),
+	-- шаг 10: после него открываются ворота в Neon (WorldsConfig QuestStep = 11)
+	step(1, "Starlight Wish", "The rarest egg of the meadow! Then Neon opens.", { Type = "eggs", N = 6, Egg = 3 }, { Coins = 6000 }),
+	step(1, "Golden Touch", "Fuse 5 same pets in the golden machine.", { Type = "variant", N = 1, Key = "Gold" }, { Coins = 4000, Potion = "Luck" }),
+	step(1, "Meadow Master", "Finish the chapter for a big prize!", { Type = "earn", N = 30000 }, { Coins = 5000, Hatch = 3, Bonus = 0.05 }),
 
 	-- ===== Глава 2: Neon District (яйца 4, 5, 6; прокачка до 25) =====
-	step(2, "Into the Neon", "Unlock it in the TELEPORT menu (15K coins).", { Type = "world", World = "Neon District" }, { Coins = 5000 }),
+	step(2, "Into the Neon", "Unlock it in the TELEPORT menu (60K coins).", { Type = "world", World = "Neon District" }, { Coins = 5000 }),
 	step(2, "Neon Runner", "Neon kiosks sell higher levels.", { Type = "speed", N = 15 }, { Coins = 2900 }),
 	step(2, "Disco Fever", "Neon pets are way stronger!", { Type = "eggs", N = 5, Egg = 4 }, { Coins = 8000, Potion = "Luck" }),
 	step(2, "Double Trouble", "A chance for every coin to count twice.", { Type = "double", N = 5 }, { Coins = 21000 }),
@@ -172,7 +173,13 @@ function Q.GoalText(goal): string
 	elseif t == "eggs" then
 		local egg = goal.Egg and Config.Eggs[goal.Egg]
 		if egg then
-			return "Open " .. Q.Format(n) .. " " .. egg.Name .. (n > 1 and "s" or "")
+			local better = false -- есть ли в этом мире яйцо дороже (оно тоже засчитывается)
+			for _, other in ipairs(Config.Eggs) do
+				if other.World == egg.World and (other.Cost or 0) > (egg.Cost or 0) then
+					better = true
+				end
+			end
+			return "Open " .. Q.Format(n) .. " " .. egg.Name .. (n > 1 and "s" or "") .. (better and " (or better)" or "")
 		end
 		return "Open " .. Q.Format(n) .. " eggs"
 	elseif t == "speed" then

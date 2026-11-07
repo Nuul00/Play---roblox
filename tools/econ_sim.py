@@ -54,7 +54,7 @@ def roll(eid):
 class S: pass
 s = S()
 s.t = 0; s.coins = 0.0; s.lv = dict(speed=0, magnet=0, income=0, double=0); s.mag = 0; s.pets = []; s.reb = 0; s.eggs = 0
-s.log = []; s.lastrate = 0; s.seen = set(); s.earned = 0.0; s.hatch_ready = 0
+s.log = []; s.weggs = {}; s.eggc = {}; s.lastrate = 0; s.seen = set(); s.earned = 0.0; s.hatch_ready = 0
 def slots(): return 3 + int(P.get('slots',0)) + sum(v for k, v in SLOTS_AT.items() if s.reb >= k)
 VM = [1, 2, 3.5, 6]
 s.inv = {}
@@ -115,22 +115,33 @@ while s.t < T:
     if s.coins >= rcost(s.reb) and s.eggs >= reggs(s.reb) and s.reb < 50:
         s.reb += 1; s.coins = 0; s.lv = dict(speed=6, magnet=0, income=0, double=0); s.eggs = 0
         note('r%d' % s.reb, 'REBIRTH %d' % s.reb); continue
-    while s.unl < 6 and s.coins >= UNLOCK[s.unl] and s.lv['speed'] >= WORLDS[s.unl][1]:
+    # ворота мира: нужно открыть gE яиц в предыдущем мире (квесты главы), если задано
+    while s.unl < 6 and s.coins >= UNLOCK[s.unl] and s.lv['speed'] >= WORLDS[s.unl][1] and s.weggs.get(WORLDS[s.unl-1][0], 0) >= P.get('gE%d' % s.unl, P.get('gE', 0)) and not (s.unl == 1 and any(s.eggc.get(int(k[1:]), 0) < P[k] for k in P if k.startswith('q') and k[1:].isdigit())):
         s.coins -= UNLOCK[s.unl]; s.unl += 1
+        note('team%d' % s.unl, 'UNLOCK %s team x%.3g eggs_prev %d' % (WORLDS[s.unl-1][0], team(), s.weggs.get(WORLDS[s.unl-2][0], 0)))
     # человеческая стратегия: 1) открыть мир 2) яйца (самое дорогое доступное) 3) самая дешёвая прокачка
-    saving = s.unl < 6 and UNLOCK[s.unl] > s.coins and UNLOCK[s.unl] - s.coins < s.lastrate*P.get('save',240)
+    gate = P.get('gE%d' % s.unl, P.get('gE', 0)) if s.unl < 6 else 0
+    gated = s.unl < 6 and s.weggs.get(WORLDS[s.unl-1][0], 0) < gate  # квесты главы требуют ещё яиц
+    need_q = [int(k[1:]) for k in P if k.startswith('q') and k[1:].isdigit() and s.eggc.get(int(k[1:]), 0) < P[k]]
+    if s.unl == 1 and need_q: gated = True
+    saving = (not gated) and s.unl < 6 and UNLOCK[s.unl] > s.coins and UNLOCK[s.unl] - s.coins < s.lastrate*P.get('save',240)
     if s.t >= s.hatch_ready and not saving:
         eggs = sorted([i for w in access() for i in WORLD_EGGS[w[0]]], key=lambda i: -EGGS[i]['Price'])
         need = s.eggs < reggs(s.reb) and s.coins >= rcost(s.reb)
         if need:  # для ребёрса добиваем количество самыми полезными яйцами, что не мешают накоплению
             eggs = [i for i in eggs if EGGS[i]['Price']*9 <= max(s.coins - rcost(s.reb), s.coins*0.01)] or [min(eggs, key=lambda i: EGGS[i]['Price'])]
+        if s.unl == 1:
+            qn = [i for i in eggs if s.eggc.get(i, 0) < P.get('q%d' % i, 0)]
+            if qn: eggs = sorted(qn, key=lambda i: EGGS[i]['Price'])
         for eid in eggs:
             n = 9 if s.coins >= EGGS[eid]['Price']*9 else 3 if s.coins >= EGGS[eid]['Price']*3 else 0
             # яйцо ещё полезно, или нужны яйца для ребёрса
-            useful = egg_gain(eid) > 0.02*team() or need
+            useful = egg_gain(eid) > 0.02*team() or need or (gated and EGGS[eid]['World'] == WORLDS[s.unl-1][0])
             if n and useful and (EGGS[eid]['Price']*n <= s.coins*P.get('eggshare',0.6) or need):
                 s.coins -= EGGS[eid]['Price']*n
                 for _ in range(n): add_pet(roll(eid))
+                s.weggs[EGGS[eid]['World']] = s.weggs.get(EGGS[eid]['World'], 0) + n
+                s.eggc[eid] = s.eggc.get(eid, 0) + n
                 rebuild(); fuse()
                 s.eggs += n; s.hatch_ready = s.t + 3.5
                 note('e%d' % eid, 'egg %d %s (%g)' % (eid, EGGS[eid]['Name'], EGGS[eid]['Price']))

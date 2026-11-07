@@ -366,7 +366,11 @@ task.spawn(function()
 			if not s or s.Goal.Type ~= "eggs" or p:GetAttribute(A.Ready) == true then
 				return
 			end
-			if s.Goal.Egg and s.Goal.Egg ~= eggId then
+			-- засчитываем это яйцо или любое дороже из того же мира: кто открыл Sakura вместо
+			-- Sunset, не должен застревать на «Open 7 Sunset Sky Eggs»
+			local want = s.Goal.Egg and Config.Eggs[s.Goal.Egg]
+			local got = Config.Eggs[eggId]
+			if want and not (got and got.World == want.World and (got.Cost or 0) >= (want.Cost or 0)) then
 				return
 			end
 			p:SetAttribute(A.Count, num(p, A.Count) + (tonumber(amount) or 1))

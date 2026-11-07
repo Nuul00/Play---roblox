@@ -120,6 +120,10 @@ local function teleport(p, id, buy)
 		if buy ~= true then
 			return { Ok = false, Message = "Requires unlock: open TELEPORT (" .. short(cost) .. " coins)" }
 		end
+		local gateOk, done, needQ = Worlds.QuestGate(p, def)
+		if not gateOk then
+			return { Ok = false, Message = "Finish the " .. (def.QuestChapter or "") .. " quests first (" .. done .. "/" .. needQ .. ")" }
+		end
 		if stats.Coins.Value < cost then
 			return { Ok = false, Message = "Need " .. short(cost - stats.Coins.Value) .. " more coins to unlock " .. def.Name }
 		end

@@ -225,6 +225,13 @@ local function refresh()
 			c.go.Text = "LOCKED"
 			c.go.BackgroundColor3 = rgb(120, 115, 140)
 			c.go.Active = false
+		elseif (d.Cost or 0) > 0 and not player:GetAttribute(Worlds.UnlockKey(d.Id)) and not Worlds.QuestGate(player, d) then
+			-- ворота: сначала квесты прошлого мира
+			local _, done, need = Worlds.QuestGate(player, d)
+			c.info.Text = "📜 " .. (d.QuestChapter or "") .. " quests " .. done .. "/" .. need .. " · 🪙 " .. short(d.Cost)
+			c.go.Text = "QUESTS"
+			c.go.BackgroundColor3 = rgb(120, 115, 140)
+			c.go.Active = false
 		elseif (d.Cost or 0) > 0 and not player:GetAttribute(Worlds.UnlockKey(d.Id)) then
 			-- мир ещё не куплен: цена на карточке, кнопка покупает и сразу переносит
 			local enough = stats.Coins.Value >= d.Cost
