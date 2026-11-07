@@ -67,56 +67,35 @@ local function button(parent, text, pos, size, color)
 	return b
 end
 
-local window = Instance.new("Frame")
-window.AnchorPoint = Vector2.new(0.5, 0.5)
-window.Position = UDim2.fromScale(0.5, 0.52)
-window.Size = UDim2.fromOffset(780, 480)
-window.BackgroundColor3 = Color3.fromRGB(40, 48, 70)
-window.Visible = false
-window:SetAttribute("NoTheme", true)
-window.BackgroundColor3 = Color3.new(1, 1, 1) -- цвет даёт градиент (он умножается на фон) -- свой фиолетовый стиль, как у DAILY
-window.Parent = gui
-corner(window, 20)
-stroke(window, 4)
-local scale = Instance.new("UIScale", window)
--- оформление как у остальных окон: градиент и заголовок-плашка над краем
-local wg = Instance.new("UIGradient")
-wg.Rotation = 90
-wg.Color = ColorSequence.new(Color3.fromRGB(62, 36, 130), Color3.fromRGB(20, 12, 52))
-wg.Parent = window
-local pillHead = Instance.new("Frame")
-pillHead.Name = "TitlePill"
-pillHead.Position = UDim2.fromOffset(24, -24)
-pillHead.Size = UDim2.fromOffset(280, 56)
-pillHead.BackgroundColor3 = Color3.new(1, 1, 1)
-pillHead.ZIndex = 3
-pillHead.Parent = window
-corner(pillHead, 18)
-stroke(pillHead, 4, Color3.fromRGB(35, 22, 60))
-local pg = Instance.new("UIGradient")
-pg.Rotation = 90
-pg.Color = ColorSequence.new(Color3.fromRGB(165, 240, 120), Color3.fromRGB(55, 165, 70))
-pg.Parent = pillHead
-local title = label(pillHead, "🎒 INVENTORY", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 30)
-title.ZIndex = 4
-local tst = Instance.new("UIStroke")
-tst.Thickness = 2.5
-tst.Color = Color3.fromRGB(35, 22, 60)
-tst.Parent = title
-local close = button(window, "×", UDim2.new(1, -52, 0, 10), UDim2.fromOffset(40, 40), Color3.fromRGB(220, 70, 70))
-close.TextSize = 28
-close.Modal = true
+-- окно в общем стиле UIKit (звёздная витрина, плашка-заголовок, глянцевые вкладки)
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
+local window, close, scale = K.window(gui, "InventoryWindow", 800, 500, "🎒 INVENTORY", K.GREEN, 290)
+window.Position = UDim2.fromScale(0.5, 0.53)
+do
+	-- плашка заголовка — слева, вкладки справа от неё
+	local pill = window:FindFirstChild("TitlePill")
+	if pill then
+		pill.Position = UDim2.fromOffset(22, -30)
+	end
+	for _, c in ipairs(window:GetChildren()) do
+		-- «ленточки» по бокам плашки рассчитаны на плашку по центру — убираем
+		if c:IsA("Frame") and c.Size == UDim2.fromOffset(68, 42) then
+			c.Visible = false
+		end
+	end
+end
 
 local tabNames = { { "pets", "🐾 PETS" }, { "potions", "🧪 POTIONS" }, { "badges", "🏅 BADGES" }, { "titles", "👑 TITLES" } }
 local tabButtons = {}
+local tabSet = {}
 for i, t in ipairs(tabNames) do
-	local b = button(window, t[2], UDim2.fromOffset(314 + (i - 1) * 102, 13), UDim2.fromOffset(98, 34), Color3.fromRGB(85, 62, 160))
-	b.TextSize = 14
+	local b, _, set = K.button(window, t[2], UDim2.fromOffset(330 + (i - 1) * 104, 16), UDim2.fromOffset(98, 38), K.GRAY, 15)
 	tabButtons[t[1]] = b
+	tabSet[t[1]] = set
 end
 local body = Instance.new("Frame")
 body.BackgroundTransparency = 1
-body.Position = UDim2.fromOffset(16, 60)
+body.Position = UDim2.fromOffset(26, 74)
 body.Size = UDim2.fromOffset(748, 406)
 body.Parent = window
 
@@ -163,21 +142,26 @@ local function buildPets()
 	end
 	-- Размер команды растёт с ребёрсами: сервер пишет его в атрибут MaxEquipped.
 	local maxEquipped = player:GetAttribute("MaxEquipped") or ShopConfig.MaxEquipped
-	local header = label(body, string.format("Equipped %d / %d   ·   Team bonus x%g", #equipped, maxEquipped, math.floor((player:GetAttribute("PetBonus") or 1) * 100 + 0.5) / 100), UDim2.fromOffset(0, 0), UDim2.fromOffset(440, 22), 18)
-	header.TextXAlignment = Enum.TextXAlignment.Left
+	-- шапка: плашки «надето» и «бонус команды», строка способностей, кнопки
+	local function chip(x, w, icon, text, colA, colB)
+		local c = K.frame(body, UDim2.fromOffset(x, 0), UDim2.fromOffset(w, 34), Color3.new(1, 1, 1), 17)
+		K.grad(c, colA, colB)
+		K.stroke(c, K.INK, 2.5)
+		local t = K.text(c, icon .. " " .. text, UDim2.fromOffset(10, 3), UDim2.new(1, -20, 1, -6), 18, nil, 2)
+		return c, t
+	end
+	chip(0, 168, "🐾", string.format("EQUIPPED %d/%d", #equipped, maxEquipped), Color3.fromRGB(120, 200, 255), Color3.fromRGB(50, 110, 220))
+	chip(176, 190, "💰", string.format("TEAM x%g", math.floor((player:GetAttribute("PetBonus") or 1) * 100 + 0.5) / 100), Color3.fromRGB(255, 220, 110), Color3.fromRGB(230, 140, 30))
 	-- Строка способностей команды; при наведении на карточку показывает способность питомца.
 	local teamText = PetAbilities.TeamText(player)
 	if teamText == "" then
 		teamText = "Every pet has an ability · Legendary & Secret pets have a SUPER ability"
 	end
-	local teamLine = label(body, teamText, UDim2.fromOffset(0, 22), UDim2.fromOffset(440, 18), 13, Color3.fromRGB(255, 230, 150))
+	local teamLine = K.text(body, teamText, UDim2.fromOffset(2, 38), UDim2.fromOffset(440, 18), 13, Color3.fromRGB(255, 230, 150), 0)
+	teamLine.Font = Enum.Font.GothamBold
 	teamLine.TextXAlignment = Enum.TextXAlignment.Left
-	teamLine.TextScaled = true
-	local teamSize = Instance.new("UITextSizeConstraint")
-	teamSize.MaxTextSize = 13
-	teamSize.Parent = teamLine
-	local best = button(body, "⭐ EQUIP BEST", UDim2.fromOffset(450, 0), UDim2.fromOffset(150, 36), Color3.fromRGB(70, 180, 90))
-	local none = button(body, "UNEQUIP ALL", UDim2.fromOffset(608, 0), UDim2.fromOffset(140, 36), Color3.fromRGB(200, 90, 80))
+	local best = K.button(body, "⭐ EQUIP BEST", UDim2.fromOffset(452, 0), UDim2.fromOffset(150, 38), K.GREEN, 17)
+	local none = K.button(body, "UNEQUIP ALL", UDim2.fromOffset(610, 0), UDim2.fromOffset(138, 38), K.RED, 17)
 	best.Activated:Connect(function()
 		action:FireServer("best")
 	end)
@@ -185,8 +169,8 @@ local function buildPets()
 		action:FireServer("none")
 	end)
 	local list = Instance.new("ScrollingFrame")
-	list.Position = UDim2.fromOffset(0, 46)
-	list.Size = UDim2.fromOffset(748, 360)
+	list.Position = UDim2.fromOffset(0, 62)
+	list.Size = UDim2.fromOffset(748, 344)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 8
@@ -208,40 +192,55 @@ local function buildPets()
 		return codeMult(a) > codeMult(b)
 	end)
 	if #ids == 0 then
-		-- пустое состояние: подсказка, где взять первого питомца
-		local empty = Instance.new("Frame")
-		empty.AnchorPoint = Vector2.new(0.5, 0)
-		empty.Position = UDim2.new(0.5, 0, 0, 80)
-		empty.Size = UDim2.fromOffset(420, 230)
-		empty.BackgroundColor3 = Color3.fromRGB(24, 16, 52)
-		empty.BackgroundTransparency = 0.2
-		empty.Parent = body
-		corner(empty, 18)
-		local es = stroke(empty, 2.5, Color3.fromRGB(255, 205, 80))
-		es.Transparency = 0.3
-		label(empty, "🥚", UDim2.fromOffset(0, 14), UDim2.new(1, 0, 0, 80), 70)
-		local t1 = label(empty, "No pets yet!", UDim2.fromOffset(0, 100), UDim2.new(1, 0, 0, 34), 28)
-		local t1s = Instance.new("UIStroke")
-		t1s.Thickness = 2
-		t1s.Color = dark
-		t1s.Parent = t1
-		label(empty, "Walk up to any egg stand and press E to hatch your first pet. Pets multiply every coin you pick up.", UDim2.fromOffset(24, 140), UDim2.new(1, -48, 0, 70), 17, Color3.fromRGB(210, 200, 240), Enum.Font.GothamMedium)
+		-- пустое состояние: большая картинка яиц, подсказка и кнопка к яйцам
+		local empty = K.frame(body, UDim2.new(0.5, -230, 0, 112), UDim2.fromOffset(460, 286), Color3.new(1, 1, 1), 24)
+		K.grad(empty, Color3.fromRGB(70, 44, 150), K.CARD2)
+		K.stroke(empty, K.GOLD, 3)
+		local glow = K.frame(empty, UDim2.new(0.5, -70, 0, -40), UDim2.fromOffset(140, 140), Color3.fromRGB(255, 210, 110), UDim.new(1, 0))
+		glow.BackgroundTransparency = 0.75
+		local img = Instance.new("ImageLabel")
+		img.BackgroundTransparency = 1
+		img.Image = "rbxthumb://type=Asset&id=127549130694833&w=420&h=420"
+		img.AnchorPoint = Vector2.new(0.5, 0)
+		img.Position = UDim2.new(0.5, 0, 0, -44)
+		img.Size = UDim2.fromOffset(150, 150)
+		img.Parent = empty
+		img.Rotation = -4
+		game:GetService("TweenService"):Create(img, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = 4 }):Play()
+		K.text(empty, "No pets yet!", UDim2.fromOffset(0, 114), UDim2.new(1, 0, 0, 44), 36, nil, 3)
+		local d = K.text(empty, "Walk up to an egg stand and press E to hatch your first pet. Pets multiply every coin you pick up!", UDim2.fromOffset(34, 160), UDim2.new(1, -68, 0, 56), 17, Color3.fromRGB(225, 215, 255), 0)
+		d.Font = Enum.Font.GothamBold
+		local go = K.button(empty, "🥚 FIND AN EGG", UDim2.new(0.5, -110, 1, -70), UDim2.fromOffset(220, 50), K.GREEN, 22)
+		go.Activated:Connect(function()
+			-- закрываем инвентарь: указатель квеста ведёт к яйцу
+			player:SetAttribute("UIScreen", "")
+		end)
 	end
 	for _, id in ipairs(ids) do
 		local baseId, tier = ShopConfig.SplitPet(id)
 		local def = Config.Pets[baseId]
 		local variant = ShopConfig.Variants[tier]
+		local rc = variant and variant.Color or rarityColors[def.Rarity] or dark
+		local isOn = (equippedCount[id] or 0) > 0
 		local card = Instance.new("TextButton")
 		card.Text = ""
-		card.BackgroundColor3 = (equippedCount[id] or 0) > 0 and Color3.fromRGB(60, 120, 75) or Color3.fromRGB(40, 30, 80)
-		local cg = Instance.new("UIGradient")
-		cg.Rotation = 90
-		cg.Transparency = NumberSequence.new(0, 0)
-		cg.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 190))
-		cg.Parent = card
+		card.AutoButtonColor = false
+		card.BackgroundColor3 = Color3.new(1, 1, 1)
+		K.grad(card, (isOn and Color3.fromRGB(60, 140, 90) or K.CARD):Lerp(rc, 0.22), K.CARD2)
 		card.Parent = list
-		corner(card, 14)
-		stroke(card, 3, variant and variant.Color or rarityColors[def.Rarity] or dark)
+		corner(card, 16)
+		K.stroke(card, isOn and K.GOLD or rc, isOn and 3.5 or 2.5)
+		-- мягкий круг цвета редкости за питомцем
+		local halo = K.frame(card, UDim2.fromOffset(24, 8), UDim2.fromOffset(90, 90), rc, UDim.new(1, 0))
+		halo.BackgroundTransparency = 0.72
+		local cs = Instance.new("UIScale")
+		cs.Parent = card
+		card.MouseEnter:Connect(function()
+			cs.Scale = 1.04
+		end)
+		card.MouseLeave:Connect(function()
+			cs.Scale = 1
+		end)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
 		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
 		label(card, ((baseId >= 222 and baseId <= 227) and "VAULT SECRET" or def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
@@ -468,7 +467,6 @@ end
 
 -- ===== Титулы =====
 local Titles = require(ReplicatedStorage:WaitForChild("TitlesConfig"))
-local K = require(ReplicatedStorage:WaitForChild("UIKit"))
 local function plate(parent, t, pos, w)
 	local pill = K.frame(parent, pos, UDim2.fromOffset(w, 32), Color3.new(1, 1, 1), UDim.new(1, 0))
 	K.grad(pill, t.A, t.B)
@@ -555,8 +553,8 @@ local function render()
 	body:ClearAllChildren()
 	spinning = {}
 	potionTimers = {}
-	for name, b in pairs(tabButtons) do
-		b.BackgroundColor3 = name == current and Color3.fromRGB(240, 160, 50) or Color3.fromRGB(85, 62, 160)
+	for name, set in pairs(tabSet) do
+		set(name == current and K.ORANGE or K.GRAY)
 	end
 	if current == "pets" then
 		buildPets()
@@ -626,7 +624,7 @@ local spin = 0
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
-		scale.Scale = math.clamp(math.min(camera.ViewportSize.X / 840, camera.ViewportSize.Y / 540), 0.35, 1)
+		scale.Scale = math.clamp(math.min(camera.ViewportSize.X / 860, camera.ViewportSize.Y / 580), 0.35, 1)
 	end
 	if not window.Visible then
 		return
