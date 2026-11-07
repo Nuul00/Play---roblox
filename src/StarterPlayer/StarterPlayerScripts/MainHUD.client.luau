@@ -40,6 +40,7 @@ if game:GetService("UserInputService").TouchEnabled and not game:GetService("Use
 end
 
 local LocalEvents = require(game:GetService("ReplicatedStorage"):WaitForChild("LocalEvents"))
+local TrailBonus = require(game:GetService("ReplicatedStorage"):WaitForChild("TrailBonus"))
 local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function abbreviate(n: number): string
 	return NumberFormat.Short(n)
@@ -153,6 +154,10 @@ local function refreshStats()
 	local bonus = (player:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(player:GetAttribute("IncomeLevel") or 0) * (player:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(player:GetAttribute("Rebirths") or 0)
 	bonus *= (player:GetAttribute("IndexBonus") or 1) * (player:GetAttribute("FriendBonus") or 1)
 	bonus *= player:GetAttribute("Save_QuestLineBonus") or 1
+	local trail = TrailBonus.Get(player)
+	if trail then
+		bonus *= 1 + trail.Coins
+	end
 	bonus *= Config.GetSpeedCoinBonus(speedLevel.Value)
 	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
@@ -186,7 +191,7 @@ speedLevel.Changed:Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventId"):Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventEnd"):Connect(refreshStats)
 -- только атрибуты, влияющие на панель (иначе пересчёт на каждую монету и каждого питомца)
-local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, PotionEndCoins = true, PotionEndSuperCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true }
+local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, EquippedTrail = true, PotionEndCoins = true, PotionEndSuperCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true }
 player.AttributeChanged:Connect(function(name)
 	if STAT_ATTRS[name] then
 		refreshStats()

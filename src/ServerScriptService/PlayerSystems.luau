@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local LocalEvents = require(game:GetService("ReplicatedStorage"):WaitForChild("LocalEvents"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local TrailBonus = require(game:GetService("ReplicatedStorage"):WaitForChild("TrailBonus"))
 local MagnetVisuals = require(ReplicatedStorage:WaitForChild("MagnetVisuals"))
 local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
 
@@ -195,6 +196,10 @@ function PlayerSystems.CoinMultiplier(p): number
 	local m = (p:GetAttribute("PetBonus") or 1) * Config.GetIncomeMultiplier(p:GetAttribute("IncomeLevel") or 0) * (p:GetAttribute("BadgeBonus") or 1) * Config.GetRebirthBonus(p:GetAttribute("Rebirths") or 0)
 	m *= (p:GetAttribute("IndexBonus") or 1) * (p:GetAttribute("FriendBonus") or 1)
 	m *= p:GetAttribute("Save_QuestLineBonus") or 1 -- постоянный бонус за главы квестовой линии
+	local trail = TrailBonus.Get(p)
+	if trail then
+		m *= 1 + trail.Coins -- надетый трейл
+	end
 	local stats = p:FindFirstChild("leaderstats")
 	m *= Config.GetSpeedCoinBonus(stats and stats.SpeedLevel.Value or 0) -- +1% монет за уровень скорости
 	if PlayerSystems.EventActive("Golden") then
@@ -246,6 +251,10 @@ function PlayerSystems.ApplySpeed(p)
 		speed *= 1.25
 	end
 	speed *= 1 + (p:GetAttribute("AbilSpeed") or 0) -- способность питомцев
+	local trail = TrailBonus.Get(p)
+	if trail then
+		speed *= 1 + trail.Speed -- надетый трейл
+	end
 	speed = math.min(math.floor(speed * 10 + 0.5) / 10, PlayerSystems.MaxWalkSpeed) -- выше — уже неуправляемо
 	if p:GetAttribute("InRush") then
 		speed = math.min(speed, 26) -- данж Coin Rush: испытания на ловкость, а не на прокачку
