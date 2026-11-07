@@ -238,7 +238,8 @@ local function applySkin(world)
 		frameImg.ImageColor3 = skin.Tint or WHITE
 		panelGrad.Enabled = true
 		panel.BackgroundColor3 = WHITE
-		panelGrad.Color = ColorSequence.new(skin.MenuBottom:Lerp(Color3.new(0, 0, 0), 0.45), skin.MenuBottom:Lerp(Color3.new(0, 0, 0), 0.7))
+		-- нейтральный тёмный фон с лёгким оттенком мира (раньше — тяжёлый зелёный, фидбэк 78)
+		panelGrad.Color = ColorSequence.new(skin.MenuBottom:Lerp(Color3.fromRGB(26, 26, 34), 0.78), skin.MenuBottom:Lerp(Color3.fromRGB(18, 18, 24), 0.9))
 		headerGrad.Color = ColorSequence.new(skin.MenuTop, skin.MenuBottom)
 		title.TextColor3 = skin.TitleColor or WHITE
 		for key, img in pairs(tiles) do
@@ -296,6 +297,8 @@ autoChipText.ZIndex = 21
 autoStop.TextSize = 14
 
 local eggId, mode, dismissed
+local showKeepTip, hideKeepTip -- подсказка ✓/🗑, задаются ниже
+local keepTipOwner = nil
 local cells = {}
 local busy = 0
 local autoEgg, autoCount, lastAuto = nil, 0, 0
@@ -343,12 +346,16 @@ local function refresh()
 	subtitle.Text = string.format("%d PETS  ·  💰 %s EACH  ·  🎯 %s", #egg.Pool, fmt(egg.Cost), table.concat(pity, " · "))
 	for _, cell in ipairs(cells) do
 		local deleting = player:GetAttribute("AutoDelete" .. cell.id) == true
-		cell.toggle.Text = deleting and "✕ AUTO-DELETE" or "✓ KEEP"
-		cell.toggle.BackgroundColor3 = deleting and Color3.fromRGB(190, 60, 85) or (skyTheme and Color3.fromRGB(150, 130, 230) or Color3.fromRGB(60, 80, 120))
+		cell.toggle.Text = deleting and "🗑" or "✓"
+		cell.toggle.TextSize = deleting and 19 or 16
+		cell.toggle.BackgroundColor3 = deleting and Color3.fromRGB(205, 65, 90) or Color3.fromRGB(70, 185, 95)
 		cell.frame.BackgroundTransparency = deleting and 0.45 or 0
+		if keepTipOwner == cell.toggle then
+			showKeepTip(cell.toggle, cell.id)
+		end
 		local owned = player:GetAttribute("PetOwned" .. cell.id) or 0
-		cell.owned.Text = owned > 0 and ("OWNED ×" .. owned) or "NEW!"
-		cell.owned.TextColor3 = owned > 0 and (skyTheme and Color3.fromRGB(130, 110, 190) or Color3.fromRGB(205, 195, 225)) or (skyTheme and Color3.fromRGB(240, 120, 60) or Color3.fromRGB(255, 225, 90))
+		cell.owned.Text = owned > 0 and ("×" .. owned) or "● NEW"
+		cell.owned.TextColor3 = owned > 0 and (skyTheme and Color3.fromRGB(130, 110, 190) or Color3.fromRGB(150, 148, 170)) or Color3.fromRGB(255, 200, 60)
 	end
 	local waiting = os.clock() < busy
 	for _, pair in ipairs({ { single, 1 }, { triple, 3 }, { nine, 9 } }) do
@@ -423,7 +430,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, processed
 	end
 end)
 -- подсказка про клавиши — в строке над кнопками (внизу окна её закрывают украшения рамки)
-hint.Text = (TOUCH_ONLY and "" or "E ×1 · R ×3 · T ×9   |   ") .. "tap KEEP to auto-delete copies   |   super secrets ↓"
+hint.Text = (TOUCH_ONLY and "" or "E ×1 · R ×3 · T ×9   |   ") .. "✓ keep · 🗑 auto-delete copies   |   super secrets ↓"
 hint.TextScaled = true
 do
 	local c = Instance.new("UITextSizeConstraint")
@@ -450,6 +457,31 @@ end)
 -- показывается. Раньше при каждом подходе к яйцу заново строились 8–10 моделей — отсюда
 -- пауза в 1–2 секунды перед появлением окна (2026-11). Страницу строим заранее, когда игрок
 -- только подходит к яйцу (см. цикл внизу), поэтому окно открывается сразу.
+-- Подсказка при наведении на ✓/🗑 (на телефоне её заменяет строка hint под карточками).
+local keepTip = box(panel, 0, 0, 236, 50, Color3.fromRGB(20, 20, 28))
+corner(keepTip, 10)
+stroke(keepTip, Color3.fromRGB(90, 200, 120), 1.5, 0.1)
+keepTip.ZIndex = 50
+keepTip.Visible = false
+local keepTipText = label(keepTip, "", 8, 3, 220, 44, 13, WHITE, Enum.Font.GothamBold)
+keepTipText.ZIndex = 51
+keepTipText.RichText = true
+showKeepTip = function(btn, petId)
+	keepTipOwner = btn
+	local deleting = player:GetAttribute("AutoDelete" .. petId) == true
+	keepTipText.Text = deleting and '<font color="#FF7A8A">🗑 AUTO-DELETE</font>\nnew copies are deleted · click to keep'
+		or '<font color="#7CE38F">✓ KEEP</font>\nnew copies are kept · click to auto-delete'
+	keepTip:FindFirstChildOfClass("UIStroke").Color = deleting and Color3.fromRGB(220, 80, 100) or Color3.fromRGB(90, 200, 120)
+	local s = scale.Scale > 0 and scale.Scale or 1
+	local rel = (btn.AbsolutePosition - panel.AbsolutePosition) / s
+	keepTip.Position = UDim2.fromOffset(math.clamp(rel.X - 200, 6, 660 - 242), rel.Y + 38)
+	keepTip.Visible = true
+end
+hideKeepTip = function()
+	keepTipOwner = nil
+	keepTip.Visible = false
+end
+
 local eggPages = {}
 local function buildEggPage(id)
 	if eggPages[id] then
@@ -469,33 +501,64 @@ local function buildEggPage(id)
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local c = colors[def.Rarity] or colors.Common
-		local cellBg = sky and Color3.fromRGB(252, 248, 255) or Color3.fromRGB(46, 38, 72)
+		-- Минималистичная карточка (2026-11, фидбэк 77–78): нейтральный фон, редкость — цветом рамки
+		-- и маленькой подписью, крупный шанс, множитель мелко, NEW — точкой, KEEP — маленький значок.
+		local top = Color3.fromRGB(34, 33, 44)
+		local cellBg = sky and Color3.fromRGB(252, 250, 255) or top
 		local cell = box(page, (i - 1) % cols * 212, math.floor((i - 1) / cols) * (cellH + 9), cellW, cellH, cellBg)
-		stroke(cell, c, (def.Rarity == "Secret" or def.Rarity == "Legendary") and 3 or 2, 0)
+		corner(cell, 14)
+		local rare = ShopConfig.RarityRank[def.Rarity] or 1
+		stroke(cell, c, rare >= 5 and 3 or 2, rare >= 3 and 0 or 0.35)
 		local grad = Instance.new("UIGradient", cell)
-		grad.Color = sky and ColorSequence.new(c:Lerp(WHITE, 0.45), Color3.fromRGB(236, 232, 255)) or ColorSequence.new(c:Lerp(Color3.fromRGB(46, 38, 72), 0.55), Color3.fromRGB(36, 30, 58))
+		grad.Color = sky and ColorSequence.new(Color3.fromRGB(252, 250, 255), c:Lerp(WHITE, 0.7)) or ColorSequence.new(top, c:Lerp(top, 0.82))
 		grad.Rotation = 90
-		local scene = viewport(cell, 0, 16, 116, cellH - 52)
+		local scene = viewport(cell, 10, 20, cellW - 20, cellH - 66)
 		local ok, model = pcall(PetVisuals.Build, entry.Pet)
 		if ok and model then
 			model.Parent = scene
 			frameModel(scene, model)
 		end
-		local pill = box(cell, 6, 5, 100, 18, c)
-		corner(pill, 9)
-		label(pill, def.Rarity:upper(), 0, 0, 100, 18, 11, INK, Enum.Font.GothamBlack)
-		local chance = label(cell, string.format("%g%%", entry.Chance), 112, 24, 84, 30, 24, c, Enum.Font.FredokaOne)
-		stroke(chance, INK, 2, 0)
-		label(cell, string.format("×%g 💰", def.Multiplier), 112, 56, 84, 20, 14, sky and Color3.fromRGB(235, 130, 40) or Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
-		local owned = label(cell, "", 112, 78, 84, 18, 11, Color3.fromRGB(205, 195, 225))
-		local name = label(cell, def.Name, 6, cellH - 50, 188, 18, 14, WHITE, Enum.Font.FredokaOne)
-		stroke(name, INK, 1.5, 0)
-		-- выше, чем было (18 px): на телефоне в такой переключатель не попасть
-		local toggle = button(cell, "", 8, cellH - 30, 184, 26)
-		toggle.TextSize = 12
-		toggle.Font = Enum.Font.GothamBold
+		local textMain = sky and Color3.fromRGB(60, 50, 95) or Color3.fromRGB(240, 238, 248)
+		local textSoft = sky and Color3.fromRGB(130, 120, 165) or Color3.fromRGB(150, 148, 170)
+		local rarityText = label(cell, def.Rarity:upper(), 10, 6, 110, 14, 11, c, Enum.Font.GothamBlack)
+		rarityText.TextXAlignment = Enum.TextXAlignment.Left
+		local owned = label(cell, "", 96, 6, 62, 14, 11, textSoft, Enum.Font.GothamBold)
+		owned.TextXAlignment = Enum.TextXAlignment.Right
+		local name = label(cell, def.Name, 10, cellH - 44, 118, 20, 15, textMain, Enum.Font.FredokaOne)
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.TextWrapped = false
+		name.TextTruncate = Enum.TextTruncate.AtEnd
+		local mult = label(cell, string.format("×%g coins", def.Multiplier), 10, cellH - 24, 118, 16, 12, textSoft, Enum.Font.GothamBold)
+		mult.TextXAlignment = Enum.TextXAlignment.Left
+		local chance = label(cell, string.format("%g%%", entry.Chance), 112, cellH - 48, 80, 40, 26, c, Enum.Font.FredokaOne)
+		chance.TextXAlignment = Enum.TextXAlignment.Right
+		chance.TextScaled = true
+		do
+			local lim = Instance.new("UITextSizeConstraint")
+			lim.MaxTextSize = 26
+			lim.Parent = chance
+		end
+		stroke(chance, INK, sky and 1.5 or 2, 0)
+		-- KEEP: маленькая круглая кнопка в углу (✓ зелёная — оставлять, 🗑 красная — автоудаление)
+		local toggle = Instance.new("TextButton")
+		toggle.Position = UDim2.fromOffset(cellW - 36, 4)
+		toggle.Size = UDim2.fromOffset(32, 32)
+		toggle.Font = Enum.Font.GothamBlack
+		toggle.TextSize = 16
+		toggle.TextColor3 = WHITE
+		toggle.BorderSizePixel = 0
+		toggle.AutoButtonColor = true
+		toggle.Parent = cell
+		corner(toggle, 16)
+		stroke(toggle, INK, 2, 0.2)
 		toggle.Activated:Connect(function()
 			action:FireServer("autodelete", entry.Pet)
+		end)
+		toggle.MouseEnter:Connect(function()
+			showKeepTip(toggle, entry.Pet)
+		end)
+		toggle.MouseLeave:Connect(function()
+			hideKeepTip()
 		end)
 		table.insert(pageCells, { id = entry.Pet, toggle = toggle, owned = owned, frame = cell })
 	end
