@@ -35,6 +35,7 @@ rim.Thickness = 3
 rim.Color = Color3.fromRGB(255, 245, 210)
 rim.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 rim.Parent = pill
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
 local scale = Instance.new("UIScale")
 scale.Parent = pill
 
@@ -114,7 +115,7 @@ RunService.RenderStepped:Connect(function(dt)
 		pill.Visible = (player:GetAttribute("UIScreen") or "") == ""
 	end
 	if camera and (waiting or scale.Scale >= 0.99) then
-		local base = math.clamp(camera.ViewportSize.X / 900, 0.6, 1)
+		local base = ResponsiveHUD.Scale() -- общий масштаб HUD (было X/900)
 		scale.Scale = waiting and base * 0.7 or base
 	end
 end)

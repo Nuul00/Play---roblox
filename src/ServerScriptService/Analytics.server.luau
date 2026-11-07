@@ -48,6 +48,16 @@ local UPGRADE_COST = {
 	IncomeLevel = Config.GetIncomeUpgradeCost,
 	DoubleLevel = Config.GetDoubleUpgradeCost,
 }
+-- названия квестов для шагов воронки (Quest20_CityLights читается легче, чем Quest20)
+local QuestTitles = {}
+do
+	local ok, Q = pcall(require, ReplicatedStorage:WaitForChild("QuestLineConfig"))
+	if ok and Q and Q.Steps then
+		for i, s in ipairs(Q.Steps) do
+			QuestTitles[i] = s.Title
+		end
+	end
+end
 local WORLD_INDEX = {}
 for i, def in ipairs(Worlds.Worlds) do
 	WORLD_INDEX[def.Id] = i
@@ -112,9 +122,6 @@ local function track(p: Player)
 				if name == Worlds.UnlockKey(def.Id) and p:GetAttribute(name) == true and (def.Cost or 0) > 0 then
 					economy(p, Flow.Sink, def.Cost, Tx.Shop.Name, "World_" .. def.Id)
 					safe(AnalyticsService.LogProgressionEvent, p, "Worlds", Enum.AnalyticsProgressionType.Complete, WORLD_INDEX[def.Id] or 0, def.Id)
-					if def.Id == "Neon District" then
-						onboard(p, 15, "UnlockNeon")
-					end
 				end
 			end
 			return
@@ -156,8 +163,10 @@ local function track(p: Player)
 				return
 			end
 			safe(AnalyticsService.LogProgressionEvent, p, "QuestLine", Enum.AnalyticsProgressionType.Complete, done, "Quest" .. done)
-			if done <= 10 then
-				onboard(p, 4 + done, "Quest" .. done)
+			-- воронка новичка: шаги 5..34 = квесты 1..30 (до первого ребёрса и конца Sky Isles).
+			-- Открытие Neon — это квест 13 (шаг 17), отдельный шаг UnlockNeon убран.
+			if done <= 30 then
+				onboard(p, 4 + done, "Quest" .. done .. "_" .. string.gsub((QuestTitles[done] or ""), "%s", ""))
 			end
 		end
 	end)

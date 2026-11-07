@@ -88,7 +88,9 @@ function K.button(parent, s, pos, size, colors, max)
 	local sc = Instance.new("UIScale")
 	sc.Parent = b
 	local function to(v)
-		TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Back), { Scale = v }):Play()
+		-- Base — масштаб HUD из Responsive.Bind: hover умножается на него, а не сбрасывает кнопку в 1
+		local base = tonumber(sc:GetAttribute("Base")) or 1
+		TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Back), { Scale = v * base }):Play()
 	end
 	b.MouseEnter:Connect(function()
 		to(1.06)

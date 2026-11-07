@@ -31,6 +31,7 @@ root.AnchorPoint = Vector2.new(1, 0)
 root.Position = UDim2.new(1, 0, 0.42, 0)
 root.Size = UDim2.fromOffset(TAB_W, TAB_H)
 root.Parent = gui
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
 local rootScale = Instance.new("UIScale")
 rootScale.Parent = root
 
@@ -436,7 +437,7 @@ Run.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	if cam then
 		local v = cam.ViewportSize
-		rootScale.Scale = math.clamp(math.min(v.X / 1000, v.Y / 620), 0.55, 1)
+		rootScale.Scale = ResponsiveHUD.Scale() -- общий масштаб HUD (было min(X/1000, Y/620))
 	end
 	local now = os.time()
 	local total = 0

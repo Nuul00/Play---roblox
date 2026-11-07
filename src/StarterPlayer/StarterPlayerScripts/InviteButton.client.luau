@@ -37,6 +37,9 @@ ts.Color = Color3.fromRGB(20, 70, 35)
 ts.Parent = b
 local scale = Instance.new("UIScale")
 scale.Parent = b
+-- общий масштаб HUD (Responsive); позицию под шестерёнкой ставит HudLayout
+local ResponsiveHUD = require(ReplicatedStorage:WaitForChild("Responsive"))
+ResponsiveHUD.Bind(scale)
 
 local canInvite = false
 task.spawn(function()
@@ -48,8 +51,8 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	b.Visible = canInvite and (player:GetAttribute("UIScreen") or "") == ""
 end)
 b.Activated:Connect(function()
-	scale.Scale = 0.9
-	TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	scale.Scale = ResponsiveHUD.Scale() * 0.9
+	TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Back), { Scale = ResponsiveHUD.Scale() }):Play()
 	pcall(SocialService.PromptGameInvite, SocialService, player)
 end)
 -- раз в минуту кнопка коротко «подпрыгивает», пока у игрока нет друзей на сервере
@@ -57,8 +60,8 @@ task.spawn(function()
 	while true do
 		task.wait(60)
 		if b.Visible and (player:GetAttribute("FriendsOnline") or 0) == 0 then
-			scale.Scale = 1.15
-			TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Elastic), { Scale = 1 }):Play()
+			scale.Scale = ResponsiveHUD.Scale() * 1.15
+			TweenService:Create(scale, TweenInfo.new(0.4, Enum.EasingStyle.Elastic), { Scale = ResponsiveHUD.Scale() }):Play()
 		end
 	end
 end)

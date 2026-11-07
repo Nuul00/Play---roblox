@@ -342,10 +342,10 @@ local function column(x, title, a, b, lines)
 end
 column(20, "YOU LOSE", rgb(200, 75, 110), rgb(130, 40, 75), {
 	"💰 All coins",
-	"⚡ Speed (back to lvl " .. Config.RebirthStartSpeed .. ")",
-	"🧲 Magnet radius level",
-	"💵 Coin income level",
-	"✨ Double coin level",
+	"⚡ Half of Speed levels",
+	"🧲 Half of Magnet levels",
+	"💵 Half of Coin income levels",
+	"✨ Half of Double coin levels",
 	"🥚 Egg counter resets",
 })
 column(436, "YOU KEEP", rgb(60, 170, 110), rgb(30, 110, 70), {

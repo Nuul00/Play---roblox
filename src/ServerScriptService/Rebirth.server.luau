@@ -1,4 +1,4 @@
--- Ребёрс: игрок отдаёт монеты и прокачку, получает постоянный множитель монет (Config.GetRebirthBonus),
+-- Ребёрс: игрок отдаёт монеты и половину уровней прокачки (Config.RebirthKeepLevels), получает постоянный множитель монет (Config.GetRebirthBonus),
 -- удачу яиц (атрибут RebirthLuck), слоты команды питомцев (RebirthSlots), титул и ауру на вехах
 -- и разовые подарки-зелья (Config.RebirthMilestones).
 -- Требование: монеты И яйца, открытые с прошлого ребёрса (Save_RebirthEggs — сохраняется автоматически).
@@ -249,20 +249,20 @@ remote.OnServerEvent:Connect(function(p)
 		return
 	end
 	last[p] = now
+	local multBefore = PlayerSystems.CoinMultiplier(p)
 	stats.Coins.Value = 0
-	stats.SpeedLevel.Value = math.max(Config.RebirthStartSpeed, 0)
+	stats.SpeedLevel.Value = math.max(Config.RebirthStartSpeed, Config.RebirthKeptLevel(stats.SpeedLevel.Value))
 	for _, name in ipairs({ "MagnetLevel", "IncomeLevel", "DoubleLevel" }) do
-		p:SetAttribute(name, 0)
+		p:SetAttribute(name, Config.RebirthKeptLevel(p:GetAttribute(name)))
 	end
 	p:SetAttribute(EGGS_ATTR, 0)
 	p:SetAttribute("Rebirths", count + 1) -- applyRewards сработает через сигнал атрибута
 	PlayerSystems.ApplySpeed(p)
-	-- Возвращаем на старт Meadow Isles: новый круг начинается с первого мира (открытые миры остаются).
-	local root = character:FindFirstChild("HumanoidRootPart")
-	if root then
-		p:SetAttribute("ServerTP", os.clock()) -- серверный телепорт: проверка скачков в GameServer его не наказывает
-		character:PivotTo(CFrame.new(0, 4 + (world:GetAttribute("GroundY") or 0), 180))
-		root.AssemblyLinearVelocity = Vector3.zero
-		p:SetAttribute("CurrentWorld", "Meadow Isles")
-	end
+	-- Аналитика: сколько % множителя монет осталось сразу после ребёрса (100 = без потерь).
+	-- В Creator Dashboard → Analytics → Custom events: RebirthIncomeKept_<номер>.
+	pcall(function()
+		local kept = math.floor(PlayerSystems.CoinMultiplier(p) / math.max(multBefore, 1e-9) * 100 + 0.5)
+		game:GetService("AnalyticsService"):LogCustomEvent(p, "RebirthIncomeKept_" .. math.min(count + 1, 10), kept)
+	end)
+	-- v3: игрок остаётся в своём мире (раньше телепорт в Meadow, где монеты в 30-4000 раз дешевле).
 end)

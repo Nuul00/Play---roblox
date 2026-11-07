@@ -8,7 +8,9 @@ W.Worlds = {
 	{ Id = "Magma Volcano", Name = "Magma Volcano", Emoji = "🌋", Top = Color3.fromRGB(255, 150, 60), Bottom = Color3.fromRGB(170, 40, 20), Desc = "Lava rivers, fire pets and magnets", Speed = 0, Cost = 1.2e12, Open = true, QuestAfter = "Glacier Giant", QuestChapter = "Frozen" },
 	{ Id = "Cosmic Galaxy", Name = "Cosmic Galaxy", Emoji = "🌌", Top = Color3.fromRGB(150, 140, 255), Bottom = Color3.fromRGB(60, 30, 140), Desc = "Planets, stars and cosmic pets", Speed = 0, Cost = 3e14, Open = true, QuestAfter = "Obsidian Secret", QuestChapter = "Volcano" },
 }
--- Cost — разовая цена открытия мира (монеты). v2: ≈2–2.5× самого дорогого яйца прошлого мира, без «стены». Открытые миры остаются после ребёрса
+-- Cost — разовая цена открытия мира (монеты). v2: ≈2–5× самого дорогого яйца прошлого мира, без «стены».
+-- Исключение — Neon (60K = ×20 от Starlight Egg 3K): к концу главы Meadow доход уже вырос,
+-- накопить уходит ~1 минута (симуляция), так что это не стена. Открытые миры остаются после ребёрса
 -- (атрибут Save_Unlock_<ключ> сохраняется в профиле).
 function W.UnlockKey(id)
 	return "Save_Unlock_" .. string.gsub(id, "%s", "")

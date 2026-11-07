@@ -29,6 +29,7 @@ local list = Instance.new("UIListLayout")
 list.Padding = UDim.new(0, 16) -- круглые иконки выступают за плитку: место, чтобы не касались
 list.SortOrder = Enum.SortOrder.LayoutOrder
 list.Parent = column
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
 local uiScale = Instance.new("UIScale")
 uiScale.Parent = column
 -- На телефоне левый нижний угол занимает джойстик: колонку статов переносим к правому краю по центру
@@ -221,6 +222,6 @@ RunService.RenderStepped:Connect(function(dt)
 	if coinText.Text ~= txt then coinText.Text = txt end
 	local camera = workspace.CurrentCamera
 	if camera then
-		uiScale.Scale = math.clamp(camera.ViewportSize.Y / 720, 0.6, 1.1)
+		uiScale.Scale = ResponsiveHUD.Scale() -- общий масштаб HUD (было Y/720)
 	end
 end)

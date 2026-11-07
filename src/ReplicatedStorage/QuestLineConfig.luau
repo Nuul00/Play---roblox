@@ -116,7 +116,7 @@ Q.Steps = {
 	step(6, "Star Speed", "Galaxy kiosks go up to level 125.", { Type = "speed", N = 110 }, { Coins = 3.6e14 }),
 	step(6, "Nebula Drift", "Pets born in the stars.", { Type = "eggs", N = 10, Egg = 14 }, { Coins = 6.3e14, Potion = "Coins" }),
 	step(6, "Cosmic Magnet", "Buy Nebula Swirl in the Galaxy magnet shop.", { Type = "magnetTier", N = 55 }, { Coins = 1.2e15 }),
-	step(6, "Egg Legend", "Open any eggs you like!", { Type = "eggs", N = 500 }, { Coins = 2.1e15, Potion = "Luck" }),
+	step(6, "Egg Legend", "Open any eggs you like!", { Type = "eggs", N = 200 }, { Coins = 2.1e15, Potion = "Luck" }),
 	step(6, "Supernova", "The ultimate egg of the universe!", { Type = "eggs", N = 10, Egg = 15 }, { Coins = 3.6e15, Potion = "Luck" }),
 	step(6, "Master of the Universe", "The final quest. Become a legend!", { Type = "earn", N = 1e17 }, { Coins = 6.6e15, Hatch = 15, Slot = 1, Bonus = 0.10 }),
 }

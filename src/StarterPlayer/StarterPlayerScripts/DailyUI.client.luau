@@ -325,6 +325,8 @@ local function refresh()
 	current = state.Day
 	local shownDay = (state.Ready and state.Day == 1) and 0 or day -- новая неделя: прошлые галочки не показываем
 	for i, c in ipairs(cells) do
+		-- награда с учётом недели подряд (каждая следующая щедрее)
+		c.reward = D.RewardFor(i, p:GetAttribute(D.WeekAttr)) or c.reward
 		local amount = c.reward.Coins and NumberFormat.Short(D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned")))
 		if c.big then
 			-- джекпот: коротко в две строки

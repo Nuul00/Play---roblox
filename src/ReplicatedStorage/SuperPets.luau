@@ -13,8 +13,10 @@ local WORLD_ORDER = { "island", "neon", "sky", "volcano", "galaxy", "frozen" }
 local SUPER_BASE = 154
 
 -- Мифические секретки (id 172-179, закреплены): 8 уникальных питомцев с собственным обликом.
--- Шесть — по одному на мир (1 на 15 млн), две «космические» — только из яиц Galaxy (1 на 50 млн).
--- Base — чья модель берётся, Look — особый облик (PetVisuals.ApplyLook), Mult — от силы основы.
+-- Шесть — по одному на мир (1 на 15 млн), две «космические» (Cosmic) — только из яиц Galaxy (1 на 50 млн).
+-- Base — чья модель берётся, Look — особый облик (PetVisuals.ApplyLook), Mult — от силы PowerBase (если задан) или Base.
+-- Космические берут силу главной Secret Galaxy (129): раньше они считались от петов Вулкана и Неба
+-- и выходили слабее секреток 1 на 3 млн.
 local SPECIALS = {
 	{ Id = 172, Name = "Blossom Hologram", Base = 42, Look = "hologram", World = "island", Odds = 15_000_000, Mult = 25 },
 	{ Id = 173, Name = "Glitch Core", Base = 53, Look = "void", World = "neon", Odds = 15_000_000, Mult = 25 },
@@ -22,8 +24,8 @@ local SPECIALS = {
 	{ Id = 175, Name = "Frostbite Wyvern", Base = 145, Look = "frost", World = "frozen", Odds = 15_000_000, Mult = 25 },
 	{ Id = 176, Name = "Molten Colossus", Base = 97, Look = "molten", World = "volcano", Odds = 15_000_000, Mult = 25 },
 	{ Id = 177, Name = "Void Phoenix", Base = 121, Look = "shadow", World = "galaxy", Odds = 15_000_000, Mult = 25 },
-	{ Id = 178, Name = "Prism Phoenix King", Base = 89, Look = "prism", World = "galaxy", Odds = 50_000_000, Mult = 24 },
-	{ Id = 179, Name = "Empress of Eternity", Base = 81, Look = "blossom", World = "galaxy", Odds = 50_000_000, Mult = 60 },
+	{ Id = 178, Name = "Prism Phoenix King", Base = 89, PowerBase = 129, Cosmic = true, Look = "prism", World = "galaxy", Odds = 50_000_000, Mult = 30 },
+	{ Id = 179, Name = "Empress of Eternity", Base = 81, PowerBase = 129, Cosmic = true, Look = "blossom", World = "galaxy", Odds = 50_000_000, Mult = 60 },
 }
 
 return function(Config)
@@ -82,19 +84,20 @@ return function(Config)
 	Config.Specials = {}
 	for _, sp in ipairs(SPECIALS) do
 		local b = Config.Pets[sp.Base]
-		assert(b and Config.Pets[sp.Id] == nil, "SuperPets: special id " .. sp.Id)
+		local power = Config.Pets[sp.PowerBase or sp.Base]
+		assert(b and power and Config.Pets[sp.Id] == nil, "SuperPets: special id " .. sp.Id)
 		Config.Pets[sp.Id] = {
 			Name = sp.Name,
 			Rarity = "Secret",
-			Multiplier = b.Multiplier * sp.Mult,
+			Multiplier = power.Multiplier * sp.Mult,
 			Visual = b.Visual,
 			Color = b.Color,
 			EggId = b.EggId,
 			Base = sp.Base,
-			Super = sp.World and 4 or 5,
-			SuperKey = sp.World and "Mythic" or "Cosmic",
+			Super = sp.Cosmic and 5 or 4,
+			SuperKey = sp.Cosmic and "Cosmic" or "Mythic",
 			Odds = sp.Odds,
-			Scale = sp.World and 1.3 or 1.45,
+			Scale = sp.Cosmic and 1.45 or 1.3,
 			Look = sp.Look,
 			World = sp.World,
 			Special = true,
@@ -162,13 +165,15 @@ return function(Config)
 	-- Royal Egg — яйцо за Robux (id питомцев 186-221, закреплены: 186 + (мир−1)·6 + (ступень−1)).
 	-- 6 питомцев; сила — доля от главной Secret лучшего открытого мира игрока, поэтому яйцо полезно
 	-- на любом этапе. Шансы фиксированы (их показывает окно яйца). В индекс и машины не входят.
+	-- Баланс 2026-11: средний питомец ≈ 0.25 от главной Secret (было 0.74) — примерно ×2.5 от среднего
+	-- питомца лучшего яйца за монеты (было ×7). Common слабее Legendary из обычных яиц, Secret = ×2 главной.
 	local ROYAL = {
-		{ Rarity = "Common", Chance = 50, Pct = 0.5, Name = "Crown Pup", Model = "RoyalEgg1" },
-		{ Rarity = "Uncommon", Chance = 30, Pct = 0.8, Name = "Velvet Fox", Model = "RoyalEgg2" },
-		{ Rarity = "Rare", Chance = 13.9, Pct = 1.1, Name = "Sapphire Owl", Model = "RoyalEgg3" },
-		{ Rarity = "Epic", Chance = 5, Pct = 1.4, Name = "Emerald Griffin", Model = "RoyalEgg4" },
-		{ Rarity = "Legendary", Chance = 1, Pct = 2, Name = "Golden Phoenix", Model = "RoyalEgg5" },
-		{ Rarity = "Secret", Chance = 0.1, Pct = 3, Name = "Imperial Dragon", Model = "RoyalEgg6" },
+		{ Rarity = "Common", Chance = 50, Pct = 0.15, Name = "Crown Pup", Model = "RoyalEgg1" },
+		{ Rarity = "Uncommon", Chance = 30, Pct = 0.25, Name = "Velvet Fox", Model = "RoyalEgg2" },
+		{ Rarity = "Rare", Chance = 13.9, Pct = 0.4, Name = "Sapphire Owl", Model = "RoyalEgg3" },
+		{ Rarity = "Epic", Chance = 5, Pct = 0.6, Name = "Emerald Griffin", Model = "RoyalEgg4" },
+		{ Rarity = "Legendary", Chance = 1, Pct = 1, Name = "Golden Phoenix", Model = "RoyalEgg5" },
+		{ Rarity = "Secret", Chance = 0.1, Pct = 2, Name = "Imperial Dragon", Model = "RoyalEgg6" },
 	}
 	-- пока нет моделей Tripo — облик берём у питомцев последнего яйца мира (по редкости)
 	local FALLBACK_SLOT = { 1, 3, 5, 6, 7, 8 }
@@ -232,7 +237,7 @@ return function(Config)
 			return nil
 		end
 		local acc = 0
-		-- сначала самые редкие: мифическая секретка мира и две космические (из любого яйца)
+		-- сначала самые редкие: мифическая секретка мира и две космические (из яиц Galaxy)
 		for _, id in ipairs(Config.Specials) do
 			local def = Config.Pets[id]
 			if def.World == nil or def.World == egg.World then

@@ -13,6 +13,24 @@ D.Rewards={
  {Name="2 Super Luck potions",Potions={SuperLuck=2},Icon="SuperLuck"},
  {Name="JACKPOT",Coins=25000,Share=0.2,Potions={SuperCoins=1,SuperSpeed=1,SuperLuck=1},FreeHatch=3,RushKeys=1,Icon="Star"},
 }
+-- Недели подряд (Save_DailyWeek, +1 после джекпота 7-го дня): каждая следующая неделя щедрее —
+-- +1 к зельям, ключам и бесплатным яйцам каждого дня и +50% к монетам, до 4-й недели (потом так же).
+-- Раньше неделя повторялась без изменений и после первой не давала нового повода заходить.
+D.WeekAttr="Save_DailyWeek"
+D.MaxWeekBonus=3
+function D.Week(raw) return math.clamp(math.floor(tonumber(raw) or 0),0,D.MaxWeekBonus) end
+function D.RewardFor(day,weekRaw)
+ local base=D.Rewards[day]
+ local w=D.Week(weekRaw)
+ if not base or w==0 then return base end
+ local r=table.clone(base)
+ if r.Coins then r.Coins=math.floor(r.Coins*(1+0.5*w)) end
+ if r.Share then r.Share=r.Share*(1+0.5*w) end
+ if base.Potions then r.Potions={} for name,n in pairs(base.Potions) do r.Potions[name]=n+w end end
+ if r.RushKeys then r.RushKeys+=w end
+ if r.FreeHatch then r.FreeHatch=(r.FreeHatch==true and 1 or r.FreeHatch)+w end
+ return r
+end
 -- Монеты награды растут с игроком: не меньше Coins и не меньше доли Share от всего заработанного.
 function D.CoinsFor(reward,lifetime) return math.floor(math.max(reward.Coins or 0,(reward.Share or 0)*(tonumber(lifetime) or 0))) end
 function D.State(day,last,now)

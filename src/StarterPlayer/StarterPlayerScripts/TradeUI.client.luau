@@ -113,6 +113,9 @@ end
 
 -- ===== кнопка =====
 local open = K.button(gui, "🤝 TRADE", UDim2.new(0, 16, 0.5, -54), UDim2.fromOffset(124, 44), K.BLUE, 19)
+-- имя — для HudLayout (ставит кнопку под Royal Egg), масштаб — общий для HUD (Responsive)
+open.Name = "TradeOpen"
+require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive")).Bind(open:FindFirstChildWhichIsA("UIScale"))
 open.AnchorPoint = Vector2.new(0, 0.5)
 
 -- ===== список игроков =====

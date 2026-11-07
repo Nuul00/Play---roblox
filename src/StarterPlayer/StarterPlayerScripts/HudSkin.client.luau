@@ -63,6 +63,7 @@ dock.Position = UDim2.new(0.5, 0, 1, -76) -- выше слота инструм�
 dock.Size = UDim2.fromOffset(384, 420)
 dock.BackgroundTransparency = 1
 dock.Parent = menuGui
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
 local dockScale = Instance.new("UIScale")
 dockScale.Parent = dock
 
@@ -311,7 +312,7 @@ RunService.RenderStepped:Connect(function()
 	local camera = workspace.CurrentCamera
 	if camera then
 		local v = camera.ViewportSize
-		local s = math.clamp(math.min(v.X / 700, v.Y / 520), 0.6, 1)
+		local s = ResponsiveHUD.Scale() -- общий масштаб HUD (было min(X/700, Y/520))
 		dockScale.Scale = s
 		topScale.Scale = s
 	end

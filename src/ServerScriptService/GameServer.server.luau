@@ -768,7 +768,7 @@ local function collect(record, p)
  local earned=record.value*PlayerSystems.CoinMultiplier(p)*ComboConfig.MultOf(combo)
  -- Апгрейд «двойная монета» + способность питомцев: шанс получить награду x2.
  local doubleChance=Config.GetDoubleChance(p:GetAttribute("DoubleLevel") or 0)+(p:GetAttribute("AbilDouble") or 0)
- if random:NextNumber()<math.min(doubleChance,0.95) then earned*=2 end
+ if random:NextNumber()<math.min(doubleChance,Config.MaxDoubleChance) then earned*=2 end
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)

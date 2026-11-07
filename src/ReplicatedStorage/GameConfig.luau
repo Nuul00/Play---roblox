@@ -1,18 +1,14 @@
 -- Каталог: питомцы, яйца, цены. Цены яиц и ребёрса перебалансированы вручную (2026-11, симулятор экономики);
 -- create-catalog.mjs устарел — не перегенерировать без переноса этих цен.
 local Config = {}
-Config.CoinValue=5
 Config.CoinRespawnSeconds=8
 Config.BaseWalkSpeed=16
-Config.SpeedPerLevel=4
 Config.MaxSpeedLevel=125
-Config.FirstUpgradeCost=10
 Config.ShopDistance=14
 Config.PurchaseCooldown=0.4
 Config.ShopkeeperUserId=1361632228
 Config.MaxIncomeLevel=125
 Config.BaseMagnetRadius=3
-Config.MagnetRadiusGrowth=0.10
 Config.MaxMagnetLevel=125
 Config.MaxDoubleLevel=125
 Config.MaxUpgradeLevel=125
@@ -185,7 +181,7 @@ Config.Eggs={
 [3]={Id=3,Name="Starlight Egg",World="island",Cost=3000,Position=Vector3.new(102,2,132),Color=Color3.fromRGB(150,100,255),Pool={{Pet=13,Chance=30,Weight=30000},{Pet=14,Chance=24,Weight=24000},{Pet=15,Chance=18,Weight=18000},{Pet=16,Chance=12,Weight=12000},{Pet=17,Chance=8,Weight=8000},{Pet=18,Chance=5,Weight=5000},{Pet=43,Chance=2.3,Weight=2300},{Pet=44,Chance=0.6,Weight=600},{Pet=45,Chance=0.1,Weight=100}}},
 [4]={Id=4,Name="Disco Grid Egg",World="neon",Cost=8000,Position=Vector3.new(540,2,132),Color=Color3.fromRGB(232,68,255),Pool={{Pet=19,Chance=30,Weight=30000},{Pet=20,Chance=24,Weight=24000},{Pet=21,Chance=18,Weight=18000},{Pet=22,Chance=12,Weight=12000},{Pet=23,Chance=7,Weight=7000},{Pet=24,Chance=5,Weight=5000},{Pet=46,Chance=2,Weight=2000},{Pet=47,Chance=1,Weight=1000},{Pet=48,Chance=0.9,Weight=900},{Pet=49,Chance=0.1,Weight=100}}},
 [5]={Id=5,Name="Tech Core Egg",World="neon",Cost=100000,Position=Vector3.new(571,2,132),Color=Color3.fromRGB(54,205,255),Pool={{Pet=25,Chance=30,Weight=30000},{Pet=26,Chance=24,Weight=24000},{Pet=27,Chance=18,Weight=18000},{Pet=28,Chance=12,Weight=12000},{Pet=29,Chance=7,Weight=7000},{Pet=30,Chance=5,Weight=5000},{Pet=50,Chance=2,Weight=2000},{Pet=51,Chance=1,Weight=1000},{Pet=52,Chance=0.9,Weight=900},{Pet=53,Chance=0.1,Weight=100}}},
-[6]={Id=6,Name="City Lights Egg",World="neon",Cost=5000000,Position=Vector3.new(602,2,132),Color=Color3.fromRGB(192,88,255),Pool={{Pet=31,Chance=30,Weight=30000},{Pet=32,Chance=24,Weight=24000},{Pet=33,Chance=18,Weight=18000},{Pet=34,Chance=12,Weight=12000},{Pet=35,Chance=7,Weight=7000},{Pet=36,Chance=5,Weight=5000},{Pet=54,Chance=2,Weight=2000},{Pet=55,Chance=1,Weight=1000},{Pet=56,Chance=0.9,Weight=900},{Pet=57,Chance=0.1,Weight=100}}},
+[6]={Id=6,Name="City Lights Egg",World="neon",Cost=1000000,Position=Vector3.new(602,2,132),Color=Color3.fromRGB(192,88,255),Pool={{Pet=31,Chance=30,Weight=30000},{Pet=32,Chance=24,Weight=24000},{Pet=33,Chance=18,Weight=18000},{Pet=34,Chance=12,Weight=12000},{Pet=35,Chance=7,Weight=7000},{Pet=36,Chance=5,Weight=5000},{Pet=54,Chance=2,Weight=2000},{Pet=55,Chance=1,Weight=1000},{Pet=56,Chance=0.9,Weight=900},{Pet=57,Chance=0.1,Weight=100}}},
 [7]={Id=7,Name="Cloud Egg",World="sky",Cost=15000000,Position=Vector3.new(1048,2,112),Color=Color3.fromRGB(190,225,255),Pool={{Pet=58,Chance=30,Weight=30000},{Pet=59,Chance=25,Weight=25000},{Pet=60,Chance=18,Weight=18000},{Pet=61,Chance=12,Weight=12000},{Pet=62,Chance=8,Weight=8000},{Pet=63,Chance=5,Weight=5000},{Pet=64,Chance=1.9,Weight=1900},{Pet=65,Chance=0.1,Weight=100}}},
 [8]={Id=8,Name="Celestial Egg",World="sky",Cost=250000000,Position=Vector3.new(1100,2,112),Color=Color3.fromRGB(160,110,255),Pool={{Pet=66,Chance=30,Weight=30000},{Pet=67,Chance=25,Weight=25000},{Pet=68,Chance=18,Weight=18000},{Pet=69,Chance=12,Weight=12000},{Pet=70,Chance=8,Weight=8000},{Pet=71,Chance=5,Weight=5000},{Pet=72,Chance=1.9,Weight=1900},{Pet=73,Chance=0.1,Weight=100}}},
 [9]={Id=9,Name="Crystal Egg",World="sky",Cost=5e9,Position=Vector3.new(1152,2,112),Color=Color3.fromRGB(110,215,255),Pool={{Pet=74,Chance=30,Weight=30000},{Pet=75,Chance=25,Weight=25000},{Pet=76,Chance=18,Weight=18000},{Pet=77,Chance=12,Weight=12000},{Pet=78,Chance=8,Weight=8000},{Pet=79,Chance=5,Weight=5000},{Pet=80,Chance=1.9,Weight=1900},{Pet=81,Chance=0.1,Weight=100}}},
@@ -220,25 +216,34 @@ function Config.GetWalkSpeed(level) return math.floor((Config.BaseWalkSpeed+2*ma
 function Config.GetSpeedCoinBonus(level) return 1+0.01*level end
 function Config.GetMagnetRadius(level) return Config.BaseMagnetRadius+0.12*level end
 function Config.GetMagnetUpgradeCost(level) return upCost(0.8, level) end
-function Config.GetIncomeMultiplier(level) return 1+0.25*level end
+-- До 50-го +0.25 за уровень (x13.5), дальше ×1.02 за уровень (x59.6 к 125-му): раньше поздние уровни
+-- давали +0.8% за цену самого дорогого яйца, их не стоило покупать.
+function Config.GetIncomeMultiplier(level) level=tonumber(level) or 0 return (1+0.25*math.min(level,50))*1.02^math.max(0,level-50) end
 function Config.GetIncomeUpgradeCost(level) return upCost(1.6, level) end
 -- Шанс, что подобранная монета даст двойную награду.
--- До 50 уровня +1.5% за уровень (75%), дальше до 100% к 125-му (раньше поздние уровни давали по +0.2%).
-function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(1,0.75+0.25*(level-50)/75) end
+-- До 50 уровня +1.5% за уровень (75%), дальше до 95% к 125-му. Потолок 95% — тот же, что у сервера
+-- (GameServer.collect), чтобы магазин не обещал 100%, которых игрок не получал.
+Config.MaxDoubleChance=0.95
+function Config.GetDoubleChance(level) if level<=50 then return 0.015*level end return math.min(Config.MaxDoubleChance,0.75+0.20*(level-50)/75) end
 function Config.GetDoubleUpgradeCost(level) return upCost(2.5, level) end
 -- Ребёрс: за монеты И яйца, открытые с прошлого ребёрса, сбрасывает прокачку,
 -- но даёт постоянный множитель монет, удачу яиц и награды на вехах (дорога наград).
 Config.MaxRebirths=50
 Config.RebirthStartSpeed=6
+-- Мягкий ребёрс (2026-11, v3): прокачка (скорость, магнит, доход, двойная) сохраняет эту долю уровней,
+-- а не обнуляется. Раньше доход после 1-го ребёрса падал ×11, после 2-го ×60 — игроки бросали на 2-м.
+Config.RebirthKeepLevels=0.5
+function Config.RebirthKeptLevel(level) return math.floor((tonumber(level) or 0)*Config.RebirthKeepLevels) end
 -- Округление до двух значащих цифр: цены выглядят «красиво» (250K, 6.6M, 1.2B...).
 local function niceRound(x) if x<100 then return math.floor(x+0.5) end local mag=10^(math.floor(math.log10(x))-1) return math.floor(x/mag+0.5)*mag end
--- Цена в монетах: 1-й ребёрс 250M (~10-я минута первой сессии), рост за ребёрс от ×2.1 в начале
--- до ×1.25 к 50-му (раньше к концу оставалось ×1.8 при +4% бонуса — поздние ребёрсы были стеной).
-function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.33*r-0.0023*r*r)) end
+-- Цена в монетах: 1-й ребёрс 250M (~35-я минута, Sky Isles), рост за ребёрс от ×2 в начале до ×1.25 к 50-му.
+-- v3: 50-й стоит ~1.4Qi (было ~14Qi). Симуляция: ~32 ребёрса за 30 ч активной игры (было 2, если не терпеть падение дохода).
+function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.30*r-0.0021*r*r)) end
 -- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
-function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+15*r+1.2*r*r)/5+0.5)*5) end
--- Множитель монет: первые 10 как раньше (+0.75), дальше ускоряется.
-function Config.GetRebirthBonus(r) return 1+0.75*r+0.05*math.max(0,r-10)^2 end
+-- v3: 49-й требует ~1950 яиц (было ~3600).
+function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+10*r+0.6*r*r)/5+0.5)*5) end
+-- Множитель монет: +1 за ребёрс (x2, x3, x4...), с 6-го ускоряется; к 50-му x172 (было x118).
+function Config.GetRebirthBonus(r) return 1+r+0.06*math.max(0,r-5)^2 end
 -- Вехи: подарки (зелья) выдаются один раз; слоты, удача, титул и аура действуют постоянно.
 Config.RebirthMilestones={
  {At=1,Icon="🧪",Name="Starter Potions",Desc="1 Super Coin + 1 Super Luck potion",Potions={SuperCoins=1,SuperLuck=1}},

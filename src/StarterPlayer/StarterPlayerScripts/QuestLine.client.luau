@@ -88,6 +88,7 @@ root.Position = UDim2.fromOffset(14, 14)
 root.Size = UDim2.fromOffset(W, H)
 root.Visible = false
 root.Parent = gui
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
 local rootScale = Instance.new("UIScale")
 rootScale.Parent = root
 
@@ -574,7 +575,7 @@ render()
 RunService.RenderStepped:Connect(function(dt)
 	local camera = workspace.CurrentCamera
 	if camera then
-		rootScale.Scale = math.clamp(camera.ViewportSize.Y / 720, TOUCH and 0.8 or 0.6, 1.1)
+		rootScale.Scale = ResponsiveHUD.Scale() -- общий масштаб HUD (было Y/720, на сенсоре не меньше 0.8)
 	end
 	local t = os.clock()
 	if readyNow and root.Visible then

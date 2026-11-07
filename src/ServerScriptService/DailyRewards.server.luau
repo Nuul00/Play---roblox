@@ -14,8 +14,10 @@ remote.OnServerInvoke=function(p)
  local state=D.State(p:GetAttribute("DailyDay"),p:GetAttribute("DailyClaimedAt"),now)
  if not state.Ready then return {Ok=false,Message="Your next reward is available tomorrow"} end
  -- No yields between eligibility check, timestamp and reward, so parallel claims cannot duplicate it.
- local reward=D.Rewards[state.Day]
+ local reward=D.RewardFor(state.Day,p:GetAttribute(D.WeekAttr))
  p:SetAttribute("DailyDay",state.Day);p:SetAttribute("DailyClaimedAt",now)
+ -- джекпот 7-го дня закрывает неделю: следующая будет щедрее (DailyConfig.RewardFor)
+ if state.Day==#D.Rewards then p:SetAttribute(D.WeekAttr,(tonumber(p:GetAttribute(D.WeekAttr)) or 0)+1) end
  stats.Coins.Value+=D.CoinsFor(reward,p:GetAttribute("LifetimeEarned"))
  for name,count in pairs(reward.Potions or {}) do p:SetAttribute("Potion"..name,(p:GetAttribute("Potion"..name) or 0)+count) end
  if reward.RushKeys then p:SetAttribute("Save_RushKeys",(p:GetAttribute("Save_RushKeys") or 0)+reward.RushKeys) end

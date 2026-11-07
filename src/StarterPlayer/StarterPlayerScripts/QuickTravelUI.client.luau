@@ -46,6 +46,20 @@ list.AutomaticSize = Enum.AutomaticSize.Y
 list.BackgroundColor3 = Color3.fromRGB(30, 40, 70)
 list.Visible = false
 list.Parent = gui
+-- имена — для HudLayout (кнопка под Invite, список под кнопкой), масштаб — общий для HUD
+open.Name = "TravelOpen"
+-- по правому краю, как Invite: при масштабе HUD кнопки стоят ровной колонкой
+open.AnchorPoint = Vector2.new(1, 0)
+open.Position = UDim2.new(1, -14, 0, 160)
+list.Name = "TravelList"
+do
+	local ResponsiveHUD = require(ReplicatedStorage:WaitForChild("Responsive"))
+	for _, o in ipairs({ open, list }) do
+		local s = Instance.new("UIScale")
+		s.Parent = o
+		ResponsiveHUD.Bind(s)
+	end
+end
 Instance.new("UICorner", list).CornerRadius = UDim.new(0, 12)
 local pad = Instance.new("UIPadding")
 pad.PaddingTop, pad.PaddingBottom, pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 6), UDim.new(0, 6), UDim.new(0, 6), UDim.new(0, 6)

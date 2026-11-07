@@ -111,6 +111,12 @@ do
 	g.Parent = open
 end
 local openScale = Instance.new("UIScale", open)
+-- общий масштаб HUD (Responsive); позицию под панелью квестов ставит HudLayout
+local ResponsiveHUD = require(game:GetService("ReplicatedStorage"):WaitForChild("Responsive"))
+openScale:SetAttribute("Base", ResponsiveHUD.Scale())
+ResponsiveHUD.Changed:Connect(function(s)
+	openScale:SetAttribute("Base", s)
+end)
 
 -- ===== окно =====
 local panel = Instance.new("Frame")
@@ -382,7 +388,7 @@ local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
 	if open.Visible then
-		openScale.Scale = 1 + 0.05 * math.sin(t * 3)
+		openScale.Scale = ResponsiveHUD.Scale() * (1 + 0.05 * math.sin(t * 3))
 	end
 	if not panel.Visible then
 		return
