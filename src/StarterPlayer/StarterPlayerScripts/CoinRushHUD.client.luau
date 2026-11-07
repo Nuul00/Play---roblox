@@ -114,7 +114,7 @@ flash.Parent = gui
 local panel = Instance.new("Frame")
 panel.AnchorPoint = Vector2.new(0.5, 0.5)
 panel.Position = UDim2.fromScale(0.5, 0.5)
-panel.Size = UDim2.fromOffset(420, 260)
+panel.Size = UDim2.fromOffset(420, 300)
 panel.BackgroundColor3 = DARK
 panel.Visible = false
 panel.Parent = gui
@@ -123,9 +123,9 @@ local ps = Instance.new("UIStroke")
 ps.Color = GOLD
 ps.Thickness = 3
 ps.Parent = panel
-local pTitle = label(panel, "COIN RUSH", UDim2.new(1, -20, 0, 40), UDim2.fromOffset(10, 12), GOLD)
-local pCoins = label(panel, "", UDim2.new(1, -20, 0, 46), UDim2.fromOffset(10, 62), Color3.fromRGB(255, 235, 150))
-local pInfo = label(panel, "", UDim2.new(1, -30, 0, 60), UDim2.fromOffset(15, 112), WHITE)
+local pTitle = label(panel, "COIN RUSH", UDim2.new(1, -20, 0, 64), UDim2.fromOffset(10, 10), GOLD)
+local pCoins = label(panel, "", UDim2.new(1, -20, 0, 46), UDim2.fromOffset(10, 84), Color3.fromRGB(255, 235, 150))
+local pInfo = label(panel, "", UDim2.new(1, -30, 0, 80), UDim2.fromOffset(15, 134), WHITE)
 pInfo.TextWrapped = true
 local ok = Instance.new("TextButton")
 ok.AnchorPoint = Vector2.new(0.5, 1)
@@ -146,6 +146,7 @@ ok.Activated:Connect(function()
 end)
 
 local worth, endsAt, vault = 1, 0, nil
+local bossMax = 1
 local function coins(weight)
 	return NumberFormat.Short(math.floor(weight * worth))
 end
@@ -157,9 +158,9 @@ remote.OnClientEvent:Connect(function(kind, d)
 		vault = nil
 		top.Visible = true
 		vbar.Visible = false
-		roomL.Text = "ROOM " .. d.Room .. "/" .. d.Rooms .. " · " .. d.Name
+		roomL.Text = "FLOOR " .. (d.Floor or 1) .. " · ROOM " .. d.Room .. "/" .. d.Rooms .. " · " .. d.Name
 		leftL.Text = d.Total .. " coins left"
-		shout("ROOM " .. d.Room .. ": " .. d.Name, GOLD, 1.4)
+		shout((d.Room == 1 and ("🏰 FLOOR " .. (d.Floor or 1) .. "  ·  ") or "") .. "ROOM " .. d.Room .. ": " .. d.Name, GOLD, 1.4)
 		if d.Hint then
 			local room = d.Room
 			task.delay(1.6, function()
@@ -191,18 +192,45 @@ remote.OnClientEvent:Connect(function(kind, d)
 		vfill.Size = UDim2.fromScale(math.clamp(d.Have / math.max(d.Need, 0.001), 0, 1), 1)
 		vfill.BackgroundColor3 = d.Have >= d.Need and Color3.fromRGB(110, 240, 130) or GOLD
 		shout(d.Have >= d.Need and "🔓 ENOUGH COINS — OPEN THE VAULT!" or "🔒 THE VAULT", GOLD, 1.6)
+	elseif kind == "boss" then
+		-- босс хранилища: полоса его жизней (кристаллы)
+		worth = d.Worth or worth
+		endsAt = d.Ends
+		vault = { Need = 1 }
+		top.Visible = true
+		roomL.Text = "FLOOR " .. (d.Floor or 1) .. " · BOSS: VAULT GOLEM"
+		leftL.Text = "grab the ❄ crystals · jump the shockwaves!"
+		vbar.Visible = true
+		vfill.BackgroundColor3 = Color3.fromRGB(255, 80, 90)
+		vfill.Size = UDim2.fromScale(1, 1)
+		bossMax = d.Max
+		shout("⚔ VAULT GOLEM AWAKENS!", Color3.fromRGB(255, 120, 110), 1.8)
+		task.delay(1.9, function()
+			if vault then
+				shout("Grab crystals · JUMP the waves!", Color3.new(1, 1, 1), 2.2)
+			end
+		end)
+		UISounds.Play("rare")
+	elseif kind == "bossHit" then
+		vfill.Size = UDim2.fromScale(math.clamp(d.Hp / math.max(d.Max, 1), 0, 1), 1)
+		leftL.Text = d.Hp > 0 and (d.Hp .. " crystals left") or "GOLEM DEFEATED!"
+		shout(d.Hp > 0 and ("💥 HIT!  " .. d.Hp .. " left") or "🏆 GOLEM DEFEATED!", Color3.fromRGB(140, 230, 255), 0.9)
+		UISounds.Play(d.Hp > 0 and "crack" or "fanfare")
+	elseif kind == "bossSlam" then
+		UISounds.Play("crack")
 	elseif kind == "vaultResult" then
 		if d.Open then
 			shout("💥 VAULT OPENED!  ×2 COINS", Color3.fromRGB(255, 220, 80), 2.4)
 			UISounds.Play("fanfare")
 		else
-			shout("🔒 Not enough coins for the vault", Color3.fromRGB(255, 150, 150), 2)
+			shout(bossMax > 1 and "⏰ The golem guards the vault…" or "🔒 Not enough coins for the vault", Color3.fromRGB(255, 150, 150), 2)
 			UISounds.Play("fail")
 		end
 	elseif kind == "result" then
 		top.Visible = false
 		endsAt = 0
-		pTitle.Text = d.Vault and "💰 VAULT CRACKED!" or "COIN RUSH OVER"
+		local stars = d.Stars or 0
+		pTitle.Text = (d.Vault and "💰 VAULT CRACKED!" or "COIN RUSH OVER") .. "\n" .. string.rep("⭐", stars) .. string.rep("☆", 3 - stars) .. "  FLOOR " .. (d.Floor or 1)
 		pCoins.Text = "+" .. NumberFormat.Short(d.Coins) .. " coins"
 		local info = {}
 		if d.Hits and d.Hits > 0 then
@@ -211,7 +239,7 @@ remote.OnClientEvent:Connect(function(kind, d)
 		for _, l in ipairs(d.Loot or {}) do
 			table.insert(info, l)
 		end
-		pInfo.Text = #info > 0 and table.concat(info, "\n") or (d.Vault and "Lucky next time for loot!" or "Collect more coins to open the vault (×2 + loot)")
+		pInfo.Text = #info > 0 and table.concat(info, "\n") or (d.Vault and "Lucky next time for loot!" or "Beat the Vault Golem to open the vault (×2 + loot) and unlock the next floor")
 		panel.Visible = true
 		panelScale.Scale = 0.5
 		TweenService:Create(panelScale, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
@@ -256,6 +284,8 @@ local function updatePrompt()
 		local cost = player:GetAttribute("RushKeyCost") or 0
 		local keys = player:GetAttribute("Save_RushKeys") or 0
 		local freeToday = (player:GetAttribute("Save_RushFreeDay") or -1) ~= math.floor(workspace:GetServerTimeNow() / 86400)
+		local floor = math.clamp(player:GetAttribute("Save_RushFloor") or 1, 1, 10)
+		prompt.ActionText = "Enter Coin Rush · Floor " .. floor
 		prompt.ObjectText = cost > 0 and ("🔑 Key: " .. NumberFormat.Short(cost) .. " coins") or (not freeToday and keys > 0) and ("🔑 Use key (" .. keys .. " left)") or "FREE run today!"
 	end
 	local sign = portal and portal:FindFirstChild("RushSign", true)
@@ -460,4 +490,5 @@ task.spawn(function()
 end)
 player:GetAttributeChangedSignal("RushKeyCost"):Connect(updatePrompt)
 player:GetAttributeChangedSignal("Save_RushKeys"):Connect(updatePrompt)
+player:GetAttributeChangedSignal("Save_RushFloor"):Connect(updatePrompt)
 task.delay(5, updatePrompt)

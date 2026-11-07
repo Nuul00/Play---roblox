@@ -3,6 +3,10 @@
 -- монеты (дороже от комнаты к комнате) и вращающиеся лазеры (удар — минус 15% собранного).
 -- Комната 4 — Хранилище: если собрано не меньше порога, оно открывается: награда ×2 и лут
 -- (зелья, 3% — эксклюзив Vault Golem). Монеты зачисляются в конце. Всё решает сервер.
+-- ЭТАЖИ 1–10 (Save_RushFloor): каждая победа над боссом открывает следующий этаж — монеты дороже,
+-- лазеры и лава быстрее, лут лучше. ЗВЁЗДЫ за забег: 1 — дошёл, 2 — победил босса, 3 — без ударов (≤1).
+-- БОСС в хранилище: Vault Golem (3D-модель питомца, увеличенная) бьёт по полу волнами-кольцами
+-- (перепрыгнуть), вокруг появляются кристаллы — каждый подобранный снимает 1 жизнь босса.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -32,6 +36,11 @@ R.VAULT_NEED = 0.55 -- доля от всех монет забега (в «ве
 R.HIT_LOSS = 0.15
 R.KEY_COINS = 80 -- ключ стоит столько «монет» лучшего мира игрока
 R.COOLDOWN = 120
+R.FLOORS = 10
+R.BOSS_TIME = 32
+function R.Floor(p): number
+	return math.clamp(math.floor(tonumber(p:GetAttribute("Save_RushFloor")) or 1), 1, R.FLOORS)
+end
 -- поляна справа от главной дороги перед рядом яиц (видно со спавна), лицом к дороге.
 -- Слева на той же высоте стоит UpgradeShop (его детали не видны запросам CanQuery=false).
 -- Yaw — поворот модели Tripo, если её «лицо» смотрит не туда.
@@ -681,6 +690,7 @@ end)
 
 -- ===== забеги =====
 local runs = {} -- [player] = run
+local spawnBoss -- задаётся ниже (босс хранилища)
 local slots = {} -- [index] = true (занят)
 local lastRun = {}
 local function takeSlot(): number
@@ -713,7 +723,7 @@ local function spawnOne(run, folder, def, c: Vector3, rng, life: number?)
 	local pos = c + Vector3.new(rng:NextNumber(-half, half), big and 0.6 or 1.8, rng:NextNumber(-half + 10, half))
 	local coin = part(folder, big and "RushBar" or "RushCoinPart", big and Vector3.new(2.8, 1.1, 1.4) or Vector3.new(0.5, 2.6, 2.6), CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, 6.28), 0), big and Color3.fromRGB(245, 185, 40) or Color3.fromRGB(255, 215, 70), big and Enum.Material.Metal or Enum.Material.Neon, { Shape = big and Enum.PartType.Block or Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
 	coin:SetAttribute("RushCoin", true)
-	local e = { part = coin, value = def.Value * (big and 3 or 1) }
+	local e = { part = coin, value = def.Value * (big and 3 or 1) * (run.fmul or 1) }
 	if life then
 		e.expire = os.clock() + life
 		coin:SetAttribute("ExpireAt", workspace:GetServerTimeNow() + life) -- клиент мигает перед исчезновением
@@ -746,7 +756,7 @@ local function spawnCoins(run, i: number)
 			local emit = part(folder, "SweepEnd", Vector3.new(1.6, 1.6, 1.6), cf * CFrame.new(x, 0, 0), Color3.fromRGB(80, 20, 30), Enum.Material.Metal, { CanCollide = false, CanQuery = false })
 			emit:SetAttribute("SweepEnd", x)
 		end
-		run.sweep = { core = core, glow = glowS, z = -R.ROOM / 2 + 14, dir = 1, speed = 13, c = c, armAt = os.clock() + 2.5, half = R.ROOM / 2 - 6 }
+		run.sweep = { core = core, glow = glowS, z = -R.ROOM / 2 + 14, dir = 1, speed = 13 * (1 + 0.06 * ((run.floor or 1) - 1)), c = c, armAt = os.clock() + 2.5, half = R.ROOM / 2 - 6 }
 	end
 	-- пол-лава: сетка 6×6 плиток-наложений, загораются циклами
 	if def.Lava then
@@ -788,9 +798,9 @@ local function spawnCoins(run, i: number)
 		sp.Parent = hub
 		-- первые 2 с лазер мигает и не бьёт — предупреждение
 		beam.Transparency, glowL.Transparency = 0.8, 0.9
-		table.insert(run.lasers, { part = beam, glow = glowL, center = c + Vector3.new(0, 2.5, 0), angle = (k - 1) * math.pi / def.Lasers, speed = def.Speed * (k % 2 == 0 and -1 or 1), armAt = os.clock() + 2 })
+		table.insert(run.lasers, { part = beam, glow = glowL, center = c + Vector3.new(0, 2.5, 0), angle = (k - 1) * math.pi / def.Lasers, speed = def.Speed * (1 + 0.07 * ((run.floor or 1) - 1)) * (k % 2 == 0 and -1 or 1), armAt = os.clock() + 2 })
 	end
-	run.totalWeight += def.Coins * def.Value * 1.24 -- 12% слитков ×3 → средний вес монеты 1.24 (вся комната, и волны тоже)
+	run.totalWeight += def.Coins * def.Value * 1.24 * (run.fmul or 1) -- 12% слитков ×3 → средний вес монеты 1.24 (вся комната, и волны тоже)
 end
 
 local function send(run, kind, data)
@@ -810,16 +820,36 @@ local function finish(run, reason: string?)
 	pcall(PlayerSystems.ApplySpeed, p)
 	local reward = math.floor(run.bank * run.worth)
 	local loot = {}
+	local F = run.floor or 1
+	-- звёзды и этажи
+	local stars = (run.room or 1) > #R.ROOMS and 1 or 0
+	if run.bossBeaten then
+		stars = run.hits <= 1 and 3 or 2
+	end
+	local starKey = "Save_RushStars" .. F
+	if stars > (p:GetAttribute(starKey) or 0) then
+		p:SetAttribute(starKey, stars)
+	end
+	local newFloor = nil
+	if run.bossBeaten and F >= R.Floor(p) and F < R.FLOORS then
+		newFloor = F + 1
+		p:SetAttribute("Save_RushFloor", newFloor)
+		table.insert(loot, "🏰 Floor " .. newFloor .. " unlocked!")
+	end
+	if run.bossBeaten and (F == 5 or F == 10) and stars == 3 then
+		p:SetAttribute("Save_RushKeys", (p:GetAttribute("Save_RushKeys") or 0) + 2)
+		table.insert(loot, "🔑 +2 Rush Keys (perfect floor " .. F .. ")")
+	end
 	if run.vaultOpen then
 		reward *= 2
 		local rng = Random.new()
-		if rng:NextNumber() < 0.45 then
+		if rng:NextNumber() < math.min(0.45 + 0.05 * (F - 1), 0.95) then
 			local names = ShopConfig.SuperPotionOrder -- в сейфе — только СУПЕР-зелья
 			local name = names[rng:NextInteger(1, #names)]
 			p:SetAttribute("Potion" .. name, (p:GetAttribute("Potion" .. name) or 0) + 1)
 			table.insert(loot, ShopConfig.Potions[name].Icon .. " " .. ShopConfig.Potions[name].Name)
 		end
-		if rng:NextNumber() < 0.03 then
+		if rng:NextNumber() < 0.03 + 0.006 * (F - 1) then
 			local id = Config.VaultPets and Config.VaultPets[SHORT[bestWorld(p)] or "island"]
 			if id then
 				local count = (p:GetAttribute("PetOwned" .. id) or 0) + 1
@@ -844,7 +874,7 @@ local function finish(run, reason: string?)
 	if reward > (p:GetAttribute("Save_RushBest") or 0) then
 		p:SetAttribute("Save_RushBest", reward)
 	end
-	send(run, "result", { Coins = reward, Vault = run.vaultOpen == true, Loot = loot, Reason = reason, Hits = run.hits })
+	send(run, "result", { Floor = F, Stars = stars, NewFloor = newFloor, Coins = reward, Vault = run.vaultOpen == true, Loot = loot, Reason = reason, Hits = run.hits })
 	task.delay(0.2, function()
 		if p.Parent == Players then
 			tp(p, R.ReturnCF)
@@ -852,6 +882,102 @@ local function finish(run, reason: string?)
 		run.model:Destroy()
 		slots[run.slot] = nil
 	end)
+end
+
+-- ===== Босс хранилища =====
+local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
+local function bossModel(run, at: CFrame): Model
+	local id = Config.VaultPets and Config.VaultPets[SHORT[bestWorld(run.player)] or "island"]
+	local ok, m = pcall(function()
+		return PetVisuals.Build(id)
+	end)
+	if not ok or not m then
+		m = Instance.new("Model")
+		part(m, "Body", Vector3.new(6, 8, 5), CFrame.new(), Color3.fromRGB(230, 180, 60), Enum.Material.Metal)
+	end
+	local _, ext = m:GetBoundingBox()
+	m:ScaleTo(m:GetScale() * 15 / math.max(ext.Y, 0.1)) -- великан ~15 студов
+	local cf, ext2 = m:GetBoundingBox()
+	m:PivotTo(at * CFrame.new(0, ext2.Y / 2, 0) * m:GetPivot():ToObjectSpace(cf):Inverse())
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch = true, false, false, false
+		end
+	end
+	m.Name = "VaultBoss"
+	m.Parent = run.model
+	return m
+end
+spawnBoss = function(run, c: Vector3)
+	local F = run.floor or 1
+	run.center, run.folder = c, nil -- пол арены (для высоты прыжка над кольцом)
+	local zone = run.model:FindFirstChild("VaultZone", true)
+	if zone then
+		zone.Transparency = 1
+	end
+	local at = CFrame.lookAt(c + Vector3.new(0, 0, 12), c + Vector3.new(0, 0, -20))
+	local hp = 5 + math.floor(F / 2) -- 5..10 кристаллов
+	run.boss = {
+		model = bossModel(run, at), base = at, c = c, hp = hp, max = hp,
+		nextSlam = os.clock() + 3, slamEvery = math.max(2.2, 3.8 - 0.16 * (F - 1)), ringSpeed = 17 + F,
+		rings = {}, crystals = {}, nextCrystal = os.clock() + 1.2,
+	}
+	-- полоса жизней над големом
+	local _, ext = run.boss.model:GetBoundingBox()
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "BossBar"
+	bb.Size = UDim2.fromOffset(220, 46)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, ext.Y / 2 + 2.5, 0)
+	bb.AlwaysOnTop = true
+	bb.LightInfluence = 0
+	bb.Adornee = run.boss.model.PrimaryPart or run.boss.model:FindFirstChildWhichIsA("BasePart", true)
+	local nameL = Instance.new("TextLabel")
+	nameL.BackgroundTransparency = 1
+	nameL.Size = UDim2.new(1, 0, 0, 22)
+	nameL.Font = Enum.Font.FredokaOne
+	nameL.TextScaled = true
+	nameL.TextColor3 = Color3.fromRGB(255, 225, 120)
+	nameL.TextStrokeTransparency = 0
+	nameL.Text = "VAULT GOLEM · FLOOR " .. F
+	nameL.Parent = bb
+	local back = Instance.new("Frame")
+	back.Position = UDim2.fromOffset(10, 26)
+	back.Size = UDim2.new(1, -20, 0, 16)
+	back.BackgroundColor3 = Color3.fromRGB(30, 16, 60)
+	back.Parent = bb
+	Instance.new("UICorner", back).CornerRadius = UDim.new(1, 0)
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(255, 70, 90)
+	fill.Parent = back
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+	bb.Parent = run.boss.model
+	run.boss.fill = fill
+	run.boss.rel = at:ToObjectSpace(run.boss.model:GetPivot()) -- поворот к игроку сохраняет посадку модели
+	run.boss.model:SetAttribute("Hp", hp)
+	run.boss.model:SetAttribute("MaxHp", hp)
+end
+local function bossRing(run)
+	local B = run.boss
+	local ring = part(run.model, "BossRing", Vector3.new(0.4, 4, 4), CFrame.new(B.c + Vector3.new(0, 0.3, 12)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(255, 120, 40), Enum.Material.Neon, { Shape = Enum.PartType.Cylinder, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false, Transparency = 0.25 })
+	table.insert(B.rings, { part = ring, r = 2, born = os.clock() })
+	send(run, "bossSlam", {})
+end
+local function bossCrystal(run)
+	local B = run.boss
+	local rng = run.rng or Random.new()
+	local a = rng:NextNumber(0, math.pi * 2)
+	local d = rng:NextNumber(10, 24)
+	local pos = B.c + Vector3.new(math.cos(a) * d, 2.2, 6 + math.sin(a) * d * 0.8)
+	local cr = part(run.model, "BossCrystal", Vector3.new(2, 3.4, 2), CFrame.new(pos) * CFrame.Angles(0, a, math.rad(20)), Color3.fromRGB(110, 230, 255), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	local l = Instance.new("PointLight")
+	l.Color = Color3.fromRGB(110, 230, 255)
+	l.Range = 12
+	l.Brightness = 2
+	l.Parent = cr
+	cr:SetAttribute("BossCrystal", true)
+	table.insert(B.crystals, cr)
 end
 
 local function startRoom(run, i: number)
@@ -864,15 +990,17 @@ local function startRoom(run, i: number)
 		spawnCoins(run, i)
 		local dur = RunService:IsStudio() and workspace:GetAttribute("RushRoomTime") or R.ROOMS[i].Time -- в Studio можно ускорить
 		run.ends = os.clock() + dur
-		send(run, "room", { Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Hint = R.ROOMS[i].Hint, Ends = workspace:GetServerTimeNow() + dur, Total = #run.coins + (run.wave and run.wave.left or 0) })
+		send(run, "room", { Floor = run.floor, Room = i, Rooms = #R.ROOMS, Worth = run.worth, Name = R.ROOMS[i].Name, Hint = R.ROOMS[i].Hint, Ends = workspace:GetServerTimeNow() + dur, Total = #run.coins + (run.wave and run.wave.left or 0) })
 	else
 		spawnCF = CFrame.new(run.offset + roomCenter(i) + Vector3.new(0, 4, -26))
 		run.coins, run.lasers, run.sweep, run.lava, run.wave = {}, {}, nil, nil, nil
 		run.need = run.totalWeight * (RunService:IsStudio() and workspace:GetAttribute("RushVaultNeed") or R.VAULT_NEED) -- в Studio порог можно задать атрибутом
-		run.ends = os.clock() + R.VAULT_TIME
-		send(run, "vault", { Need = run.need, Have = run.bank, Ends = workspace:GetServerTimeNow() + R.VAULT_TIME, Worth = run.worth })
+		run.ends = os.clock() + R.BOSS_TIME
+		spawnBoss(run, run.offset + roomCenter(i))
+		send(run, "boss", { Floor = run.floor, Hp = run.boss.hp, Max = run.boss.max, Ends = workspace:GetServerTimeNow() + R.BOSS_TIME, Worth = run.worth, Have = run.bank })
 	end
-	tp(run.player, spawnCF)
+	-- лицом в комнату (к монетам / к боссу), а не к стене входа
+	tp(run.player, CFrame.lookAt(spawnCF.Position, spawnCF.Position + Vector3.new(0, 0, 1)))
 end
 
 local function openVault(run)
@@ -880,7 +1008,11 @@ local function openVault(run)
 		return
 	end
 	run.vaultTried = true
-	run.vaultOpen = run.bank >= run.need
+	if run.boss then
+		run.vaultOpen = run.bossBeaten == true -- победил босса — сейф открыт
+	else
+		run.vaultOpen = run.bank >= run.need
+	end
 	local door = run.model:FindFirstChild("VaultDoor", true)
 	if run.vaultOpen and door then
 		-- дверь сейфа (вместе с каменной рамой — одна модель Tripo) уезжает вверх, как решётка,
@@ -913,7 +1045,8 @@ local function startRun(p)
 	m.Name = "CoinRush_" .. p.UserId
 	m:PivotTo(m:GetPivot() + offset)
 	m.Parent = workspace
-	local run = { player = p, slot = slot, offset = offset, model = m, bank = 0, totalWeight = 0, hits = 0, worth = coinWorth(p), lastHit = 0 }
+	local F = RunService:IsStudio() and workspace:GetAttribute("RushFloor") or R.Floor(p) -- в Studio этаж можно задать атрибутом
+	local run = { player = p, slot = slot, offset = offset, model = m, bank = 0, totalWeight = 0, hits = 0, worth = coinWorth(p), lastHit = 0, floor = F, fmul = 1 + 0.3 * (F - 1) }
 	runs[p] = run
 	p:SetAttribute("InRush", true)
 	pcall(PlayerSystems.ApplySpeed, p) -- в данже скорость ограничена (R.SPEED_CAP)
@@ -1083,7 +1216,7 @@ RunService.Heartbeat:Connect(function(dt)
 			local Lv = run.lava
 			if Lv then
 				if now >= Lv.nextAt then
-					Lv.nextAt = now + 3.2
+					Lv.nextAt = now + 3.2 / (1 + 0.05 * ((run.floor or 1) - 1))
 					for _, tile in ipairs(Lv.tiles) do
 						if not tile.safe and tile.state == 0 and run.rng:NextNumber() < 0.42 then
 							tile.state, tile.warnAt = 1, now
@@ -1118,11 +1251,66 @@ RunService.Heartbeat:Connect(function(dt)
 					hit(L.center)
 				end
 			end
-			-- хранилище: встал в круг — проверка
-			if run.room > #R.ROOMS and not run.vaultTried then
-				local zone = run.model:FindFirstChild("VaultZone", true)
-				if zone and (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(zone.Position.X, 0, zone.Position.Z)).Magnitude < 11 then
-					openVault(run)
+			-- босс хранилища
+			local B = run.boss
+			if B and not run.vaultTried then
+				-- смотрит на игрока
+				local look = Vector3.new(pos.X, B.base.Position.Y, pos.Z)
+				if (look - B.base.Position).Magnitude > 1 then
+					B.model:PivotTo(CFrame.lookAt(B.base.Position, look) * B.rel)
+				end
+				-- удар по полу → кольцо-волна
+				if now >= B.nextSlam then
+					B.nextSlam = now + B.slamEvery
+					bossRing(run)
+				end
+				for k = #B.rings, 1, -1 do
+					local rg = B.rings[k]
+					rg.r = 2 + (now - rg.born) * B.ringSpeed
+					rg.part.Size = Vector3.new(0.4, rg.r * 2, rg.r * 2)
+					rg.part.Transparency = math.clamp(0.2 + rg.r / 60, 0, 1)
+					local center = Vector3.new(rg.part.Position.X, 0, rg.part.Position.Z)
+					local dist = (Vector3.new(pos.X, 0, pos.Z) - center).Magnitude
+					if not rg.hit and math.abs(dist - rg.r) < 1.6 and pos.Y - floorY < 4.4 then
+						rg.hit = true
+						hit(rg.part.Position)
+					end
+					if rg.r > 46 then
+						rg.part:Destroy()
+						table.remove(B.rings, k)
+					end
+				end
+				-- кристаллы: подобрал — минус жизнь
+				if #B.crystals < 2 and now >= B.nextCrystal then
+					B.nextCrystal = now + 0.8
+					bossCrystal(run)
+				end
+				for k = #B.crystals, 1, -1 do
+					local cr = B.crystals[k]
+					if (cr.Position - pos).Magnitude <= 4.2 then
+						cr:Destroy()
+						table.remove(B.crystals, k)
+						B.hp -= 1
+						B.nextCrystal = now + 0.6
+						B.model:SetAttribute("Hp", B.hp)
+						if B.fill then
+							B.fill.Size = UDim2.fromScale(math.max(B.hp, 0) / B.max, 1)
+						end
+						send(run, "bossHit", { Hp = B.hp, Max = B.max })
+						if B.hp <= 0 then
+							run.bossBeaten = true
+							for _, c2 in ipairs(B.crystals) do
+								c2:Destroy()
+							end
+							for _, r2 in ipairs(B.rings) do
+								r2.part:Destroy()
+							end
+							B.crystals, B.rings = {}, {}
+							B.model:Destroy()
+							openVault(run)
+							break
+						end
+					end
 				end
 			end
 			-- таймер или все монеты собраны
