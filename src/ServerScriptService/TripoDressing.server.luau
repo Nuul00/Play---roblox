@@ -262,9 +262,22 @@ end
 ------------------------------------------------------------------ магазины
 local function dressShop(shop: Instance?, propName: string, faceTo: Vector3?, scale: number?)
 	local template = props and props:FindFirstChild(propName)
-	if not (shop and template) or shop:GetAttribute("Tripo") then
+	if not (shop and template) then
 		return
 	end
+	if shop:GetAttribute("Tripo") then
+		-- копия уже одетого магазина (Neon копирует Meadow): меняем унаследованную модель на свою
+		local old = shop:FindFirstChild("TripoModel")
+		if old and (shop:GetAttribute("TripoTemplate") or "MeadowMagnetShop") ~= propName then
+			local cf, ext = old:GetBoundingBox()
+			local bottom = CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)) * cf.Rotation
+			old:Destroy()
+			fit(template, math.max(ext.X, ext.Y, ext.Z) * (scale or 1), bottom, shop, "TripoModel")
+			shop:SetAttribute("TripoTemplate", propName)
+		end
+		return
+	end
+	shop:SetAttribute("TripoTemplate", propName)
 	local minV, maxV = visualBox(shop)
 	if not minV then
 		return
