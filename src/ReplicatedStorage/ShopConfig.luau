@@ -331,6 +331,50 @@ ShopConfig.AnnounceRank = 5
 -- ===== Постоянные бонусы =====
 -- За каждую полностью собранную и забранную страницу индекса (все питомцы одного яйца).
 ShopConfig.IndexBonusPerPage = 0.05
+-- Вехи всего индекса (2026-11): доля открытых питомцев из всех яиц. Бонусы перемножаются,
+-- выдаются автоматически (считаются из открытий, отдельно не сохраняются).
+ShopConfig.IndexMilestones = {
+	{ Pct = 25, Coins = 1.1, Slots = 0 },
+	{ Pct = 50, Coins = 1.2, Slots = 1 },
+	{ Pct = 75, Coins = 1.3, Slots = 0 },
+	{ Pct = 100, Coins = 1.5, Slots = 1 },
+}
+local indexPets: { number }? = nil
+-- Все питомцы, которые выпадают из яиц (как считает книга индекса).
+function ShopConfig.IndexPets(): { number }
+	if not indexPets then
+		local Config = require(script.Parent:WaitForChild("GameConfig"))
+		local seen, list = {}, {}
+		for _, egg in pairs(Config.Eggs) do
+			for _, e in ipairs(egg.Pool) do
+				if not seen[e.Pet] then
+					seen[e.Pet] = true
+					table.insert(list, e.Pet)
+				end
+			end
+		end
+		indexPets = list
+	end
+	return indexPets :: { number }
+end
+-- found, total, tier (0..#IndexMilestones), coin mult, extra slots
+function ShopConfig.IndexProgress(p: Player)
+	local list = ShopConfig.IndexPets()
+	local found = 0
+	for _, id in ipairs(list) do
+		if ShopConfig.Discovered(p, id) then
+			found += 1
+		end
+	end
+	local pct = #list > 0 and found * 100 / #list or 0
+	local tier, mult, slots = 0, 1, 0
+	for i, m in ipairs(ShopConfig.IndexMilestones) do
+		if pct + 1e-9 >= m.Pct then
+			tier, mult, slots = i, mult * m.Coins, slots + m.Slots
+		end
+	end
+	return found, #list, tier, mult, slots
+end
 -- За каждого друга на сервере, с потолком.
 ShopConfig.FriendBonusEach = 0.1
 ShopConfig.FriendBonusMax = 0.5

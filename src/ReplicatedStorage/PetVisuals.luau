@@ -30,6 +30,11 @@ local function fromTemplate(selected,def)
 end
 function PetVisuals.Build(id)
  local def=assert(Config.Pets[id],"Unknown pet")
+ -- Блочные питомцы из деталей (BlockyPets): своя модель важнее основы и облика.
+ if def.Blocky then
+  local model,parts=require(script.Parent:WaitForChild("BlockyPets")).Build(def.Blocky,def.Name,({Mythic=3.6,Secret=4})[def.Rarity] or 3)
+  if model then model:SetAttribute("SuperSecret",def.Super);return model,parts end
+ end
  -- Royal Egg: своя модель из Tripo (ReplicatedStorage.TripoPets/<Template>), если она уже вставлена.
  if def.Template then
   local tf=script.Parent:FindFirstChild("TripoPets")
@@ -159,9 +164,15 @@ local function applyShiny(model: Model, v, withParticles: boolean?)
 		if d:IsA("BasePart") and d.Transparency < 0.95 then
 			-- детали без текстуры чуть светлее и «металлические» — питомец блестит, но узнаётся
 			local textured = d:IsA("MeshPart") and d.TextureID ~= "" or d:FindFirstChildWhichIsA("SurfaceAppearance") ~= nil
-			if not textured then
-				d.Color = d.Color:Lerp(Color3.fromRGB(255, 250, 220), 0.25)
-				d.Reflectance = math.max(d.Reflectance, 0.15)
+			if not textured and d.Material ~= Enum.Material.Neon then
+				local _, _, val = d.Color:ToHSV()
+				if val < 0.3 then
+					-- тёмные (чёрный волк и т.п.): цвет не трогаем, иначе он становится серым; только глянец
+					d.Reflectance = math.max(d.Reflectance, 0.35)
+				else
+					d.Color = d.Color:Lerp(Color3.fromRGB(255, 250, 220), 0.25)
+					d.Reflectance = math.max(d.Reflectance, 0.15)
+				end
 			end
 		end
 	end

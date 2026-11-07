@@ -8,6 +8,7 @@ local player = Players.LocalPlayer
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local PetVisuals = require(ReplicatedStorage:WaitForChild("PetVisuals"))
 local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
+local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local claim = ReplicatedStorage:WaitForChild("GameIndexClaim")
 
 local rarityColors = {
@@ -117,11 +118,13 @@ spine.BorderSizePixel = 0
 spine.Parent = book
 
 text(left, "EGGS", UDim2.fromOffset(0, 34), UDim2.new(1, 0, 0, 30), 24)
-local total = text(left, "", UDim2.fromOffset(0, 426), UDim2.new(1, 0, 0, 26), 18)
+local total = text(left, "", UDim2.fromOffset(0, 414), UDim2.new(1, 0, 0, 46), 18)
+total.RichText = true
+total.TextWrapped = true
 local tabs = {}
 local list = Instance.new("ScrollingFrame")
 list.Position = UDim2.fromOffset(0, 66)
-list.Size = UDim2.fromOffset(388, 354)
+list.Size = UDim2.fromOffset(388, 346)
 list.BackgroundTransparency = 1
 list.BorderSizePixel = 0
 list.ScrollBarThickness = 5
@@ -419,7 +422,19 @@ local function refreshTabs()
 		tab.count.Text = (id ~= "vault" and n >= max and not player:GetAttribute("IndexClaimed" .. id)) and ("🎁 " .. n .. "/" .. max) or (n .. "/" .. max)
 		tab.bar.Size = UDim2.fromScale(n / max, 1)
 	end
-	total.Text = string.format("Discovered %d / %d pets", found, all)
+	-- Вехи считает сервер (уникальные питомцы всех яиц): берём его числа, если уже пришли.
+	found = tonumber(player:GetAttribute("IndexFound")) or found
+	all = tonumber(player:GetAttribute("IndexTotal")) or all
+	local pct = all > 0 and found * 100 / all or 0
+	local nextLine = '<font size="14" color="#2E8B3A">All index milestones reached!</font>'
+	for _, m in ipairs(ShopConfig.IndexMilestones) do
+		if pct < m.Pct then
+			local slot = m.Slots > 0 and (", +" .. m.Slots .. " pet slot") or ""
+			nextLine = string.format('<font size="14" color="#8A5A2B">Next: %d%% → +%d%% coins%s</font>', m.Pct, math.floor((m.Coins - 1) * 100 + 0.5), slot)
+			break
+		end
+	end
+	total.Text = string.format("Discovered %d / %d pets (%d%%)\n", found, all, math.floor(pct)) .. nextLine
 end
 
 for id, tab in pairs(tabs) do
@@ -464,7 +479,7 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 end)
 local pendingPage = false
 player.AttributeChanged:Connect(function(name)
-	if book.Visible and (name:sub(1, 3) == "Pet" or name:sub(1, 12) == "IndexClaimed") and not pendingPage then
+	if book.Visible and (name:sub(1, 3) == "Pet" or name:sub(1, 5) == "Index") and not pendingPage then
 		-- пачка из 9 яиц меняет много атрибутов: перерисовываем страницу один раз
 		pendingPage = true
 		task.defer(function()

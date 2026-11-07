@@ -301,8 +301,8 @@ local MYTHIC = {
  {240,1,"Dusk Seraph","blossom"},{241,2,"Sakura Kitsune","blossom"},{242,3,"Astral Unicorn","starlight"},
  {243,4,"Disco Phantom","hologram"},{244,5,"Quantum Dragon","hologram"},{245,6,"Neon Wyvern","void"},
  {246,7,"Storm Griffin","starlight"},{247,8,"Seraph Dragon","prism"},{248,9,"Crystal Phoenix","prism"},
- {249,16,"Blizzard Fairy","frost"},{250,17,"Aurora Spirit","frost"},{251,18,"Frost Titan","frost"},
- {252,10,"Inferno Drake","molten"},{253,11,"Magma Hydra Prime","molten"},{254,12,"Obsidian Wyrm","shadow"},
+ {249,16,"Blizzard Fairy","frost"},{250,17,"Aurora Spirit","frost"},{251,18,"Frost Wing Wolf","frost","WingWolf_Frost"},
+ {252,10,"Inferno Drake","molten"},{253,11,"Magma Hydra Prime","molten"},{254,12,"Shadow Wing Wolf","shadow","WingWolf_Shadow"},
  {255,13,"Nova Robot","void"},{256,14,"Nebula Serpent","void"},{257,15,"Supernova Phoenix","prism"},
 }
 for _,m in ipairs(MYTHIC) do
@@ -317,7 +317,7 @@ for _,m in ipairs(MYTHIC) do
  assert(leg and sec and Config.Pets[id]==nil,"Mythic: egg "..eggId)
  local mult=math.sqrt(Config.Pets[leg].Multiplier*Config.Pets[sec].Multiplier)
  mult=mult<100 and math.floor(mult*100+0.5)/100 or math.floor(mult+0.5)
- Config.Pets[id]={Name=name,Rarity="Mythic",Multiplier=mult,Visual=Config.Pets[leg].Visual,Color=Config.Pets[leg].Color,EggId=eggId,Base=leg,Look=look,Scale=1.15}
+ Config.Pets[id]={Name=name,Rarity="Mythic",Multiplier=mult,Visual=Config.Pets[leg].Visual,Color=Config.Pets[leg].Color,EggId=eggId,Base=leg,Look=look,Scale=1.15,Blocky=m[5]}
  local w=math.floor(Config.MythicChance*1000+0.5)
  local first=egg.Pool[1]
  first.Weight-=w

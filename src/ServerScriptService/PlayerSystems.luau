@@ -47,6 +47,7 @@ function PlayerSystems.MaxEquipped(p): number
 	if p:GetAttribute("Pass_PetSlots") then
 		extra += 3 -- геймпасс «+3 Pet Slots»
 	end
+	extra += math.clamp(math.floor(tonumber(p:GetAttribute("IndexSlots")) or 0), 0, 4) -- вехи индекса
 	-- +1 слот за главы Neon, Frozen и Galaxy квестовой линии
 	local okQ, Q = pcall(require, game:GetService("ReplicatedStorage"):WaitForChild("QuestLineConfig"))
 	if okQ then
@@ -228,6 +229,35 @@ function PlayerSystems.CheckBadges(p)
 		end
 	end
 	p:SetAttribute("BadgeBonus", ShopConfig.BadgeBonus ^ unlocked)
+	PlayerSystems.CheckIndexMilestones(p)
+end
+
+-- Вехи всего индекса (25/50/75/100%): постоянный бонус к монетам и слоты питомцев.
+function PlayerSystems.CheckIndexMilestones(p)
+	local found, total, tier, mult, slots = ShopConfig.IndexProgress(p)
+	p:SetAttribute("IndexFound", found)
+	p:SetAttribute("IndexTotal", total)
+	local prev = p:GetAttribute("IndexTier")
+	if prev == tier and p:GetAttribute("IndexSlots") == slots then
+		return
+	end
+	p:SetAttribute("IndexTier", tier)
+	p:SetAttribute("IndexMilestoneMult", mult)
+	local slotsChanged = (p:GetAttribute("IndexSlots") or 0) ~= slots
+	p:SetAttribute("IndexSlots", slots)
+	PlayerSystems.RefreshIndexBonus(p)
+	if slotsChanged then
+		PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
+	end
+	-- Сообщаем только о новой вехе в этой сессии (при входе prev = nil).
+	if prev ~= nil and tier > prev then
+		local m = ShopConfig.IndexMilestones[tier]
+		local text = string.format("📖 Index %d%%! +%d%% coins forever", m.Pct, math.floor((m.Coins - 1) * 100 + 0.5))
+		if m.Slots > 0 then
+			text ..= " and +" .. m.Slots .. " pet slot"
+		end
+		notifyFn(p, text .. "!", true)
+	end
 end
 
 -- ===== Доход =====
@@ -458,7 +488,7 @@ function PlayerSystems.RefreshIndexBonus(p)
 			pages += 1
 		end
 	end
-	p:SetAttribute("IndexBonus", 1 + pages * ShopConfig.IndexBonusPerPage)
+	p:SetAttribute("IndexBonus", (1 + pages * ShopConfig.IndexBonusPerPage) * (p:GetAttribute("IndexMilestoneMult") or 1))
 end
 
 -- ===== Гарантия (pity) =====
