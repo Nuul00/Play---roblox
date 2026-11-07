@@ -72,7 +72,7 @@ Q.Steps = {
 	step(2, "Pet Hunter", "Open different eggs to find new pets.", { Type = "discover", N = 20 }, { Coins = 400000 }),
 	step(2, "City Lights", "The best egg of the district! Then Sky Isles opens.", { Type = "eggs", N = 8, Egg = 6 }, { Coins = 2.8e6 }),
 	step(2, "Diamond Shine", "Fuse 5 golden pets in the Neon machine.", { Type = "variant", N = 1, Key = "Diamond" }, { Coins = 1.1e6, Potion = "Luck" }),
-	step(2, "Neon Tycoon", "Finish the chapter for a big prize!", { Type = "earn", N = 2e7 }, { Coins = 8e6, Hatch = 6, Bonus = 0.05 }),
+	step(2, "Neon Tycoon", "Finish the chapter for a big prize!", { Type = "earn", N = 2e7 }, { Coins = 8e6, Hatch = 6, Slot = 1, Bonus = 0.05 }),
 
 	-- ===== Глава 3: Sky Isles (яйца 7, 8, 9; прокачка до 50; первый ребёрс) =====
 	step(3, "Above the Clouds", "Unlock Sky Isles in TELEPORT (25M coins).", { Type = "world", World = "Sky Isles" }, { Coins = 6e6 }),
@@ -96,7 +96,7 @@ Q.Steps = {
 	step(4, "Double Chill", "Double coins, double fun.", { Type = "double", N = 60 }, { Coins = 4.8e10 }),
 	step(4, "Pet Professor", "Your Pet Index keeps growing!", { Type = "discover", N = 60 }, { Coins = 7.8e10 }),
 	step(4, "Glacier Giant", "The mightiest egg of the peaks! Then the Volcano opens.", { Type = "eggs", N = 10, Egg = 18 }, { Coins = 1.2e11, Potion = "Luck" }),
-	step(4, "Frozen Fortune", "Finish the chapter for a big prize!", { Type = "earn", N = 1.5e12 }, { Coins = 2.4e11, Hatch = 18, Bonus = 0.05 }),
+	step(4, "Frozen Fortune", "Finish the chapter for a big prize!", { Type = "earn", N = 1.5e12 }, { Coins = 2.4e11, Hatch = 18, Slot = 1, Bonus = 0.05 }),
 
 	-- ===== Глава 5: Magma Volcano (яйца 10, 11, 12; прокачка до 100) =====
 	step(5, "Heat Wave", "Unlock Magma Volcano in TELEPORT (1.2T coins).", { Type = "world", World = "Magma Volcano" }, { Coins = 3e11 }),
@@ -118,7 +118,7 @@ Q.Steps = {
 	step(6, "Cosmic Magnet", "Buy Nebula Swirl in the Galaxy magnet shop.", { Type = "magnetTier", N = 55 }, { Coins = 1.2e15 }),
 	step(6, "Egg Legend", "Open any eggs you like!", { Type = "eggs", N = 500 }, { Coins = 2.1e15, Potion = "Luck" }),
 	step(6, "Supernova", "The ultimate egg of the universe!", { Type = "eggs", N = 10, Egg = 15 }, { Coins = 3.6e15, Potion = "Luck" }),
-	step(6, "Master of the Universe", "The final quest. Become a legend!", { Type = "earn", N = 1e17 }, { Coins = 6.6e15, Hatch = 15, Bonus = 0.10 }),
+	step(6, "Master of the Universe", "The final quest. Become a legend!", { Type = "earn", N = 1e17 }, { Coins = 6.6e15, Hatch = 15, Slot = 1, Bonus = 0.10 }),
 }
 
 -- Шаг внутри главы: «3/12».
@@ -230,10 +230,25 @@ function Q.RewardParts(reward): { string }
 	if reward.Hatch and Config.Eggs[reward.Hatch] then
 		table.insert(parts, "🥚 Free " .. Config.Eggs[reward.Hatch].Name)
 	end
+	if reward.Slot then
+		table.insert(parts, "🐾 +" .. reward.Slot .. " pet slot")
+	end
 	if reward.Bonus then
 		table.insert(parts, "⭐ +" .. math.floor(reward.Bonus * 100 + 0.5) .. "% coins forever")
 	end
 	return parts
+end
+
+
+-- Слоты питомцев за главы: считаем по пройденным шагам (не храним отдельно — верно и задним числом).
+function Q.SlotsFor(step: number): number
+	local n = 0
+	for i, st in ipairs(Q.Steps) do
+		if i < step and st.Reward and st.Reward.Slot then
+			n += st.Reward.Slot
+		end
+	end
+	return n
 end
 
 return Q

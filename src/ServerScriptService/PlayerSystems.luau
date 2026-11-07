@@ -41,6 +41,11 @@ function PlayerSystems.MaxEquipped(p): number
 	if p:GetAttribute("Pass_PetSlots") then
 		extra += 3 -- геймпасс «+3 Pet Slots»
 	end
+	-- +1 слот за главы Neon, Frozen и Galaxy квестовой линии
+	local okQ, Q = pcall(require, game:GetService("ReplicatedStorage"):WaitForChild("QuestLineConfig"))
+	if okQ then
+		extra += Q.SlotsFor(tonumber(p:GetAttribute("Save_QuestLineStep")) or 1)
+	end
 	return ShopConfig.MaxEquipped + extra
 end
 -- Последний запрошенный список команды: если слоты за ребёрсы придут позже сохранённой
@@ -351,6 +356,12 @@ function PlayerSystems.Setup(p)
 	-- Ребёрс дал (или снял) слот команды — применяем последний запрошенный список заново.
 	p:GetAttributeChangedSignal("RebirthSlots"):Connect(function()
 		PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
+	end)
+	-- глава квестов дала слот
+	p:GetAttributeChangedSignal("Save_QuestLineStep"):Connect(function()
+		if p:GetAttribute("MaxEquipped") ~= PlayerSystems.MaxEquipped(p) then
+			PlayerSystems.SetEquipped(p, wantedTeam[p] or PlayerSystems.GetEquipped(p))
+		end
 	end)
 	-- геймпасс «+3 Pet Slots» мог подтвердиться после загрузки команды — возвращаем всю команду
 	p:GetAttributeChangedSignal("Pass_PetSlots"):Connect(function()
