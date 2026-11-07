@@ -125,6 +125,15 @@ do
 			{ "Supernova", rgb(255, 255, 255), rgb(255, 180, 240) },
 		} },
 	}
+	-- 2026-11 (фидбэк 14): у Neon District не было своих магнитов — его магазин был пустым.
+	-- Магниты 11–20 продаются в Neon, 1–10 остаются в Meadow.
+	for mid = 11, 20 do
+		local d = ShopConfig.Magnets[mid]
+		if d and d.World == nil then
+			d.World = "Neon District"
+			d.Look.World = "Neon District"
+		end
+	end
 	local id = #ShopConfig.Magnets
 	-- Баланс 2026-11 (v3): цены магнитов каждого мира — от цены входа в мир до ~цены его среднего
 	-- яйца (раньше общий рост x1.45 отставал: магниты Галактики стоили копейки рядом с её яйцами).

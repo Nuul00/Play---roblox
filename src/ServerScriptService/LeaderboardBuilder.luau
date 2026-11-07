@@ -1519,6 +1519,75 @@ function B.Build(world)
 		-- проход к мосту: скалы/холмы Terrain, которые встают между площадкой и началом моста
 		-- выше настила, срезаем ровной просекой (в Meadow мост упирался в скалу у берега)
 		for _, wl in walls or {} do pcall(cutGate, wl, base, dir, hy, theme, island) end
+		-- Meadow: мост выше площадки (~7 студов), между ними холм — к топам приходилось лезть на гору
+		-- (фидбэк 11). Прорезаем в холме пологий пандус из брусчатки от поляны до моста и ставим указатель.
+		if key == "Meadow" and hy - groundY > 3 then
+			pcall(function()
+				local terrain = workspace.Terrain
+				local dTop = edge - 8
+				local rl = math.max(30, (hy - groundY) * 5)
+				local dFoot = dTop - rl
+				local footY = groundY
+				for d = dFoot - 2, dTop + 1, 2 do
+					local t = math.clamp((d - dFoot) / rl, 0, 1)
+					local fy = footY + (hy - footY) * t
+					local p = base + dir * d
+					local rot = CFrame.lookAt(Vector3.zero, dir)
+					terrain:FillBlock(CFrame.new(p.X, fy + 11, p.Z) * rot, Vector3.new(16, 22, 2.6), M.Air)
+					terrain:FillBlock(CFrame.new(p.X, fy - 3.8, p.Z) * rot, Vector3.new(13, 5, 2.6), M.Cobblestone)
+					-- трава по краям прорези прорастала сквозь настил: в прорези только камень
+					local reg = Region3.new(Vector3.new(p.X - 9, fy - 8, p.Z - 3), Vector3.new(p.X + 9, fy + 6, p.Z + 3)):ExpandToGrid(4)
+					terrain:ReplaceMaterial(reg, 4, M.Grass, M.Cobblestone)
+					terrain:ReplaceMaterial(reg, 4, M.LeafyGrass, M.Cobblestone)
+				end
+				local a = base + dir * dFoot + Vector3.new(0, footY, 0)
+				local b = base + dir * dTop + Vector3.new(0, hy, 0)
+				a = Vector3.new(a.X, footY, a.Z)
+				b = Vector3.new(b.X, hy, b.Z)
+				local len = (b - a).Magnitude
+				local rampCf = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, 0.35, 0)
+				part(island, "ApproachRamp", Vector3.new(BRIDGE_W, 0.8, len + 1), rampCf, theme.Deck, theme.DeckMat)
+				for _, sg in { -1, 1 } do
+					part(island, "ApproachRampRail", Vector3.new(0.4, 0.4, len), rampCf * CFrame.new(sg * (BRIDGE_W / 2 - 0.3), 3.2, 0), theme.Rail, theme.RailMat)
+					for k = -2, 2 do
+						part(island, "ApproachRampPost", Vector3.new(0.45, 3, 0.45), rampCf * CFrame.new(sg * (BRIDGE_W / 2 - 0.3), 1.7, k * len / 4.5), theme.Rail, theme.RailMat, GHOST)
+					end
+				end
+				-- указатель у подножия: столб с табличкой-билбордом «TOP PLAYERS»
+				local side = Vector3.new(-dir.Z, 0, dir.X)
+				local postPos = a - dir * 2 + side * (BRIDGE_W / 2 + 2)
+				cyl(island, "TopSignPost", 7, 0.6, CFrame.new(postPos + Vector3.new(0, 3.5, 0)), theme.Rail, theme.RailMat)
+				local holder = part(island, "TopSign", Vector3.new(1, 1, 1), CFrame.new(postPos + Vector3.new(0, 8, 0)), theme.Lamp, M.Neon, GHOST)
+				holder.Transparency = 1
+				local bb = Instance.new("BillboardGui")
+				bb.Size = UDim2.fromScale(12, 3.2)
+				bb.MaxDistance = 200
+				bb.LightInfluence = 0
+				bb.Parent = holder
+				local fr = Instance.new("Frame")
+				fr.Size = UDim2.fromScale(1, 1)
+				fr.BackgroundColor3 = theme.Arch
+				fr.Parent = bb
+				Instance.new("UICorner", fr).CornerRadius = UDim.new(0.3, 0)
+				local st = Instance.new("UIStroke")
+				st.Color = theme.Title
+				st.Thickness = 3
+				st.Parent = fr
+				local tl = Instance.new("TextLabel")
+				tl.BackgroundTransparency = 1
+				tl.Size = UDim2.fromScale(0.92, 0.8)
+				tl.Position = UDim2.fromScale(0.04, 0.1)
+				tl.Font = Enum.Font.FredokaOne
+				tl.TextScaled = true
+				tl.Text = "🏆 TOP PLAYERS ↑"
+				tl.TextColor3 = theme.Title
+				tl.Parent = fr
+				local ts = Instance.new("UIStroke")
+				ts.Thickness = 2.5
+				ts.Color = theme.ArchInk
+				ts.Parent = tl
+			end)
+		end
 		-- подход к мосту: дорожка и фонари, чтобы вход к топам было видно издалека, а не «шагнул в темноту»
 		do
 			local side = Vector3.new(-dir.Z, 0, dir.X)

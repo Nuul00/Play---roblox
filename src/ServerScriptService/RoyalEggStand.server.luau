@@ -144,19 +144,45 @@ local function build(spot)
 	local zone = cyl(m, "RoyalZone", 0.3, 9, base * CFrame.new(0, 0.45, -11), GOLD, Enum.Material.Neon, { CanCollide = false, CanQuery = false, Transparency = 0.45 })
 	zone:SetAttribute("RoyalZone", true)
 	cyl(m, "ZoneRim", 0.25, 10, base * CFrame.new(0, 0.38, -11), Color3.fromRGB(255, 240, 180), Enum.Material.Neon, { CanCollide = false, CanQuery = false, Transparency = 0.2 })
-	local zg = Instance.new("SurfaceGui")
-	zg.Face = Enum.NormalId.Right -- верх цилиндра (ось X повёрнута вверх)
+	-- Трава Terrain прорастала сквозь круг и прятала надпись (фидбэк 9): под кругом — земля без травы.
+	pcall(function()
+		local c = zone.Position
+		local r = Region3.new(c - Vector3.new(6, 6, 6), c + Vector3.new(6, 2, 6)):ExpandToGrid(4)
+		workspace.Terrain:ReplaceMaterial(r, 4, Enum.Material.Grass, Enum.Material.Ground)
+		workspace.Terrain:ReplaceMaterial(r, 4, Enum.Material.LeafyGrass, Enum.Material.Ground)
+	end)
+	-- «OPEN» — парящий значок над кругом, всегда повёрнут к игроку (раньше лежал на диске «боком»).
+	local zg = Instance.new("BillboardGui")
+	zg.Size = UDim2.fromScale(5.5, 2.4)
+	zg.StudsOffsetWorldSpace = Vector3.new(0, 2.2, 0)
+	zg.MaxDistance = 60
+	zg.AlwaysOnTop = true -- без этого значок прятался за прозрачным диском и травой
 	zg.LightInfluence = 0
-	zg.CanvasSize = Vector2.new(400, 400)
 	zg.Parent = zone
+	local zf = Instance.new("Frame")
+	zf.Size = UDim2.fromScale(1, 1)
+	zf.BackgroundColor3 = Color3.fromRGB(255, 205, 70)
+	zf.Parent = zg
+	Instance.new("UICorner", zf).CornerRadius = UDim.new(0.5, 0)
+	local zs = Instance.new("UIStroke")
+	zs.Thickness = 3
+	zs.Color = Color3.fromRGB(120, 50, 10)
+	zs.Parent = zf
 	local zl = Instance.new("TextLabel")
 	zl.BackgroundTransparency = 1
 	zl.Size = UDim2.fromScale(1, 1)
-	zl.Text = "👑\nOPEN"
+	zl.Text = "👑 OPEN"
 	zl.TextScaled = true
 	zl.Font = Enum.Font.FredokaOne
-	zl.TextColor3 = Color3.fromRGB(120, 50, 10)
-	zl.Parent = zg
+	zl.TextColor3 = Color3.fromRGB(110, 45, 10)
+	zl.Parent = zf
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0.14, 0)
+	pad.PaddingBottom = UDim.new(0.14, 0)
+	pad.PaddingLeft = UDim.new(0.08, 0)
+	pad.PaddingRight = UDim.new(0.08, 0)
+	pad.Parent = zf
+	game:GetService("TweenService"):Create(zg, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { StudsOffsetWorldSpace = Vector3.new(0, 2.9, 0) }):Play()
 
 	m.PrimaryPart = anchor
 	m.Parent = world

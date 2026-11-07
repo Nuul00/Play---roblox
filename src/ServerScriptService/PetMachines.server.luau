@@ -60,24 +60,59 @@ local function part(model: Model, name: string, size: Vector3, cf: CFrame, color
 	return p
 end
 
+-- Табличка — билборд: всегда повёрнута к игроку (фидбэк 7). Ниже — прыгающая стрелка ▼,
+-- видна издалека и показывает, где машина (фидбэк 7/21/35).
+local TweenService = game:GetService("TweenService")
 local function sign(model: Model, cf: CFrame, title: string, sub: string, color: Color3)
-	local board = part(model, "Sign", Vector3.new(9, 2.6, 0.3), cf, Color3.fromRGB(30, 20, 50))
+	local board = part(model, "Sign", Vector3.new(1, 1, 1), cf, color)
 	board.CanCollide = false
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.CanvasSize = Vector2.new(450, 130)
+	board.CanQuery = false
+	board.CanTouch = false
+	board.Transparency = 1
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromScale(11, 3.2)
+	gui.MaxDistance = 140
 	gui.LightInfluence = 0
 	gui.Parent = board
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.BackgroundColor3 = Color3.fromRGB(26, 22, 40)
+	bg.BackgroundTransparency = 0.15
+	bg.Parent = gui
+	Instance.new("UICorner", bg).CornerRadius = UDim.new(0.25, 0)
+	local edge = Instance.new("UIStroke")
+	edge.Color = color
+	edge.Thickness = 3
+	edge.Parent = bg
+	local arrowGui = Instance.new("BillboardGui")
+	arrowGui.Size = UDim2.fromScale(3, 3)
+	arrowGui.StudsOffset = Vector3.new(0, 3.4, 0)
+	arrowGui.MaxDistance = 220
+	arrowGui.LightInfluence = 0
+	arrowGui.Parent = board
+	local arrowText = Instance.new("TextLabel")
+	arrowText.BackgroundTransparency = 1
+	arrowText.Size = UDim2.fromScale(1, 1)
+	arrowText.Font = Enum.Font.FredokaOne
+	arrowText.TextScaled = true
+	arrowText.Text = "▼"
+	arrowText.TextColor3 = color
+	arrowText.Parent = arrowGui
+	local arrowStroke = Instance.new("UIStroke")
+	arrowStroke.Thickness = 3
+	arrowStroke.Color = Color3.fromRGB(20, 10, 30)
+	arrowStroke.Parent = arrowText
+	TweenService:Create(arrowGui, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { StudsOffset = Vector3.new(0, 4.4, 0) }):Play()
 	local function text(t: string, y: number, h: number, c: Color3)
 		local l = Instance.new("TextLabel")
 		l.BackgroundTransparency = 1
-		l.Position = UDim2.fromOffset(10, y)
-		l.Size = UDim2.fromOffset(430, h)
+		l.Position = UDim2.fromScale(0.04, y / 130)
+		l.Size = UDim2.fromScale(0.92, h / 130)
 		l.Font = Enum.Font.FredokaOne
 		l.TextScaled = true
 		l.Text = t
 		l.TextColor3 = c
-		l.Parent = gui
+		l.Parent = bg
 		local s = Instance.new("UIStroke")
 		s.Thickness = 3
 		s.Color = Color3.fromRGB(20, 10, 30)
@@ -134,8 +169,14 @@ local function build(tier: number)
 			local from, to = edge - 1, pos.Z - 7
 			terrain:FillBlock(CFrame.new(pos.X, sy - 1.5, (from + to) / 2), Vector3.new(7, 3, math.max(to - from, 1)), mat)
 		end)
-		local after = surf and workspace:Raycast(Vector3.new(pos.X, 60, pos.Z), Vector3.new(0, -120, 0), tp)
-		y = after and after.Position.Y or sy
+		-- Terrain округляет площадку до сетки 4 студа: поверхность может подняться выше sy. Ждём,
+		-- пока заливка применится, и ставим машину на фактическую поверхность (раньше утопала на 2 студа).
+		local after
+		for _ = 1, 6 do
+			task.wait(0.25)
+			after = workspace:Raycast(Vector3.new(pos.X, 60, pos.Z), Vector3.new(0, -120, 0), tp)
+		end
+		y = math.max(after and after.Position.Y or sy, sy)
 	end
 	local origin = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(face.X, y, face.Z))
 
@@ -163,6 +204,18 @@ local function build(tier: number)
 	light.Range = 16
 	light.Brightness = 2
 	light.Parent = core
+	-- искры вокруг купола: машину видно и «живой» (фидбэк 7)
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	sparks.Color = ColorSequence.new(style.glow, Color3.new(1, 1, 1))
+	sparks.LightEmission = 1
+	sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+	sparks.Transparency = NumberSequence.new(0.1, 1)
+	sparks.Lifetime = NumberRange.new(1, 1.6)
+	sparks.Rate = 8
+	sparks.Speed = NumberRange.new(1.5, 3)
+	sparks.SpreadAngle = Vector2.new(180, 180)
+	sparks.Parent = core
 	for k = 1, 3 do
 		local ring = part(model, tier == 3 and "RainbowRing" or "Ring", Vector3.new(0.35, 7 + k * 0.6, 7 + k * 0.6), origin * CFrame.new(0, 10.3, 0.5) * CFrame.Angles(k * 0.6, k * 0.9, math.pi / 2), style.trim, Enum.Material.Neon, Enum.PartType.Cylinder)
 		ring.Transparency = 0.35
