@@ -1209,6 +1209,42 @@ local function rayDown(origin, depth)
 	end
 	return nil
 end
+-- Указатель «🏆 TOP PLAYERS» у начала прохода к топам (фидбэк 11/19): столб и табличка-билборд.
+-- a — точка на земле у начала прохода, dir — направление к острову.
+local function topSign(island, theme, a, dir)
+	local side = Vector3.new(-dir.Z, 0, dir.X)
+	local postPos = a - dir * 2 + side * (BRIDGE_W / 2 + 2)
+	cyl(island, "TopSignPost", 7, 0.6, CFrame.new(postPos + Vector3.new(0, 3.5, 0)), theme.Rail, theme.RailMat)
+	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), CFrame.new(postPos + Vector3.new(0, 8, 0)), theme.Lamp, M.Neon, GHOST)
+	holder.Transparency = 1
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromScale(12, 3.2)
+	bb.MaxDistance = 200
+	bb.LightInfluence = 0
+	bb.Parent = holder
+	local fr = Instance.new("Frame")
+	fr.Size = UDim2.fromScale(1, 1)
+	fr.BackgroundColor3 = theme.Arch
+	fr.Parent = bb
+	Instance.new("UICorner", fr).CornerRadius = UDim.new(0.3, 0)
+	local st = Instance.new("UIStroke")
+	st.Color = theme.Title
+	st.Thickness = 3
+	st.Parent = fr
+	local tl = Instance.new("TextLabel")
+	tl.BackgroundTransparency = 1
+	tl.Size = UDim2.fromScale(0.92, 0.8)
+	tl.Position = UDim2.fromScale(0.04, 0.1)
+	tl.Font = Enum.Font.FredokaOne
+	tl.TextScaled = true
+	tl.Text = "🏆 TOP PLAYERS ↑"
+	tl.TextColor3 = theme.Title
+	tl.Parent = fr
+	local ts = Instance.new("UIStroke")
+	ts.Thickness = 2.5
+	ts.Color = theme.ArchInk
+	ts.Parent = tl
+end
 -- Ворота в стене мира: стену-брусок режем на два куска с проёмом под мост, по краям — светящиеся столбы.
 local function cutGate(wall, base, dir, hy, theme, island)
 	local cf, size, wpos = wall.CFrame, wall.Size, wall.Position
@@ -1554,38 +1590,15 @@ function B.Build(world)
 					end
 				end
 				-- указатель у подножия: столб с табличкой-билбордом «TOP PLAYERS»
-				local side = Vector3.new(-dir.Z, 0, dir.X)
-				local postPos = a - dir * 2 + side * (BRIDGE_W / 2 + 2)
-				cyl(island, "TopSignPost", 7, 0.6, CFrame.new(postPos + Vector3.new(0, 3.5, 0)), theme.Rail, theme.RailMat)
-				local holder = part(island, "TopSign", Vector3.new(1, 1, 1), CFrame.new(postPos + Vector3.new(0, 8, 0)), theme.Lamp, M.Neon, GHOST)
-				holder.Transparency = 1
-				local bb = Instance.new("BillboardGui")
-				bb.Size = UDim2.fromScale(12, 3.2)
-				bb.MaxDistance = 200
-				bb.LightInfluence = 0
-				bb.Parent = holder
-				local fr = Instance.new("Frame")
-				fr.Size = UDim2.fromScale(1, 1)
-				fr.BackgroundColor3 = theme.Arch
-				fr.Parent = bb
-				Instance.new("UICorner", fr).CornerRadius = UDim.new(0.3, 0)
-				local st = Instance.new("UIStroke")
-				st.Color = theme.Title
-				st.Thickness = 3
-				st.Parent = fr
-				local tl = Instance.new("TextLabel")
-				tl.BackgroundTransparency = 1
-				tl.Size = UDim2.fromScale(0.92, 0.8)
-				tl.Position = UDim2.fromScale(0.04, 0.1)
-				tl.Font = Enum.Font.FredokaOne
-				tl.TextScaled = true
-				tl.Text = "🏆 TOP PLAYERS ↑"
-				tl.TextColor3 = theme.Title
-				tl.Parent = fr
-				local ts = Instance.new("UIStroke")
-				ts.Thickness = 2.5
-				ts.Color = theme.ArchInk
-				ts.Parent = tl
+				topSign(island, theme, a, dir)
+			end)
+		end
+		-- в остальных мирах тот же указатель у начала дорожки к мосту
+		if key ~= "Meadow" then
+			pcall(function()
+				local c = base + dir * (edge - 42)
+				local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
+				topSign(island, theme, Vector3.new(c.X, g and g.Position.Y or hy, c.Z), dir)
 			end)
 		end
 		-- подход к мосту: дорожка и фонари, чтобы вход к топам было видно издалека, а не «шагнул в темноту»
