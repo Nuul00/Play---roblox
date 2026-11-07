@@ -152,8 +152,15 @@ local window = Instance.new("Frame")
 window.AnchorPoint = Vector2.new(1, 0.5)
 window.Position = UDim2.new(1, -20, 0.5, 0)
 window.Size = UDim2.fromOffset(640, 430)
-window.BackgroundColor3 = Color3.fromRGB(36, 44, 66)
+window.BackgroundColor3 = Color3.new(1, 1, 1)
 window.Visible = false
+window:SetAttribute("NoTheme", true) -- фиолетовый стиль всех окон (как DAILY / инвентарь)
+do
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.fromRGB(62, 36, 130), Color3.fromRGB(20, 12, 52))
+	g.Parent = window
+end
 window.Parent = gui
 corner(window, 20)
 stroke(window, 4)
