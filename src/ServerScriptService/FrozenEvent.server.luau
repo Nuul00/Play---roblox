@@ -43,6 +43,16 @@ local function groundAt(x: number, z: number): Vector3?
 	if hit.Instance:FindFirstAncestor("LeaderboardIsland_FrozenPeaks") then
 		return nil
 	end
+	-- 2026-11: не у яиц и не у магазинов (раньше кристаллы появлялись прямо в зоне яиц)
+	for _, d in ipairs(frozen:GetChildren()) do
+		if d:IsA("Model") and (string.match(d.Name, "^EggStand%d+$") or d.Name == "UpgradeShop" or d.Name == "MagnetShop") then
+			local cf, size = d:GetBoundingBox()
+			local o = hit.Position - cf.Position
+			if Vector2.new(o.X, o.Z).Magnitude < math.max(size.X, size.Z) / 2 + 14 then
+				return nil
+			end
+		end
+	end
 	return hit.Position
 end
 

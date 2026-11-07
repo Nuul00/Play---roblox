@@ -15,6 +15,59 @@ local STEP = 1 / 30 -- 30 раз в секунду
 -- Дерево: модель, в имени которой есть Tree/Pine/Palm. Качаем «листву» — детали, которые выше
 -- середины дерева или названы Leaves/Leaf/Canopy/Crown; ствол стоит.
 local trees = {}
+-- Имя «дерева»: Tree/Pine/Palm, но не StreetLamp/NeonStreets — в «s-TREE-t» тоже есть «tree»,
+-- из-за этого фонари качались как деревья (2026-11).
+local function isTreeName(n: string): boolean
+	if string.find(n, "street") or string.find(n, "lamp") or string.find(n, "light") then
+		return false
+	end
+	return string.find(n, "tree") ~= nil or string.find(n, "pine") ~= nil or string.find(n, "palm") ~= nil
+end
+-- Листопад: только у зелёной листвы (сосны в снегу, кристаллы и т.п. — без листьев).
+local LEAF_NEAR = 120 -- эмиттер работает только у деревьев рядом с камерой
+local function isGreen(c: Color3): boolean
+	return c.G > c.R * 1.05 and c.G > c.B * 1.05
+end
+local function addLeafFall(canopy: { BasePart }, pivot: Vector3, size: Vector3)
+	local r, g, b, n = 0, 0, 0, 0
+	for _, p in ipairs(canopy) do
+		r, g, b, n = r + p.Color.R, g + p.Color.G, b + p.Color.B, n + 1
+	end
+	local avg = Color3.new(r / n, g / n, b / n)
+	if not isGreen(avg) then
+		return nil
+	end
+	local top = 0
+	for _, p in ipairs(canopy) do
+		top = math.max(top, p.Position.Y)
+	end
+	local src = Instance.new("Part")
+	src.Name = "LeafFall"
+	src.Anchored, src.CanCollide, src.CanQuery, src.CanTouch = true, false, false, false
+	src.Transparency = 1
+	src.Size = Vector3.new(math.max(size.X, 4) * 0.7, 0.2, math.max(size.Z, 4) * 0.7)
+	src.CFrame = CFrame.new(pivot.X, top - 1, pivot.Z)
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Color = ColorSequence.new(avg:Lerp(Color3.fromRGB(255, 220, 90), 0.25), avg:Lerp(Color3.fromRGB(200, 120, 40), 0.35))
+	e.LightInfluence = 1
+	e.Rate = 1.6
+	e.Lifetime = NumberRange.new(4, 6)
+	e.Speed = NumberRange.new(0.5, 1.2)
+	e.SpreadAngle = Vector2.new(40, 40)
+	e.EmissionDirection = Enum.NormalId.Bottom
+	e.Acceleration = Vector3.new(0.8, -1.1, 0.3)
+	e.Drag = 0.6
+	e.Rotation = NumberRange.new(0, 360)
+	e.RotSpeed = NumberRange.new(-120, 120)
+	e.Size = NumberSequence.new(0.35)
+	e.Squash = NumberSequence.new(-0.5) -- вытянутая «листовая» форма из круглой искры
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.8, 0), NumberSequenceKeypoint.new(1, 1) })
+	e.Enabled = false
+	e.Parent = src
+	src.Parent = workspace.CurrentCamera -- клиентский декор, на сервер не уходит
+	return e
+end
 local function isLeaf(p: BasePart, bottom: number, height: number)
 	local n = string.lower(p.Name)
 	if string.find(n, "leaf") or string.find(n, "leaves") or string.find(n, "canopy") or string.find(n, "crown") or string.find(n, "foliage") then
@@ -50,19 +103,21 @@ local function addTree(m: Model)
 		bases = bases,
 		pivot = pivot,
 		phase = (pivot.X * 0.13 + pivot.Z * 0.07) % (math.pi * 2),
-		amp = math.clamp(2.2 / size.Y, 0.012, 0.05),
+		-- 2026-11: раскачка примерно вдвое слабее (было 2.2/h, 0.012–0.05) — деревья «тряслись»
+		amp = math.clamp(1.2 / size.Y, 0.006, 0.025),
 		cfs = table.create(#parts),
+		leaves = addLeafFall(parts, pivot, size),
 	})
 end
 local function scanTrees(root: Instance)
 	for _, d in ipairs(root:GetDescendants()) do
 		if d:IsA("Model") then
 			local n = string.lower(d.Name)
-			if (string.find(n, "tree") or string.find(n, "pine") or string.find(n, "palm")) and not d:FindFirstAncestorWhichIsA("Model", true) then
+			if isTreeName(n) and not d:FindFirstAncestorWhichIsA("Model", true) then
 				addTree(d)
-			elseif string.find(n, "tree") or string.find(n, "pine") or string.find(n, "palm") then
+			elseif isTreeName(n) then
 				local parentModel = d.Parent and d.Parent:IsA("Model") and string.lower(d.Parent.Name)
-				if not (parentModel and (string.find(parentModel, "tree") or string.find(parentModel, "pine"))) then
+				if not (parentModel and isTreeName(parentModel)) then
 					addTree(d)
 				end
 			end
@@ -151,8 +206,15 @@ RunService.RenderStepped:Connect(function(dt)
 	table.clear(moveParts)
 	table.clear(moveCFs)
 	for _, tr in ipairs(trees) do
-		if (tr.pivot - camPos).Magnitude < NEAR then
-			local sway = math.sin(t * 1.3 + tr.phase) * tr.amp * (1 + gust * 2.2) + math.sin(t * 2.9 + tr.phase * 2) * tr.amp * 0.3
+		local dist = (tr.pivot - camPos).Magnitude
+		if tr.leaves then
+			local on = dist < LEAF_NEAR
+			if tr.leaves.Enabled ~= on then
+				tr.leaves.Enabled = on
+			end
+		end
+		if dist < NEAR then
+			local sway = math.sin(t * 1.3 + tr.phase) * tr.amp * (1 + gust * 1.2) + math.sin(t * 2.9 + tr.phase * 2) * tr.amp * 0.3
 			local twist = math.sin(t * 0.9 + tr.phase) * tr.amp * 0.6
 			local rot = CFrame.new(tr.pivot) * CFrame.Angles(sway, 0, twist) * CFrame.new(-tr.pivot)
 			for i, p in ipairs(tr.parts) do

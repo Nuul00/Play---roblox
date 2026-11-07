@@ -59,7 +59,8 @@ end
 local dock = Instance.new("Frame")
 dock.Name = "Dock"
 dock.AnchorPoint = Vector2.new(0.5, 1)
-dock.Position = UDim2.new(0.5, 0, 1, -76) -- выше слота инструментов Roblox
+-- 2026-11: ниже (было -76 — место под слот инструментов Roblox, но рюкзак в игре отключён, см. ниже)
+dock.Position = UDim2.new(0.5, 0, 1, -14)
 dock.Size = UDim2.fromOffset(384, 420)
 dock.BackgroundTransparency = 1
 dock.Parent = menuGui

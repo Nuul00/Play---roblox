@@ -370,21 +370,13 @@ local function buildMagnetPanel()
 	magnetPanel.BackgroundTransparency = 1
 	magnetPanel.Size = UDim2.fromOffset(612, 360)
 	magnetPanel.Parent = body
-	local tabs = { { "magnets", "MAGNETS" }, { "potions", "POTIONS" } }
-	for i, t in ipairs(tabs) do
-		local b, _, setC = K.button(magnetPanel, t[2], UDim2.fromOffset((i - 1) * 144 + 4, 0), UDim2.fromOffset(134, 36), K.GRAY, 18)
-		b:SetAttribute("Tab", t[1])
-		tabButtons[t[1] .. "_set"] = setC
-		b.Activated:Connect(function()
-			magnetTab = t[1]
-			gui:SetAttribute("Dirty", true)
-		end)
-	end
+	-- 2026-11: зелья в магазинах больше не продаются (только награды: квесты, дейлики, Coin Rush,
+	-- ребёрсы, Robux) — вкладок нет, магниты занимают всё окно.
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Position = UDim2.fromOffset(0, 44)
-	scroll.Size = UDim2.fromOffset(612, 316)
+	scroll.Position = UDim2.fromOffset(0, 0)
+	scroll.Size = UDim2.fromOffset(612, 360)
 	scroll.ScrollBarThickness = 8
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
 	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
@@ -503,15 +495,9 @@ local function renderMagnets()
 		buildMagnetPanel()
 	end
 	magnetPanel.Visible = true
-	for _, key in ipairs({ "magnets", "potions" }) do
-		tabButtons[key .. "_set"](key == magnetTab and K.ORANGE or K.GRAY)
-	end
-	magnetArea.Visible = magnetTab == "magnets"
-	potionArea.Visible = magnetTab == "potions"
-	if magnetTab == "potions" then
-		renderPotions()
-		return
-	end
+	magnetTab = "magnets"
+	magnetArea.Visible = true
+	potionArea.Visible = false
 	local ownedTier = player:GetAttribute("MagnetTier") or 1
 	local equipped = player:GetAttribute("MagnetOff") and 0 or (player:GetAttribute("MagnetEquipped") or 1)
 	table.clear(spinning)
@@ -605,7 +591,11 @@ for _, P in pairs(panels) do
 	P.close.Activated:Connect(hide)
 end
 
-ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode, newZone)
+-- Окно магазина открывает сам клиент, как только игрок встал на метку (цикл ниже), — раньше ждали
+-- сервер: 0.4 с «стояния» + сеть + сборка окна, и меню появлялось через секунду-две (2026-11).
+-- Открытие ничего не тратит; каждую покупку сервер по-прежнему проверяет по расстоянию.
+local localOpenAt = {}
+local function openShop(newMode, newZone)
 	if newMode ~= "upgrades" and newMode ~= "magnets" then
 		return
 	end
@@ -628,6 +618,78 @@ ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(ne
 		scale.Scale = 0.6
 	end
 	render()
+end
+ReplicatedStorage:WaitForChild("GameShopOpen").OnClientEvent:Connect(function(newMode, newZone)
+	-- сервер присылает то же открытие чуть позже: если клиент уже открыл (или игрок успел закрыть) —
+	-- не открываем второй раз
+	if os.clock() - (localOpenAt[tostring(newMode) .. ":" .. tostring(newZone)] or -math.huge) < 3 then
+		return
+	end
+	openShop(newMode, newZone)
+end)
+
+-- Метки магазинов всех миров: { деталь ShopZone, режим, зона }.
+local CONTAINERS = { island = "", neon = "NeonCity", sky = "SkyIsles", frozen = "FrozenPeaks", volcano = "MagmaVolcano", galaxy = "CosmicGalaxy" }
+local shopMarks, marksScanned = {}, 0
+local function scanMarks()
+	table.clear(shopMarks)
+	local world = workspace:FindFirstChild("CoinSpeedWorld")
+	if not world then
+		return
+	end
+	for key, name in pairs(CONTAINERS) do
+		local holder = name == "" and world or world:FindFirstChild(name)
+		if holder then
+			local up = holder:FindFirstChild("UpgradeShop")
+			local upZone = up and up:FindFirstChild("ShopZone")
+			if upZone and upZone:IsA("BasePart") then
+				table.insert(shopMarks, { part = upZone, mode = "upgrades", zone = key })
+			end
+			local mag = holder:FindFirstChild("MagnetShop")
+			local magZone = mag and mag:FindFirstChild("ShopZone")
+			if magZone and magZone:IsA("BasePart") then
+				table.insert(shopMarks, { part = magZone, mode = "magnets", zone = key })
+			end
+		end
+	end
+end
+local insideMark = nil
+local markCheck = 0
+RunService.Heartbeat:Connect(function(dt)
+	markCheck += dt
+	if markCheck < 0.05 then
+		return
+	end
+	markCheck = 0
+	-- миры достраиваются после входа (Sky, Frozen...) — список меток обновляем раз в 5 с
+	if os.clock() - marksScanned > 5 then
+		marksScanned = os.clock()
+		scanMarks()
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		insideMark = nil
+		return
+	end
+	local found = nil
+	for _, m in ipairs(shopMarks) do
+		local p = m.part
+		if p.Parent then
+			local o = root.Position - p.Position
+			-- та же зона, что проверяет сервер (GameServer: Size.Z/2 - 0.5, по высоте ±8)
+			if Vector2.new(o.X, o.Z).Magnitude <= p.Size.Z / 2 - 0.5 and math.abs(o.Y) < 8 then
+				found = m
+				break
+			end
+		end
+	end
+	if found ~= insideMark then
+		insideMark = found
+		if found and ((player:GetAttribute("UIScreen") or "") == "" or player:GetAttribute("UIScreen") == found.mode) then
+			localOpenAt[found.mode .. ":" .. found.zone] = os.clock()
+			openShop(found.mode, found.mode == "magnets" and found.zone or found.zone)
+		end
+	end
 end)
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 	local s = player:GetAttribute("UIScreen")

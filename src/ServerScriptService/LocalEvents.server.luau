@@ -206,10 +206,33 @@ local function run(name: string, def, ends: number)
 					end
 				end
 			end
-			local pool = #near >= 4 and near or spots
-			for _ = 1, math.floor(E.Pickups / 3) do
-				local base = pool[rng:NextInteger(1, #pool)]
-				makePickup(name, def, base + Vector3.new(rng:NextNumber(-3, 3), -1.2, rng:NextNumber(-3, 3)), folder)
+			local pool = table.clone(#near >= 4 and near or spots)
+			-- 2026-11: бонус не внутри монеты и не в другом бонусе — каждая точка монеты берётся один раз,
+			-- бонус ставится в 5 студах от неё и не ближе 8 студов к уже поставленным
+			local placedPickups = {}
+			for _, pm in ipairs(folder:GetChildren()) do
+				local pos = pm:GetAttribute("Pos")
+				if typeof(pos) == "Vector3" then
+					table.insert(placedPickups, pos)
+				end
+			end
+			local made = 0
+			while made < math.floor(E.Pickups / 3) and #pool > 0 do
+				local base = table.remove(pool, rng:NextInteger(1, #pool))
+				local a = rng:NextNumber(0, math.pi * 2)
+				local pos = base + Vector3.new(math.cos(a) * 5, -1.2, math.sin(a) * 5)
+				local free = true
+				for _, q in ipairs(placedPickups) do
+					if (q - pos).Magnitude < 8 then
+						free = false
+						break
+					end
+				end
+				if free then
+					makePickup(name, def, pos, folder)
+					table.insert(placedPickups, pos + Vector3.new(0, 1.6, 0))
+					made += 1
+				end
 			end
 			if wave < 3 then
 				task.wait(15)

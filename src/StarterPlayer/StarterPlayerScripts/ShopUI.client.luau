@@ -446,30 +446,31 @@ auto.Activated:Connect(function()
 	refresh()
 end)
 
-local function showEgg(id)
-	if mode == "egg" and eggId == id and panel.Visible then
-		return
+-- Страница яйца (карточки питомцев с 3D-моделями) собирается ОДИН раз и дальше только
+-- показывается. Раньше при каждом подходе к яйцу заново строились 8–10 моделей — отсюда
+-- пауза в 1–2 секунды перед появлением окна (2026-11). Страницу строим заранее, когда игрок
+-- только подходит к яйцу (см. цикл внизу), поэтому окно открывается сразу.
+local eggPages = {}
+local function buildEggPage(id)
+	if eggPages[id] then
+		return eggPages[id]
 	end
-	eggId = id
-	mode = "egg"
 	local egg = Config.Eggs[id]
 	local sky = egg.World == "sky"
-	applyTheme(sky)
-	headerGrad.Color = sky and ColorSequence.new(egg.Color:Lerp(WHITE, 0.45), egg.Color:Lerp(WHITE, 0.05)) or ColorSequence.new(egg.Color:Lerp(WHITE, 0.15), egg.Color:Lerp(Color3.new(0, 0, 0), 0.35))
-	panelStroke.Color = sky and WHITE or egg.Color
-	applySkin(egg.World)
-	gallery:ClearAllChildren()
-	cells = {}
 	local count = #egg.Pool
 	local cols = 3
 	local cellW, cellH = 200, count > 6 and 146 or 220
-	gallery.CanvasSize=UDim2.fromOffset(0,math.ceil(count/cols)*(cellH+9)-9)
-	gallery.CanvasPosition=Vector2.zero
+	local page = Instance.new("Frame")
+	page.Name = "EggPage" .. id
+	page.BackgroundTransparency = 1
+	page.Visible = false
+	page.Parent = gallery
+	local pageCells = {}
 	for i, entry in ipairs(egg.Pool) do
 		local def = Config.Pets[entry.Pet]
 		local c = colors[def.Rarity] or colors.Common
 		local cellBg = sky and Color3.fromRGB(252, 248, 255) or Color3.fromRGB(46, 38, 72)
-		local cell = box(gallery, (i - 1) % cols * 212, math.floor((i - 1) / cols) * (cellH + 9), cellW, cellH, cellBg)
+		local cell = box(page, (i - 1) % cols * 212, math.floor((i - 1) / cols) * (cellH + 9), cellW, cellH, cellBg)
 		stroke(cell, c, (def.Rarity == "Secret" or def.Rarity == "Legendary") and 3 or 2, 0)
 		local grad = Instance.new("UIGradient", cell)
 		grad.Color = sky and ColorSequence.new(c:Lerp(WHITE, 0.45), Color3.fromRGB(236, 232, 255)) or ColorSequence.new(c:Lerp(Color3.fromRGB(46, 38, 72), 0.55), Color3.fromRGB(36, 30, 58))
@@ -496,7 +497,7 @@ local function showEgg(id)
 		toggle.Activated:Connect(function()
 			action:FireServer("autodelete", entry.Pet)
 		end)
-		table.insert(cells, { id = entry.Pet, toggle = toggle, owned = owned, frame = cell })
+		table.insert(pageCells, { id = entry.Pet, toggle = toggle, owned = owned, frame = cell })
 	end
 	-- Шансы супер-секреток этого яйца — до покупки (правило Roblox о платных случайных предметах).
 	do
@@ -515,15 +516,39 @@ local function showEgg(id)
 		end
 		local top = math.ceil(count / cols) * (cellH + 9)
 		local h = 30 + #rows * 18 + 34
-		local extra = box(gallery, 0, top, 3 * 212 - 12, h, sky and Color3.fromRGB(245, 238, 255) or Color3.fromRGB(36, 28, 60))
+		local extra = box(page, 0, top, 3 * 212 - 12, h, sky and Color3.fromRGB(245, 238, 255) or Color3.fromRGB(36, 28, 60))
 		stroke(extra, Color3.fromRGB(190, 140, 255), 2, 0)
 		label(extra, "🌌 SUPER SECRETS (from any hatch of this egg)", 10, 4, 600, 22, 15, Color3.fromRGB(200, 160, 255), Enum.Font.FredokaOne)
 		for k, text in ipairs(rows) do
 			label(extra, text, 14, 28 + (k - 1) * 18, 600, 18, 13, sky and Color3.fromRGB(70, 60, 110) or Color3.fromRGB(225, 220, 245), Enum.Font.GothamBold).TextXAlignment = Enum.TextXAlignment.Left
 		end
 		label(extra, "Luck boosts (passes, potions, events) raise rare chances. Shown chances are base chances.", 14, h - 30, 600, 18, 11, Color3.fromRGB(170, 160, 200), Enum.Font.Gotham).TextXAlignment = Enum.TextXAlignment.Left
-		gallery.CanvasSize = UDim2.fromOffset(0, top + h)
+		page.Size = UDim2.fromOffset(3 * 212, top + h)
+		eggPages[id] = { frame = page, cells = pageCells, canvas = top + h }
 	end
+	return eggPages[id]
+end
+
+local function showEgg(id)
+	if mode == "egg" and eggId == id and panel.Visible then
+		return
+	end
+	eggId = id
+	mode = "egg"
+	local egg = Config.Eggs[id]
+	local sky = egg.World == "sky"
+	applyTheme(sky)
+	headerGrad.Color = sky and ColorSequence.new(egg.Color:Lerp(WHITE, 0.45), egg.Color:Lerp(WHITE, 0.05)) or ColorSequence.new(egg.Color:Lerp(WHITE, 0.15), egg.Color:Lerp(Color3.new(0, 0, 0), 0.35))
+	panelStroke.Color = sky and WHITE or egg.Color
+	applySkin(egg.World)
+	for _, pg in pairs(eggPages) do
+		pg.frame.Visible = false
+	end
+	local page = buildEggPage(id)
+	page.frame.Visible = true
+	cells = page.cells
+	gallery.CanvasSize = UDim2.fromOffset(0, page.canvas)
+	gallery.CanvasPosition = Vector2.zero
 	player:SetAttribute("UIScreen", "egg")
 	panel.Visible = true
 	refresh()
@@ -1533,8 +1558,10 @@ local function eggRing(id, center: Vector3, r: number, bottom: number?)
 	return m
 end
 
-local scan = 0
+local scan, refreshAcc = 0, 0
+local prebuilt = false
 RunService.RenderStepped:Connect(function(dt)
+	prebuilt = false
 	local camera = workspace.CurrentCamera
 	if camera then
 		local size = camera.ViewportSize
@@ -1546,9 +1573,14 @@ RunService.RenderStepped:Connect(function(dt)
 		revealScale.Scale = math.min(1, (size.X - 28) / 900, (size.Y - 40) / 520)
 	end
 	scan += dt
-	if scan > 0.15 then
+	refreshAcc += dt
+	-- 2026-11: круг яйца проверяем 20 раз в секунду (было ~7), окно — сразу при входе в круг
+	if scan > 0.05 then
 		scan = 0
-		refresh()
+		if refreshAcc > 0.15 then
+			refreshAcc = 0
+			refresh()
+		end
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local nearest, distance
 		if root then
@@ -1570,6 +1602,11 @@ RunService.RenderStepped:Connect(function(dt)
 				end
 				local offset = root.Position - center
 				local d = Vector2.new(offset.X, offset.Z).Magnitude
+				-- подходим к яйцу — заранее собираем его страницу (одну за проверку), чтобы окно не ждало
+				if not eggPages[id] and not prebuilt and d <= zoneR + 30 then
+					prebuilt = true
+					buildEggPage(id)
+				end
 				local open = (mode == "egg" and eggId == id) or autoEgg == id
 				local heightOk = math.abs(root.Position.Y - entry.base.Position.Y) < entry.radius * 2 + 6
 					or (bottom and root.Position.Y > bottom - 2 and root.Position.Y < bottom + 10)
@@ -1579,7 +1616,8 @@ RunService.RenderStepped:Connect(function(dt)
 				else
 					entry.since = nil
 				end
-				local ready = inside and (open or os.clock() - entry.since >= 0.35)
+				-- короткая пауза (0.12 с, было 0.35) — чтобы окно не мигало, когда просто пробегаешь мимо края
+				local ready = inside and (open or os.clock() - entry.since >= 0.12)
 				if ready and (not distance or d < distance) then
 					nearest, distance = id, d
 				end

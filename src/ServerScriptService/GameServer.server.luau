@@ -351,6 +351,8 @@ buy.OnServerEvent:Connect(function(p, kind, zoneId, eggId, amount)
   if amount == 9 and not StoreConfig.HasPassFeature(p, "Hatch9") then notify(p, "×9 Hatch is a gamepass — get it in the STORE"); return end
  end
  if type(kind) ~= "string" or type(zoneId) ~= "string" then return end
+ -- 2026-11: зелья за монеты больше не продаются (только награды) — покупку отклоняем и на сервере
+ if kind == "potion" then return end
  if kind == "magnettool" or kind == "potion" then
   -- Магазин магнитов: магниты и зелья, только рядом с его зелёным кругом.
   -- Какой магазин магнитов рядом: от него зависит, какие магниты можно купить (def.World).
@@ -639,9 +641,9 @@ do
  end
  fill(world, 115)
  fill(city, 90)
- -- «дорожка» монет от точки появления: новичок сразу собирает первые монеты (раньше ~7 с бега
- -- по пустой площади до первой монеты), квест «First Steps» (10 монет) идёт с первых секунд
- local start = world:FindFirstChild("Start")
+ -- «Дорожка» монет от точки появления (10 монет прямо на дороге) — убрана по просьбе (2026-11):
+ -- монеты не лежат на дорожках (см. WorldPolish), первые монеты новичок находит на траве рядом.
+ local start = nil -- world:FindFirstChild("Start")
  local sample
  for _, c in ipairs(world:GetChildren()) do
   if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then sample = c break end

@@ -307,7 +307,7 @@ local potionTimers = {}
 local function buildPotions()
 	-- два ряда: обычные (магазин за монеты) и СУПЕР (только награды и Robux)
 	local rows = {
-		{ ShopConfig.PotionOrder, "POTIONS · 5 min · buy at the Magnet Shop", Color3.fromRGB(200, 190, 240) },
+		{ ShopConfig.PotionOrder, "POTIONS · 5 min · from quests and rewards", Color3.fromRGB(200, 190, 240) },
 		{ ShopConfig.SuperPotionOrder, "⭐ SUPER POTIONS · 10 min · Daily Rewards, Coin Rush vault, Rebirths", Color3.fromRGB(255, 215, 90) },
 	}
 	for r, row in ipairs(rows) do

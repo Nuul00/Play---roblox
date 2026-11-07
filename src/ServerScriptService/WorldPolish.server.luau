@@ -162,6 +162,93 @@ local function fixCoins()
 		end
 	end
 	print(string.format("[WorldPolish] coins %d: raised %d, moved out of objects %d", #coins, raised, moved))
+
+	-- 2026-11: монеты не лежат на дорожках/площадях/мостах, не у яиц, магазинов и машин
+	-- и не друг в друге (раньше встречались по две монеты в одной точке).
+	local PATH_WORDS = { "path", "plaza", "road", "street", "bridge", "walk", "sidewalk" }
+	local function onPath(hit: RaycastResult?): boolean
+		if not hit then
+			return false
+		end
+		local inst = hit.Instance
+		if inst:IsA("Terrain") then
+			return hit.Material == Enum.Material.Cobblestone -- под дорожками Meadow — брусчатка Terrain
+		end
+		local n = string.lower(inst.Name)
+		for _, w in ipairs(PATH_WORDS) do
+			if string.find(n, w, 1, true) then
+				return true
+			end
+		end
+		return false
+	end
+	-- «запретные круги»: яйца, метки магазинов, машины (центр и радиус в плоскости XZ)
+	local keepOut = {}
+	for _, d in ipairs(world:GetDescendants()) do
+		if d:IsA("Model") and string.match(d.Name, "^EggStand%d+$") then
+			local cf, size = d:GetBoundingBox()
+			table.insert(keepOut, { at = cf.Position, r = math.max(size.X, size.Z) / 2 + 8 })
+		elseif d:IsA("BasePart") and (d.Name == "ShopZone" or d.Name == "MachineMarker" or d.Name == "Plinth") then
+			table.insert(keepOut, { at = d.Position, r = math.max(d.Size.Y, d.Size.Z) / 2 + 6 })
+		end
+	end
+	-- дорожки Sky Isles и Magma — декоративные детали без коллизии: луч для «твёрдой земли» их
+	-- пролетает, поэтому дорожку ищем отдельным лучом, который видит и некасаемые детали
+	local pathRay = RaycastParams.new()
+	pathRay.FilterType = Enum.RaycastFilterType.Exclude
+	pathRay.FilterDescendantsInstances = coins
+	local function pathBelow(pos: Vector3): boolean
+		return onPath(workspace:Raycast(pos + Vector3.new(0, 6, 0), Vector3.new(0, -50, 0), pathRay))
+	end
+	local MIN_GAP = 5
+	local placed = {}
+	local function badSpot(pos: Vector3, self: BasePart?): boolean
+		for _, k in ipairs(keepOut) do
+			local o = pos - k.at
+			if Vector2.new(o.X, o.Z).Magnitude < k.r and math.abs(o.Y) < 25 then
+				return true
+			end
+		end
+		for _, q in ipairs(placed) do
+			if q.coin ~= self and (q.at - pos).Magnitude < MIN_GAP then
+				return true
+			end
+		end
+		return pathBelow(pos)
+	end
+	local relocated = 0
+	for i, c in ipairs(coins) do
+		if badSpot(c.Position, c) then
+			local home = c.Position
+			local done = false
+			for _ = 1, 60 do
+				local a, r = rng:NextNumber(0, math.pi * 2), rng:NextNumber(6, 60)
+				local at = home + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+				local g = workspace:Raycast(at + Vector3.new(0, 60, 0), Vector3.new(0, -120, 0), rp)
+				if g and isGround(g) and math.abs(g.Position.Y - (home.Y - LIFT)) < 10 then
+					local pos = g.Position + Vector3.new(0, LIFT, 0)
+					if not badSpot(pos, c) then
+						c.Position = pos
+						if not blocked(c) then
+							c:SetAttribute("Home", c.Position)
+							relocated += 1
+							done = true
+							break
+						end
+						c.Position = home
+					end
+				end
+			end
+			if not done then
+				c.Position = home
+			end
+		end
+		table.insert(placed, { coin = c, at = c.Position })
+		if i % 40 == 0 then
+			task.wait()
+		end
+	end
+	print(string.format("[WorldPolish] coins moved off paths / eggs / shops / each other: %d", relocated))
 end
 
 -- миры и модели Tripo строятся в первые секунды; GameServer досыпает монеты — ждём

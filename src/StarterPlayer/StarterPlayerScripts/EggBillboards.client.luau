@@ -504,7 +504,7 @@ RunService.RenderStepped:Connect(function(dt)
 			-- вздрагивание раз в несколько секунд (рядом с игроком — чаще)
 			if t > e.nextWobble then
 				e.wobbleAt = t
-				e.nextWobble = t + (x > 0.3 and 2.2 or 5) + math.random() * 3
+				e.nextWobble = t + (x > 0.3 and 4 or 5) + math.random() * 3
 				e.sparks:Emit(8 + e.tier * 4)
 			end
 			local w = t - e.wobbleAt
@@ -514,8 +514,10 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 
 			local bob = math.sin(t * (e.neon and 1.05 or 1.6) + e.phase) * (e.neon and 0.22 or 0.35) * (1 - x * 0.5)
-			local hop = math.abs(math.sin(t * 5.5 + e.phase)) * x * 1.1
-			e.spin += dt * ((e.neon and 0.4 or 0.55) + x * 1.4)
+			-- 2026-11: реакция на игрока рядом спокойнее (было: прыжки ×1.1, вращение +1.4, орбиты +1.6,
+			-- искры +18 в секунду — «перебор»)
+			local hop = math.abs(math.sin(t * 3 + e.phase)) * x * 0.35
+			e.spin += dt * ((e.neon and 0.4 or 0.55) + x * 0.4)
 			local lean = math.sin(t * 0.8 + e.phase) * 0.04
 
 			-- прыжок при открытии
@@ -542,18 +544,18 @@ RunService.RenderStepped:Connect(function(dt)
 			e.anchor.CFrame = CFrame.new(center + Vector3.new(0, 0.35 + bob + hop + popH, 0))
 			e.glow.Brightness = (e.neon and 1.6 or 0.8) + 0.35 * math.sin(t * 2 + e.phase) + x * 1.6 + shake + flash
 			-- Range не меняем каждый кадр (дорого для освещения): только яркость
-			e.sparks.Rate = 2 + e.tier + x * 18
+			e.sparks.Rate = 2 + e.tier + x * 5
 
 			local r = math.max(3.4, e.radius + 1.6)
 			for k, orb in ipairs(e.orbs) do
 				local n = #e.orbs
-				local a = t * (1.2 + x * 1.6) + k / n * math.pi * 2 + e.phase
+				local a = t * (1.2 + x * 0.5) + k / n * math.pi * 2 + e.phase
 				local y = math.sin(t * 2 + k * 1.7) * h * 0.3
 				orb.CFrame = CFrame.new(center + Vector3.new(math.cos(a) * r, 0.35 + y + popH * 0.5, math.sin(a) * r))
 			end
 			if e.pillar then
 				e.pillar.Enabled = true
-				e.pillar.Rate = 10 + x * 20
+				e.pillar.Rate = 10 + x * 6
 			end
 			for _, hr in ipairs(e.holo) do
 				local rot = CFrame.new(hr.center) * CFrame.Angles(0, t * 0.7, 0) * CFrame.new(-hr.center)

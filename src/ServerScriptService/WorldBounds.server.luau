@@ -135,11 +135,9 @@ task.defer(function()
 		if f and f:IsA("BasePart") then
 			table.insert(parts, f)
 		end
-		local walls = city:FindFirstChild("CityWalls")
-		local outer = walls and walls:FindFirstChild("OuterGround")
-		if outer and outer:IsA("BasePart") then
-			table.insert(parts, outer)
-		end
+		-- 2026-11: стены — по краю пола с квадратиками (Floor). Раньше их ставили по краю тёмной
+		-- OuterGround (на 24–66 студов дальше), и игрок уходил в «чёрную бездну» за полом.
+		-- Остров лидеров по-прежнему с проходом (islandBox).
 		if #parts > 0 then
 			local minV, maxV = bounds(parts)
 			local island = city:WaitForChild("LeaderboardIsland_NeonCity", 30)

@@ -196,11 +196,12 @@ RunService.RenderStepped:Connect(function(dt)
 			elseif asleep then
 				offset = CFrame.new(0, math.sin(t * 0.8 + c.phase) * 0.08, 0)
 			else
-				-- ожидание: лёгкое покачивание; радость: прыжки и вертушка
+				-- ожидание: лёгкое покачивание; радость: прыжки и вертушка.
+				-- 2026-11: прыжки ниже и медленнее (было ×1.4 высоты и частота 5–9) — сундуки «скакали»
 				local bob = math.sin(t * 1.6 + c.phase) * 0.18
-				local hop = math.abs(math.sin(t * (5 + e * 4))) * e * 1.4
-				local wiggle = math.sin(t * 11) * e * 0.18
-				local tilt = math.sin(t * 7) * e * 0.08
+				local hop = math.abs(math.sin(t * (2.5 + e * 1.5))) * e * 0.5
+				local wiggle = math.sin(t * 5) * e * 0.08
+				local tilt = math.sin(t * 3.5) * e * 0.04
 				offset = CFrame.new(0, bob + hop, 0) * CFrame.Angles(tilt, wiggle, -tilt)
 			end
 			c.model:PivotTo(c.base * offset)
