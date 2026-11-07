@@ -226,7 +226,7 @@ Run.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	local uiScale = cam and math.clamp(cam.ViewportSize.X / 900, 0.6, 1) or 1
 	local worldName = player:GetAttribute("CurrentWorld")
-	local def = worldName and E.Worlds[worldName]
+	local def = worldName and not player:GetAttribute("InRush") and E.Worlds[worldName] or nil -- в Coin Rush ивенты мира не показываем
 	local now = workspace:GetServerTimeNow()
 	local left = def and ((workspace:GetAttribute(E.AttrEnd(worldName)) or 0) - now) or 0
 	local active = def ~= nil and left > 0

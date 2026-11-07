@@ -6,7 +6,10 @@
 -- ЭТАЖИ 1–10 (Save_RushFloor): каждая победа над боссом открывает следующий этаж — монеты дороже,
 -- лазеры и лава быстрее, лут лучше. ЗВЁЗДЫ за забег: 1 — дошёл, 2 — победил босса, 3 — без ударов (≤1).
 -- БОСС в хранилище: Vault Golem (3D-модель питомца, увеличенная) бьёт по полу волнами-кольцами
--- (перепрыгнуть), вокруг появляются кристаллы — каждый подобранный снимает 1 жизнь босса.
+-- (перепрыгнуть). РЮКЗАК-ПЕРЕРАБОТЧИК: на спине у игрока рюкзак, по трубке в магнит течёт золото —
+-- собранные в комнатах монеты становятся патронами (сами монеты не тратятся). У босса игрок
+-- зажимает ЛКМ / кнопку FIRE — магнит стреляет золотыми пулями с автоприцелом. Патроны
+-- понемногу восстанавливаются, кристаллы на арене дают +6.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -691,6 +694,8 @@ end)
 -- ===== забеги =====
 local runs = {} -- [player] = run
 local spawnBoss -- задаётся ниже (босс хранилища)
+local openVault -- задаётся ниже
+local removePack -- задаётся ниже (рюкзак)
 local slots = {} -- [index] = true (занят)
 local lastRun = {}
 local function takeSlot(): number
@@ -818,6 +823,7 @@ local function finish(run, reason: string?)
 	runs[p] = nil
 	p:SetAttribute("InRush", nil)
 	pcall(PlayerSystems.ApplySpeed, p)
+	pcall(removePack, p)
 	local reward = math.floor(run.bank * run.worth)
 	local loot = {}
 	local F = run.floor or 1
@@ -916,11 +922,11 @@ spawnBoss = function(run, c: Vector3)
 		zone.Transparency = 1
 	end
 	local at = CFrame.lookAt(c + Vector3.new(0, 0, 12), c + Vector3.new(0, 0, -20))
-	local hp = 5 + math.floor(F / 2) -- 5..10 кристаллов
+	local hp = 20 + 3 * (F - 1) -- выстрелов: 20 на 1 этаже … 47 на 10-м
 	run.boss = {
 		model = bossModel(run, at), base = at, c = c, hp = hp, max = hp,
 		nextSlam = os.clock() + 3, slamEvery = math.max(2.2, 3.8 - 0.16 * (F - 1)), ringSpeed = 17 + F,
-		rings = {}, crystals = {}, nextCrystal = os.clock() + 1.2,
+		rings = {}, crystals = {}, nextCrystal = os.clock() + 4, bullets = {}, nextRegen = os.clock() + 1,
 	}
 	-- полоса жизней над големом
 	local _, ext = run.boss.model:GetBoundingBox()
@@ -954,7 +960,9 @@ spawnBoss = function(run, c: Vector3)
 	Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
 	bb.Parent = run.boss.model
 	run.boss.fill = fill
-	run.boss.rel = at:ToObjectSpace(run.boss.model:GetPivot()) -- поворот к игроку сохраняет посадку модели
+	run.boss.rel = at:ToObjectSpace(run.boss.model:GetPivot())
+	-- патроны: 8 + 40% собранных монет, не больше 90
+	run.ammo = math.min(8 + math.floor((run.picked or 0) * 0.4), 90) -- поворот к игроку сохраняет посадку модели
 	run.boss.model:SetAttribute("Hp", hp)
 	run.boss.model:SetAttribute("MaxHp", hp)
 end
@@ -980,6 +988,83 @@ local function bossCrystal(run)
 	table.insert(B.crystals, cr)
 end
 
+local function bossDamage(run, n: number)
+	local B = run.boss
+	if not B or run.vaultTried then
+		return
+	end
+	B.hp -= n
+	B.model:SetAttribute("Hp", B.hp)
+	if B.fill then
+		B.fill.Size = UDim2.fromScale(math.max(B.hp, 0) / B.max, 1)
+	end
+	-- белая вспышка попадания
+	local hl = Instance.new("Highlight")
+	hl.FillColor = Color3.fromRGB(255, 240, 160)
+	hl.FillTransparency = 0.3
+	hl.OutlineTransparency = 1
+	hl.Parent = B.model
+	task.delay(0.08, function()
+		hl:Destroy()
+	end)
+	send(run, "bossHit", { Hp = B.hp, Max = B.max })
+	if B.hp <= 0 then
+		run.bossBeaten = true
+		for _, c2 in ipairs(B.crystals) do
+			c2:Destroy()
+		end
+		for _, r2 in ipairs(B.rings) do
+			r2.part:Destroy()
+		end
+		for _, b2 in ipairs(B.bullets) do
+			b2.part:Destroy()
+		end
+		B.crystals, B.rings, B.bullets = {}, {}, {}
+		B.model:Destroy()
+		openVault(run)
+	end
+end
+-- выстрел магнитом: клиент только просит, сервер проверяет фазу, темп и патроны
+local shoot = Instance.new("RemoteEvent")
+shoot.Name = "RushShoot"
+shoot.Parent = ReplicatedStorage
+shoot.OnServerEvent:Connect(function(p)
+	local run = runs[p]
+	local B = run and run.boss
+	if not B or run.vaultTried or run.done then
+		return
+	end
+	local now = os.clock()
+	if now - (run.lastShot or 0) < 0.17 or (run.ammo or 0) < 1 then
+		return
+	end
+	run.lastShot = now
+	run.ammo -= 1
+	local char = p.Character
+	local tool = char and char:FindFirstChild("CoinMagnet")
+	local muzzle = tool and tool:FindFirstChild("Handle") or (char and (char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")))
+	if not muzzle then
+		return
+	end
+	local from = muzzle.Position + muzzle.CFrame.UpVector * 1.2
+	local bullet = part(run.model, "GoldBullet", Vector3.new(0.9, 0.9, 0.9), CFrame.new(from), Color3.fromRGB(255, 205, 60), Enum.Material.Neon, { Shape = Enum.PartType.Ball, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 0.35, 0)
+	a0.Parent = bullet
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -0.35, 0)
+	a1.Parent = bullet
+	local tr = Instance.new("Trail")
+	tr.Attachment0, tr.Attachment1 = a0, a1
+	tr.Lifetime = 0.18
+	tr.LightEmission = 1
+	tr.Color = ColorSequence.new(Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 150, 30))
+	tr.Transparency = NumberSequence.new(0.1, 1)
+	tr.Parent = bullet
+	table.insert(B.bullets, { part = bullet })
+	send(run, "shot", { Ammo = run.ammo })
+end)
+
 local function startRoom(run, i: number)
 	run.room = i
 	if run.model:FindFirstChild("Coins" .. (i - 1)) then
@@ -997,13 +1082,13 @@ local function startRoom(run, i: number)
 		run.need = run.totalWeight * (RunService:IsStudio() and workspace:GetAttribute("RushVaultNeed") or R.VAULT_NEED) -- в Studio порог можно задать атрибутом
 		run.ends = os.clock() + R.BOSS_TIME
 		spawnBoss(run, run.offset + roomCenter(i))
-		send(run, "boss", { Floor = run.floor, Hp = run.boss.hp, Max = run.boss.max, Ends = workspace:GetServerTimeNow() + R.BOSS_TIME, Worth = run.worth, Have = run.bank })
+		send(run, "boss", { Ammo = run.ammo, Floor = run.floor, Hp = run.boss.hp, Max = run.boss.max, Ends = workspace:GetServerTimeNow() + R.BOSS_TIME, Worth = run.worth, Have = run.bank })
 	end
 	-- лицом в комнату (к монетам / к боссу), а не к стене входа
 	tp(run.player, CFrame.lookAt(spawnCF.Position, spawnCF.Position + Vector3.new(0, 0, 1)))
 end
 
-local function openVault(run)
+openVault = function(run)
 	if run.vaultTried then
 		return
 	end
@@ -1038,6 +1123,102 @@ local function openVault(run)
 	end)
 end
 
+-- ===== Рюкзак-переработчик и трубка к магниту =====
+local GOLD = Color3.fromRGB(255, 200, 50)
+local function weldTo(partA: BasePart, partB: BasePart)
+	local w = Instance.new("WeldConstraint")
+	w.Part0, w.Part1 = partA, partB
+	w.Parent = partA
+end
+local function buildPack(): Model
+	local tpl = ReplicatedStorage:FindFirstChild("TripoProps") and ReplicatedStorage.TripoProps:FindFirstChild("RushBackpack")
+	local m
+	if tpl then
+		m = tpl:Clone()
+		local _, ext = m:GetBoundingBox()
+		m:ScaleTo(m:GetScale() * 2.6 / math.max(ext.Y, 0.1))
+	else
+		-- запасной рюкзак из деталей: фиолетовый корпус, золотой бак с окошком
+		m = Instance.new("Model")
+		local body = part(m, "Body", Vector3.new(2.2, 2.4, 1.1), CFrame.new(), Color3.fromRGB(120, 70, 210), Enum.Material.SmoothPlastic)
+		part(m, "Tank", Vector3.new(2.6, 1.3, 1.3), CFrame.new(0, 0, 0.35) * CFrame.Angles(0, 0, math.rad(90)), GOLD, Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
+		part(m, "Window", Vector3.new(1.2, 1.6, 0.2), CFrame.new(0, 0, 0.95), Color3.fromRGB(255, 220, 90), Enum.Material.Neon, { Transparency = 0.15 })
+		part(m, "Cap", Vector3.new(0.5, 0.6, 0.5), CFrame.new(0.6, 1.4, 0.2), GOLD, Enum.Material.Metal)
+		m.PrimaryPart = body
+	end
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Anchored, d.CanCollide, d.CanQuery, d.CanTouch, d.Massless = false, false, false, false, true
+		end
+	end
+	m.Name = "RushPack"
+	return m
+end
+local function equipPack(p)
+	local char = p.Character
+	local torso = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso"))
+	if not torso or char:FindFirstChild("RushPack") then
+		return
+	end
+	local pack = buildPack()
+	local _, ext = pack:GetBoundingBox()
+	-- за спиной: позади торса, чуть выше центра
+	pack:PivotTo(torso.CFrame * CFrame.new(0, 0.2, torso.Size.Z / 2 + ext.Z / 2 + 0.05) * CFrame.Angles(0, math.pi, 0))
+	local root = pack.PrimaryPart or pack:FindFirstChildWhichIsA("BasePart", true)
+	for _, d in ipairs(pack:GetDescendants()) do
+		if d:IsA("BasePart") then
+			weldTo(d, torso)
+		end
+	end
+	pack.Parent = char
+	-- трубка: Beam от бока рюкзака к магниту (или к руке), по ней бегут золотые шевроны
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TubeStart"
+	a0.WorldPosition = root.Position + torso.CFrame.RightVector * (ext.X / 2) + Vector3.new(0, -0.3, 0)
+	a0.Parent = root
+	local tool = char:FindFirstChild("CoinMagnet")
+	local endPart = tool and tool:FindFirstChild("Handle") or char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
+	if endPart then
+		local a1 = Instance.new("Attachment")
+		a1.Name = "TubeEnd"
+		a1.Parent = endPart
+		local outer = Instance.new("Beam")
+		outer.Name = "PackTube"
+		outer.Attachment0, outer.Attachment1 = a0, a1
+		outer.Width0, outer.Width1 = 0.55, 0.45
+		outer.Segments = 14
+		outer.CurveSize0, outer.CurveSize1 = -2.2, 1.2
+		outer.Color = ColorSequence.new(Color3.fromRGB(150, 100, 230))
+		outer.Transparency = NumberSequence.new(0.35)
+		outer.FaceCamera = true
+		outer.Parent = root
+		local flow = outer:Clone()
+		flow.Name = "PackFlow"
+		flow.Width0, flow.Width1 = 0.4, 0.32
+		flow.Texture = "rbxassetid://119363361632569"
+		flow.TextureMode = Enum.TextureMode.Static
+		flow.TextureLength = 0.9
+		flow.TextureSpeed = 2.5
+		flow.LightEmission = 1
+		flow.Brightness = 3
+		flow.Color = ColorSequence.new(Color3.fromRGB(255, 235, 120), GOLD)
+		flow.Transparency = NumberSequence.new(0)
+		flow.Parent = root
+	end
+end
+removePack = function(p)
+	local char = p.Character
+	local pack = char and char:FindFirstChild("RushPack")
+	if pack then
+		pack:Destroy()
+	end
+	for _, d in ipairs(char and char:GetDescendants() or {}) do
+		if d.Name == "TubeEnd" then
+			d:Destroy()
+		end
+	end
+end
+
 local function startRun(p)
 	local slot = takeSlot()
 	local offset = R.ORIGIN + Vector3.new((slot - 1) * R.SLOT, 0, 0)
@@ -1050,6 +1231,7 @@ local function startRun(p)
 	runs[p] = run
 	p:SetAttribute("InRush", true)
 	pcall(PlayerSystems.ApplySpeed, p) -- в данже скорость ограничена (R.SPEED_CAP)
+	pcall(equipPack, p)
 	startRoom(run, RunService:IsStudio() and workspace:GetAttribute("RushStartRoom") or 1) -- в Studio можно начать с любой комнаты
 end
 
@@ -1199,6 +1381,7 @@ RunService.Heartbeat:Connect(function(dt)
 				elseif (c.part.Position - pos).Magnitude <= radius then
 					run.bank += c.value
 					got += 1
+					run.picked = (run.picked or 0) + 1
 					c.part:Destroy()
 					table.remove(run.coins, k)
 				end
@@ -1280,9 +1463,9 @@ RunService.Heartbeat:Connect(function(dt)
 						table.remove(B.rings, k)
 					end
 				end
-				-- кристаллы: подобрал — минус жизнь
-				if #B.crystals < 2 and now >= B.nextCrystal then
-					B.nextCrystal = now + 0.8
+				-- кристалл-патроны: по одному, раз в ~5 с
+				if #B.crystals < 1 and now >= B.nextCrystal then
+					B.nextCrystal = now + 5
 					bossCrystal(run)
 				end
 				for k = #B.crystals, 1, -1 do
@@ -1290,26 +1473,34 @@ RunService.Heartbeat:Connect(function(dt)
 					if (cr.Position - pos).Magnitude <= 4.2 then
 						cr:Destroy()
 						table.remove(B.crystals, k)
-						B.hp -= 1
-						B.nextCrystal = now + 0.6
-						B.model:SetAttribute("Hp", B.hp)
-						if B.fill then
-							B.fill.Size = UDim2.fromScale(math.max(B.hp, 0) / B.max, 1)
-						end
-						send(run, "bossHit", { Hp = B.hp, Max = B.max })
-						if B.hp <= 0 then
-							run.bossBeaten = true
-							for _, c2 in ipairs(B.crystals) do
-								c2:Destroy()
-							end
-							for _, r2 in ipairs(B.rings) do
-								r2.part:Destroy()
-							end
-							B.crystals, B.rings = {}, {}
-							B.model:Destroy()
-							openVault(run)
+						B.nextCrystal = now + 5
+						run.ammo = math.min((run.ammo or 0) + 6, 99)
+						send(run, "ammo", { Ammo = run.ammo, Got = 6 })
+					end
+				end
+				-- патроны сами понемногу восстанавливаются
+				if now >= B.nextRegen then
+					B.nextRegen = now + 1
+					if (run.ammo or 0) < 12 then
+						run.ammo = (run.ammo or 0) + 1
+						send(run, "ammo", { Ammo = run.ammo })
+					end
+				end
+				-- полёт пуль
+				local target = B.model:GetBoundingBox().Position
+				for k = #B.bullets, 1, -1 do
+					local b = B.bullets[k]
+					local to = target - b.part.Position
+					local step = 140 * 0.05
+					if to.Magnitude <= step + 2 then
+						b.part:Destroy()
+						table.remove(B.bullets, k)
+						bossDamage(run, 1)
+						if run.vaultTried then
 							break
 						end
+					else
+						b.part.CFrame = CFrame.new(b.part.Position + to.Unit * step)
 					end
 				end
 			end

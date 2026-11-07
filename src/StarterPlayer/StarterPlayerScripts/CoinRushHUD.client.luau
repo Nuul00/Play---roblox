@@ -147,6 +147,67 @@ end)
 
 local worth, endsAt, vault = 1, 0, nil
 local bossMax = 1
+local bossPhase, ammo = false, 0
+
+-- ===== стрельба золотом (рюкзак → трубка → магнит) =====
+local UIS = game:GetService("UserInputService")
+local shootRemote = game:GetService("ReplicatedStorage"):WaitForChild("RushShoot", 30)
+local K = require(game:GetService("ReplicatedStorage"):WaitForChild("UIKit"))
+local fire, fireLabel = K.button(gui, "🔫 FIRE", UDim2.new(1, -190, 1, -230), UDim2.fromOffset(150, 150), K.ORANGE, 34)
+fire.Visible = false
+Instance.new("UICorner", fire).CornerRadius = UDim.new(1, 0)
+local holding = false
+fire.MouseButton1Down:Connect(function()
+	holding = true
+end)
+fire.MouseButton1Up:Connect(function()
+	holding = false
+end)
+fire.MouseLeave:Connect(function()
+	holding = false
+end)
+UIS.InputBegan:Connect(function(input, processed)
+	if bossPhase and not processed and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.F) then
+		holding = true
+	end
+end)
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.F then
+		holding = false
+	end
+end)
+task.spawn(function()
+	while true do
+		task.wait(0.18)
+		if bossPhase and holding and ammo > 0 and shootRemote then
+			shootRemote:FireServer()
+		end
+	end
+end)
+local function setAmmo(n)
+	ammo = n or ammo
+	if bossPhase then
+		leftL.Text = "🟡 GOLD AMMO " .. ammo .. "  ·  hold click / F to fire"
+		fireLabel.Text = ammo > 0 and ("🔫 " .. ammo) or "EMPTY"
+	end
+end
+local function pulseTube()
+	local char = player.Character
+	local pack = char and char:FindFirstChild("RushPack")
+	if not pack then
+		return
+	end
+	for _, d in ipairs(pack:GetDescendants()) do
+		if d:IsA("Beam") and d.Name == "PackFlow" then
+			d.Brightness = 8
+			d.TextureSpeed = 6
+			task.delay(0.12, function()
+				d.Brightness = 3
+				d.TextureSpeed = 2.5
+			end)
+		end
+	end
+end
 local function coins(weight)
 	return NumberFormat.Short(math.floor(weight * worth))
 end
@@ -199,7 +260,9 @@ remote.OnClientEvent:Connect(function(kind, d)
 		vault = { Need = 1 }
 		top.Visible = true
 		roomL.Text = "FLOOR " .. (d.Floor or 1) .. " · BOSS: VAULT GOLEM"
-		leftL.Text = "grab the ❄ crystals · jump the shockwaves!"
+		bossPhase = true
+		fire.Visible = true
+		setAmmo(d.Ammo or 0)
 		vbar.Visible = true
 		vfill.BackgroundColor3 = Color3.fromRGB(255, 80, 90)
 		vfill.Size = UDim2.fromScale(1, 1)
@@ -207,15 +270,28 @@ remote.OnClientEvent:Connect(function(kind, d)
 		shout("⚔ VAULT GOLEM AWAKENS!", Color3.fromRGB(255, 120, 110), 1.8)
 		task.delay(1.9, function()
 			if vault then
-				shout("Grab crystals · JUMP the waves!", Color3.new(1, 1, 1), 2.2)
+				shout("HOLD CLICK to shoot gold · JUMP the waves!", Color3.new(1, 1, 1), 2.4)
 			end
 		end)
 		UISounds.Play("rare")
 	elseif kind == "bossHit" then
 		vfill.Size = UDim2.fromScale(math.clamp(d.Hp / math.max(d.Max, 1), 0, 1), 1)
-		leftL.Text = d.Hp > 0 and (d.Hp .. " crystals left") or "GOLEM DEFEATED!"
-		shout(d.Hp > 0 and ("💥 HIT!  " .. d.Hp .. " left") or "🏆 GOLEM DEFEATED!", Color3.fromRGB(140, 230, 255), 0.9)
-		UISounds.Play(d.Hp > 0 and "crack" or "fanfare")
+		if d.Hp <= 0 then
+			bossPhase, holding = false, false
+			fire.Visible = false
+			leftL.Text = "GOLEM DEFEATED!"
+			shout("🏆 GOLEM DEFEATED!", Color3.fromRGB(140, 230, 255), 1.6)
+			UISounds.Play("fanfare")
+		end
+	elseif kind == "shot" then
+		setAmmo(d.Ammo)
+		pulseTube()
+		UISounds.Play("click")
+	elseif kind == "ammo" then
+		setAmmo(d.Ammo)
+		if d.Got then
+			shout("💎 +" .. d.Got .. " GOLD AMMO", Color3.fromRGB(140, 230, 255), 0.9)
+		end
 	elseif kind == "bossSlam" then
 		UISounds.Play("crack")
 	elseif kind == "vaultResult" then
@@ -227,6 +303,8 @@ remote.OnClientEvent:Connect(function(kind, d)
 			UISounds.Play("fail")
 		end
 	elseif kind == "result" then
+		bossPhase, holding = false, false
+		fire.Visible = false
 		top.Visible = false
 		endsAt = 0
 		local stars = d.Stars or 0
