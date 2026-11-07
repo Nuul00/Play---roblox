@@ -15,6 +15,33 @@ W.Worlds = {
 function W.UnlockKey(id)
 	return "Save_Unlock_" .. string.gsub(id, "%s", "")
 end
+-- Ворота прогресса (2026-11, экономика v4): кроме монет мир требует ребёрсы и открытых питомцев
+-- в индексе — это не купить монетами, поэтому миры нельзя «перепрыгнуть» за пару минут.
+-- Числа подобраны под квестовую линию: ребёрс-квест стоит в главе Sky, поэтому Sky — только индекс.
+-- Индекс: из 57 петов Meadow+Neon, 81 до Frozen, 105 до Volcano, 129 до Galaxy.
+W.Gates = {
+	["Sky Isles"] = { Index = 25 },
+	["Frozen Peaks"] = { Rebirths = 2, Index = 42 },
+	["Magma Volcano"] = { Rebirths = 4, Index = 58 },
+	["Cosmic Galaxy"] = { Rebirths = 6, Index = 72 },
+}
+-- Пройдены ли ворота прогресса: ok, короткий текст «чего не хватает» (для окна и сообщения).
+function W.ProgressGate(p, def): (boolean, string)
+	local gate = def and W.Gates[def.Id]
+	if not gate then
+		return true, ""
+	end
+	local reb = tonumber(p:GetAttribute("Rebirths")) or 0
+	local idx = tonumber(p:GetAttribute("PetsDiscovered")) or 0
+	local miss = {}
+	if gate.Rebirths and reb < gate.Rebirths then
+		table.insert(miss, "🔄 Rebirths " .. reb .. "/" .. gate.Rebirths)
+	end
+	if gate.Index and idx < gate.Index then
+		table.insert(miss, "📖 Pets " .. idx .. "/" .. gate.Index)
+	end
+	return #miss == 0, table.concat(miss, " · ")
+end
 -- Ворота мира по квестам: QuestStep — сколько шагов квестовой линии нужно пройти (номер шага,
 -- который должен стать текущим). Так игрок проходит главу прошлого мира (яйца, прокачку),
 -- а не перепрыгивает её, накопив монеты. Возвращает: пройдено ли, сколько шагов сделано, сколько нужно.

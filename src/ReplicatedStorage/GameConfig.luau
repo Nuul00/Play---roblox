@@ -175,6 +175,16 @@ Config.Pets={
 [26]={Name="Mecha Bunny",Rarity="Common",Multiplier=15.6,Visual="NeonTech_Bunny",Color=Color3.fromRGB(54,205,255),EggId=5},
 [32]={Name="City Panda",Rarity="Common",Multiplier=26,Visual="NeonCity_Panda",Color=Color3.fromRGB(192,88,255),EggId=6},
 }
+-- Экономика v4 (2026-11): сила питомцев = множитель^0.93. Слабые почти не меняются (×1.1 → ×1.09),
+-- сильные заметно слабее (Secret Neon ×300 → ×201, Secret Galaxy ×66 000 → ×30 500): игра проходилась
+-- слишком быстро. Супер-, Royal- и Vault-питомцы считаются от этих же чисел (SuperPets ниже).
+Config.PetPowerExp=0.93
+for _,def in pairs(Config.Pets) do
+ if def.Multiplier>1 then
+  local m=def.Multiplier^Config.PetPowerExp
+  def.Multiplier=m<100 and math.floor(m*100+0.5)/100 or math.floor(m+0.5)
+ end
+end
 Config.Eggs={
 [1]={Id=1,Name="Sunset Sky Egg",World="island",Cost=50,Position=Vector3.new(40,2,132),Color=Color3.fromRGB(232,137,220),Pool={{Pet=1,Chance=30,Weight=30000},{Pet=2,Chance=25,Weight=25000},{Pet=3,Chance=18,Weight=18000},{Pet=4,Chance=12,Weight=12000},{Pet=5,Chance=7,Weight=7000},{Pet=6,Chance=5,Weight=5000},{Pet=37,Chance=2,Weight=2000},{Pet=38,Chance=0.9,Weight=900},{Pet=39,Chance=0.1,Weight=100}}},
 [2]={Id=2,Name="Sakura Egg",World="island",Cost=600,Position=Vector3.new(71,2,132),Color=Color3.fromRGB(255,140,200),Pool={{Pet=7,Chance=32,Weight=32000},{Pet=8,Chance=24,Weight=24000},{Pet=9,Chance=17,Weight=17000},{Pet=10,Chance=12,Weight=12000},{Pet=11,Chance=7.5,Weight=7500},{Pet=12,Chance=4.5,Weight=4500},{Pet=40,Chance=2,Weight=2000},{Pet=41,Chance=0.9,Weight=900},{Pet=42,Chance=0.1,Weight=100}}},
@@ -216,9 +226,9 @@ function Config.GetWalkSpeed(level) return math.floor((Config.BaseWalkSpeed+2*ma
 function Config.GetSpeedCoinBonus(level) return 1+0.01*level end
 function Config.GetMagnetRadius(level) return Config.BaseMagnetRadius+0.12*level end
 function Config.GetMagnetUpgradeCost(level) return upCost(0.8, level) end
--- До 50-го +0.25 за уровень (x13.5), дальше ×1.02 за уровень (x59.6 к 125-му): раньше поздние уровни
--- давали +0.8% за цену самого дорогого яйца, их не стоило покупать.
-function Config.GetIncomeMultiplier(level) level=tonumber(level) or 0 return (1+0.25*math.min(level,50))*1.02^math.max(0,level-50) end
+-- v4 (2026-11): до 50-го +0.12 за уровень (x7), дальше ×1.012 за уровень (x17 к 125-му).
+-- Было +0.25 и ×1.02 (x13.5 / x59.6) — прокачка давала слишком много.
+function Config.GetIncomeMultiplier(level) level=tonumber(level) or 0 return (1+0.12*math.min(level,50))*1.012^math.max(0,level-50) end
 function Config.GetIncomeUpgradeCost(level) return upCost(1.6, level) end
 -- Шанс, что подобранная монета даст двойную награду.
 -- До 50 уровня +1.5% за уровень (75%), дальше до 95% к 125-му. Потолок 95% — тот же, что у сервера
@@ -230,9 +240,10 @@ function Config.GetDoubleUpgradeCost(level) return upCost(2.5, level) end
 -- но даёт постоянный множитель монет, удачу яиц и награды на вехах (дорога наград).
 Config.MaxRebirths=50
 Config.RebirthStartSpeed=6
--- Мягкий ребёрс (2026-11, v3): прокачка (скорость, магнит, доход, двойная) сохраняет эту долю уровней,
--- а не обнуляется. Раньше доход после 1-го ребёрса падал ×11, после 2-го ×60 — игроки бросали на 2-м.
-Config.RebirthKeepLevels=0.5
+-- Ребёрс (2026-11, v4): прокачка (скорость, магнит, доход, двойная) сохраняет четверть уровней.
+-- v3 сохранял половину — ребёрсы были «бесплатными» и давали безумный прирост; до v3 всё обнулялось
+-- и доход после 2-го ребёрса падал ×60.
+Config.RebirthKeepLevels=0.25
 function Config.RebirthKeptLevel(level) return math.floor((tonumber(level) or 0)*Config.RebirthKeepLevels) end
 -- Округление до двух значащих цифр: цены выглядят «красиво» (250K, 6.6M, 1.2B...).
 local function niceRound(x) if x<100 then return math.floor(x+0.5) end local mag=10^(math.floor(math.log10(x))-1) return math.floor(x/mag+0.5)*mag end
@@ -242,8 +253,9 @@ function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.30*r-0.0021*r*r)) e
 -- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
 -- v3: 49-й требует ~1950 яиц (было ~3600).
 function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+10*r+0.6*r*r)/5+0.5)*5) end
--- Множитель монет: +1 за ребёрс (x2, x3, x4...), с 6-го ускоряется; к 50-му x172 (было x118).
-function Config.GetRebirthBonus(r) return 1+r+0.06*math.max(0,r-5)^2 end
+-- Множитель монет (v4): +0.5 за ребёрс (x1.5, x2, x2.5...), с 6-го ускоряется; к 10-му x6.75,
+-- к 20-му x17.8, к 50-му x87 (v3 давал x2, x3... x172 — слишком сильно).
+function Config.GetRebirthBonus(r) return 1+0.5*r+0.03*math.max(0,r-5)^2 end
 -- Вехи: подарки (зелья) выдаются один раз; слоты, удача, титул и аура действуют постоянно.
 Config.RebirthMilestones={
  {At=1,Icon="🧪",Name="Starter Potions",Desc="1 Super Coin + 1 Super Luck potion",Potions={SuperCoins=1,SuperLuck=1}},

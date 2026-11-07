@@ -10,36 +10,38 @@ end
 -- Диаметр обычной монеты: на 10% меньше прежних (3 студа в Meadow и Неонграде, 3,4 в Sky).
 CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06, Frozen = 3.06, Volcano = 3.06, Galaxy = 3.06 }
 
+-- Экономика v4 (2026-11): ценность монет Meadow и Neon ×0.6, Sky ×0.8, Frozen ×0.9, Volcano без
+-- изменений, Galaxy ×1.3 — начало игры медленнее, а последний мир не превращается в многочасовую стену.
 CoinTypes.Worlds = {
 	Meadow = {
 		Theme = { rgb(255, 215, 80), rgb(120, 235, 120) }, -- золото и свежая зелень
 		Kinds = {
-			{ Id = "Gold", Weight = 75, Value = 5, Scale = 1, Color = rgb(255, 210, 60) },
-			{ Id = "Emerald", Weight = 25, Value = 15, Scale = 1.15, Color = rgb(50, 215, 115) },
+			{ Id = "Gold", Weight = 75, Value = 3, Scale = 1, Color = rgb(255, 210, 60) },
+			{ Id = "Emerald", Weight = 25, Value = 9, Scale = 1.15, Color = rgb(50, 215, 115) },
 		},
 	},
 	Neon = {
 		Theme = { rgb(255, 80, 210), rgb(70, 230, 255) }, -- неоновые розовый и голубой
 		Kinds = {
-			{ Id = "Cyan", Weight = 65, Value = 25, Scale = 1, Color = rgb(70, 225, 255) },
-			{ Id = "Pink", Weight = 25, Value = 50, Scale = 1.15, Color = rgb(255, 85, 200) },
-			{ Id = "Violet", Weight = 10, Value = 120, Scale = 1.3, Color = rgb(165, 85, 255) },
+			{ Id = "Cyan", Weight = 65, Value = 15, Scale = 1, Color = rgb(70, 225, 255) },
+			{ Id = "Pink", Weight = 25, Value = 30, Scale = 1.15, Color = rgb(255, 85, 200) },
+			{ Id = "Violet", Weight = 10, Value = 72, Scale = 1.3, Color = rgb(165, 85, 255) },
 		},
 	},
 	Sky = {
 		Theme = { rgb(255, 220, 120), rgb(255, 255, 255) }, -- тёплое золото и белые облака
 		Kinds = {
-			{ Id = "Cloud", Weight = 60, Value = 150, Scale = 1, Color = rgb(255, 200, 110), Model = "Coin1" },
-			{ Id = "Star", Weight = 30, Value = 300, Scale = 1.12, Color = rgb(190, 130, 255), Model = "Coin2" },
-			{ Id = "Wings", Weight = 10, Value = 600, Scale = 1.25, Color = rgb(255, 225, 120), Model = "Coin3" },
+			{ Id = "Cloud", Weight = 60, Value = 120, Scale = 1, Color = rgb(255, 200, 110), Model = "Coin1" },
+			{ Id = "Star", Weight = 30, Value = 240, Scale = 1.12, Color = rgb(190, 130, 255), Model = "Coin2" },
+			{ Id = "Wings", Weight = 10, Value = 480, Scale = 1.25, Color = rgb(255, 225, 120), Model = "Coin3" },
 		},
 	},
 	Frozen = {
 		Theme = { rgb(150, 230, 255), rgb(200, 160, 255) }, -- лёд и северное сияние
 		Kinds = {
-			{ Id = "Ice", Weight = 60, Value = 700, Scale = 1, Color = rgb(140, 220, 255) },
-			{ Id = "Crystal", Weight = 30, Value = 1400, Scale = 1.12, Color = rgb(120, 170, 255) },
-			{ Id = "Aurora", Weight = 10, Value = 2800, Scale = 1.25, Color = rgb(120, 255, 200) },
+			{ Id = "Ice", Weight = 60, Value = 630, Scale = 1, Color = rgb(140, 220, 255) },
+			{ Id = "Crystal", Weight = 30, Value = 1260, Scale = 1.12, Color = rgb(120, 170, 255) },
+			{ Id = "Aurora", Weight = 10, Value = 2520, Scale = 1.25, Color = rgb(120, 255, 200) },
 		},
 	},
 	Volcano = {
@@ -53,9 +55,9 @@ CoinTypes.Worlds = {
 	Galaxy = {
 		Theme = { rgb(120, 170, 255), rgb(230, 120, 240) }, -- звёздный синий и туманность
 		Kinds = {
-			{ Id = "Stardust", Weight = 60, Value = 19600, Scale = 1, Color = rgb(130, 190, 255) },
-			{ Id = "Nebula", Weight = 30, Value = 39200, Scale = 1.12, Color = rgb(225, 115, 240) },
-			{ Id = "Cosmic", Weight = 10, Value = 78400, Scale = 1.25, Color = rgb(255, 220, 120) },
+			{ Id = "Stardust", Weight = 60, Value = 25480, Scale = 1, Color = rgb(130, 190, 255) },
+			{ Id = "Nebula", Weight = 30, Value = 50960, Scale = 1.12, Color = rgb(225, 115, 240) },
+			{ Id = "Cosmic", Weight = 10, Value = 101920, Scale = 1.25, Color = rgb(255, 220, 120) },
 		},
 	},
 }

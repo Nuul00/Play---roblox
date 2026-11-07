@@ -81,7 +81,7 @@ Q.Steps = {
 	step(3, "Sky Magnet", "Pull in coins across the islands.", { Type = "magnet", N = 35 }, { Coins = 8e7 }),
 	step(3, "Celestial Call", "Celestial pets shine bright.", { Type = "eggs", N = 10, Egg = 8 }, { Coins = 1.2e8, Potion = "Coins" }),
 	step(3, "Magnet Collector", "Buy Bubblegum Pop in the Sky magnet shop.", { Type = "magnetTier", N = 22 }, { Coins = 2e8 }),
-	step(3, "Fresh Start", "Rebirth for a permanent coin bonus!", { Type = "rebirth", N = 1 }, { Coins = 3.5e8, Potion = "Speed" }),
+	step(3, "Fresh Start", "Rebirth twice — Frozen Peaks needs 2 rebirths!", { Type = "rebirth", N = 2 }, { Coins = 3.5e8, Potion = "Speed" }),
 	step(3, "Egg Frenzy", "Open any eggs you like!", { Type = "eggs", N = 50 }, { Coins = 5.5e8 }),
 	step(3, "Crystal Clear", "The most precious egg in the sky! Then Frozen Peaks opens.", { Type = "eggs", N = 8, Egg = 9 }, { Coins = 1.4e9 }),
 	step(3, "Rainbow Dream", "Fuse 5 diamond pets in the Sky machine.", { Type = "variant", N = 1, Key = "Rainbow" }, { Coins = 9e8, Potion = "Luck" }),
@@ -104,7 +104,7 @@ Q.Steps = {
 	step(5, "Lava Sprinter", "Volcano kiosks go up to level 100.", { Type = "speed", N = 80 }, { Coins = 1.2e12 }),
 	step(5, "Molten Magnet", "Buy Magma Core in the Volcano magnet shop.", { Type = "magnetTier", N = 45 }, { Coins = 2.1e12 }),
 	step(5, "Magma Core", "Hatch pets forged in lava.", { Type = "eggs", N = 12, Egg = 11 }, { Coins = 3.6e12, Potion = "Coins" }),
-	step(5, "Reborn in Fire", "Rebirth twice to grow even stronger.", { Type = "rebirth", N = 2 }, { Coins = 6e12, Potion = "Speed" }),
+	step(5, "Reborn in Fire", "Reach 6 rebirths — Cosmic Galaxy needs them!", { Type = "rebirth", N = 6 }, { Coins = 6e12, Potion = "Speed" }),
 	step(5, "Income Inferno", "Push your income to level 90.", { Type = "income", N = 90 }, { Coins = 9e12 }),
 	step(5, "Lava Hunter", "Collect coins among the lava rivers.", { Type = "collect", N = 3000 }, { Coins = 1.8e13 }),
 	step(5, "Obsidian Secret", "The darkest egg hides a dragon! Then the Galaxy opens.", { Type = "eggs", N = 10, Egg = 12 }, { Coins = 3e13, Potion = "Luck" }),
@@ -120,6 +120,34 @@ Q.Steps = {
 	step(6, "Supernova", "The ultimate egg of the universe!", { Type = "eggs", N = 10, Egg = 15 }, { Coins = 3.6e15, Potion = "Luck" }),
 	step(6, "Master of the Universe", "The final quest. Become a legend!", { Type = "earn", N = 1e17 }, { Coins = 6.6e15, Hatch = 15, Slot = 1, Bonus = 0.10 }),
 }
+
+-- Экономика v4 (2026-11). Монеты в наградах ×0.2: они были рассчитаны под старую, быструю экономику
+-- и «перескакивали» прогресс. Квесты «открой N лучших яиц мира» короче: при скачке цен яиц
+-- внутри мира ×16–20 они были стенами по 1–4 часа (симуляция).
+Q.RewardCoinScale = 0.2
+local V4_N = {
+	["Celestial Call"] = 6,
+	["Crystal Clear"] = 4,
+	["Aurora Lights"] = 8,
+	["Glacier Giant"] = 5,
+	["Ember Awakening"] = 8,
+	["Magma Core"] = 6,
+	["Obsidian Secret"] = 4,
+	["Rocket Science"] = 6,
+	["Nebula Drift"] = 5,
+	["Egg Legend"] = 120,
+	["Supernova"] = 4,
+}
+for _, s in ipairs(Q.Steps) do
+	if V4_N[s.Title] then
+		s.Goal.N = V4_N[s.Title]
+	end
+	if s.Reward and s.Reward.Coins then
+		local c = s.Reward.Coins * Q.RewardCoinScale
+		local mag = 10 ^ (math.floor(math.log10(c)) - 1)
+		s.Reward.Coins = math.floor(c / mag + 0.5) * mag
+	end
+end
 
 -- Шаг внутри главы: «3/12».
 function Q.ChapterInfo(index: number): (number, number, number)

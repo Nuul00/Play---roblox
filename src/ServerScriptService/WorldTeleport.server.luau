@@ -124,6 +124,10 @@ local function teleport(p, id, buy)
 		if not gateOk then
 			return { Ok = false, Message = "Finish the " .. (def.QuestChapter or "") .. " quests first (" .. done .. "/" .. needQ .. ")" }
 		end
+		local progOk, progMiss = Worlds.ProgressGate(p, def)
+		if not progOk then
+			return { Ok = false, Message = "To unlock " .. def.Name .. ": " .. progMiss }
+		end
 		if stats.Coins.Value < cost then
 			return { Ok = false, Message = "Need " .. short(cost - stats.Coins.Value) .. " more coins to unlock " .. def.Name }
 		end
