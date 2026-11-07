@@ -1125,6 +1125,7 @@ end
 
 -- ===== Рюкзак-переработчик и трубка к магниту =====
 local GOLD = Color3.fromRGB(255, 200, 50)
+local PACK_YAW = math.pi -- поворот модели рюкзака Tripo на спине (подбирается под модель)
 local function weldTo(partA: BasePart, partB: BasePart)
 	local w = Instance.new("WeldConstraint")
 	w.Part0, w.Part1 = partA, partB
@@ -1136,7 +1137,7 @@ local function buildPack(): Model
 	if tpl then
 		m = tpl:Clone()
 		local _, ext = m:GetBoundingBox()
-		m:ScaleTo(m:GetScale() * 2.6 / math.max(ext.Y, 0.1))
+		m:ScaleTo(m:GetScale() * 2.3 / math.max(ext.Y, 0.1))
 	else
 		-- запасной рюкзак из деталей: фиолетовый корпус, золотой бак с окошком
 		m = Instance.new("Model")
@@ -1161,9 +1162,11 @@ local function equipPack(p)
 		return
 	end
 	local pack = buildPack()
-	local _, ext = pack:GetBoundingBox()
-	-- за спиной: позади торса, чуть выше центра
-	pack:PivotTo(torso.CFrame * CFrame.new(0, 0.2, torso.Size.Z / 2 + ext.Z / 2 + 0.05) * CFrame.Angles(0, math.pi, 0))
+	local bcf, ext = pack:GetBoundingBox()
+	local offset = pack:GetPivot():ToObjectSpace(bcf) -- центр габаритов относительно точки модели
+	-- за спиной: центр рюкзака позади торса, чуть выше середины; окошко с золотом смотрит назад
+	local target = torso.CFrame * CFrame.new(0, 0.55, torso.Size.Z / 2 + ext.Z / 2 - 0.1) * CFrame.Angles(0, PACK_YAW, 0)
+	pack:PivotTo(target * offset:Inverse())
 	local root = pack.PrimaryPart or pack:FindFirstChildWhichIsA("BasePart", true)
 	for _, d in ipairs(pack:GetDescendants()) do
 		if d:IsA("BasePart") then
