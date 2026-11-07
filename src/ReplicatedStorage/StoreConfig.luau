@@ -57,4 +57,36 @@ function StoreConfig.PassByKey(key: string)
 	return nil
 end
 
+-- Иконки магазина (ChatGPT, assets/hud/store): миниатюры декалей через rbxthumb.
+local STORE_ICONS = {
+	Coins2x = 98840340908501,
+	Luck2x = 92970062752296,
+	PetSlots = 90790001618461,
+	VIP = 109574395101341,
+	FastHatch = 126149750834935,
+	SuperMagnet = 83262267389477,
+	SuperLuck = 90985420967636,
+	Hatch9 = 127549130694833,
+	AutoHatch = 76243364203404,
+	GoldenHatch = 80391467575887,
+	QuickTravel = 133262198052656,
+	RoyalAura = 97295436279396,
+	MythicLuck = 100974259406687,
+	StarterPack = 122370841193579,
+	LuckBoost = 85592552995301,
+	CoinsSmall = 112986102639746,
+	CoinsMedium = 103975512112730,
+	CoinsHuge = 133705284255673,
+}
+for _, list in ipairs({ StoreConfig.Passes, StoreConfig.Products }) do
+	for _, def in ipairs(list) do
+		local id = STORE_ICONS[def.Key]
+		if def.Key == "Potions" then
+			def.Image = "rbxassetid://96705395595679" -- супер-зелье монет (иконка зелий)
+		elseif id then
+			def.Image = "rbxthumb://type=Asset&id=" .. id .. "&w=420&h=420"
+		end
+	end
+end
+
 return StoreConfig

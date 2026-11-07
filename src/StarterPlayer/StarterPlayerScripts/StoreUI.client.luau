@@ -90,7 +90,9 @@ task.spawn(function()
 	end
 end)
 
--- ===== окно =====
+-- ===== окно (стиль UIKit, как DAILY / инвентарь / киоск) =====
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
+local WHITE, BLACK = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
 local gui = Instance.new("ScreenGui")
 gui.Name = "StoreUI"
 gui.ResetOnSpawn = false
@@ -98,196 +100,114 @@ gui.DisplayOrder = 45
 gui.IgnoreGuiInset = true
 gui.Parent = playerGui
 
-local panel = Instance.new("Frame")
-panel.AnchorPoint = Vector2.new(0.5, 0.5)
-panel.Position = UDim2.fromScale(0.5, 0.52)
-panel.Size = UDim2.fromOffset(900, 470)
-panel.BackgroundColor3 = Color3.new(1, 1, 1)
-panel.Visible = false
-panel.Parent = gui
-Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 26)
-local pStroke = Instance.new("UIStroke")
-pStroke.Thickness = 5
-pStroke.Color = INK
-pStroke.Parent = panel
-local pGrad = Instance.new("UIGradient")
-pGrad.Rotation = 90
-pGrad.Parent = panel
-local pScale = Instance.new("UIScale")
-pScale.Parent = panel
-
-local head = Instance.new("TextLabel")
-head.AnchorPoint = Vector2.new(0.5, 0)
-head.Position = UDim2.new(0.5, 0, 0, -28)
-head.Size = UDim2.fromOffset(380, 62)
-head.BackgroundColor3 = rgb(255, 180, 50)
-head.Font = Enum.Font.FredokaOne
-head.Text = "🛒 STORE"
-head.TextSize = 34
-head.TextColor3 = Color3.new(1, 1, 1)
-head.Parent = panel
-Instance.new("UICorner", head).CornerRadius = UDim.new(0, 18)
-local hs = Instance.new("UIStroke")
-hs.Thickness = 4
-hs.Color = INK
-hs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-hs.Parent = head
-local hg = Instance.new("UIGradient")
-hg.Rotation = 90
-hg.Color = ColorSequence.new(rgb(255, 225, 110), rgb(240, 140, 30))
-hg.Parent = head
-local hts = Instance.new("UIStroke")
-hts.Thickness = 2.5
-hts.Color = rgb(120, 60, 10)
-hts.Parent = head
-
-local close = Instance.new("TextButton")
-close.Position = UDim2.new(1, -56, 0, 12)
-close.Size = UDim2.fromOffset(42, 42)
-close.Text = "×"
-close.Font = Enum.Font.FredokaOne
-close.TextSize = 30
-close.TextColor3 = Color3.new(1, 1, 1)
-close.BackgroundColor3 = rgb(235, 70, 80)
-close.Parent = panel
-Instance.new("UICorner", close).CornerRadius = UDim.new(0, 12)
-local cs = Instance.new("UIStroke")
-cs.Thickness = 3
-cs.Color = INK
-cs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-cs.Parent = close
+local W, H = 920, 510
+local panel, close, pScale = K.window(gui, "StoreWindow", W, H, "🛒 STORE", K.ORANGE, 300)
+panel.Position = UDim2.fromScale(0.5, 0.53)
 close.Activated:Connect(function()
 	player:SetAttribute("UIScreen", "")
 end)
 
-local scroll = Instance.new("ScrollingFrame")
-scroll.Position = UDim2.fromOffset(20, 50)
-scroll.Size = UDim2.new(1, -40, 1, -66)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 8
-scroll.ScrollBarImageColor3 = rgb(255, 220, 120)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.CanvasSize = UDim2.new()
-scroll.Parent = panel
-local list = Instance.new("UIListLayout")
-list.Padding = UDim.new(0, 10)
-list.SortOrder = Enum.SortOrder.LayoutOrder
-list.Parent = scroll
-
-local function section(text, order)
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.Size = UDim2.new(1, 0, 0, 30)
-	l.Font = Enum.Font.FredokaOne
-	l.TextSize = 24
-	l.TextXAlignment = Enum.TextXAlignment.Left
-	l.Text = text
-	l.TextColor3 = rgb(255, 230, 150)
-	l.LayoutOrder = order
-	l.Parent = scroll
-	local s = Instance.new("UIStroke")
-	s.Thickness = 2
-	s.Color = INK
-	s.Parent = l
+-- вкладки
+local tab = "passes"
+local tabSet = {}
+local pages = {}
+for i, t in ipairs({ { "passes", "⭐ GAMEPASSES" }, { "boosts", "⚡ BOOSTS" } }) do
+	local b, _, set = K.button(panel, t[2], UDim2.fromOffset(24 + (i - 1) * 186, 46), UDim2.fromOffset(176, 40), K.GRAY, 19)
+	tabSet[t[1]] = set
+	b.Activated:Connect(function()
+		tab = t[1]
+		for k, pg in pairs(pages) do
+			pg.Visible = k == tab
+		end
+		for k, f in pairs(tabSet) do
+			f(k == tab and K.ORANGE or K.GRAY)
+		end
+	end)
 end
-local function grid(order)
-	local f = Instance.new("Frame")
-	f.BackgroundTransparency = 1
-	f.Size = UDim2.new(1, -10, 0, 0)
-	f.AutomaticSize = Enum.AutomaticSize.Y
-	f.LayoutOrder = order
-	f.Parent = scroll
+local hint = K.text(panel, "Gamepasses are forever · boosts can be bought again", UDim2.new(0, 400, 0, 52), UDim2.new(1, -480, 0, 28), 15, rgb(210, 195, 255), 0)
+hint.Font = Enum.Font.GothamBold
+hint.TextXAlignment = Enum.TextXAlignment.Right
+
+local function page(key)
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Position = UDim2.fromOffset(20, 98)
+	scroll.Size = UDim2.new(1, -40, 1, -114)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 8
+	scroll.ScrollBarImageColor3 = rgb(255, 220, 120)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.CanvasSize = UDim2.new()
+	scroll.Visible = key == tab
+	scroll.Parent = panel
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop, pad.PaddingLeft = UDim.new(0, 8), UDim.new(0, 4)
+	pad.Parent = scroll
 	local g = Instance.new("UIGridLayout")
-	g.CellSize = UDim2.fromOffset(260, 150)
+	g.CellSize = UDim2.fromOffset(278, 172)
 	g.CellPadding = UDim2.fromOffset(14, 14)
 	g.SortOrder = Enum.SortOrder.LayoutOrder
-	g.Parent = f
-	return f
+	g.Parent = scroll
+	pages[key] = scroll
+	return scroll
 end
 
+local refreshFn -- задаётся ниже (refresh)
+local TAGS = { Coins2x = "POPULAR", VIP = "BEST", MythicLuck = "MAX LUCK", CoinsHuge = "BEST VALUE" }
 local cards = {}
 local function card(parent, def, isPass, order)
-	local c = Instance.new("Frame")
-	c.BackgroundColor3 = Color3.new(1, 1, 1)
+	local c = K.frame(parent, UDim2.new(), UDim2.new(), WHITE, 20)
 	c.LayoutOrder = order
-	c.Parent = parent
-	Instance.new("UICorner", c).CornerRadius = UDim.new(0, 18)
-	local st = Instance.new("UIStroke")
-	st.Thickness = 3.5
-	st.Color = INK
-	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	st.Parent = c
-	local g = Instance.new("UIGradient")
-	g.Rotation = 90
-	g.Color = ColorSequence.new(def.Color:Lerp(Color3.new(1, 1, 1), 0.25), def.Color:Lerp(rgb(40, 20, 80), 0.45))
-	g.Parent = c
+	K.grad(c, K.CARD:Lerp(def.Color, 0.28), K.CARD2)
+	local st = K.stroke(c, def.Color, 3)
+	-- светящийся шар с картинкой
+	local orb = K.frame(c, UDim2.fromOffset(12, 18), UDim2.fromOffset(104, 104), WHITE, UDim.new(1, 0))
+	K.grad(orb, def.Color:Lerp(WHITE, 0.45), def.Color:Lerp(BLACK, 0.35))
+	K.stroke(orb, WHITE, 3)
+	local shine = K.frame(orb, UDim2.fromScale(0.18, 0.08), UDim2.fromScale(0.64, 0.32), WHITE, UDim.new(1, 0))
+	shine.BackgroundTransparency = 0.75
 	local img = Instance.new("ImageLabel")
 	img.BackgroundTransparency = 1
-	img.Position = UDim2.fromOffset(8, 10)
-	img.Size = UDim2.fromOffset(104, 104)
+	img.AnchorPoint = Vector2.new(0.5, 0.5)
+	img.Position = UDim2.fromScale(0.5, 0.5)
+	img.Size = UDim2.fromOffset(96, 96)
 	img.ScaleType = Enum.ScaleType.Fit
-	img.Parent = c
-	local name = Instance.new("TextLabel")
-	name.BackgroundTransparency = 1
-	name.Position = UDim2.fromOffset(116, 8)
-	name.Size = UDim2.new(1, -124, 0, 30)
-	name.Font = Enum.Font.FredokaOne
-	name.TextScaled = true
+	img.Image = def.Image or ""
+	img.Parent = orb
+	local name = K.text(c, def.Name, UDim2.fromOffset(124, 12), UDim2.new(1, -134, 0, 30), 24, nil, 2.5)
 	name.TextXAlignment = Enum.TextXAlignment.Left
-	name.Text = def.Name
-	name.TextColor3 = Color3.new(1, 1, 1)
-	name.Parent = c
-	local ns = Instance.new("UIStroke")
-	ns.Thickness = 2.5
-	ns.Color = INK
-	ns.Parent = name
-	local desc = Instance.new("TextLabel")
-	desc.BackgroundTransparency = 1
-	desc.Position = UDim2.fromOffset(116, 40)
-	desc.Size = UDim2.new(1, -124, 0, 52)
+	local desc = K.text(c, def.Desc, UDim2.fromOffset(124, 44), UDim2.new(1, -134, 0, 62), 14, rgb(240, 232, 255), 0)
 	desc.Font = Enum.Font.GothamBold
-	desc.TextSize = 13
-	desc.TextWrapped = true
 	desc.TextXAlignment = Enum.TextXAlignment.Left
 	desc.TextYAlignment = Enum.TextYAlignment.Top
-	desc.Text = def.Desc
-	desc.TextColor3 = rgb(255, 250, 235)
-	desc.Parent = c
-	local ds = Instance.new("UIStroke")
-	ds.Thickness = 1.5
-	ds.Color = INK
-	ds.Parent = desc
-	local buy = Instance.new("TextButton")
-	buy.AnchorPoint = Vector2.new(1, 1)
-	buy.Position = UDim2.new(1, -10, 1, -10)
-	buy.Size = UDim2.new(1, -126, 0, 38)
-	buy.Font = Enum.Font.FredokaOne
-	buy.TextSize = 20
-	buy.Text = "..."
-	buy.TextColor3 = Color3.new(1, 1, 1)
-	buy.BackgroundColor3 = rgb(80, 200, 90)
-	buy.AutoButtonColor = true
-	buy.Parent = c
-	Instance.new("UICorner", buy).CornerRadius = UDim.new(0, 12)
-	local bs = Instance.new("UIStroke")
-	bs.Thickness = 3
-	bs.Color = INK
-	bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	bs.Parent = buy
-	local bts = Instance.new("UIStroke")
-	bts.Thickness = 2
-	bts.Color = rgb(20, 80, 30)
-	bts.Parent = buy
-	local entry = { def = def, pass = isPass, buy = buy, img = img, price = nil, frame = c }
+	local buy, buyLabel, setBuy = K.button(c, "...", UDim2.new(0, 124, 1, -52), UDim2.new(1, -136, 0, 42), K.GREEN, 22)
+	if TAGS[def.Key] then
+		local tg = K.frame(c, UDim2.new(0, 4, 0, -10), UDim2.fromOffset(96, 24), WHITE, 12)
+		tg.Rotation = -6
+		tg.ZIndex = 5
+		K.grad(tg, rgb(255, 120, 150), rgb(220, 40, 90))
+		K.stroke(tg, K.INK, 2.5)
+		K.text(tg, TAGS[def.Key], UDim2.fromOffset(4, 2), UDim2.new(1, -8, 1, -4), 14, nil, 1.5).ZIndex = 6
+	end
+	-- лёгкое покачивание иконки
+	img.Rotation = -4
+	TweenService:Create(img, TweenInfo.new(1.3 + (order % 3) * 0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Rotation = 4 }):Play()
+	local entry = { def = def, pass = isPass, buy = buy, label = buyLabel, set = setBuy, img = img, price = nil, frame = c, stroke = st }
 	table.insert(cards, entry)
 	task.spawn(function()
 		local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, def.Id, isPass and Enum.InfoType.GamePass or Enum.InfoType.Product)
 		if ok and info then
-			if info.IconImageAssetId and info.IconImageAssetId > 0 then
+			if not def.Image and info.IconImageAssetId and info.IconImageAssetId > 0 then
 				img.Image = "rbxassetid://" .. info.IconImageAssetId
 			end
 			entry.price = info.PriceInRobux
+			if panel.Visible then
+				task.defer(function()
+					if refreshFn then
+						refreshFn()
+					end
+				end)
+			end
 		end
 	end)
 	buy.Activated:Connect(function()
@@ -305,28 +225,19 @@ local function card(parent, def, isPass, order)
 	return entry
 end
 
-section("⭐ GAMEPASSES — forever", 1)
-local passGrid = grid(2)
+local passPage = page("passes")
 for i, def in ipairs(StoreConfig.Passes) do
 	if def.Id > 0 then
-		card(passGrid, def, true, i)
+		card(passPage, def, true, i)
 	end
 end
-local anyProduct = false
-for _, def in ipairs(StoreConfig.Products) do
-	if def.Id > 0 then
-		anyProduct = true
+local boostPage = page("boosts")
+for i, def in ipairs(StoreConfig.Products) do
+	if def.Id > 0 and not def.Hidden then
+		card(boostPage, def, false, i)
 	end
 end
-if anyProduct then
-	section("⚡ BOOSTS", 3)
-	local prodGrid = grid(4)
-	for i, def in ipairs(StoreConfig.Products) do
-		if def.Id > 0 and not def.Hidden then
-			card(prodGrid, def, false, i)
-		end
-	end
-end
+tabSet.passes(K.ORANGE)
 
 local function refresh()
 	for _, e in ipairs(cards) do
@@ -335,25 +246,18 @@ local function refresh()
 			and not (e.def.Kind == "starter" and player:GetAttribute("Save_StarterBought"))
 		local owned = e.pass and player:GetAttribute("Pass_" .. e.def.Key)
 		if owned then
-			e.buy.Text = "✅ OWNED"
-			e.buy.BackgroundColor3 = rgb(120, 115, 150)
-			e.buy.AutoButtonColor = false
+			e.label.Text = "✔ OWNED"
+			e.set(K.GRAY)
+			e.stroke.Color = K.GOLD
 		else
-			e.buy.Text = e.price and ("R$ " .. e.price) or "BUY"
-			e.buy.BackgroundColor3 = rgb(80, 200, 90)
-			e.buy.AutoButtonColor = true
+			e.label.Text = e.price and ("R$ " .. e.price) or "BUY"
+			e.set(K.GREEN)
+			e.stroke.Color = e.def.Color
 		end
 	end
 end
 
-local function theme()
-	local skin = Skins[player:GetAttribute("CurrentWorld") or ""]
-	local top = skin and skin.MenuTop or rgb(125, 85, 235)
-	local bottom = skin and skin.MenuBottom or rgb(55, 30, 125)
-	pGrad.Color = ColorSequence.new(top, bottom)
-end
-player:GetAttributeChangedSignal("CurrentWorld"):Connect(theme)
-theme()
+refreshFn = refresh
 
 btn.Activated:Connect(function()
 	bscale.Scale = 0.9
@@ -368,7 +272,7 @@ player:GetAttributeChangedSignal("UIScreen"):Connect(function()
 		refresh()
 		local cam = workspace.CurrentCamera
 		local v = cam and cam.ViewportSize or Vector2.new(1000, 600)
-		local base = math.min(1, (v.X - 30) / 900, (v.Y - 90) / 480)
+		local base = math.min(1, (v.X - 30) / W, (v.Y - 90) / (H + 30))
 		pScale.Scale = base * 0.7
 		TweenService:Create(pScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = base }):Play()
 		storeOpenedAt = os.clock()
@@ -387,7 +291,7 @@ RunService.RenderStepped:Connect(function()
 	local cam = workspace.CurrentCamera
 	if cam then
 		local v = cam.ViewportSize
-		local base = math.min(1, (v.X - 30) / 900, (v.Y - 90) / 480)
+		local base = math.min(1, (v.X - 30) / W, (v.Y - 90) / (H + 30))
 		if os.clock() - storeOpenedAt > 0.3 then
 			pScale.Scale = base -- подстраиваемся под поворот/размер экрана
 		end
