@@ -39,6 +39,7 @@ if game:GetService("UserInputService").TouchEnabled and not game:GetService("Use
 	list.HorizontalAlignment = Enum.HorizontalAlignment.Right
 end
 
+local LocalEvents = require(game:GetService("ReplicatedStorage"):WaitForChild("LocalEvents"))
 local NumberFormat = require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat"))
 local function abbreviate(n: number): string
 	return NumberFormat.Short(n)
@@ -159,6 +160,13 @@ local function refreshStats()
 	if (player:GetAttribute("PotionEndSuperCoins") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 3
 	elseif (player:GetAttribute("PotionEndCoins") or 0) > workspace:GetServerTimeNow() then
+		bonus *= 2
+	end
+	-- локальный ивент мира (Blossom Rain и др.) и метель во Frozen: x2 в своём мире
+	if LocalEvents.Active(player:GetAttribute("CurrentWorld")) then
+		bonus *= 2
+	end
+	if player:GetAttribute("CurrentWorld") == "Frozen Peaks" and (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end
 	bonus *= 1 + (player:GetAttribute("AbilCoins") or 0) -- способность питомцев (как в PlayerSystems.CoinMultiplier)

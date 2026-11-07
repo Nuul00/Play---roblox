@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
+local LocalEvents = require(game:GetService("ReplicatedStorage"):WaitForChild("LocalEvents"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local MagnetVisuals = require(ReplicatedStorage:WaitForChild("MagnetVisuals"))
 local PetAbilities = require(ReplicatedStorage:WaitForChild("PetAbilities"))
@@ -201,6 +202,10 @@ function PlayerSystems.CoinMultiplier(p): number
 	end
 	-- Мини-ивент Frozen Peaks «Метель»: x2 монет тем, кто в этот момент во Frozen.
 	if (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() and p:GetAttribute("CurrentWorld") == "Frozen Peaks" then
+		m *= 2
+	end
+	-- локальные ивенты остальных миров (Blossom Rain, Disco Fever, ...): x2 в своём мире
+	if LocalEvents.Active(p:GetAttribute("CurrentWorld")) then
 		m *= 2
 	end
 	if PlayerSystems.PotionActive(p, "SuperCoins") then

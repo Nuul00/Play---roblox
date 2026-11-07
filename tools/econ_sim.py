@@ -116,22 +116,24 @@ while s.t < T:
         s.reb += 1; s.coins = 0; s.lv = dict(speed=6, magnet=0, income=0, double=0); s.eggs = 0
         note('r%d' % s.reb, 'REBIRTH %d' % s.reb); continue
     # ворота мира: нужно открыть gE яиц в предыдущем мире (квесты главы), если задано
-    while s.unl < 6 and s.coins >= UNLOCK[s.unl] and s.lv['speed'] >= WORLDS[s.unl][1] and s.weggs.get(WORLDS[s.unl-1][0], 0) >= P.get('gE%d' % s.unl, P.get('gE', 0)) and not (s.unl == 1 and any(s.eggc.get(int(k[1:]), 0) < P[k] for k in P if k.startswith('q') and k[1:].isdigit())):
+    while s.unl < 6 and s.coins >= UNLOCK[s.unl] and s.lv['speed'] >= WORLDS[s.unl][1] and s.weggs.get(WORLDS[s.unl-1][0], 0) >= P.get('gE%d' % s.unl, P.get('gE', 0)) and not any(s.eggc.get(i, 0) < P.get('q%d' % i, 0) for i in WORLD_EGGS[WORLDS[s.unl-1][0]]):
         s.coins -= UNLOCK[s.unl]; s.unl += 1
         note('team%d' % s.unl, 'UNLOCK %s team x%.3g eggs_prev %d' % (WORLDS[s.unl-1][0], team(), s.weggs.get(WORLDS[s.unl-2][0], 0)))
     # человеческая стратегия: 1) открыть мир 2) яйца (самое дорогое доступное) 3) самая дешёвая прокачка
     gate = P.get('gE%d' % s.unl, P.get('gE', 0)) if s.unl < 6 else 0
     gated = s.unl < 6 and s.weggs.get(WORLDS[s.unl-1][0], 0) < gate  # квесты главы требуют ещё яиц
-    need_q = [int(k[1:]) for k in P if k.startswith('q') and k[1:].isdigit() and s.eggc.get(int(k[1:]), 0) < P[k]]
-    if s.unl == 1 and need_q: gated = True
+    # квестовые ворота: яйца мира, из которого игрок сейчас «выходит» (q<id> = сколько нужно)
+    curw = WORLDS[s.unl-1][0] if s.unl < 6 else None
+    need_q = [i for i in WORLD_EGGS.get(curw, []) if s.eggc.get(i, 0) < P.get('q%d' % i, 0)] if curw else []
+    if need_q: gated = True
     saving = (not gated) and s.unl < 6 and UNLOCK[s.unl] > s.coins and UNLOCK[s.unl] - s.coins < s.lastrate*P.get('save',240)
     if s.t >= s.hatch_ready and not saving:
         eggs = sorted([i for w in access() for i in WORLD_EGGS[w[0]]], key=lambda i: -EGGS[i]['Price'])
         need = s.eggs < reggs(s.reb) and s.coins >= rcost(s.reb)
         if need:  # для ребёрса добиваем количество самыми полезными яйцами, что не мешают накоплению
             eggs = [i for i in eggs if EGGS[i]['Price']*9 <= max(s.coins - rcost(s.reb), s.coins*0.01)] or [min(eggs, key=lambda i: EGGS[i]['Price'])]
-        if s.unl == 1:
-            qn = [i for i in eggs if s.eggc.get(i, 0) < P.get('q%d' % i, 0)]
+        if s.unl < 6:
+            qn = [i for i in eggs if EGGS[i]['World'] == WORLDS[s.unl-1][0] and s.eggc.get(i, 0) < P.get('q%d' % i, 0)]
             if qn: eggs = sorted(qn, key=lambda i: EGGS[i]['Price'])
         for eid in eggs:
             n = 9 if s.coins >= EGGS[eid]['Price']*9 else 3 if s.coins >= EGGS[eid]['Price']*3 else 0
