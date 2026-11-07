@@ -21,6 +21,8 @@ Config.ZoneMax={island=10,neon=25,sky=50,frozen=75,volcano=100,galaxy=125}
 Config.BaseMaxLevel=10
 Config.EnableGlobalBoards=true
 Config.EnableStudioDataStores=false
+-- Только Studio: при входе выдать всё для поиска багов (все квесты, миры, монеты, ключи, зелья, жетоны). false — обычный старт.
+Config.DevMaxInStudio=true
 Config.Worlds={island={Name="Meadow Isles",CenterX=0,Width=300,Depth=460,BaseValue=5},neon={Name="Neon District",CenterX=500,Width=300,Depth=460,BaseValue=25},sky={Name="Sky Isles",CenterX=1100,Width=300,Depth=300,BaseValue=150},frozen={Name="Frozen Peaks",CenterX=3000,Width=440,Depth=440,BaseValue=900},volcano={Name="Magma Volcano",CenterX=6000,Width=440,Depth=440,BaseValue=6000},galaxy={Name="Cosmic Galaxy",CenterX=7500,Width=440,Depth=440,BaseValue=40000}}
 Config.Pets={
 [1]={Name="Cloud Puff",Rarity="Common",Multiplier=1.1,Visual="SunsetCloud",Color=Color3.fromRGB(232,137,220),EggId=1},
