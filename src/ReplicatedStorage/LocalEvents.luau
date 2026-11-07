@@ -13,25 +13,28 @@ E.Reward = 40 -- в обычных монетах мира
 E.Worlds = {
 	["Meadow Isles"] = {
 		Key = "Meadow", Name = "BLOSSOM RAIN", Icon = "🌸", Item = "golden blossoms",
-		Color = rgb(255, 140, 200), Color2 = rgb(255, 225, 120), Coin = "Meadow", Offset = 0,
+		Color = rgb(255, 140, 200), Color2 = rgb(255, 225, 120), Coin = "Meadow", Offset = 0, Image = "rbxassetid://116955946009632",
 	},
 	["Neon District"] = {
 		Key = "Neon", Name = "DISCO FEVER", Icon = "🪩", Item = "disco balls",
-		Color = rgb(255, 80, 220), Color2 = rgb(80, 230, 255), Coin = "Neon", Offset = 72,
+		Color = rgb(255, 80, 220), Color2 = rgb(80, 230, 255), Coin = "Neon", Offset = 72, Image = "rbxassetid://121804754786185",
 	},
 	["Sky Isles"] = {
 		Key = "Sky", Name = "STAR FALL", Icon = "🌠", Item = "fallen stars",
-		Color = rgb(255, 220, 110), Color2 = rgb(190, 150, 255), Coin = "Sky", Offset = 144,
+		Color = rgb(255, 220, 110), Color2 = rgb(190, 150, 255), Coin = "Sky", Offset = 144, Image = "rbxassetid://116813474635724",
 	},
 	["Magma Volcano"] = {
 		Key = "Volcano", Name = "LAVA GOLD", Icon = "🔥", Item = "molten gold",
-		Color = rgb(255, 120, 40), Color2 = rgb(255, 220, 90), Coin = "Volcano", Offset = 216,
+		Color = rgb(255, 120, 40), Color2 = rgb(255, 220, 90), Coin = "Volcano", Offset = 216, Image = "rbxassetid://73288360471749",
 	},
 	["Cosmic Galaxy"] = {
 		Key = "Galaxy", Name = "METEOR SHOWER", Icon = "☄️", Item = "meteorites",
-		Color = rgb(150, 110, 255), Color2 = rgb(90, 220, 255), Coin = "Galaxy", Offset = 288,
+		Color = rgb(150, 110, 255), Color2 = rgb(90, 220, 255), Coin = "Galaxy", Offset = 288, Image = "rbxassetid://113680090012253",
 	},
 }
+
+-- картинка бонуса «Метели» Frozen (FrozenEvent.server)
+E.FrostImage = "rbxassetid://106626061518039"
 
 -- атрибут workspace с концом ивента мира
 function E.AttrEnd(world: string): string

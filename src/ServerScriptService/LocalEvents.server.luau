@@ -76,37 +76,50 @@ local function makePickup(name: string, def, pos: Vector3, folder: Folder)
 		d.Parent = m
 		return d
 	end
-	if def.Key == "Meadow" then
-		core.Transparency = 1
-		-- цветок стоит «лицом» вбок: лепестки по кругу в вертикальной плоскости, сердцевина светится
-		deco(Vector3.new(1.4, 1.4, 1.4), CFrame.new(), def.Color2, Enum.Material.Neon, Enum.PartType.Ball)
-		for k = 0, 5 do
-			deco(Vector3.new(0.35, 1.9, 1.9), CFrame.Angles(0, 0, k * math.pi / 3) * CFrame.new(0, 1.25, 0) * CFrame.Angles(0, math.pi / 2, 0), def.Color, Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
-		end
-	elseif def.Key == "Neon" then
-		core.Shape = Enum.PartType.Ball
-		core.Material = Enum.Material.Foil
-		core.Color = Color3.fromRGB(220, 220, 240)
-		core.Reflectance = 0.4
-		deco(Vector3.new(0.2, 1.2, 0.2), CFrame.new(0, 1.8, 0), Color3.fromRGB(150, 150, 160), Enum.Material.Metal)
-	elseif def.Key == "Sky" then
-		core.Transparency = 1
-		for k = 0, 4 do
-			deco(Vector3.new(0.6, 2.2, 0.6), CFrame.Angles(0, 0, k * math.pi * 2 / 5) * CFrame.new(0, 0.9, 0), def.Color, Enum.Material.Neon)
-		end
-		deco(Vector3.new(1.2, 1.2, 1.2), CFrame.new(), def.Color, Enum.Material.Neon, Enum.PartType.Ball)
-	elseif def.Key == "Volcano" then
-		core.Material = Enum.Material.Neon
-		core.Color = def.Color2
-		core.Size = Vector3.new(2.2, 1.8, 2)
-		deco(Vector3.new(1.6, 1.4, 1.8), CFrame.new(0.8, 0.4, 0.3) * CFrame.Angles(0.4, 0.6, 0.2), def.Color, Enum.Material.Neon)
-		deco(Vector3.new(1.3, 1.1, 1.3), CFrame.new(-0.7, -0.2, -0.4) * CFrame.Angles(0.2, 1.2, 0.5), Color3.fromRGB(60, 30, 25), Enum.Material.Basalt)
+	-- Вид бонуса: картинка из ChatGPT на билборде (всегда лицом к камере, как иконки HUD) +
+	-- светящееся кольцо на земле и луч вверх, чтобы бонус было видно издалека.
+	-- Если картинки нет — простая светящаяся сфера.
+	core.Transparency = 1
+	if def.Image then
+		local bb = Instance.new("BillboardGui")
+		bb.Name = "Icon"
+		bb.Size = UDim2.fromScale(5.2, 5.2)
+		bb.StudsOffset = Vector3.new(0, 1.2, 0)
+		bb.LightInfluence = 0
+		bb.MaxDistance = 260
+		bb.Adornee = core
+		bb.Parent = core
+		local img = Instance.new("ImageLabel")
+		img.Name = "Image"
+		img.BackgroundTransparency = 1
+		img.Size = UDim2.fromScale(1, 1)
+		img.Image = def.Image
+		img.Parent = bb
 	else
-		core.Shape = Enum.PartType.Ball
-		core.Material = Enum.Material.Slate
-		core.Color = Color3.fromRGB(70, 60, 90)
-		deco(Vector3.new(2.9, 2.9, 2.9), CFrame.new(), def.Color, Enum.Material.ForceField, Enum.PartType.Ball)
+		deco(Vector3.new(2.2, 2.2, 2.2), CFrame.new(), def.Color, Enum.Material.Neon, Enum.PartType.Ball)
 	end
+	-- кольцо на земле
+	local ring = deco(Vector3.new(0.2, 5, 5), CFrame.new(0, -1.5, 0) * CFrame.Angles(0, 0, math.pi / 2), def.Color, Enum.Material.Neon, Enum.PartType.Cylinder)
+	ring.Name = "Ring"
+	ring.Transparency = 0.45
+	-- луч света вверх
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, -1.5, 0)
+	a0.Parent = core
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, 22, 0)
+	a1.Parent = core
+	local beam = Instance.new("Beam")
+	beam.Attachment0 = a0
+	beam.Attachment1 = a1
+	beam.Width0 = 2.4
+	beam.Width1 = 0.4
+	beam.Segments = 10
+	beam.LightEmission = 1
+	beam.FaceCamera = true
+	beam.Color = ColorSequence.new(def.Color, def.Color2)
+	beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	beam.Parent = core
 	local light = Instance.new("PointLight")
 	light.Color = def.Color
 	light.Range = 12

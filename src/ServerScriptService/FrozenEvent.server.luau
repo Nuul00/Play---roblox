@@ -88,6 +88,57 @@ local function makeCrystal(pos: Vector3)
 	sp.SpreadAngle = Vector2.new(180, 180)
 	sp.Rate = 8
 	sp.Parent = core
+	-- картинка-кристалл (ChatGPT) на билборде вместо простых стеклянных призм + кольцо и луч
+	local okE, E = pcall(require, ReplicatedStorage:WaitForChild("LocalEvents"))
+	if okE and E.FrostImage then
+		for _, d in ipairs(m:GetChildren()) do
+			if d:IsA("BasePart") then
+				d.Transparency = 1
+			end
+		end
+		local bb = Instance.new("BillboardGui")
+		bb.Size = UDim2.fromScale(5.2, 5.2)
+		bb.StudsOffset = Vector3.new(0, 0.4, 0)
+		bb.LightInfluence = 0
+		bb.MaxDistance = 260
+		bb.Adornee = core
+		bb.Parent = core
+		local img = Instance.new("ImageLabel")
+		img.BackgroundTransparency = 1
+		img.Size = UDim2.fromScale(1, 1)
+		img.Image = E.FrostImage
+		img.Parent = bb
+		local ring = Instance.new("Part")
+		ring.Name = "Ring"
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanQuery = false
+		ring.CanTouch = false
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Material = Enum.Material.Neon
+		ring.Color = Color3.fromRGB(150, 225, 255)
+		ring.Transparency = 0.45
+		ring.Size = Vector3.new(0.2, 5, 5)
+		ring.CFrame = CFrame.new(pos + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+		ring.Parent = m
+		local a0 = Instance.new("Attachment")
+		a0.WorldPosition = pos + Vector3.new(0, 0.3, 0)
+		a0.Parent = core
+		local a1 = Instance.new("Attachment")
+		a1.WorldPosition = pos + Vector3.new(0, 22, 0)
+		a1.Parent = core
+		local beam = Instance.new("Beam")
+		beam.Attachment0 = a0
+		beam.Attachment1 = a1
+		beam.Width0 = 2.4
+		beam.Width1 = 0.4
+		beam.Segments = 10
+		beam.LightEmission = 1
+		beam.FaceCamera = true
+		beam.Color = ColorSequence.new(Color3.fromRGB(150, 225, 255), Color3.fromRGB(220, 245, 255))
+		beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+		beam.Parent = core
+	end
 	m.PrimaryPart = core
 	m:AddTag("FrostCrystal")
 	local taken = false
