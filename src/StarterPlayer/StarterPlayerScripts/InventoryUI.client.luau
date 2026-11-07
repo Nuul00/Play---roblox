@@ -212,7 +212,8 @@ local function buildPets()
 		d.Font = Enum.Font.GothamBold
 		local go = K.button(empty, "🥚 FIND AN EGG", UDim2.new(0.5, -110, 1, -70), UDim2.fromOffset(220, 50), K.GREEN, 22)
 		go.Activated:Connect(function()
-			-- закрываем инвентарь: указатель квеста ведёт к яйцу
+			-- закрываем инвентарь, стрелка квеста 25 с ведёт к ближайшему яйцу
+			player:SetAttribute("GuideEggUntil", os.clock() + 25)
 			player:SetAttribute("UIScreen", "")
 		end)
 	end

@@ -31,7 +31,40 @@ local function posOf(x: Instance?): Vector3?
 end
 
 local eggCache = {}
+-- «FIND AN EGG» из пустого инвентаря: на 25 с стрелка ведёт к ближайшему яйцу своего мира
+local standList = nil -- все подставки яиц (ищем один раз)
+local function nearestEgg(): Vector3?
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return nil
+	end
+	if not standList then
+		standList = {}
+		for _, d in ipairs(world:GetDescendants()) do
+			if d:IsA("Model") and d.Name:match("^EggStand%d+$") then
+				table.insert(standList, d)
+			end
+		end
+	end
+	local best, bd = nil, math.huge
+	for _, d in ipairs(standList) do
+		if d.Parent then
+			local pos = posOf(d:FindFirstChild("Interact") or d)
+			local dist = pos and (pos - root.Position).Magnitude or math.huge
+			if dist < bd and dist < FAR then
+				best, bd = pos, dist
+			end
+		end
+	end
+	return best
+end
 local function target(): Vector3?
+	if (player:GetAttribute("GuideEggUntil") or 0) > os.clock() then
+		local e = nearestEgg()
+		if e then
+			return e
+		end
+	end
 	if player:GetAttribute(Q.Attr.Ready) == true then
 		return nil
 	end
