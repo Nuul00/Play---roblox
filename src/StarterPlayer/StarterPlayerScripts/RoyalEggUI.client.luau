@@ -272,7 +272,20 @@ local function buyButton(pos, label, def)
 	b.Activated:Connect(function()
 		s.Scale = 0.92
 		TweenService:Create(s, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-		if (def.Id or 0) > 0 and player:GetAttribute("NoPaidRandom") == false then
+		if (def.Id or 0) <= 0 then
+			-- товар за Robux ещё не создан в Creator Hub — говорим об этом, а не молчим
+			local old = b.Text
+			b.Text = "COMING SOON"
+			task.delay(1.5, function()
+				b.Text = old
+			end)
+		elseif player:GetAttribute("NoPaidRandom") ~= false then
+			local old = b.Text
+			b.Text = "NOT AVAILABLE IN YOUR REGION"
+			task.delay(1.5, function()
+				b.Text = old
+			end)
+		else
 			MarketplaceService:PromptProductPurchase(player, def.Id)
 		end
 	end)
