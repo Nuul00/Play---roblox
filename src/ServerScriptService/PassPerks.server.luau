@@ -62,17 +62,36 @@ local function tag(head: BasePart, text: string, color: Color3, offset: number, 
 end
 -- табличка титула: глянцевая плашка с градиентом цвета титула, эмодзи и надписью
 local INK = Color3.fromRGB(30, 16, 60)
-local function titlePlate(head: BasePart, t, offset: number)
+-- Размер в стадах (раньше в пикселях: издалека табличка была огромной). Корона Royal — часть таблички,
+-- ровно по центру над ней (раньше отдельный билборд «отрывался» от таблички).
+local function titlePlate(head: BasePart, t, offset: number, crown: boolean?)
 	local g = Instance.new("BillboardGui")
 	g.Name = "TitlePlate"
 	g:SetAttribute("PassPerk", true)
-	g.Size = UDim2.new(0, math.clamp(#t.Text * 13 + 70, 110, 260), 0, 34)
-	g.StudsOffsetWorldSpace = Vector3.new(0, offset, 0)
-	g.MaxDistance = 90
+	local w = math.clamp(#t.Text * 0.42 + 2.2, 3, 7.5)
+	local ph, ch = 1.05, crown and 0.85 or 0
+	g.Size = UDim2.fromScale(w, ph + ch)
+	g.StudsOffsetWorldSpace = Vector3.new(0, offset + ch / 2, 0)
+	g.MaxDistance = 70
 	g.LightInfluence = 0
 	g.Adornee = head
+	if crown then
+		local c = Instance.new("TextLabel")
+		c.Name = "Crown"
+		c.BackgroundTransparency = 1
+		c.AnchorPoint = Vector2.new(0.5, 0)
+		c.Position = UDim2.fromScale(0.5, 0)
+		c.Size = UDim2.fromScale(1, ch / (ph + ch))
+		c.Font = Enum.Font.FredokaOne
+		c.TextScaled = true
+		c.TextXAlignment = Enum.TextXAlignment.Center
+		c.Text = "👑"
+		c.Parent = g
+	end
 	local pill = Instance.new("Frame")
-	pill.Size = UDim2.fromScale(1, 1)
+	pill.AnchorPoint = Vector2.new(0, 1)
+	pill.Position = UDim2.fromScale(0, 1)
+	pill.Size = UDim2.fromScale(1, ph / (ph + ch))
 	pill.BackgroundColor3 = Color3.new(1, 1, 1)
 	pill.Parent = g
 	Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
@@ -88,14 +107,14 @@ local function titlePlate(head: BasePart, t, offset: number)
 	local gloss = Instance.new("Frame")
 	gloss.BackgroundColor3 = Color3.new(1, 1, 1)
 	gloss.BackgroundTransparency = 0.7
-	gloss.Position = UDim2.new(0, 10, 0, 3)
-	gloss.Size = UDim2.new(1, -20, 0.38, 0)
+	gloss.Position = UDim2.fromScale(0.08, 0.08)
+	gloss.Size = UDim2.fromScale(0.84, 0.36)
 	gloss.Parent = pill
 	Instance.new("UICorner", gloss).CornerRadius = UDim.new(1, 0)
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
-	l.Position = UDim2.new(0, 8, 0, 3)
-	l.Size = UDim2.new(1, -16, 1, -6)
+	l.Position = UDim2.fromScale(0.07, 0.1)
+	l.Size = UDim2.fromScale(0.86, 0.8)
 	l.Font = Enum.Font.FredokaOne
 	l.TextScaled = true
 	l.Text = t.Icon .. " " .. t.Text
@@ -118,13 +137,15 @@ local function dress(p: Player)
 	local vip, royal = p:GetAttribute("Pass_VIP") == true, p:GetAttribute("Pass_RoyalAura") == true
 	local shown = Titles.Shown(p)
 	if shown then
-		titlePlate(head, shown, 1.9)
+		titlePlate(head, shown, 1.9, royal)
 	end
 	if vip then
 		sparks(root, Color3.fromRGB(255, 210, 90), 10, "VipSparks")
 	end
 	if royal then
-		tag(head, "👑", Color3.fromRGB(255, 225, 120), shown and 3.3 or 1.8, 36)
+		if not shown then
+			tag(head, "👑", Color3.fromRGB(255, 225, 120), 1.8, 36)
+		end
 		sparks(root, Color3.fromRGB(255, 240, 150), 26, "RoyalSparks")
 	end
 end

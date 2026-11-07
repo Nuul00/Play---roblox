@@ -1211,39 +1211,50 @@ local function rayDown(origin, depth)
 end
 -- Указатель «🏆 TOP PLAYERS» у начала прохода к топам (фидбэк 11/19): столб и табличка-билборд.
 -- a — точка на земле у начала прохода, dir — направление к острову.
+-- Входная арка над проходом (а не столбик посреди дороги): видно издалека, проход свободен.
 local function topSign(island, theme, a, dir)
 	local side = Vector3.new(-dir.Z, 0, dir.X)
-	local postPos = a - dir * 2 + side * (BRIDGE_W / 2 + 2)
-	cyl(island, "TopSignPost", 7, 0.6, CFrame.new(postPos + Vector3.new(0, 3.5, 0)), theme.Rail, theme.RailMat)
-	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), CFrame.new(postPos + Vector3.new(0, 8, 0)), theme.Lamp, M.Neon, GHOST)
+	local half = BRIDGE_W / 2 + 1.5
+	local postH = 11
+	local rot = CFrame.lookAt(Vector3.zero, dir)
+	for _, sg in { -1, 1 } do
+		local at = a + side * sg * half
+		part(island, "TopGatePost", Vector3.new(1.6, postH, 1.6), CFrame.new(at + Vector3.new(0, postH / 2, 0)) * rot, theme.Arch, theme.ArchMat)
+		local lamp = ball(island, "TopGateLamp", 1.4, at + Vector3.new(0, postH + 0.9, 0), theme.Lamp, M.Neon, GHOST)
+		light(lamp, theme.Lamp, 16, 1.5)
+	end
+	-- перекладина с надписью с обеих сторон
+	local beamCf = CFrame.new(a + Vector3.new(0, postH - 1.2, 0)) * rot
+	local beam = part(island, "TopGateBeam", Vector3.new(half * 2 + 2.4, 3.4, 0.8), beamCf, theme.Arch, theme.ArchMat)
+	part(island, "TopGateEdge", Vector3.new(half * 2 + 2.8, 3.8, 0.4), beamCf * CFrame.new(0, 0, 0.25), theme.ArchGlow or theme.Title, M.Neon, GHOST)
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local sg = Instance.new("SurfaceGui")
+		sg.Face = face
+		sg.LightInfluence = 0
+		sg.MaxDistance = 250
+		sg.CanvasSize = Vector2.new(600, 160)
+		sg.Parent = beam
+		local t1 = Instance.new("TextLabel")
+		t1.BackgroundTransparency = 1
+		t1.Size = UDim2.new(1, 0, 0.62, 0)
+		t1.Font = Enum.Font.FredokaOne
+		t1.TextScaled = true
+		t1.Text = "🏆 TOP PLAYERS"
+		t1.TextColor3 = theme.Title
+		t1.Parent = sg
+		local s1 = Instance.new("UIStroke")
+		s1.Thickness = 3
+		s1.Color = theme.ArchInk
+		s1.Parent = t1
+		local t2 = t1:Clone()
+		t2.Position = UDim2.fromScale(0, 0.62)
+		t2.Size = UDim2.new(1, 0, 0.34, 0)
+		t2.Text = "Who's #1? Leaderboards →"
+		t2.TextColor3 = theme.Sub or Color3.new(1, 1, 1)
+		t2.Parent = sg
+	end
+	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), beamCf, theme.Lamp, M.Neon, GHOST)
 	holder.Transparency = 1
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromScale(12, 3.2)
-	bb.MaxDistance = 200
-	bb.LightInfluence = 0
-	bb.Parent = holder
-	local fr = Instance.new("Frame")
-	fr.Size = UDim2.fromScale(1, 1)
-	fr.BackgroundColor3 = theme.Arch
-	fr.Parent = bb
-	Instance.new("UICorner", fr).CornerRadius = UDim.new(0.3, 0)
-	local st = Instance.new("UIStroke")
-	st.Color = theme.Title
-	st.Thickness = 3
-	st.Parent = fr
-	local tl = Instance.new("TextLabel")
-	tl.BackgroundTransparency = 1
-	tl.Size = UDim2.fromScale(0.92, 0.8)
-	tl.Position = UDim2.fromScale(0.04, 0.1)
-	tl.Font = Enum.Font.FredokaOne
-	tl.TextScaled = true
-	tl.Text = "🏆 TOP PLAYERS ↑"
-	tl.TextColor3 = theme.Title
-	tl.Parent = fr
-	local ts = Instance.new("UIStroke")
-	ts.Thickness = 2.5
-	ts.Color = theme.ArchInk
-	ts.Parent = tl
 end
 -- Ворота в стене мира: стену-брусок режем на два куска с проёмом под мост, по краям — светящиеся столбы.
 local function cutGate(wall, base, dir, hy, theme, island)

@@ -12,7 +12,7 @@ local pg = Players.LocalPlayer:WaitForChild("PlayerGui")
 local GAP = 8
 -- { ScreenGui, элемент } сверху вниз; первый — якорь колонки, его не двигаем.
 -- Limit — элемент, выше которого колонка должна закончиться; не влезает — кнопки встают в ряд
--- справа от якоря (телефон и другие низкие экраны).
+-- под якорем от левого края (телефон и другие низкие экраны).
 local COLUMNS = {
 	{ Items = { { "QuestLineUI", "QuestTracker" }, { "RoyalEggUI", "RoyalEggButton" }, { "TradeUI", "TradeOpen" } }, Limit = { "MainHUD", "Panels" } },
 	{ Items = { { "MenuHUD", "TopRight" }, { "InviteHUD", "Invite" }, { "QuickTravelHUD", "TravelOpen" }, { "QuickTravelHUD", "TravelList" } } },
@@ -91,11 +91,13 @@ local function layoutColumn(column)
 	local limit = shown(limitObj) and (limitObj.AbsolutePosition.Y - gap) or math.huge
 	local row = need > limit
 	local bottom = top + height(first)
-	local right = first.AbsolutePosition.X + first.AbsoluteSize.X
+	-- ряд — под якорем от левого края (у стенки), а не справа от квеста посреди экрана (баг 2026-11)
+	local right = first.AbsolutePosition.X - gap
+	local rowTop = bottom + gap
 	for i = 2, #items do
 		local o = items[i]
 		local info = prepare(o)
-		local ty = row and top or (bottom + gap)
+		local ty = row and rowTop or (bottom + gap)
 		local dy = math.floor(ty - o.AbsolutePosition.Y + 0.5)
 		local pos = o.Position
 		if row then

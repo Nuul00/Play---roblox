@@ -1188,25 +1188,14 @@ local function equipPack(p)
 		local outer = Instance.new("Beam")
 		outer.Name = "PackTube"
 		outer.Attachment0, outer.Attachment1 = a0, a1
-		outer.Width0, outer.Width1 = 0.55, 0.45
-		outer.Segments = 14
-		outer.CurveSize0, outer.CurveSize1 = -2.2, 1.2
+		outer.Width0, outer.Width1 = 0.35, 0.3
+		outer.Segments = 10
+		-- без стрелок-потока и с меньшим изгибом: полоса «>>>» тянулась по полю и мешала выстрелам (фидбэк 2026-11)
+		outer.CurveSize0, outer.CurveSize1 = -0.8, 0.5
 		outer.Color = ColorSequence.new(Color3.fromRGB(150, 100, 230))
 		outer.Transparency = NumberSequence.new(0.35)
 		outer.FaceCamera = true
 		outer.Parent = root
-		local flow = outer:Clone()
-		flow.Name = "PackFlow"
-		flow.Width0, flow.Width1 = 0.4, 0.32
-		flow.Texture = "rbxassetid://119363361632569"
-		flow.TextureMode = Enum.TextureMode.Static
-		flow.TextureLength = 0.9
-		flow.TextureSpeed = 2.5
-		flow.LightEmission = 1
-		flow.Brightness = 3
-		flow.Color = ColorSequence.new(Color3.fromRGB(255, 235, 120), GOLD)
-		flow.Transparency = NumberSequence.new(0)
-		flow.Parent = root
 	end
 end
 removePack = function(p)

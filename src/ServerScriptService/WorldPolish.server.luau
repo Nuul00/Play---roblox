@@ -343,3 +343,22 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 end)
+
+------------------------------------------------------------------ трава в кругах магазинов
+-- Трава Terrain прорастала сквозь круги магазинов (фидбэк 7, как было у Royal Egg): под каждой
+-- зоной магазина на Terrain трава меняется на брусчатку (как дорожки рядом).
+task.spawn(function()
+	task.wait(8)
+	local terrain = workspace.Terrain
+	for _, d in ipairs(world:GetDescendants()) do
+		if d:IsA("BasePart") and d.Name == "ShopZone" then
+			pcall(function()
+				local r = math.min(math.max(d.Size.X, d.Size.Y, d.Size.Z) / 2 + 2, 14)
+				local c = d.Position
+				local reg = Region3.new(c - Vector3.new(r, 6, r), c + Vector3.new(r, 3, r)):ExpandToGrid(4)
+				terrain:ReplaceMaterial(reg, 4, Enum.Material.Grass, Enum.Material.Cobblestone)
+				terrain:ReplaceMaterial(reg, 4, Enum.Material.LeafyGrass, Enum.Material.Cobblestone)
+			end)
+		end
+	end
+end)
