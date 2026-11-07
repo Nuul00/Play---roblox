@@ -346,7 +346,8 @@ for tier = 1, 3 do
 end
 pcall(dressShop, world:FindFirstChild("UpgradeShop"), "MeadowUpgradeShop")
 pcall(dressShop, world:FindFirstChild("MagnetShop"), "MeadowMagnetShop")
-pcall(dressShop, city:WaitForChild("MagnetShop", 10), "MeadowMagnetShop") -- копия из GameServer
+-- у Neon свой неоновый ларёк (TripoProps.NeonMagnetShop); пока его нет — деревянный из Meadow
+pcall(dressShop, city:WaitForChild("MagnetShop", 10), props and props:FindFirstChild("NeonMagnetShop") and "NeonMagnetShop" or "MeadowMagnetShop")
 pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop", nil, 0.72) -- был огромный, видно недорисованные края
 pcall(dressShop, sky and sky:FindFirstChild("UpgradeShop"), "SkyUpgradeShop")
 pcall(dressShop, sky and sky:FindFirstChild("MagnetShop"), "SkyMagnetShop")
