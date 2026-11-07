@@ -779,6 +779,7 @@ local function collect(record, p)
  stats.Coins.Value=stats.Coins.Value+earned
  p:SetAttribute("LifetimeEarned",(p:GetAttribute("LifetimeEarned") or 0)+earned)
  p:SetAttribute("CoinsCollected",(p:GetAttribute("CoinsCollected") or 0)+1)
+ PlayerSystems.AddPetXP(p, 1) -- уровни питомцев: +1 опыт надетым за каждую монету
  coinSignal:Fire(p,earned,p:GetAttribute("CurrentWorld"))
  -- Чем больше игроков в мире, тем быстрее монеты возвращаются: каждому хватает монет и в полном сервере.
  local here, worldName = 0, ZONE_NAME[record.zone]

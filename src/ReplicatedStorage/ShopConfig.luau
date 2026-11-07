@@ -378,6 +378,44 @@ function ShopConfig.VariantMult(tier: number): number
 	return v and v.Mult or 1
 end
 
+-- ===== Уровни питомцев (2026-11) =====
+-- Уровень у ВИДА питомца (id): обычный, Golden, Diamond, Rainbow и Shiny одного вида делят его.
+-- Надетые питомцы получают 1 опыт за каждую собранную монету — это цель «по времени игры», её не
+-- купить монетами. Каждый уровень +4% к силе: Lv 1 = ×1, Lv 50 = ×2.96.
+-- Опыт до следующего уровня = 20·Lv^1.6: Lv 10 ≈ 3 000 монет (~50 мин), Lv 25 ≈ 33 000 (~9 ч).
+ShopConfig.PetLevel = { Max = 50, PerLevel = 0.04, XpBase = 20, XpExp = 1.6 }
+function ShopConfig.PetXPAttr(id: number): string
+	return "Save_PetXP_" .. id
+end
+function ShopConfig.XPToNext(level: number): number
+	local L = ShopConfig.PetLevel
+	return math.floor(L.XpBase * level ^ L.XpExp + 0.5)
+end
+-- суммарный опыт, нужный для каждого уровня (кэш)
+local xpAt = { [1] = 0 }
+for lv = 2, ShopConfig.PetLevel.Max do
+	xpAt[lv] = xpAt[lv - 1] + ShopConfig.XPToNext(lv - 1)
+end
+-- Уровень по опыту: уровень, опыт внутри уровня, опыт до следующего (0 на максимуме).
+function ShopConfig.LevelFromXP(xp: number?): (number, number, number)
+	local total = math.max(0, tonumber(xp) or 0)
+	local lv = 1
+	while lv < ShopConfig.PetLevel.Max and total >= xpAt[lv + 1] do
+		lv += 1
+	end
+	if lv >= ShopConfig.PetLevel.Max then
+		return lv, 0, 0
+	end
+	return lv, total - xpAt[lv], xpAt[lv + 1] - xpAt[lv]
+end
+function ShopConfig.LevelMult(level: number): number
+	return 1 + ShopConfig.PetLevel.PerLevel * (math.clamp(level, 1, ShopConfig.PetLevel.Max) - 1)
+end
+-- Уровень вида питомца у игрока (по атрибуту опыта).
+function ShopConfig.PetLevelOf(p: Player, id: number): number
+	return (ShopConfig.LevelFromXP(p:GetAttribute(ShopConfig.PetXPAttr(id))))
+end
+
 -- ===== Мировые события =====
 -- Раз в Interval секунд на весь сервер включается следующее событие из списка на Duration секунд.
 -- Сервер пишет в workspace атрибуты EventId и EventEnd (серверное время), клиенты рисуют таймер.

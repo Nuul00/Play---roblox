@@ -30,8 +30,14 @@ local function mult(code)
 	local id, tier = ShopConfig.SplitPet(code)
 	return Config.GetPetMultiplier(id) * ShopConfig.VariantMult(tier)
 end
+-- сила питомца у этого игрока: с уровнем вида (ShopConfig.PetLevel)
+local function multFor(p, code)
+	local id = ShopConfig.SplitPet(code)
+	return mult(code) * ShopConfig.LevelMult(ShopConfig.PetLevelOf(p, id))
+end
 PlayerSystems.Owned = owned
 PlayerSystems.CodeMultiplier = mult
+PlayerSystems.PlayerCodeMultiplier = multFor
 function PlayerSystems.GetEquipped(p): { number }
 	return ShopConfig.ParseEquipped(p:GetAttribute("Equipped"))
 end
@@ -70,11 +76,11 @@ function PlayerSystems.SetEquipped(p, list: { number })
 		end
 	end
 	table.sort(clean, function(a, b)
-		return mult(a) > mult(b)
+		return multFor(p, a) > multFor(p, b)
 	end)
 	local mults, text = {}, {}
 	for _, code in ipairs(clean) do
-		table.insert(mults, mult(code))
+		table.insert(mults, multFor(p, code))
 		table.insert(text, tostring(code))
 	end
 	p:SetAttribute("Equipped", table.concat(text, ","))
@@ -100,7 +106,7 @@ function PlayerSystems.EquipBest(p)
 		end
 	end
 	table.sort(all, function(a, b)
-		return mult(a) > mult(b)
+		return multFor(p, a) > multFor(p, b)
 	end)
 	local best = {}
 	for i = 1, math.min(#all, maxEquipped) do
@@ -115,11 +121,39 @@ function PlayerSystems.OnHatched(p, code)
 		table.insert(list, code)
 	else
 		local weakest = list[#list]
-		if mult(code) > mult(weakest) then
+		if multFor(p, code) > multFor(p, weakest) then
 			list[#list] = code
 		end
 	end
 	PlayerSystems.SetEquipped(p, list)
+end
+
+-- Опыт надетым питомцам: +amount каждому надетому ВИДУ (дубликаты одного вида — один раз).
+-- Вызывается при сборе монеты (GameServer.collect). На новом уровне — сообщение и пересчёт команды.
+function PlayerSystems.AddPetXP(p, amount: number)
+	local seen, leveled = {}, nil
+	for _, code in ipairs(PlayerSystems.GetEquipped(p)) do
+		local id = ShopConfig.SplitPet(code)
+		if not seen[id] and Config.Pets[id] then
+			seen[id] = true
+			local attr = ShopConfig.PetXPAttr(id)
+			local before = tonumber(p:GetAttribute(attr)) or 0
+			local lvBefore = ShopConfig.LevelFromXP(before)
+			if lvBefore < ShopConfig.PetLevel.Max then
+				local after = before + amount
+				p:SetAttribute(attr, after)
+				local lvAfter = ShopConfig.LevelFromXP(after)
+				if lvAfter > lvBefore then
+					leveled = leveled or {}
+					table.insert(leveled, Config.Pets[id].Name .. " Lv " .. lvAfter)
+				end
+			end
+		end
+	end
+	if leveled then
+		notifyFn(p, "⬆️ " .. table.concat(leveled, ", ") .. "! Pets get stronger with levels.", true)
+		PlayerSystems.SetEquipped(p, PlayerSystems.GetEquipped(p))
+	end
 end
 
 -- ===== Машины улучшения =====

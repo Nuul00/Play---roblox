@@ -130,7 +130,8 @@ local function count(code)
 end
 local function codeMult(code)
 	local id, tier = ShopConfig.SplitPet(code)
-	return Config.GetPetMultiplier(id) * ShopConfig.VariantMult(tier)
+	-- с уровнем вида питомца (ShopConfig.PetLevel): как считает сервер для бонуса команды
+	return Config.GetPetMultiplier(id) * ShopConfig.VariantMult(tier) * ShopConfig.LevelMult(ShopConfig.PetLevelOf(player, id))
 end
 
 -- ===== Питомцы =====
@@ -243,6 +244,20 @@ local function buildPets()
 			cs.Scale = 1
 		end)
 		viewport(card, UDim2.fromOffset(14, 4), UDim2.fromOffset(110, 92), id)
+		-- уровень вида: значок «Lv N» и полоска опыта до следующего уровня
+		do
+			local lv, into, need = ShopConfig.LevelFromXP(player:GetAttribute(ShopConfig.PetXPAttr(baseId)))
+			local pill = K.frame(card, UDim2.fromOffset(6, 6), UDim2.fromOffset(44, 20), Color3.new(1, 1, 1), 10)
+			K.grad(pill, Color3.fromRGB(120, 230, 140), Color3.fromRGB(40, 150, 80))
+			K.stroke(pill, K.INK, 2)
+			pill.ZIndex = 6
+			local lt = K.text(pill, "Lv " .. lv, UDim2.fromOffset(2, 1), UDim2.new(1, -4, 1, -2), 13, nil, 1.5)
+			lt.ZIndex = 7
+			local bar = K.frame(card, UDim2.fromOffset(14, 92), UDim2.fromOffset(110, 4), Color3.fromRGB(30, 25, 50), 2)
+			bar.ZIndex = 6
+			local fill = K.frame(bar, UDim2.new(), UDim2.fromScale(need > 0 and math.clamp(into / need, 0, 1) or 1, 1), Color3.fromRGB(120, 230, 140), 2)
+			fill.ZIndex = 7
+		end
 		label(card, (variant and (variant.Name .. " ") or "") .. def.Name, UDim2.fromOffset(4, 96), UDim2.fromOffset(130, 20), 15, variant and variant.Color:Lerp(Color3.new(1, 1, 1), 0.35) or nil)
 		label(card, ((baseId >= 222 and baseId <= 227) and "VAULT SECRET" or def.Exclusive and ("ROYAL " .. def.Rarity:upper()) or def.Super and (def.SuperKey:upper() .. " SECRET") or def.Rarity) .. " · x" .. string.format("%g", codeMult(id)), UDim2.fromOffset(4, 116), UDim2.fromOffset(130, 16), 13, rarityColors[def.Rarity])
 		-- Способность питомца и (у Legendary/Secret) значок супер-способности.

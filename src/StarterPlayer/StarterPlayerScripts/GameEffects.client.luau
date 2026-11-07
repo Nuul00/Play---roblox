@@ -43,6 +43,7 @@ local function formation(n: number): { Vector3 }
 end
 local function rebuild(record)
 	clearPets(record)
+	record.levelTags = {}
 	local codes = ShopConfig.ParseEquipped(record.player:GetAttribute("Equipped"))
 	local spots = formation(#codes)
 	for slot, code in ipairs(codes) do
@@ -72,11 +73,14 @@ local function rebuild(record)
 			text.TextColor3 = Color3.new(1, 1, 1)
 			text.TextStrokeTransparency = 0.3
 			local variant = ShopConfig.Variants[tier]
-			text.Text = (variant and (variant.Name .. " ") or "") .. def.Name -- без множителя: просто имя
+			local baseName = (variant and (variant.Name .. " ") or "") .. def.Name -- без множителя: имя и уровень
+			text.Text = "Lv " .. ShopConfig.PetLevelOf(record.player, id) .. " · " .. baseName
 			if variant then
 				text.TextColor3 = variant.Color:Lerp(Color3.new(1, 1, 1), 0.3)
 			end
 			text.Parent = tag
+			record.levelTags = record.levelTags or {}
+			table.insert(record.levelTags, { id = id, label = text, name = baseName })
 			local rainbow = {}
 			if tier == 3 then
 				for _, d in ipairs(model:GetDescendants()) do
@@ -107,6 +111,22 @@ local function addPlayer(player)
 				rebuild(record)
 			end
 		end)
+	end))
+	-- уровень питомца вырос (опыт вида Save_PetXP_<id>) — обновляем «Lv N» в табличке без пересборки
+	table.insert(record.connections, player.AttributeChanged:Connect(function(name)
+		local id = tonumber(string.match(name, "^Save_PetXP_(%d+)$"))
+		if not id then
+			return
+		end
+		local lv = ShopConfig.PetLevelOf(player, id)
+		for _, t in ipairs(record.levelTags or {}) do
+			if t.id == id and t.label.Parent then
+				local s = "Lv " .. lv .. " · " .. t.name
+				if t.label.Text ~= s then
+					t.label.Text = s
+				end
+			end
+		end
 	end))
 	rebuild(record)
 end
