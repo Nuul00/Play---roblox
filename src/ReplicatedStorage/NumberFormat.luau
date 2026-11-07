@@ -15,7 +15,11 @@ function NumberFormat.Short(n: number?): string
 			local v = n / u[1]
 			-- 3 значащие цифры: 1.25M, 12.5M, 125M
 			local f = v >= 100 and "%.0f" or v >= 10 and "%.1f" or "%.2f"
-			return sign .. (string.format(f, v):gsub("%.?0+$", "")) .. u[2]
+			local str = string.format(f, v)
+			if string.find(str, ".", 1, true) then -- нули срезаем только после точки: 200K не должно стать 2K
+				str = str:gsub("0+$", ""):gsub("%.$", "")
+			end
+			return sign .. str .. u[2]
 		end
 	end
 	return sign .. string.format("%g", math.floor(n * 10 + 0.5) / 10)

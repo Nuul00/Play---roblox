@@ -71,6 +71,13 @@ local sTitle = K.text(splash, "", UDim2.fromOffset(0, 170), UDim2.new(1, 0, 0, 6
 local sSub = K.text(splash, "x2 COINS IN THIS WORLD!", UDim2.fromOffset(0, 232), UDim2.new(1, 0, 0, 40), 30, K.GOLD, 3)
 
 ------------------------------------------------------------------ стрелки к бонусам
+-- отдельный слой поверх HUD (иначе стрелку у края закрывают кнопки)
+local pointerGui = Instance.new("ScreenGui")
+pointerGui.Name = "LocalEventPointers"
+pointerGui.ResetOnSpawn = false
+pointerGui.DisplayOrder = 40
+pointerGui.IgnoreGuiInset = true
+pointerGui.Parent = player.PlayerGui
 local pointers = {}
 for i = 1, 3 do
 	local f = Instance.new("Frame")
@@ -78,14 +85,17 @@ for i = 1, 3 do
 	f.AnchorPoint = Vector2.new(0.5, 0.5)
 	f.Size = UDim2.fromOffset(64, 64)
 	f.Visible = false
-	f.Parent = gui
+	f.Parent = pointerGui
+	local disc = K.frame(f, UDim2.fromScale(-0.1, -0.1), UDim2.fromScale(1.2, 1.2), Color3.new(1, 1, 1), UDim.new(1, 0))
+	K.grad(disc, rgb(70, 40, 140), rgb(30, 16, 60))
+	local discStroke = K.stroke(disc, K.GOLD, 3)
 	local img = Instance.new("ImageLabel")
 	img.BackgroundTransparency = 1
 	img.Size = UDim2.fromScale(1, 1)
 	img.Parent = f
 	local arrow = K.text(f, "▲", UDim2.new(0.5, -14, 0, -26), UDim2.fromOffset(28, 26), 26, nil, 2)
 	local dist = K.text(f, "", UDim2.new(0.5, -40, 1, -4), UDim2.fromOffset(80, 20), 15, nil, 2)
-	pointers[i] = { f = f, img = img, arrow = arrow, dist = dist }
+	pointers[i] = { f = f, img = img, arrow = arrow, dist = dist, stroke = discStroke }
 end
 
 ------------------------------------------------------------------ падающие картинки
@@ -314,7 +324,7 @@ Run.RenderStepped:Connect(function(dt)
 		if item and cam and item.d > 12 then
 			local sp, onScreen = cam:WorldToViewportPoint(item.pos)
 			local vp = cam.ViewportSize
-			local margin = 70
+			local margin = 110
 			local inside = onScreen and sp.X > margin and sp.X < vp.X - margin and sp.Y > margin and sp.Y < vp.Y - margin
 			if not inside then
 				-- направление на бонус от центра экрана; если он сзади — разворачиваем
@@ -333,6 +343,7 @@ Run.RenderStepped:Connect(function(dt)
 				ptr.arrow.Rotation = math.deg(math.atan2(dir.Y, dir.X)) + 90
 				ptr.arrow.Position = UDim2.new(0.5, -14 + dir.Unit.X * 40, 0.5, -13 + dir.Unit.Y * 40)
 				ptr.img.Image = def.Image or ""
+				ptr.stroke.Color = def.Color
 				ptr.dist.Text = math.floor(item.d) .. " m"
 				ptr.f.Size = UDim2.fromOffset(56 * uiScale, 56 * uiScale)
 				vis = true

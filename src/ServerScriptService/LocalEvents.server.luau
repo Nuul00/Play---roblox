@@ -193,8 +193,22 @@ local function run(name: string, def, ends: number)
 	if #spots > 0 then
 		local rng = Random.new()
 		for wave = 1, 3 do
+			-- каждая волна — рядом с игроками этого мира (до 90 студов), чтобы не бегать через весь мир
+			local near = {}
+			for _, p in ipairs(Players:GetPlayers()) do
+				local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+				if r and p:GetAttribute("CurrentWorld") == name then
+					for _, sp in ipairs(spots) do
+						local d = (sp - r.Position).Magnitude
+						if d > 12 and d < 90 then
+							table.insert(near, sp)
+						end
+					end
+				end
+			end
+			local pool = #near >= 4 and near or spots
 			for _ = 1, math.floor(E.Pickups / 3) do
-				local base = spots[rng:NextInteger(1, #spots)]
+				local base = pool[rng:NextInteger(1, #pool)]
 				makePickup(name, def, base + Vector3.new(rng:NextNumber(-3, 3), -1.2, rng:NextNumber(-3, 3)), folder)
 			end
 			if wave < 3 then

@@ -206,6 +206,9 @@ local function skinButton(b)
 	return img
 end
 local tiles = { single = skinButton(single), triple = skinButton(triple), nine = skinButton(nine), auto = skinButton(auto) }
+-- галерея и подсказка поверх рамки мира: у Neon (и других) центр картинки рамки непрозрачный
+gallery.ZIndex = 3
+hint.ZIndex = 3
 header.ZIndex = 3 -- шапка (название, монеты, крестик) поверх рамки мира
 -- Компактное окно для телефонов: галерея ниже (она прокручивается), кнопки выше — окно влезает в низкий экран.
 local compact = false
