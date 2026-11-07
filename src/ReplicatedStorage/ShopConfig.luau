@@ -199,6 +199,18 @@ end
 -- Достижения: цепочки с уровнями (I, II, III…) по каждой статистике. Каждое открытое достижение
 -- навсегда даёт x1.03 к монетам (умножается на остальные бонусы). Первые шесть Id остались
 -- прежними, чтобы у игроков не пропали уже полученные.
+-- гербы достижений (ChatGPT, assets/hud/badges), по цепочке
+ShopConfig.BadgeImages = {
+	CoinsCollected = "rbxassetid://81638763927640",
+	EggsOpened = "rbxassetid://81801260238500",
+	LifetimeEarned = "rbxassetid://137632783991525",
+	PetsDiscovered = "rbxassetid://111642737460387",
+	Rebirths = "rbxassetid://79537989500913",
+	Save_RushRuns = "rbxassetid://83097397411038",
+	MagnetTier = "rbxassetid://108801745063065",
+	Save_BestCombo = "rbxassetid://124037883612626",
+	Legend = "rbxassetid://94631015871509",
+}
 ShopConfig.BadgeBonus = 1.03
 ShopConfig.Badges = {}
 do

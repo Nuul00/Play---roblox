@@ -240,6 +240,13 @@ action.OnServerEvent:Connect(function(p, kind, arg)
  elseif kind == "potion" and type(arg) == "string" then
   PlayerSystems.UsePotion(p, arg)
  -- настройки вкладки зелий (сторона экрана и высота) — сохраняются с профилем
+ elseif kind == "title" and type(arg) == "string" then
+  -- титул над головой: только открытый (или "none" — без титула)
+  local Titles = require(ReplicatedStorage:WaitForChild("TitlesConfig"))
+  local t = Titles.ById[arg]
+  if arg == "none" or (t and t.Has(p)) then
+   p:SetAttribute(Titles.Attr, arg)
+  end
  elseif kind == "potionside" and (arg == "L" or arg == "R") then
   p:SetAttribute("Save_PotionSide", arg)
  elseif kind == "potiony" and type(arg) == "number" and arg == arg and arg >= 0 and arg <= 1 then

@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local StoreConfig = require(ReplicatedStorage:WaitForChild("StoreConfig"))
 local Worlds = require(ReplicatedStorage:WaitForChild("WorldsConfig"))
 local world = workspace:WaitForChild("CoinSpeedWorld")
+local Titles = require(ReplicatedStorage:WaitForChild("TitlesConfig"))
 
 local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 
@@ -59,6 +60,53 @@ local function tag(head: BasePart, text: string, color: Color3, offset: number, 
 	l.Parent = g
 	g.Parent = head
 end
+-- табличка титула: глянцевая плашка с градиентом цвета титула, эмодзи и надписью
+local INK = Color3.fromRGB(30, 16, 60)
+local function titlePlate(head: BasePart, t, offset: number)
+	local g = Instance.new("BillboardGui")
+	g.Name = "TitlePlate"
+	g:SetAttribute("PassPerk", true)
+	g.Size = UDim2.new(0, math.clamp(#t.Text * 13 + 70, 110, 260), 0, 34)
+	g.StudsOffsetWorldSpace = Vector3.new(0, offset, 0)
+	g.MaxDistance = 90
+	g.LightInfluence = 0
+	g.Adornee = head
+	local pill = Instance.new("Frame")
+	pill.Size = UDim2.fromScale(1, 1)
+	pill.BackgroundColor3 = Color3.new(1, 1, 1)
+	pill.Parent = g
+	Instance.new("UICorner", pill).CornerRadius = UDim.new(1, 0)
+	local grad = Instance.new("UIGradient")
+	grad.Rotation = 90
+	grad.Color = ColorSequence.new(t.A, t.B)
+	grad.Parent = pill
+	local st = Instance.new("UIStroke")
+	st.Thickness = 3
+	st.Color = INK
+	st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	st.Parent = pill
+	local gloss = Instance.new("Frame")
+	gloss.BackgroundColor3 = Color3.new(1, 1, 1)
+	gloss.BackgroundTransparency = 0.7
+	gloss.Position = UDim2.new(0, 10, 0, 3)
+	gloss.Size = UDim2.new(1, -20, 0.38, 0)
+	gloss.Parent = pill
+	Instance.new("UICorner", gloss).CornerRadius = UDim.new(1, 0)
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Position = UDim2.new(0, 8, 0, 3)
+	l.Size = UDim2.new(1, -16, 1, -6)
+	l.Font = Enum.Font.FredokaOne
+	l.TextScaled = true
+	l.Text = t.Icon .. " " .. t.Text
+	l.TextColor3 = Color3.new(1, 1, 1)
+	l.Parent = pill
+	local ts = Instance.new("UIStroke")
+	ts.Thickness = 2
+	ts.Color = INK
+	ts.Parent = l
+	g.Parent = head
+end
 local function dress(p: Player)
 	local char = p.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -68,12 +116,15 @@ local function dress(p: Player)
 	end
 	clear(char)
 	local vip, royal = p:GetAttribute("Pass_VIP") == true, p:GetAttribute("Pass_RoyalAura") == true
+	local shown = Titles.Shown(p)
+	if shown then
+		titlePlate(head, shown, 1.9)
+	end
 	if vip then
-		tag(head, "[VIP]", Color3.fromRGB(255, 215, 80), 1.7, 30)
 		sparks(root, Color3.fromRGB(255, 210, 90), 10, "VipSparks")
 	end
 	if royal then
-		tag(head, "👑", Color3.fromRGB(255, 225, 120), vip and 2.9 or 1.8, 36)
+		tag(head, "👑", Color3.fromRGB(255, 225, 120), shown and 3.3 or 1.8, 36)
 		sparks(root, Color3.fromRGB(255, 240, 150), 26, "RoyalSparks")
 	end
 end
@@ -84,7 +135,7 @@ local function onPlayer(p: Player)
 		dress(p)
 	end)
 	p.AttributeChanged:Connect(function(n)
-		if n == "Pass_VIP" or n == "Pass_RoyalAura" then
+		if n == "Pass_VIP" or n == "Pass_RoyalAura" or n == Titles.Attr then
 			dress(p)
 		end
 	end)
@@ -187,3 +238,31 @@ remote.OnServerInvoke = function(p, index)
 	hrp.AssemblyLinearVelocity = Vector3.zero
 	return { Ok = true }
 end
+
+-- ===== Новые титулы: сообщаем, когда открылся (раз в 3 с проверяем, что изменилось) =====
+local known = {}
+task.spawn(function()
+	local feedback = ReplicatedStorage:WaitForChild("GameFeedback")
+	while true do
+		task.wait(3)
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p:GetAttribute("ProfileReady") then
+				local k = known[p]
+				local first = k == nil
+				k = k or {}
+				for _, t in ipairs(Titles.List) do
+					if not k[t.Id] and t.Has(p) then
+						k[t.Id] = true
+						if not first then
+							feedback:FireClient(p, "👑 New title: " .. t.Text .. "! Equip it in Inventory → TITLES", true)
+						end
+					end
+				end
+				known[p] = k
+			end
+		end
+	end
+end)
+Players.PlayerRemoving:Connect(function(p)
+	known[p] = nil
+end)

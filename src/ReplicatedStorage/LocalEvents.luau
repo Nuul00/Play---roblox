@@ -16,7 +16,7 @@ E.Worlds = {
 		Color = rgb(255, 140, 200), Color2 = rgb(255, 225, 120), Coin = "Meadow", Offset = 0, Image = "rbxassetid://116955946009632",
 	},
 	["Neon District"] = {
-		Key = "Neon", Name = "DISCO FEVER", Icon = "🪩", Item = "disco balls",
+		Key = "Neon", Name = "DISCO FEVER", Icon = "🌃", Item = "disco balls",
 		Color = rgb(255, 80, 220), Color2 = rgb(80, 230, 255), Coin = "Neon", Offset = 72, Image = "rbxassetid://121804754786185",
 	},
 	["Sky Isles"] = {

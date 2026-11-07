@@ -107,10 +107,11 @@ local close = button(window, "×", UDim2.new(1, -52, 0, 10), UDim2.fromOffset(40
 close.TextSize = 28
 close.Modal = true
 
-local tabNames = { { "pets", "🐾 PETS" }, { "potions", "🧪 POTIONS" }, { "badges", "🏅 BADGES" } }
+local tabNames = { { "pets", "🐾 PETS" }, { "potions", "🧪 POTIONS" }, { "badges", "🏅 BADGES" }, { "titles", "👑 TITLES" } }
 local tabButtons = {}
 for i, t in ipairs(tabNames) do
-	local b = button(window, t[2], UDim2.fromOffset(330 + (i - 1) * 132, 12), UDim2.fromOffset(124, 36), Color3.fromRGB(85, 62, 160))
+	local b = button(window, t[2], UDim2.fromOffset(314 + (i - 1) * 102, 13), UDim2.fromOffset(98, 34), Color3.fromRGB(85, 62, 160))
+	b.TextSize = 14
 	tabButtons[t[1]] = b
 end
 local body = Instance.new("Frame")
@@ -415,15 +416,34 @@ local function buildBadges()
 		row.Parent = list
 		corner(row, 14)
 		stroke(row, 3, done and Color3.fromRGB(255, 210, 80) or dark)
-		local medal = Instance.new("Frame")
-		medal.Position = UDim2.fromOffset(12, 16)
-		medal.Size = UDim2.fromOffset(76, 76)
-		medal.BackgroundColor3 = done and Color3.fromRGB(255, 200, 60) or Color3.fromRGB(90, 95, 110)
-		medal.Parent = row
-		corner(medal, 38)
-		stroke(medal, 3)
-		local mi = label(medal, b.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 38)
-		mi.TextTransparency = done and 0 or 0.45
+		-- герб цепочки; ступень (I–II бронза, III–IV серебро, V–VI золото, VII+ алмаз) — цвет подложки
+		local tierColor = ({ Color3.fromRGB(205, 127, 50), Color3.fromRGB(200, 205, 215), Color3.fromRGB(255, 200, 50), Color3.fromRGB(110, 230, 255) })[math.clamp(math.ceil(b.Level / 2), 1, 4)]
+		local glow = Instance.new("Frame")
+		glow.Position = UDim2.fromOffset(10, 10)
+		glow.Size = UDim2.fromOffset(84, 84)
+		glow.BackgroundColor3 = done and tierColor or Color3.fromRGB(60, 50, 90)
+		glow.BackgroundTransparency = done and 0.55 or 0.3
+		glow.Parent = row
+		corner(glow, 42)
+		local img = ShopConfig.BadgeImages[b.Chain]
+		if img then
+			local mi = Instance.new("ImageLabel")
+			mi.BackgroundTransparency = 1
+			mi.Image = img
+			mi.Position = UDim2.fromOffset(4, 2)
+			mi.Size = UDim2.fromOffset(96, 96)
+			mi.ImageColor3 = done and Color3.new(1, 1, 1) or Color3.fromRGB(120, 110, 150)
+			mi.ImageTransparency = done and 0 or 0.35
+			mi.Parent = row
+			local lv = label(row, ({ "I", "II", "III", "IV", "V", "VI", "VII", "VIII" })[b.Level] or "", UDim2.fromOffset(34, 78), UDim2.fromOffset(36, 22), 15, done and tierColor or Color3.fromRGB(170, 160, 200))
+			local lst = Instance.new("UIStroke")
+			lst.Thickness = 2
+			lst.Color = Color3.fromRGB(30, 16, 60)
+			lst.Parent = lv
+		else
+			local mi = label(glow, b.Icon, UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 38)
+			mi.TextTransparency = done and 0 or 0.45
+		end
 		local n = label(row, b.Name .. (done and "  ✔" or ""), UDim2.fromOffset(100, 8), UDim2.fromOffset(260, 28), 20)
 		n.TextXAlignment = Enum.TextXAlignment.Left
 		local d = label(row, b.Desc .. string.format(" · x%g coins", ShopConfig.BadgeBonus), UDim2.fromOffset(100, 36), UDim2.fromOffset(260, 22), 14, Color3.fromRGB(210, 215, 230), Enum.Font.GothamMedium)
@@ -443,6 +463,80 @@ local function buildBadges()
 	end
 	if firstOpen then
 		list.CanvasPosition = Vector2.new(0, math.max(math.floor((firstOpen - 1) / 2) - 1, 0) * 118)
+	end
+end
+
+-- ===== Титулы =====
+local Titles = require(ReplicatedStorage:WaitForChild("TitlesConfig"))
+local K = require(ReplicatedStorage:WaitForChild("UIKit"))
+local function plate(parent, t, pos, w)
+	local pill = K.frame(parent, pos, UDim2.fromOffset(w, 32), Color3.new(1, 1, 1), UDim.new(1, 0))
+	K.grad(pill, t.A, t.B)
+	K.stroke(pill, K.INK, 3)
+	local gl = K.frame(pill, UDim2.fromOffset(10, 3), UDim2.new(1, -20, 0.38, 0), Color3.new(1, 1, 1), UDim.new(1, 0))
+	gl.BackgroundTransparency = 0.7
+	K.text(pill, t.Icon .. " " .. t.Text, UDim2.fromOffset(8, 3), UDim2.new(1, -16, 1, -6), 20, nil, 2)
+	return pill
+end
+local function buildTitles()
+	local shown = Titles.Shown(player)
+	local owned = 0
+	for _, t in ipairs(Titles.List) do
+		if t.Has(player) then
+			owned += 1
+		end
+	end
+	local header = label(body, string.format("Titles show above your head · unlocked %d / %d", owned, #Titles.List), UDim2.fromOffset(0, 0), UDim2.fromOffset(560, 34), 19)
+	header.TextXAlignment = Enum.TextXAlignment.Left
+	local none = K.button(body, "NO TITLE", UDim2.fromOffset(600, 0), UDim2.fromOffset(140, 34), shown == nil and K.ORANGE or K.GRAY, 16)
+	none.Activated:Connect(function()
+		action:FireServer("title", "none")
+	end)
+	local list = Instance.new("ScrollingFrame")
+	list.Name = "TitleList"
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.Position = UDim2.fromOffset(0, 44)
+	list.Size = UDim2.new(1, 0, 1, -44)
+	list.ScrollBarThickness = 8
+	list.ScrollBarImageColor3 = Color3.fromRGB(240, 160, 50)
+	list.ScrollingDirection = Enum.ScrollingDirection.Y
+	list.CanvasSize = UDim2.fromOffset(0, math.ceil(#Titles.List / 3) * 128)
+	list.Parent = body
+	for i, t in ipairs(Titles.List) do
+		local has = t.Has(player)
+		local on = shown == t
+		local card = K.frame(list, UDim2.fromOffset(((i - 1) % 3) * 248, math.floor((i - 1) / 3) * 128), UDim2.fromOffset(238, 118), Color3.new(1, 1, 1), 16)
+		K.grad(card, has and K.CARD:Lerp(t.B, 0.25) or K.CARD, K.CARD2)
+		K.stroke(card, on and K.GOLD or (has and t.B or Color3.fromRGB(70, 60, 110)), on and 3.5 or 2)
+		local pl = plate(card, t, UDim2.fromOffset(12, 10), 214)
+		if not has then
+			pl.BackgroundTransparency = 0.5
+			for _, d in ipairs(pl:GetDescendants()) do
+				if d:IsA("TextLabel") then
+					d.TextTransparency = 0.45
+				end
+			end
+		end
+		local d = K.text(card, (has and "" or "🔒 ") .. t.Desc, UDim2.fromOffset(10, 46), UDim2.new(1, -20, 0, 22), 14, has and Color3.fromRGB(225, 220, 245) or Color3.fromRGB(170, 160, 200), 0)
+		d.Font = Enum.Font.GothamBold
+		local crest = Instance.new("ImageLabel")
+		crest.BackgroundTransparency = 1
+		crest.Image = t.Image or ""
+		crest.Position = UDim2.fromOffset(10, 64)
+		crest.Size = UDim2.fromOffset(50, 50)
+		crest.ImageTransparency = has and 0 or 0.5
+		crest.Visible = t.Image ~= nil
+		crest.Parent = card
+		if not t.Image then
+			K.text(card, t.Icon, UDim2.fromOffset(14, 70), UDim2.fromOffset(42, 40), 32, nil, 0).TextTransparency = has and 0 or 0.5
+		end
+		local b = K.button(card, on and "EQUIPPED" or has and "EQUIP" or "LOCKED", UDim2.fromOffset(68, 74), UDim2.fromOffset(158, 34), on and K.ORANGE or has and K.GREEN or K.GRAY, 17)
+		b.Activated:Connect(function()
+			if has and not on then
+				action:FireServer("title", t.Id)
+			end
+		end)
 	end
 end
 
@@ -468,6 +562,8 @@ local function render()
 		buildPets()
 	elseif current == "potions" then
 		buildPotions()
+	elseif current == "titles" then
+		buildTitles()
 	else
 		buildBadges()
 	end
@@ -515,7 +611,7 @@ player.AttributeChanged:Connect(function(name)
 	if not window.Visible or pending then
 		return
 	end
-	if name == "Equipped" or name == "PetBonus" or name == "MaxEquipped" or name == "PetSupers" or name:sub(1, 4) == "Abil" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" then
+	if name == "Equipped" or name == "PetBonus" or name == "MaxEquipped" or name == "PetSupers" or name:sub(1, 4) == "Abil" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" or name == "Save_Title" or name == "Save_QuestLineStep" then
 		pending = true
 		task.defer(function()
 			pending = false
