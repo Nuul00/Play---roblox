@@ -632,6 +632,38 @@ do
  end
  fill(world, 115)
  fill(city, 90)
+ -- «дорожка» монет от точки появления: новичок сразу собирает первые монеты (раньше ~7 с бега
+ -- по пустой площади до первой монеты), квест «First Steps» (10 монет) идёт с первых секунд
+ local start = world:FindFirstChild("Start")
+ local sample
+ for _, c in ipairs(world:GetChildren()) do
+  if c:IsA("BasePart") and string.match(c.Name, "^Coin_%d+$") then sample = c break end
+ end
+ if start and sample then
+  local maxN = 0
+  for _, c in ipairs(world:GetChildren()) do
+   local n = tonumber(string.match(c.Name, "^Coin_(%d+)$") or "")
+   if n then maxN = math.max(maxN, n) end
+  end
+  local look = start.CFrame.LookVector
+  look = Vector3.new(look.X, 0, look.Z).Unit
+  local side = Vector3.new(-look.Z, 0, look.X)
+  rayP.FilterDescendantsInstances = { sample }
+  for i = 1, 10 do
+   local flat = start.Position + look * (7 + i * 4.5) + side * math.sin(i * 0.7) * 3
+   local hit = workspace:Raycast(flat + Vector3.new(0, 30, 0), Vector3.new(0, -60, 0), rayP)
+   if hit then
+    maxN += 1
+    local c = sample:Clone()
+    c.Name = "Coin_" .. maxN
+    c.Position = hit.Position + Vector3.new(0, 2.6, 0)
+    for _, d in ipairs(c:GetChildren()) do
+     if d:IsA("Light") or d:IsA("ParticleEmitter") then d:Destroy() end
+    end
+    c.Parent = world
+   end
+  end
+ end
 end
 for zone, worldId in pairs({[world] = "Meadow", [city] = "Neon"}) do
  for _, coin in ipairs(zone:GetChildren()) do

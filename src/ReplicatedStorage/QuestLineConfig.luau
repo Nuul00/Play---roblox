@@ -62,7 +62,7 @@ Q.Steps = {
 	step(1, "Meadow Master", "Finish the chapter for a big prize!", { Type = "earn", N = 10000 }, { Coins = 3000, Hatch = 3, Bonus = 0.05 }),
 
 	-- ===== Глава 2: Neon District (яйца 4, 5, 6; прокачка до 25) =====
-	step(2, "Into the Neon", "Unlock it in the TELEPORT menu (1K coins).", { Type = "world", World = "Neon District" }, { Coins = 1100 }),
+	step(2, "Into the Neon", "Unlock it in the TELEPORT menu (15K coins).", { Type = "world", World = "Neon District" }, { Coins = 5000 }),
 	step(2, "Neon Runner", "Neon kiosks sell higher levels.", { Type = "speed", N = 15 }, { Coins = 2900 }),
 	step(2, "Disco Fever", "Neon pets are way stronger!", { Type = "eggs", N = 5, Egg = 4 }, { Coins = 8000, Potion = "Luck" }),
 	step(2, "Double Trouble", "A chance for every coin to count twice.", { Type = "double", N = 5 }, { Coins = 21000 }),

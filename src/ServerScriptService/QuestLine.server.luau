@@ -247,6 +247,50 @@ local function onAttributeChanged(p, st, name: string)
 	end
 end
 
+-- Догоняем линию: игрок ушёл в мир следующей главы, не закончив прошлую (например, открыл
+-- Neon, не купив яйцо в Meadow) — раньше квест так и висел на «Open 1 Sunset Sky Egg» и
+-- переставал подсказывать. Теперь прыгаем на первый шаг главы этого мира. Монеты пропущенных
+-- шагов не выдаём, а постоянные бонусы глав (+5% монет) — выдаём, чтобы никто их не терял.
+local function catchUp(p)
+	local i, s = currentStep(p)
+	if not s then
+		return
+	end
+	local world = p:GetAttribute("CurrentWorld")
+	local chapter
+	for ci, c in ipairs(Q.Chapters) do
+		if c.Name == world then
+			chapter = ci
+		end
+	end
+	if not chapter or chapter <= s.Chapter then
+		return
+	end
+	local first
+	for j = i, #Q.Steps do
+		if Q.Steps[j].Chapter == chapter then
+			first = j
+			break
+		end
+	end
+	if not first then
+		return
+	end
+	local bonus = 0
+	for j = i, first - 1 do
+		local r = Q.Steps[j].Reward
+		if r and r.Bonus then
+			bonus += r.Bonus
+		end
+	end
+	if bonus > 0 then
+		local b = p:GetAttribute(A.Bonus)
+		p:SetAttribute(A.Bonus, (type(b) == "number" and b or 1) + bonus)
+	end
+	startStep(p, first)
+	feedback:FireClient(p, "📜 Quests caught up: " .. Q.Chapters[chapter].Title .. "!", true)
+end
+
 local function init(p)
 	-- Ждём загрузки сохранения: до этого Save_-атрибутов ещё нет.
 	while p.Parent == Players and not p:GetAttribute("ProfileReady") do
@@ -269,6 +313,9 @@ local function init(p)
 	state[p] = st
 	st.conn = p.AttributeChanged:Connect(function(name)
 		onAttributeChanged(p, st, name)
+		if name == "CurrentWorld" then
+			catchUp(p)
+		end
 	end)
 	local i = p:GetAttribute(A.Step)
 	if type(i) ~= "number" or i < 1 then
@@ -285,6 +332,7 @@ local function init(p)
 			refresh(p)
 		end
 	end
+	catchUp(p)
 end
 
 Players.PlayerAdded:Connect(function(p)

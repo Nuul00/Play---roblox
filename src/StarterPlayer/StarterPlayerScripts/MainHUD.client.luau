@@ -204,7 +204,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if math.abs(target - shown) < 0.05 then
 		shown = target
 	end
-	local txt = abbreviate(shown)
+	local txt = abbreviate(math.floor(shown + 0.001)) -- монеты целыми: «153.5» сбивало с толку
 	if coinText.Text ~= txt then coinText.Text = txt end
 	local camera = workspace.CurrentCamera
 	if camera then
