@@ -171,12 +171,12 @@ for i,m in ipairs(modes) do
  modeButtons[m[1]]=b
  b.Activated:Connect(function() applyTime(m[1]) end)
 end
-local hint=Instance.new("TextLabel");hint.BackgroundTransparency=1;hint.Position=UDim2.fromOffset(20,190);hint.Size=UDim2.fromOffset(380,40);hint.TextWrapped=true;hint.Text="Only changes what you see. Street lamps glow at night.";hint.Font=Enum.Font.Gotham;hint.TextSize=14;hint.TextColor3=Color3.fromRGB(200,210,220);hint.Parent=settings
+local hint=Instance.new("TextLabel");hint.BackgroundTransparency=1;hint.Position=UDim2.fromOffset(20,184);hint.Size=UDim2.fromOffset(380,26);hint.TextWrapped=true;hint.Text="Only changes what you see. Street lamps glow at night.";hint.Font=Enum.Font.Gotham;hint.TextSize=14;hint.TextColor3=Color3.fromRGB(200,210,220);hint.Parent=settings
 applyTime("Evening")
 -- Музыка миров (WorldAmbience): вкл/выкл только у этого игрока.
-local music=button(settings,"🎵 Music: ON",UDim2.fromOffset(380,40),UDim2.fromOffset(20,240));music.BackgroundColor3=Color3.fromRGB(90,160,110)
+local music=button(settings,"🎵 Music: ON",UDim2.fromOffset(380,34),UDim2.fromOffset(20,214));music.BackgroundColor3=Color3.fromRGB(90,160,110)
 -- сторона вкладки зелий: для левшей и правшей (сохраняется с профилем)
-settings.Size=UDim2.fromOffset(420,512)
+settings.Size=UDim2.fromOffset(420,460)
 -- ивенты миров (LocalEventsFX, сохраняется): баннер полный/маленький/скрыт, где он, метки бонусов
 local GA=ReplicatedStorage:WaitForChild("GameAction")
 local function cycle(attr,kind,list,default)
@@ -185,22 +185,25 @@ local function cycle(attr,kind,list,default)
  local nxt=list[i%#list+1]
  player:SetAttribute(attr,nxt);GA:FireServer(kind,nxt)
 end
-local evBtn=button(settings,"",UDim2.fromOffset(380,40),UDim2.fromOffset(20,344));evBtn.BackgroundColor3=Color3.fromRGB(220,100,170)
-local posBtn=button(settings,"",UDim2.fromOffset(380,40),UDim2.fromOffset(20,392));posBtn.BackgroundColor3=Color3.fromRGB(200,110,60)
-local mrkBtn=button(settings,"",UDim2.fromOffset(380,40),UDim2.fromOffset(20,440));mrkBtn.BackgroundColor3=Color3.fromRGB(80,150,200)
+local evBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,292));evBtn.BackgroundColor3=Color3.fromRGB(220,100,170)
+local posBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,331));posBtn.BackgroundColor3=Color3.fromRGB(200,110,60)
+local mrkBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,370));mrkBtn.BackgroundColor3=Color3.fromRGB(80,150,200)
+local pillBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,409));pillBtn.BackgroundColor3=Color3.fromRGB(190,150,50)
 local function evText()
  local m=player:GetAttribute("Save_EventBanner") or "full"
  evBtn.Text="🌸 Event banner: "..(m=="mini" and "SMALL" or m=="hidden" and "HIDDEN" or "FULL")
  local p=player:GetAttribute("Save_EventPos") or "top"
  posBtn.Text="📍 Event banner place: "..(p=="bottom" and "BOTTOM" or p=="right" and "RIGHT" or "TOP")
  mrkBtn.Text="🎯 Event pickup markers: "..(player:GetAttribute("Save_EventMarkers")=="off" and "OFF" or "ON")
+ pillBtn.Text="⏳ Server event bar: "..(player:GetAttribute("Save_EventPill")=="off" and "OFF" or "ON")
 end
 evText()
-for _,a in ipairs({"Save_EventBanner","Save_EventPos","Save_EventMarkers"}) do player:GetAttributeChangedSignal(a):Connect(evText) end
+for _,a in ipairs({"Save_EventBanner","Save_EventPos","Save_EventMarkers","Save_EventPill"}) do player:GetAttributeChangedSignal(a):Connect(evText) end
 evBtn.Activated:Connect(function() cycle("Save_EventBanner","eventbanner",{"full","mini","hidden"},"full") end)
 posBtn.Activated:Connect(function() cycle("Save_EventPos","eventpos",{"top","bottom","right"},"top") end)
 mrkBtn.Activated:Connect(function() cycle("Save_EventMarkers","eventmarkers",{"on","off"},"on") end)
-local sideBtn=button(settings,"🧪 Potion tab: RIGHT",UDim2.fromOffset(380,40),UDim2.fromOffset(20,292));sideBtn.BackgroundColor3=Color3.fromRGB(120,80,200)
+pillBtn.Activated:Connect(function() cycle("Save_EventPill","eventpill",{"on","off"},"on") end)
+local sideBtn=button(settings,"🧪 Potion tab: RIGHT",UDim2.fromOffset(380,34),UDim2.fromOffset(20,253));sideBtn.BackgroundColor3=Color3.fromRGB(120,80,200)
 local function sideText() sideBtn.Text="🧪 Potion tab: "..(player:GetAttribute("Save_PotionSide")=="L" and "LEFT" or "RIGHT") end
 sideText();player:GetAttributeChangedSignal("Save_PotionSide"):Connect(sideText)
 sideBtn.Activated:Connect(function()

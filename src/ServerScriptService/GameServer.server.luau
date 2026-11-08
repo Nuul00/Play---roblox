@@ -255,6 +255,8 @@ action.OnServerEvent:Connect(function(p, kind, arg)
   p:SetAttribute("Save_EventPos", arg)
  elseif kind == "eventmarkers" and (arg == "on" or arg == "off") then
   p:SetAttribute("Save_EventMarkers", arg)
+ elseif kind == "eventpill" and (arg == "on" or arg == "off") then
+  p:SetAttribute("Save_EventPill", arg) -- верхняя плашка событий сервера (Golden Hour и др.)
  elseif kind == "eventhintseen" then
   p:SetAttribute("Save_EventHintSeen", math.min((p:GetAttribute("Save_EventHintSeen") or 0) + 1, 9))
  elseif kind == "potiony" and type(arg) == "number" and arg == arg and arg >= 0 and arg <= 1 then
