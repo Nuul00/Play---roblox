@@ -271,6 +271,8 @@ end
 closeStats.Activated:Connect(hideAll);closeSettings.Activated:Connect(hideAll)
 statButton.Activated:Connect(function() toggle("stats") end)
 settingsButton.Activated:Connect(function() toggle("settings") end)
+-- кнопка ⚙ в верхней панели Roblox (HudSkin) открывает настройки через это событие
+do local ev=Instance.new("BindableEvent");ev.Name="ToggleSettings";ev.Event:Connect(function() toggle("settings") end);ev.Parent=player:WaitForChild("PlayerGui") end
 indexButton.Activated:Connect(function() hideAll();openIndex:Fire() end)
 inventoryButton.Activated:Connect(function() hideAll();openInventory:Fire() end)
 player:GetAttributeChangedSignal("UIScreen"):Connect(function()
