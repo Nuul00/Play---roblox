@@ -517,7 +517,9 @@ RunService.RenderStepped:Connect(function(dt)
 			-- 2026-11: реакция на игрока рядом спокойнее (было: прыжки ×1.1, вращение +1.4, орбиты +1.6,
 			-- искры +18 в секунду — «перебор»)
 			local hop = math.abs(math.sin(t * 3 + e.phase)) * x * 0.35
-			e.spin += dt * ((e.neon and 0.4 or 0.55) + x * 0.4)
+			-- 2026-11 (фидбэк: «в реальной игре вращения слишком быстрые»): рядом с игроком яйцо больше
+			-- не разгоняется (было +0.4 рад/с — почти вдвое), и базовая скорость ниже
+			e.spin += dt * (e.neon and 0.28 or 0.35)
 			local lean = math.sin(t * 0.8 + e.phase) * 0.04
 
 			-- прыжок при открытии
@@ -549,7 +551,8 @@ RunService.RenderStepped:Connect(function(dt)
 			local r = math.max(3.4, e.radius + 1.6)
 			for k, orb in ipairs(e.orbs) do
 				local n = #e.orbs
-				local a = t * (1.2 + x * 0.5) + k / n * math.pi * 2 + e.phase
+				-- огоньки по кругу: спокойно и одинаково, далеко игрок или рядом (было 1.2–1.7 рад/с)
+				local a = t * 0.7 + k / n * math.pi * 2 + e.phase
 				local y = math.sin(t * 2 + k * 1.7) * h * 0.3
 				orb.CFrame = CFrame.new(center + Vector3.new(math.cos(a) * r, 0.35 + y + popH * 0.5, math.sin(a) * r))
 			end
@@ -558,7 +561,7 @@ RunService.RenderStepped:Connect(function(dt)
 				e.pillar.Rate = 10 + x * 6
 			end
 			for _, hr in ipairs(e.holo) do
-				local rot = CFrame.new(hr.center) * CFrame.Angles(0, t * 0.7, 0) * CFrame.new(-hr.center)
+				local rot = CFrame.new(hr.center) * CFrame.Angles(0, t * 0.45, 0) * CFrame.new(-hr.center)
 				hr.part.CFrame = rot * hr.base
 			end
 		end
