@@ -1712,6 +1712,9 @@ RunService.RenderStepped:Connect(function(dt)
 		local nearest, distance
 		if root then
 			for id, entry in pairs(displays) do
+				if id == "royal" then
+					continue -- модель Royal Egg только для окна открытия (стоит в 0,0,0) — круга и зоны у неё нет
+				end
 				-- «Настоящая» зона яйца: видимый круг вокруг постамента (рисуем его здесь же).
 				-- Окно открывается, когда стоишь внутри круга ~0.35 с, и закрывается, когда вышел из него.
 				local center, zoneR, bottom = entry.base.Position, entry.radius + 2.5, nil

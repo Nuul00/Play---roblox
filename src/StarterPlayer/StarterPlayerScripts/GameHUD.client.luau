@@ -142,14 +142,15 @@ local modeButtons,modeStrokes={},{}
 local skies=ReplicatedStorage:FindFirstChild("WorldSkies")
 local serverSky=Lighting:FindFirstChildOfClass("Sky")
 local localSky
-local defaults={Brightness=Lighting.Brightness,ClockTime=Lighting.ClockTime,OutdoorAmbient=Lighting.OutdoorAmbient,Ambient=Lighting.Ambient}
+-- 2026-11 (фидбэк «пересвет»): окружающий свет плейса (128 серого) заливал картинку — берём мягче
+local defaults={Brightness=math.min(Lighting.Brightness,1.75),ClockTime=Lighting.ClockTime,OutdoorAmbient=Color3.fromRGB(110,110,120),Ambient=Color3.fromRGB(72,72,82)}
 local function applyTime(mode)
  player:SetAttribute("TimeOfDay",mode)
  if localSky then localSky:Destroy();localSky=nil end
  if serverSky then serverSky.Parent=Lighting end
  if mode=="Day" then
   if serverSky then serverSky.Parent=nil end
-  Lighting.ClockTime=13;Lighting.Brightness=2.8;Lighting.OutdoorAmbient=Color3.fromRGB(150,150,155);Lighting.Ambient=Color3.fromRGB(120,120,125)
+  Lighting.ClockTime=13;Lighting.Brightness=2.2;Lighting.OutdoorAmbient=Color3.fromRGB(125,125,132);Lighting.Ambient=Color3.fromRGB(85,85,92) -- 2026-11: было 2.8/150/120 — пересвет
  elseif mode=="Night" then
   local night=skies and skies:FindFirstChild("Neon District")
   if night then
