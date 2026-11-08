@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 local player = Players.LocalPlayer
 local world = workspace:WaitForChild("CoinSpeedWorld")
 local frozen = world:WaitForChild("FrozenPeaks", 90)
+local FxBudget = require(game:GetService("ReplicatedStorage"):WaitForChild("FxBudget"))
 if not frozen then
 	return
 end
@@ -23,8 +24,8 @@ flakes.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
 flakes.LightEmission = 0.15
 flakes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.14) })
 flakes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0.15), NumberSequenceKeypoint.new(0.85, 0.3), NumberSequenceKeypoint.new(1, 1) })
-flakes.Lifetime = NumberRange.new(6, 8)
-flakes.Rate = 95 -- было 180 (лагало на телефоне), потом 60 — фидбэк 2026-11: «чуть больше снега»
+flakes.Lifetime = NumberRange.new(4.5, 6) -- было 6–8: часть снежинок падала ниже камеры зря
+flakes.Rate = FxBudget.Pick(35, 60, 95) -- было 180 (лагало на телефоне); 2026-11: по уровню качества
 flakes.Speed = NumberRange.new(6, 9)
 flakes.EmissionDirection = Enum.NormalId.Bottom
 flakes.SpreadAngle = Vector2.new(15, 15)
@@ -40,8 +41,8 @@ soft.LightEmission = 0.5
 soft.LightInfluence = 0.2
 soft.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.35) })
 soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0.05), NumberSequenceKeypoint.new(0.85, 0.2), NumberSequenceKeypoint.new(1, 1) })
-soft.Lifetime = NumberRange.new(7, 10)
-soft.Rate = 70 -- было 260, потом 45
+soft.Lifetime = NumberRange.new(5, 7)
+soft.Rate = FxBudget.Pick(25, 45, 70)
 soft.Speed = NumberRange.new(3, 6)
 soft.EmissionDirection = Enum.NormalId.Bottom
 soft.SpreadAngle = Vector2.new(25, 25)
@@ -154,6 +155,11 @@ local bands = {}
 for _, b in ipairs(frozen:WaitForChild("Aurora", 30):GetDescendants()) do
 	if b:IsA("Beam") then
 		table.insert(bands, { beam = b, k = b:GetAttribute("Band") or 1, layer = b:GetAttribute("Layer") or 1, c0 = b.CurveSize0, c1 = b.CurveSize1 })
+		-- на слабых устройствах (аудит 2026-11): меньше сегментов, на low — только нечётные занавеси и слои
+		b.Segments = FxBudget.Pick(12, 24, 48)
+		if FxBudget.Tier() == "low" and (((b:GetAttribute("Band") or 1) % 2 == 0) or ((b:GetAttribute("Layer") or 1) % 2 == 0)) then
+			b.Enabled = false
+		end
 	end
 end
 -- Мерцают только видимые детали. Скрытые сервером (T = 1, например старые кончики кристалла под
@@ -179,7 +185,7 @@ local AURORA = {
 	Color3.fromRGB(170, 100, 255), -- фиолетовый
 	Color3.fromRGB(255, 110, 200), -- розовый
 }
-local auroraAcc = 0
+local auroraAcc, lastAuroraColor, glowAcc = 0, -1, 0
 -- прозрачность слоёв снизу вверх: мягкий низ, яркое зелёное ядро, тающая к верху кайма
 local LAYER_ALPHA = { 0.5, 0.22, 0.26, 0.38, 0.5, 0.64 }
 
@@ -222,12 +228,21 @@ local function step(dt: number)
 	-- розовый), по ней бегут вертикальные «лучи» (полосы прозрачности), а сама занавесь колышется.
 	-- Нижний слой — зелёное ядро, верхние — фиолетово-розовая кайма. Обновляем 15 раз в секунду.
 	auroraAcc += dt
-	if auroraAcc >= 0.066 then
+	-- 2026-11 (аудит): 42 луча пересобирались 15 раз в секунду. Теперь: прозрачность — 6 Гц (low 3 Гц),
+	-- цвета текут медленно — раз в 0.5 с; на low половина занавесей выключена (см. ниже)
+	if auroraAcc >= FxBudget.Pick(0.33, 0.16, 0.16) then
+		local doColor = t - lastAuroraColor >= 0.5
+		if doColor then
+			lastAuroraColor = t
+		end
 		auroraAcc = 0
 		for _, b in ipairs(bands) do
+			if not b.beam.Enabled then
+				continue
+			end
 			local k, layer = b.k, b.layer
-			local cols = {}
-			for i = 0, 9 do
+			local cols = doColor and {} or nil
+			for i = 0, (cols and 9 or -1) do
 				local x = i / 9
 				local flow = 0.5 + 0.5 * math.sin(x * 5.5 - t * 0.45 + k * 1.3)
 				local fringe = (layer - 1) / 5 -- 0 у нижнего края (зелёный), 1 у верхнего (розовый)
@@ -242,7 +257,9 @@ local function step(dt: number)
 				end
 				cols[i + 1] = ColorSequenceKeypoint.new(x, col)
 			end
-			b.beam.Color = ColorSequence.new(cols)
+			if cols then
+				b.beam.Color = ColorSequence.new(cols)
+			end
 			local base = LAYER_ALPHA[layer] or 0.7
 			local tr = {}
 			for i = 0, 15 do
@@ -258,6 +275,11 @@ local function step(dt: number)
 			b.beam.CurveSize1 = b.c1 * (1 - 0.35 * wave)
 		end
 	end
+	glowAcc += dt
+	if glowAcc < 1 / 15 then
+		return
+	end
+	glowAcc = 0
 	local pulse = 0.25 + 0.15 * math.sin(t * 1.6)
 	for i, g in ipairs(glows) do
 		if g.Parent then

@@ -29,6 +29,10 @@ local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local FIRE = "rbxasset://textures/particles/fire_main.dds"
 local SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 local rng = Random.new()
+-- уровень качества (аудит 2026-11: на слабых телефонах небо было самым тяжёлым местом игры)
+local FxBudget = require(game:GetService("ReplicatedStorage"):WaitForChild("FxBudget"))
+local LOW = FxBudget.Tier() == "low"
+local MID = FxBudget.Tier() == "mid"
 
 local folder = Instance.new("Folder")
 folder.Name = "GalaxySky"
@@ -78,7 +82,7 @@ for _, m in ipairs(space:GetChildren()) do
 			for i, p in ipairs(parts) do
 				baseT[i] = p.Transparency
 			end
-			table.insert(rings, { parts = parts, base = base, baseT = baseT, baseC = parts[1].Color, center = pl.center, axis = axis, speed = (0.06 + rng:NextNumber(0, 0.06)) * (rng:NextNumber() < 0.5 and -1 or 1), frames = table.create(#parts) })
+			table.insert(rings, { parts = parts, base = base, baseT = baseT, baseC = parts[1].Color, center = pl.center, radius = pl.r * 1.3, axis = axis, speed = (0.06 + rng:NextNumber(0, 0.06)) * (rng:NextNumber() < 0.5 and -1 or 1), frames = table.create(#parts) })
 		end
 	elseif m:IsA("BasePart") and m.Name == "Moon" then
 		table.insert(planets, { name = "Moon", center = m.Position, r = m.Size.X / 2 })
@@ -94,7 +98,7 @@ local SKY_R = 800
 local function skyPoint(dir: Vector3)
 	return CENTER + dir.Unit * SKY_R
 end
-for _ = 1, 260 do
+for _ = 1, FxBudget.Scale(260) do
 	local d = Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(0.05, 1), rng:NextNumber(-1, 1))
 	local s = rng:NextNumber(2, 5.5)
 	local col = ({ WHITE, WHITE, WHITE, rgb(190, 220, 255), rgb(255, 220, 230), rgb(255, 240, 200) })[rng:NextInteger(1, 6)]
@@ -148,6 +152,9 @@ end
 -- туманности: огромные мягкие цветные облака далеко в небе
 local nebulae = {}
 for k, d in ipairs({ Vector3.new(-0.8, 0.35, -0.5), Vector3.new(0.6, 0.4, -0.7), Vector3.new(0.9, 0.25, 0.4), Vector3.new(-0.5, 0.45, 0.8), Vector3.new(0.1, 0.95, -0.2) }) do
+	if LOW or (MID and k > 3) then
+		break -- туманности — самый тяжёлый для GPU телефона эффект (огромные прозрачные спрайты)
+	end
 	local p = mk("Nebula", Vector3.new(1, 1, 1), CFrame.new(CENTER + d.Unit * (SKY_R * 0.95)), WHITE)
 	p.Transparency = 1
 	p.Parent = folder
@@ -231,6 +238,7 @@ local function rocketModel(trim: Color3)
 	glow.Color = rgb(255, 160, 80)
 	glow.Range = 25
 	glow.Brightness = 3
+	glow.Enabled = not LOW
 	glow.Parent = nozzle
 	m.fire, m.smoke, m.glow = fire, smoke, glow
 	return m
@@ -286,6 +294,9 @@ local function bez(p0, p1, p2, p3, t)
 end
 local rockets = {}
 for k, trim in ipairs({ rgb(230, 60, 60), CYAN, GOLD }) do
+	if LOW and k > 2 then
+		break
+	end
 	local r = rocketModel(trim)
 	local pl = planets[(k % #planets) + 1]
 	r.planet = pl
@@ -347,7 +358,7 @@ end
 
 -- ===== Спутники на орбитах и летающая тарелка =====
 local sats = {}
-for k = 1, 5 do
+for k = 1, FxBudget.Pick(2, 3, 5) do
 	local pl = planets[(k % #planets) + 1]
 	local s = satelliteModel(k % 2 == 0 and rgb(255, 80, 80) or rgb(120, 255, 140))
 	s.planet = pl
@@ -521,9 +532,9 @@ do
 	l.Range = 120
 	l.Brightness = 2
 	l.Parent = glowAnchor
-	for band = 1, 4 do
+	for band = 1, FxBudget.Pick(2, 3, 4) do
 		local r = 52 + band * 24
-		local n = 36
+		local n = FxBudget.Pick(18, 24, 36)
 		local parts, base = {}, {}
 		local chord = 2 * r * math.sin(math.pi / n) * 1.25
 		for k = 1, n do
@@ -549,7 +560,7 @@ do
 		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.5), NumberSequenceKeypoint.new(1, 0) }),
 		Lifetime = NumberRange.new(2, 3),
 		Speed = NumberRange.new(0, 0),
-		Rate = 30,
+		Rate = FxBudget.Pick(8, 15, 30),
 		Shape = Enum.ParticleEmitterShape.Box,
 		LockedToPart = true,
 	})
@@ -664,7 +675,7 @@ end
 newComet()
 
 -- ещё ракеты (всего 5)
-for _, trim in ipairs({ PINK, rgb(120, 255, 160) }) do
+for _, trim in ipairs((LOW or MID) and {} or { PINK, rgb(120, 255, 160) }) do
 	local r = rocketModel(trim)
 	r.planet = planets[rng:NextInteger(1, #planets)]
 	r.n = randomUp()
@@ -687,15 +698,30 @@ local conn: RBXScriptConnection? = nil
 local t = 0
 local slow = 0
 local nextImpact, nextStar = 3, 1.5
+local ringAcc, spiralAcc, recolorAcc = 0, 0, 0
 local function step(dt)
 	t += dt
-	-- кольца: вращение каждый кадр
-	for _, ring in ipairs(rings) do
-		local rot = CFrame.new(ring.center) * CFrame.fromAxisAngle(ring.axis, t * ring.speed) * CFrame.new(-ring.center)
-		for i, b in ipairs(ring.base) do
-			ring.frames[i] = rot * b
+	local cam = workspace.CurrentCamera
+	local camPos, camLook = cam.CFrame.Position, cam.CFrame.LookVector
+	-- группа за спиной камеры (с запасом на радиус) — не двигаем: её не видно
+	local function visible(center: Vector3, radius: number): boolean
+		local to = center - camPos
+		local d = to.Magnitude
+		return d < radius or to:Dot(camLook) > -radius
+	end
+	-- кольца: вращение (high — каждый кадр, mid — 30 Гц, low — 10 Гц)
+	ringAcc += dt
+	if ringAcc >= FxBudget.Pick(0.1, 1 / 30, 0) then
+		ringAcc = 0
+		for _, ring in ipairs(rings) do
+			if visible(ring.center, ring.radius) then
+				local rot = CFrame.new(ring.center) * CFrame.fromAxisAngle(ring.axis, t * ring.speed) * CFrame.new(-ring.center)
+				for i, b in ipairs(ring.base) do
+					ring.frames[i] = rot * b
+				end
+				workspace:BulkMoveTo(ring.parts, ring.frames, Enum.BulkMoveMode.FireCFrameChanged)
+			end
 		end
-		workspace:BulkMoveTo(ring.parts, ring.frames, Enum.BulkMoveMode.FireCFrameChanged)
 	end
 	for _, r in ipairs(rockets) do
 		stepRocket(r, dt)
@@ -748,15 +774,17 @@ local function step(dt)
 		end
 	end
 	-- чёрная дыра: диски крутятся (внутренние быстрее)
-	for _, d in ipairs(bh.disks) do
+	for _, d in ipairs(visible(BH, 160) and bh.disks or {}) do
 		local rot = CFrame.new(BH) * CFrame.fromAxisAngle(bhTilt.UpVector, t * d.speed) * CFrame.new(-BH)
 		for i, b in ipairs(d.base) do
 			d.frames[i] = rot * b
 		end
 		workspace:BulkMoveTo(d.parts, d.frames, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	-- спиральная галактика медленно вращается
-	do
+	-- спиральная галактика медленно вращается: глазу хватает 4 Гц, на low стоит на месте
+	spiralAcc += dt
+	if not LOW and spiralAcc >= 0.25 and visible(spiral.center, 260) then
+		spiralAcc = 0
 		local rot = CFrame.new(spiral.center) * CFrame.fromAxisAngle(spiral.axis, t * 0.04) * CFrame.new(-spiral.center)
 		for i, b in ipairs(spiral.base) do
 			spiral.frames[i] = rot * b
@@ -800,8 +828,13 @@ local function step(dt)
 		for _, b in ipairs(beams) do
 			b.beam.Transparency = NumberSequence.new(0.45 + 0.3 * (0.5 + 0.5 * math.sin(t * 1.4 + b.ph)))
 		end
-		for _, ring in ipairs(rings) do
-			-- по кольцу бежит светлая волна; всё кольцо медленно «дышит»
+		recolorAcc += 0.05
+		local recolor = not LOW and (not MID or recolorAcc >= 0.2)
+		if recolor then
+			recolorAcc = 0
+		end
+		for _, ring in ipairs(recolor and rings or {}) do
+			-- по кольцу бежит светлая волна; всё кольцо медленно «дышит» (low — без перекраски)
 			local n = #ring.parts
 			local breath = 0.5 + 0.5 * math.sin(t * 1.2)
 			for i, p in ipairs(ring.parts) do

@@ -400,9 +400,12 @@ RunService.RenderStepped:Connect(function(dt)
 				local pitch = (-0.16 + 0.14 * land) * m + math.sin(t * 1.7 + pet.slot) * 0.04 * idle
 				local roll = s * 0.16 * m -- знак меняется на каждом прыжке: вперевалку
 				local look = math.sin(t * 0.45 + pet.slot * 2.1) ^ 3 * 0.55 * idle
+				pet.hidden = false
 				pet.model:PivotTo(pet.frame * CFrame.new(0, hop + bob, 0) * CFrame.Angles(pitch, look, roll))
-			else
+			elseif pet.frame ~= nil or not pet.hidden then
+				-- прячем один раз (аудит 2026-11: раньше спрятанных двигали заново каждый кадр)
 				pet.frame = nil
+				pet.hidden = true
 				pet.model:PivotTo(hidden)
 			end
 		end

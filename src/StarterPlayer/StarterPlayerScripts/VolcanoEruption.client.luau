@@ -310,6 +310,7 @@ end
 -- Густые наплывы: по каждому потоку медленно (как тяжёлая жидкость) сползают вниз вздутия лавы —
 -- приплюснутые светящиеся «капли», наполовину утопленные в русле. Внизу растворяются.
 local RunService = game:GetService("RunService")
+local FxBudget = require(game:GetService("ReplicatedStorage"):WaitForChild("FxBudget"))
 local blobs = {}
 for fi, path in ipairs(flows) do
 	if #path >= 3 then
@@ -319,7 +320,7 @@ for fi, path in ipairs(flows) do
 			total += (path[i].pos - path[i - 1].pos).Magnitude
 			cum[i] = total
 		end
-		local count = math.max(3, math.floor(total / 14))
+		local count = math.max(2, math.floor(total / FxBudget.Pick(28, 18, 14))) -- по уровню качества
 		for b = 1, count do
 			local p = Instance.new("Part")
 			p.Name = "LavaBlob"

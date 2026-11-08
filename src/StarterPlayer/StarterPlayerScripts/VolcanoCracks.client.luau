@@ -15,7 +15,8 @@ if not volcano then
 end
 local deck = volcano:WaitForChild("Ground", 30) and volcano.Ground:FindFirstChild("Deck")
 
-local MAX_CRACKS = 12 -- одновременно живущих трещин
+local FxBudget = require(game:GetService("ReplicatedStorage"):WaitForChild("FxBudget"))
+local MAX_CRACKS = FxBudget.Pick(3, 6, 12) -- одновременно живущих трещин (по уровню качества, аудит 2026-11)
 local NEAR, FAR = 14, 70 -- где рождаются (кольцо вокруг игрока)
 local HOT = Color3.fromRGB(225, 75, 15)
 local WARM = Color3.fromRGB(255, 80, 20)
@@ -297,10 +298,16 @@ local function onWorld()
 				end
 			end
 			local cParts, cFrames = {}, {}
-			breathConn = RunService.Heartbeat:Connect(function()
+			local deckAcc = 0
+			breathConn = RunService.Heartbeat:Connect(function(dt)
 				local now = os.clock()
-				local k = 0.5 + 0.5 * math.sin(now * 0.8)
-				deck.Color = baseColor:Lerp(Color3.fromRGB(150, 40, 26), k * 0.55)
+				-- цвет огромной плиты меняем 10 раз в секунду, а не каждый кадр (аудит 2026-11)
+				deckAcc += dt
+				if deckAcc >= 0.1 then
+					deckAcc = 0
+					local k = 0.5 + 0.5 * math.sin(now * 0.8)
+					deck.Color = baseColor:Lerp(Color3.fromRGB(150, 40, 26), k * 0.55)
+				end
 				table.clear(cParts)
 				table.clear(cFrames)
 				for i, c in ipairs(crusts) do
