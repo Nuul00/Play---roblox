@@ -479,7 +479,10 @@ local function decorateIsland(island, key, theme, ic, groundY)
 			end
 		end
 	end
-	-- дорожка от арки к доскам
+	-- дорожка от арки к доскам (в неоновых мирах — нет: там своя сетка на острове, фидбэк 2026-11)
+	if theme.Grid then
+		return
+	end
 	local walk = part(island, "Walk", Vector3.new(8, 0.12, 40), ic * CFrame.new(0, 0, -34) + Vector3.new(0, groundY - pos.Y + 0.06, 0), theme.Deck, theme.DeckMat, GHOST)
 	if theme.DeckMat == M.Glass then walk.Transparency = 0.2 end
 	for _, s in { -1, 1 } do
