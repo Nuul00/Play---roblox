@@ -1263,22 +1263,35 @@ local function topSignModel(island, theme, a, dir): boolean
 		return false
 	end
 	local side = Vector3.new(-dir.Z, 0, dir.X)
-	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 9)
-	local face = CFrame.lookAt(at, at - dir)
+	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 7)
+	-- чуть повёрнута к дороге (наружу от прохода), а не строго поперёк
+	local face = CFrame.lookAt(at, at - dir + side * 0.45)
 	local m = template:Clone()
 	m.Name = "TopSignModel"
 	local signFace = m.PrimaryPart
-	m:ScaleTo(m:GetScale() * 15 / signFace.Size.X) -- ширина щита 15
+	m:ScaleTo(m:GetScale() * 10 / signFace.Size.X) -- ширина щита 10 (15 было слишком крупно)
+	-- щит — тёмное дерево (оранжевый пластик выглядел дёшево), каменная окантовка темнее
+	for _, d in ipairs(m:GetDescendants()) do
+		if d:IsA("BasePart") then
+			if d.Material == Enum.Material.Wood then
+				d.Color = Color3.fromRGB(92, 58, 32)
+				d.Material = Enum.Material.WoodPlanks
+			elseif d.Material == Enum.Material.Cobblestone then
+				d.Color = d.Color:Lerp(Color3.fromRGB(60, 50, 45), 0.4)
+			end
+			d.CastShadow = false
+		end
+	end
 	-- щит висит: низ щита на высоте 4 над землёй
-	m:PivotTo(face * CFrame.new(0, 4 + signFace.Size.Y / 2, 0))
+	m:PivotTo(face * CFrame.new(0, 3.2 + signFace.Size.Y / 2, 0))
 	m.Parent = island
 	local bar = m:FindFirstChild("TopBar", true)
 	if bar and bar:IsA("BasePart") then
 		local h = bar.Position.Y - a.Y + 0.4
 		for _, sx in { -1, 1 } do
 			local p = bar.Position + bar.CFrame.RightVector * sx * (bar.Size.X / 2 - 0.5)
-			part(island, "TopBoardPost", Vector3.new(0.9, h, 0.9), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, Color3.fromRGB(70, 45, 25), M.Wood)
-			local lamp = ball(island, "TopBoardLamp", 1, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
+			part(island, "TopBoardPost", Vector3.new(0.55, h, 0.55), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, bar.Color, bar.Material)
+			local lamp = ball(island, "TopBoardLamp", 0.7, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
 			light(lamp, theme.Lamp, 16, 1.4)
 		end
 	end
