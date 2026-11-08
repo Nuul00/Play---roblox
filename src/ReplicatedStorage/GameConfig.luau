@@ -344,6 +344,17 @@ for _,def in pairs(Config.Pets) do
   def.Multiplier=m<100 and math.floor(m*10+0.5)/10 or math.floor(m+0.5)
  end
 end
+-- Vault Golem (Coin Rush) — ровно половина главной Secret своего мира уже ПОСЛЕ сжатия выше
+-- (сжатие нелинейное: 50% до него давали ~62% после). Фидбэк 2026-11: бесплатная награда не должна
+-- быть сильнее лучшего питомца мира и Robux-питомцев.
+for _,id in pairs(Config.VaultPets or {}) do
+ local v=Config.Pets[id]
+ local b=v and v.Base and Config.Pets[v.Base]
+ if b then
+  local m=b.Multiplier*0.5
+  v.Multiplier=m<100 and math.floor(m*10+0.5)/10 or math.floor(m+0.5)
+ end
+end
 -- Наибольший id питомца. В Config.Pets есть пропуски (228–239), поэтому «#Config.Pets» не годится:
 -- длина таблицы с дырами не определена — циклы сохранения могли пропустить Mythic (240+).
 -- Все циклы по питомцам: for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end ...

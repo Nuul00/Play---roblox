@@ -135,7 +135,12 @@ return function(Config)
 		end
 	end
 	-- Vault Golem — редкая награда данжа Coin Rush (id 222-227, закреплены: по одному на мир).
-	-- Выдаётся питомец лучшего открытого мира игрока; сила ×1.6 от главной Secret этого мира.
+	-- Выдаётся питомец лучшего открытого мира игрока. Баланс 2026-11 (фидбэк: «за бесплатный ключ дали
+	-- ×800, а донатный за Robux даёт меньше»): сила — половина главной Secret этого мира (было ×1.6),
+	-- то есть слабее лучшего питомца из яиц мира и пассов удачи. Уже выданные големы пересчитываются сами:
+	-- сила берётся из конфига по id. Точное значение (0.5 главной Secret после сжатия силы) ставит
+	-- GameConfig в самом конце — здесь только начальное.
+	local VAULT_SHARE = 0.5
 	Config.VaultPets = {}
 	for worldIndex, world in ipairs(WORLD_ORDER) do
 		local list = Config.SuperByWorld[world]
@@ -147,7 +152,7 @@ return function(Config)
 			Config.Pets[id] = {
 				Name = "Vault Golem",
 				Rarity = "Secret",
-				Multiplier = math.floor(b.Multiplier * 1.6 * 100 + 0.5) / 100,
+				Multiplier = math.floor(b.Multiplier * VAULT_SHARE * 100 + 0.5) / 100,
 				Visual = b.Visual,
 				Color = b.Color,
 				EggId = b.EggId,
