@@ -154,6 +154,12 @@ local function onPlayer(p: Player)
 		char:WaitForChild("Head", 10)
 		char:WaitForChild("HumanoidRootPart", 10)
 		dress(p)
+		-- внешность аватара догружается позже и может заменить голову вместе с табличкой — одеваем ещё раз
+		task.delay(2, function()
+			if p.Character == char then
+				dress(p)
+			end
+		end)
 	end)
 	p.AttributeChanged:Connect(function(n)
 		if n == "Pass_VIP" or n == "Pass_RoyalAura" or n == Titles.Attr then

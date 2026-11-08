@@ -1226,7 +1226,10 @@ local function topSign(island, theme, a, dir)
 	-- перекладина с надписью с обеих сторон
 	local beamCf = CFrame.new(a + Vector3.new(0, postH - 1.2, 0)) * rot
 	local beam = part(island, "TopGateBeam", Vector3.new(half * 2 + 2.4, 3.4, 0.8), beamCf, theme.Arch, theme.ArchMat)
-	part(island, "TopGateEdge", Vector3.new(half * 2 + 2.8, 3.8, 0.4), beamCf * CFrame.new(0, 0, 0.25), theme.ArchGlow or theme.Title, M.Neon, GHOST)
+	-- светящиеся кромки сверху и снизу (рамка-пластина перекрывала надпись с одной стороны)
+	for _, sy in { -1, 1 } do
+		part(island, "TopGateEdge", Vector3.new(half * 2 + 2.6, 0.3, 1), beamCf * CFrame.new(0, sy * 1.85, 0), theme.ArchGlow or theme.Title, M.Neon, GHOST)
+	end
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local sg = Instance.new("SurfaceGui")
 		sg.Face = face
@@ -1236,7 +1239,9 @@ local function topSign(island, theme, a, dir)
 		sg.Parent = beam
 		local t1 = Instance.new("TextLabel")
 		t1.BackgroundTransparency = 1
-		t1.Size = UDim2.new(1, 0, 0.62, 0)
+		-- текст между столбами арки (по краям перекладины их стойки закрывают надпись)
+		t1.Position = UDim2.fromScale(0.13, 0.04)
+		t1.Size = UDim2.fromScale(0.74, 0.56)
 		t1.Font = Enum.Font.FredokaOne
 		t1.TextScaled = true
 		t1.Text = "🏆 TOP PLAYERS"
@@ -1247,8 +1252,8 @@ local function topSign(island, theme, a, dir)
 		s1.Color = theme.ArchInk
 		s1.Parent = t1
 		local t2 = t1:Clone()
-		t2.Position = UDim2.fromScale(0, 0.62)
-		t2.Size = UDim2.new(1, 0, 0.34, 0)
+		t2.Position = UDim2.fromScale(0.13, 0.62)
+		t2.Size = UDim2.fromScale(0.74, 0.32)
 		t2.Text = "Who's #1? Leaderboards →"
 		t2.TextColor3 = theme.Sub or Color3.new(1, 1, 1)
 		t2.Parent = sg

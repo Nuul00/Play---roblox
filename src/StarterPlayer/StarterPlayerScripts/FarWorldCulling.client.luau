@@ -27,6 +27,7 @@ local function hide(root: Instance)
 		return
 	end
 	hiddenRoots[root] = root.DescendantAdded:Connect(hideOne)
+	hideOne(root)
 	for i, d in ipairs(root:GetDescendants()) do
 		hideOne(d)
 		if i % 2000 == 0 then
@@ -42,7 +43,9 @@ local function show(root: Instance)
 	end
 	conn:Disconnect()
 	hiddenRoots[root] = nil
-	for _, d in ipairs(root:GetDescendants()) do
+	local all = root:GetDescendants()
+	table.insert(all, root)
+	for _, d in ipairs(all) do
 		if d:IsA("BasePart") then
 			d.LocalTransparencyModifier = 0
 		elseif saved[d] ~= nil then
@@ -52,19 +55,84 @@ local function show(root: Instance)
 	end
 end
 
+-- Объекты мира, которые лежат не внутри его папки: круги яиц (EggZoneRing) и метки магазинов
+-- (ShopZoneMarker) рисует клиент прямо в Workspace, машины — в Workspace.PetMachines, бонусы
+-- событий — в LocalEventPickups. Прячем те из них, что стоят в границах мира.
+local boxes = {} -- [worldName] = { min, max }
+local function boxOf(name: string, root: Instance)
+	if not boxes[name] and root:IsA("Model") then
+		local cf, size = root:GetBoundingBox()
+		boxes[name] = { cf.Position - size / 2 - Vector3.new(20, 20, 20), cf.Position + size / 2 + Vector3.new(20, 60, 20) }
+	end
+	return boxes[name]
+end
+local function inside(pos: Vector3, b): boolean
+	return pos.X >= b[1].X and pos.X <= b[2].X and pos.Y >= b[1].Y and pos.Y <= b[2].Y and pos.Z >= b[1].Z and pos.Z <= b[2].Z
+end
+local function strays(): { Instance }
+	local list = {}
+	for _, c in ipairs(workspace:GetChildren()) do
+		if c.Name == "EggZoneRing" or c.Name == "ShopZoneMarker" then
+			table.insert(list, c)
+		end
+	end
+	for _, holder in ipairs({ workspace:FindFirstChild("PetMachines"), world:FindFirstChild("LocalEventPickups"), workspace:FindFirstChild("IslandLifeFX") }) do
+		if holder then
+			for _, c in ipairs(holder:GetChildren()) do
+				table.insert(list, c)
+			end
+		end
+	end
+	return list
+end
 local function update()
 	local current = player:GetAttribute("CurrentWorld") or "Meadow Isles"
 	for name, worldName in pairs(HIDE_WHEN_NOT_IN) do
 		local root = world:FindFirstChild(name)
 		if root then
-			if current == worldName then
-				show(root)
-			else
+			local away = current ~= worldName
+			if away then
 				hide(root)
+			else
+				show(root)
+			end
+			local b = boxOf(name, root)
+			if b then
+				-- по каждой детали: одна модель-метка может держать детали сразу в нескольких мирах
+				for _, o in ipairs(strays()) do
+					local all = o:GetDescendants()
+					table.insert(all, o)
+					for _, d in ipairs(all) do
+						if d:IsA("BasePart") and inside(d.Position, b) then
+							if away then
+								d.LocalTransparencyModifier = 1
+							elseif d.LocalTransparencyModifier == 1 then
+								d.LocalTransparencyModifier = 0
+							end
+							for _, fx in ipairs(d:GetChildren()) do
+								if fx:IsA("ParticleEmitter") or fx:IsA("Beam") or fx:IsA("Light") or fx:IsA("BillboardGui") or fx:IsA("SurfaceGui") then
+									if away then
+										hideOne(fx)
+									elseif saved[fx] ~= nil then
+										(fx :: any).Enabled = saved[fx]
+										saved[fx] = nil
+									end
+								end
+							end
+						end
+					end
+				end
 			end
 		end
 	end
 end
+-- круги и бонусы появляются со временем — досматриваем раз в 2 секунды
+task.spawn(function()
+	while true do
+		task.wait(2)
+		pcall(update)
+	end
+end)
 
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(update)
 world.ChildAdded:Connect(function(c)
