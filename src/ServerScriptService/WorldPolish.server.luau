@@ -387,7 +387,9 @@ task.spawn(function()
 							local westEdge = plaza and (plaza.Position.X - plaza.Size.X / 2) or 9954
 							-- круг касается края площади: центр модели = край − r − 1.5 − половина глубины
 							local targetX = westEdge - r - 1.5 - size.X / 2
-							shop:PivotTo(shop:GetPivot() + Vector3.new(targetX - cf.X, 0, 0))
+							-- по Z — середина западного края площади (место, отмеченное на скрине: ~z 183)
+							local targetZ = plaza and (plaza.Position.Z - 3) or 183
+							shop:PivotTo(shop:GetPivot() + Vector3.new(targetX - cf.X, 0, targetZ - cf.Z))
 							local path = shop.Parent:FindFirstChild("MagnetPath")
 							if path and path:IsA("BasePart") then
 								path.Transparency = 1
@@ -418,6 +420,50 @@ task.spawn(function()
 					end)
 				end
 			end
+		end
+	end
+end)
+
+------------------------------------------------------------------ Neon: дорога до конца площади
+-- Фидбэк 2026-11: главная улица обрывалась посреди площади прибытия, дальше — тёмный пол до
+-- дороги к лидербордам. Продлеваем асфальт, неоновые бордюры и разметку до края площади.
+task.spawn(function()
+	local city = world:WaitForChild("NeonCity", 60)
+	if not city then
+		return
+	end
+	local main = city:WaitForChild("MainPath", 30)
+	local plaza = city:FindFirstChild("ArrivalPlaza")
+	if not (main and main:IsA("BasePart")) then
+		return
+	end
+	local endZ = (plaza and (plaza.Position.Z + plaza.Size.Z / 2) or 208) + 4
+	local function extend(p: BasePart)
+		local z0, z1 = p.Position.Z - p.Size.Z / 2, p.Position.Z + p.Size.Z / 2
+		if z1 < endZ and p.Size.Z > 200 then
+			p.Size = Vector3.new(p.Size.X, p.Size.Y, endZ - z0)
+			p.Position = Vector3.new(p.Position.X, p.Position.Y, (z0 + endZ) / 2)
+		end
+	end
+	extend(main)
+	local streets = city:FindFirstChild("NeonStreets")
+	local lastDash
+	for _, d in ipairs(streets and streets:GetDescendants() or {}) do
+		if d:IsA("BasePart") then
+			if d.Name == "CurbGlow" or d.Name == "CurbLine" then
+				extend(d)
+			elseif d.Name == "LaneDash" and (not lastDash or d.Position.Z > lastDash.Position.Z) then
+				lastDash = d
+			end
+		end
+	end
+	if lastDash then
+		local z = lastDash.Position.Z + 8
+		while z < endZ - 2 do
+			local c = lastDash:Clone()
+			c.Position = Vector3.new(lastDash.Position.X, lastDash.Position.Y, z)
+			c.Parent = lastDash.Parent
+			z += 8
 		end
 	end
 end)

@@ -269,23 +269,47 @@ local statsPanel=screens and screens.stats
 local function updateIfShown() if not statsPanel or statsPanel.Visible then update() end end
 stats.Coins.Changed:Connect(updateIfShown);stats.SpeedLevel.Changed:Connect(updateIfShown);player.AttributeChanged:Connect(updateIfShown);update()
 if statsPanel then statsPanel:GetPropertyChangedSignal("Visible"):Connect(function() if statsPanel.Visible then update() end end) end
-local toast=Instance.new("TextLabel");toast.AnchorPoint=Vector2.new(0.5,1);toast.Position=UDim2.new(0.5,0,1,-190);toast.Size=UDim2.new(0.7,0,0,38);toast.BackgroundColor3=Color3.fromRGB(30,47,50);toast.BackgroundTransparency=0.08;toast.TextColor3=Color3.fromRGB(243,235,207);toast.TextWrapped=true;toast.Font=Enum.Font.GothamBold;toast.TextSize=16;toast.Visible=false;local toastGui=Instance.new("ScreenGui");toastGui.Name="ToastHUD";toastGui.ResetOnSpawn=false;toastGui.DisplayOrder=60;toastGui.IgnoreGuiInset=false;toastGui.Parent=gui.Parent;toast.Parent=toastGui;Instance.new("UICorner",toast).CornerRadius=UDim.new(0,10)
-local version=0
-local function showToast(message) version=version+1;local current=version;toast.Text=message;toast.Visible=true;task.delay(2.8,function() if version==current then toast.Visible=false end end) end
--- Сообщения сервера: ошибки — тёмный тост, успехи (мир открыт, квест, награда, покупка) — золотой
--- с «прыжком». Раньше успехи просто отбрасывались, и игрок не видел, что что-то получилось.
-local toastScale=Instance.new("UIScale");toastScale.Parent=toast
-local toastStroke=Instance.new("UIStroke");toastStroke.Thickness=2;toastStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;toastStroke.Parent=toast
+-- Сообщения сервера (2026-11, фидбэк: жёлтая полоса на всю ширину лезла поверх окон):
+-- компактная карточка выезжает справа, над нижними кнопками. Слева цветная полоса:
+-- золотая — успех (титул, награда, покупка), красная — отказ/ошибка. Идут по очереди.
 local TweenService=game:GetService("TweenService")
+local toastGui=Instance.new("ScreenGui");toastGui.Name="ToastHUD";toastGui.ResetOnSpawn=false;toastGui.DisplayOrder=60;toastGui.IgnoreGuiInset=false;toastGui.Parent=gui.Parent
+local toast=Instance.new("Frame");toast.AnchorPoint=Vector2.new(1,1);toast.Position=UDim2.new(1,400,1,-120);toast.Size=UDim2.fromOffset(340,0);toast.AutomaticSize=Enum.AutomaticSize.Y;toast.BackgroundColor3=Color3.fromRGB(24,22,36);toast.BackgroundTransparency=0.05;toast.Visible=false;toast.Parent=toastGui
+Instance.new("UICorner",toast).CornerRadius=UDim.new(0,12)
+local toastStroke=Instance.new("UIStroke");toastStroke.Thickness=2;toastStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;toastStroke.Parent=toast
+local accent=Instance.new("Frame");accent.Size=UDim2.new(0,6,1,0);accent.BorderSizePixel=0;accent.Parent=toast
+Instance.new("UICorner",accent).CornerRadius=UDim.new(0,12)
+local toastText=Instance.new("TextLabel");toastText.BackgroundTransparency=1;toastText.Position=UDim2.fromOffset(16,0);toastText.Size=UDim2.new(1,-26,0,0);toastText.AutomaticSize=Enum.AutomaticSize.Y;toastText.TextWrapped=true;toastText.TextXAlignment=Enum.TextXAlignment.Left;toastText.Font=Enum.Font.GothamBold;toastText.TextSize=15;toastText.TextColor3=Color3.fromRGB(245,240,230);toastText.Parent=toast
+local tp=Instance.new("UIPadding");tp.PaddingTop=UDim.new(0,10);tp.PaddingBottom=UDim.new(0,10);tp.Parent=toastText
+local toastScale=Instance.new("UIScale");toastScale.Parent=toast
+local queue,showing={},false
+local SHOWN=UDim2.new(1,-16,1,-120);local HIDDEN=UDim2.new(1,400,1,-120)
+local function nextToast()
+ if showing or #queue==0 then return end
+ showing=true
+ local item=table.remove(queue,1)
+ toastText.Text=item.text
+ local c=item.ok and Color3.fromRGB(255,196,60) or Color3.fromRGB(235,80,95)
+ accent.BackgroundColor3=c;toastStroke.Color=c:Lerp(Color3.new(0,0,0),0.35)
+ toast.Position=HIDDEN;toast.Visible=true
+ TweenService:Create(toast,TweenInfo.new(0.3,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=SHOWN}):Play()
+ task.delay(item.ok and 3 or 2.4,function()
+  local tw=TweenService:Create(toast,TweenInfo.new(0.25,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=HIDDEN});tw:Play();tw.Completed:Wait()
+  toast.Visible=false;showing=false;nextToast()
+ end)
+end
+local function push(message,ok)
+ -- одинаковые подряд не дублируем, очередь не длиннее 3
+ local last=queue[#queue];if last and last.text==message then return end
+ if #queue>=3 then table.remove(queue,1) end
+ table.insert(queue,{text=message,ok=ok});nextToast()
+end
 ReplicatedStorage:WaitForChild("GameFeedback").OnClientEvent:Connect(function(message,success)
  if type(message)~="string" or string.sub(message,1,7)=="World: " then return end -- о смене мира и так видно
- version=version+1;local current=version;toast.Text=message;toast.Visible=true
- toast.BackgroundColor3=success and Color3.fromRGB(255,196,60) or Color3.fromRGB(30,47,50)
- toast.TextColor3=success and Color3.fromRGB(60,35,10) or Color3.fromRGB(243,235,207)
- toastStroke.Color=success and Color3.fromRGB(150,90,20) or Color3.fromRGB(10,20,22)
- toastScale.Scale=success and 0.7 or 1
- if success then TweenService:Create(toastScale,TweenInfo.new(0.3,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play() end
- task.delay(success and 3.2 or 2.8,function() if version==current then toast.Visible=false end end)
+ push(message,success==true)
+end)
+RunService.RenderStepped:Connect(function()
+ local cam=workspace.CurrentCamera;if cam then toastScale.Scale=math.clamp(cam.ViewportSize.X/1100,0.7,1) end
 end)
 local hidden=false
 local previous=true

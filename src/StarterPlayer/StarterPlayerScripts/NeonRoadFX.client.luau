@@ -35,7 +35,8 @@ for _, d in ipairs(streets:GetDescendants()) do
 		if d.Name == "LaneDash" then
 			table.insert(dashes, { part = d, base = d.CFrame })
 		elseif d.Name == "PlazaRing" then
-			table.insert(ring, { part = d, base = d.CFrame })
+			-- 2026-11 (фидбэк): радужное кольцо на площади убрано — дорога идёт насквозь
+			d.Transparency = 1
 		elseif d.Name == "CurbLine" or d.Name == "CurbGlow" then
 			table.insert(curbs, d)
 		elseif d.Name == "Crosswalk" then
