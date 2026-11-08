@@ -159,27 +159,55 @@ gallery.BackgroundTransparency = 1
 gallery.Position = UDim2.fromOffset(18, 112)
 gallery.Size = UDim2.fromOffset(624, 456)
 gallery.Parent = panel
-local hint = label(panel, "Tap ✓ KEEP on a pet to auto-delete future copies of it (owned pets stay).", 18, 572, 450, 18, 12, Color3.fromRGB(205, 190, 225), Enum.Font.GothamMedium)
+local hint = label(panel, "Tap ✓ KEEP on a pet to auto-delete future copies of it (owned pets stay).", 18, 572, 624, 18, 12, Color3.fromRGB(205, 190, 225), Enum.Font.GothamMedium)
 -- ×1, ×3, ×9 и автооткрытие: кнопка ×9 нужна телефонам и геймпадам (клавиша T есть только на ПК)
 local single = button(panel, "", 18, 598, 146, 52, Color3.fromRGB(130, 90, 220))
 local triple = button(panel, "", 172, 598, 146, 52, Color3.fromRGB(240, 140, 70))
 local nine = button(panel, "", 326, 598, 146, 52, Color3.fromRGB(230, 80, 160))
 local auto = button(panel, "", 480, 598, 162, 52, Color3.fromRGB(70, 170, 110))
--- Сколько открывать в автооткрытии (фидбэк 5): ×1 / ×3 / ×9; ×9 — только с пассом ×9 Hatch.
+-- Сколько открывать в автооткрытии (фидбэк 5): нажал AUTO OPEN — всплывает окошко выбора,
+-- в нём только доступные варианты (×1 и ×3 есть у всех, ×9 — с пассом ×9 Hatch).
 local autoN = 3
+local autoPicker = Instance.new("Frame")
+autoPicker.Name = "AutoPicker"
+autoPicker.AnchorPoint = Vector2.new(0.5, 0.5)
+autoPicker.Position = UDim2.fromScale(0.5, 0.5)
+autoPicker.Size = UDim2.fromOffset(360, 170)
+autoPicker.BackgroundColor3 = Color3.fromRGB(28, 26, 38)
+autoPicker.BorderSizePixel = 0
+autoPicker.ZIndex = 40
+autoPicker.Visible = false
+autoPicker.Parent = panel
+Instance.new("UICorner", autoPicker).CornerRadius = UDim.new(0, 16)
+do
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(255, 130, 200)
+	s.Thickness = 3
+	s.Parent = autoPicker
+end
+local pickTitle = label(autoPicker, "AUTO OPEN · how many?", 0, 12, 360, 30, 20, WHITE, Enum.Font.FredokaOne)
+pickTitle.ZIndex = 41
+local pickClose = button(autoPicker, "X", 316, 8, 34, 34, Color3.fromRGB(220, 70, 90))
+pickClose.ZIndex = 42
+pickClose.TextSize = 16
+local pickRow = Instance.new("Frame")
+pickRow.BackgroundTransparency = 1
+pickRow.Position = UDim2.fromOffset(20, 60)
+pickRow.Size = UDim2.fromOffset(320, 90)
+pickRow.ZIndex = 41
+pickRow.Parent = autoPicker
+local pickLayout = Instance.new("UIListLayout")
+pickLayout.FillDirection = Enum.FillDirection.Horizontal
+pickLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+pickLayout.Padding = UDim.new(0, 14)
+pickLayout.Parent = pickRow
 local autoPick = {}
 for i, n in ipairs({ 1, 3, 9 }) do
-	local b = Instance.new("TextButton")
+	local b = button(pickRow, "×" .. n, 0, 0, 92, 80, n == 9 and Color3.fromRGB(230, 80, 160) or n == 3 and Color3.fromRGB(240, 140, 70) or Color3.fromRGB(130, 90, 220))
 	b.Name = "AutoPick" .. n
-	b.Size = UDim2.fromOffset(52, 24)
-	b.Position = UDim2.fromOffset(480 + (i - 1) * 55, 571)
-	b.Font = Enum.Font.GothamBlack
-	b.TextSize = 15
-	b.TextColor3 = Color3.new(1, 1, 1)
-	b.BorderSizePixel = 0
-	b.ZIndex = 5
-	b.Parent = panel
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	b.LayoutOrder = i
+	b.TextSize = 30
+	b.ZIndex = 42
 	autoPick[n] = b
 end
 
@@ -238,9 +266,6 @@ local function setCompact(on)
 	panel.Size = UDim2.fromOffset(660, 664 - dy)
 	gallery.Size = UDim2.fromOffset(624, 456 - dy)
 	hint.Position = UDim2.fromOffset(18, 572 - dy)
-	for i, n in ipairs({ 1, 3, 9 }) do
-		autoPick[n].Position = UDim2.fromOffset(480 + (i - 1) * 55, 571 - dy)
-	end
 	for key, b in pairs({ single = single, triple = triple, nine = nine, auto = auto }) do
 		b.Position = UDim2.fromOffset(b.Position.X.Offset, 598 - dy)
 		tiles[key].Position = b.Position - UDim2.fromOffset(8, 7)
@@ -325,6 +350,7 @@ local autoEgg, autoCount, lastAuto = nil, 0, 0
 
 local function hide()
 	panel.Visible = false
+	autoPicker.Visible = false
 	dismissed = eggId
 	mode = nil
 	if player:GetAttribute("UIScreen") == "egg" then
@@ -397,14 +423,7 @@ local function refresh()
 		end
 	end
 	local on = autoEgg == eggId
-	auto.Text = on and ("AUTO ×" .. autoN .. ": ON\ntap to stop") or (StoreConfig.HasPassFeature(player, "AutoHatch") and ("AUTO OPEN\n×" .. autoN .. " each time") or "🔒 AUTO OPEN\ngamepass")
-	local has9 = StoreConfig.HasPassFeature(player, "Hatch9")
-	for n, b in pairs(autoPick) do
-		local locked = n == 9 and not has9
-		b.Text = (locked and "🔒" or "") .. "×" .. n
-		b.BackgroundColor3 = autoN == n and Color3.fromRGB(70, 185, 95) or Color3.fromRGB(70, 66, 92)
-		b.AutoButtonColor = not on
-	end
+	auto.Text = on and ("AUTO ×" .. autoN .. ": ON\ntap to stop") or (StoreConfig.HasPassFeature(player, "AutoHatch") and "AUTO OPEN\nchoose amount" or "🔒 AUTO OPEN\ngamepass")
 	auto.BackgroundColor3 = on and Color3.fromRGB(220, 70, 90) or (skyTheme and BUTTON_COLORS.sky.auto or BUTTON_COLORS.dark.auto)
 	if currentSkin then
 		auto.BackgroundTransparency = 1
@@ -474,17 +493,26 @@ auto.Activated:Connect(function()
 			subtitle.Text = "Not enough coins for auto open"
 			return
 		end
-		autoEgg, autoCount, lastAuto = eggId, 0, 0
-		autoChip.Visible = true
+		-- окошко выбора: только доступные варианты
+		local has9 = StoreConfig.HasPassFeature(player, "Hatch9")
+		autoPick[9].Visible = has9
+		autoPicker.Visible = true
 	end
 	refresh()
 end)
+pickClose.Activated:Connect(function()
+	autoPicker.Visible = false
+end)
 for n, b in pairs(autoPick) do
 	b.Activated:Connect(function()
-		if n == 9 and needPass("Hatch9") then
+		if not eggId then
+			autoPicker.Visible = false
 			return
 		end
 		autoN = n
+		autoPicker.Visible = false
+		autoEgg, autoCount, lastAuto = eggId, 0, 0
+		autoChip.Visible = true
 		refresh()
 	end)
 end
