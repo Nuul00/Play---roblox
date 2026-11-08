@@ -469,9 +469,9 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------ Neon: одна дорога от улицы до моста
--- Фидбэк 2026-11: главная улица и дорога к лидербордам шли рядом со сдвигом и под углом. Кладём
--- одну дорогу от конца улицы прямо к началу моста (асфальт, неоновые бордюры, разметка, фонари),
--- старые плитки подхода прячем.
+-- Фидбэк 2026-11: дорога к лидербордам — продолжение главной улицы. Изогнутая (кривая Безье),
+-- начинается ровно в конце улицы и повторяет её разметку: бордюры ±7.5, линии ±6.7, пунктир
+-- 3.8 через 8 (тот же шаг, что у улицы). К мосту плавно сужается. Табличка — за обочиной.
 task.spawn(function()
 	local city = world:WaitForChild("NeonCity", 60)
 	local island = city and city:WaitForChild("LeaderboardIsland_NeonCity", 90)
@@ -491,16 +491,40 @@ task.spawn(function()
 			end
 		end
 	end
+	-- разметка улицы (продольные полосы и пунктир) — образцы
+	local streets = city:FindFirstChild("NeonStreets")
+	local strips, dashSample, lastDashZ = {}, nil, -math.huge
+	for _, d in ipairs(streets and streets:GetDescendants() or {}) do
+		if d:IsA("BasePart") then
+			if (d.Name == "CurbGlow" or d.Name == "CurbLine") and math.abs(d.Position.X - main.Position.X) < 12 then
+				table.insert(strips, { dx = d.Position.X - main.Position.X, y = d.Position.Y, part = d })
+			elseif d.Name == "LaneDash" and math.abs(d.Position.X - main.Position.X) < 1 then
+				dashSample = dashSample or d
+				lastDashZ = math.max(lastDashZ, d.Position.Z)
+			end
+		end
+	end
 	local topY = main.Position.Y + main.Size.Y / 2
-	local a = Vector3.new(main.Position.X, topY, main.Position.Z + main.Size.Z / 2 - 6)
+	local mainEnd = main.Position.Z + main.Size.Z / 2
+	local a = Vector3.new(main.Position.X, topY, mainEnd)
 	local back = deck.CFrame * CFrame.new(0, 0, -deck.Size.Z / 2)
 	local front = deck.CFrame * CFrame.new(0, 0, deck.Size.Z / 2)
-	local b = (back.Position - a).Magnitude < (front.Position - a).Magnitude and back.Position or front.Position
+	local nearBack = (back.Position - a).Magnitude < (front.Position - a).Magnitude
+	local b = nearBack and back.Position or front.Position
+	local far = nearBack and front.Position or back.Position
 	b = Vector3.new(b.X, topY, b.Z)
+	local bridgeDir = Vector3.new(far.X - b.X, 0, far.Z - b.Z).Unit
+	local k = (b - a).Magnitude * 0.45
+	local P0, P1, P2, P3 = a, a + Vector3.new(0, 0, 1) * k, b - bridgeDir * k, b
+	local function bez(t)
+		local u = 1 - t
+		return P0 * (u * u * u) + P1 * (3 * u * u * t) + P2 * (3 * u * t * t) + P3 * (t * t * t)
+	end
 	local W = main.Size.X
+	local Wend = deck.Size.X + 1
 	local folder = Instance.new("Model")
 	folder.Name = "LeaderboardRoad"
-	local function p(name, size, at, color, mat)
+	local function p(name, size, at, color, mat, transp)
 		local q = Instance.new("Part")
 		q.Name = name
 		q.Anchored = true
@@ -512,51 +536,64 @@ task.spawn(function()
 		q.CFrame = at
 		q.Color = color
 		q.Material = mat
+		q.Transparency = transp or 0
 		q.Parent = folder
 		return q
 	end
-	-- Изогнутая дорога (кривая Безье): выходит из улицы прямо вперёд и плавно поворачивает
-	-- вдоль моста, сужаясь от ширины улицы до ширины моста. 16 сегментов.
-	local far = (b - back.Position).Magnitude < 0.5 and front.Position or back.Position
-	local bridgeDir = Vector3.new(far.X - b.X, 0, far.Z - b.Z).Unit
-	local startDir = Vector3.new(0, 0, 1)
-	local k = (b - a).Magnitude * 0.45
-	local P0, P1, P2, P3 = a, a + startDir * k, b - bridgeDir * k, b
-	local function bez(t)
-		local u = 1 - t
-		return P0 * (u * u * u) + P1 * (3 * u * u * t) + P2 * (3 * u * t * t) + P3 * (t * t * t)
-	end
-	local N = 16
-	local Wend = 11
-	local dashAcc = 0
+	local N = 20
+	local arc = 0
+	local nextDash = dashSample and (lastDashZ + 8 - mainEnd) or 5 -- длина дуги до центра следующего штриха
 	for i = 1, N do
 		local t0, t1 = (i - 1) / N, i / N
 		local q0, q1 = bez(t0), bez(t1)
 		local mid = (q0 + q1) / 2
 		local segLen = (q1 - q0).Magnitude
-		local w = W + (Wend - W) * ((t0 + t1) / 2)
+		local sc = 1 + (Wend / W - 1) * ((t0 + t1) / 2)
+		local w = W * sc
 		local scf = CFrame.lookAt(mid, mid + (q1 - q0))
-		p("Road", Vector3.new(w, main.Size.Y, segLen + 0.7), scf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
-		for _, sg in { -1, 1 } do
-			p("RoadCurb", Vector3.new(0.35, 0.08, segLen + 0.45), scf * CFrame.new(sg * (w / 2 - 0.6), 0.05, 0), sg < 0 and Color3.fromRGB(255, 60, 90) or Color3.fromRGB(80, 230, 255), Enum.Material.Neon)
+		p("Road", Vector3.new(w, main.Size.Y, segLen + 0.6), scf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
+		for _, s in ipairs(strips) do
+			-- в кадре сегмента «вправо» = −X мира, поэтому смещение берём с минусом
+			p("RoadStrip", Vector3.new(s.part.Size.X, s.part.Size.Y, segLen + 0.12), scf * CFrame.new(-s.dx * sc, s.y - topY, 0), s.part.Color, s.part.Material, s.part.Transparency)
 		end
-		dashAcc += segLen
-		if dashAcc >= 7 then
-			dashAcc = 0
-			p("RoadDash", Vector3.new(0.35, 0.06, math.min(3.6, segLen)), scf * CFrame.new(0, 0.05, 0), Color3.fromRGB(255, 225, 90), Enum.Material.Neon)
+		while dashSample and nextDash <= arc + segLen do
+			local along = nextDash - arc - segLen / 2
+			p("RoadDash", dashSample.Size, scf * CFrame.new(0, dashSample.Position.Y - topY, -along), dashSample.Color, dashSample.Material)
+			nextDash += 8
 		end
-		if i % 4 == 2 and i < N - 1 then
-			for _, sg in { -1, 1 } do
-				local post = p("RoadLampPost", Vector3.new(0.35, 4, 0.35), scf * CFrame.new(sg * (w / 2 + 0.8), 2, 0), Color3.fromRGB(40, 36, 80), Enum.Material.Metal)
-				local bulb = p("RoadLamp", Vector3.new(0.8, 0.8, 0.8), post.CFrame * CFrame.new(0, 2.3, 0), Color3.fromRGB(255, 80, 220), Enum.Material.Neon)
-				bulb.Shape = Enum.PartType.Ball
-				local l = Instance.new("PointLight")
-				l.Color = bulb.Color
-				l.Range = 12
-				l.Brightness = 1
-				l.Parent = bulb
-			end
-		end
+		arc += segLen
 	end
 	folder.Parent = city
+	-- табличка «TOP PLAYERS» за обочиной: снаружи изгиба, на трети пути, лицом к идущим с площади
+	task.wait(1)
+	local sign = island:FindFirstChild("TopSignModel")
+	if sign and sign:IsA("Model") then
+		local tq = 0.3
+		local pt = bez(tq)
+		local tan = (bez(tq + 0.02) - bez(tq - 0.02)).Unit
+		local left = Vector3.new(tan.Z, 0, -tan.X) -- влево по ходу (к −X)
+		if left.X > 0 then
+			left = -left
+		end
+		local w = W * (1 + (Wend / W - 1) * tq)
+		local base = pt + left * (w / 2 + 7)
+		local oldCf = sign:GetPivot()
+		local face = CFrame.lookAt(Vector3.new(base.X, oldCf.Y, base.Z), Vector3.new(base.X, oldCf.Y, base.Z) - tan + left * 0.6)
+		local pivot0 = oldCf.Position
+		local function move(inst: Instance)
+			if inst:IsA("BasePart") then
+				local rel = CFrame.new(pivot0):ToObjectSpace(inst.CFrame)
+				inst.CFrame = face * oldCf.Rotation:Inverse() * rel
+			end
+		end
+		for _, d in ipairs(sign:GetDescendants()) do
+			move(d)
+		end
+		for _, d in ipairs(island:GetChildren()) do
+			if d.Name == "TopBoardPost" or d.Name == "TopBoardLamp" or d.Name == "TopSign" then
+				move(d)
+			end
+		end
+		sign.WorldPivot = face
+	end
 end)

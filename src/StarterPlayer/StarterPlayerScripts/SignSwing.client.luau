@@ -32,6 +32,7 @@ local function setup(m: Instance)
 	end
 	table.insert(signs, {
 		model = m,
+		bar = bar,
 		hinge = hinge,
 		center = center,
 		parts = parts,
@@ -67,7 +68,12 @@ RunService.RenderStepped:Connect(function(dt)
 			local swing = math.rad(5.5) * gust * math.sin(k * 1.6) + math.rad(1.2) * math.sin(k * 3.7 + 0.5)
 			local twist = math.rad(2.5) * gust * math.sin(k * 1.1 + 2)
 			-- маятник вокруг оси перекладины (её X) + закручивание вокруг вертикали
-			local rot = s.hinge * CFrame.Angles(swing, twist, 0)
+			-- шарнир — от текущего положения перекладины (сервер мог передвинуть вывеску)
+			local bar = s.bar
+			local right = Vector3.new(bar.CFrame.RightVector.X, 0, bar.CFrame.RightVector.Z).Unit
+			local hinge = CFrame.fromMatrix(bar.Position, right, Vector3.yAxis)
+			s.center = bar.Position
+			local rot = hinge * CFrame.Angles(swing, twist, 0)
 			for j, off in ipairs(s.offsets) do
 				s.buffer[j] = rot * off
 			end
