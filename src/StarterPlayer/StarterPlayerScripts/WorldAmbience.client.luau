@@ -36,7 +36,9 @@ local WORLDS = {
 		music = 9046740461, -- Winter Holidays
 		light = { ClockTime = 19.6, Brightness = 1.8, Ambient = Color3.fromRGB(125, 145, 190), OutdoorAmbient = Color3.fromRGB(150, 175, 220), ExposureCompensation = -0.05 },
 		tint = { TintColor = Color3.fromRGB(228, 242, 255), Saturation = -0.05, Contrast = 0.06 },
-		atmosphere = { Density = 0.28, Haze = 0.7, Color = Color3.fromRGB(175, 200, 240), Decay = Color3.fromRGB(120, 150, 220) },
+		-- Density 0.42 (было 0.28): вдали за шаром был виден остров Meadow (его Terrain не спрятать
+		-- на клиенте) — теперь он тонет в морозной дымке, а мир внутри шара выглядит так же
+		atmosphere = { Density = 0.42, Haze = 0.7, Color = Color3.fromRGB(175, 200, 240), Decay = Color3.fromRGB(120, 150, 220) },
 	},
 }
 local LIGHT_KEYS = { "ClockTime", "Brightness", "Ambient", "OutdoorAmbient", "ExposureCompensation" }
