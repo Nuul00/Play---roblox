@@ -316,6 +316,39 @@ for i = 1, 4 do
 	sounds[i] = s
 end
 local soundIndex, lastSound = 0, 0
+-- Магнитные волны (фидбэк 2026-11): когда магнит собирает монеты, от него расходится полупрозрачная
+-- волна до радиуса магнита — видно, что монеты притягивает именно он. Не чаще ~3 раз в секунду.
+local lastWave = 0
+local function magnetWave()
+	if os.clock() - lastWave < 0.33 then
+		return
+	end
+	local char = localPlayer.Character
+	local tool = char and char:FindFirstChildOfClass("Tool")
+	local handle = tool and tool:FindFirstChild("Handle")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local from = (handle and handle:IsA("BasePart") and handle) or root
+	if not from then
+		return
+	end
+	lastWave = os.clock()
+	local radius = math.clamp(tonumber(localPlayer:GetAttribute("MagnetRadius")) or 6, 3, 40)
+	local wave = Instance.new("Part")
+	wave.Name = "MagnetWave"
+	wave.Shape = Enum.PartType.Ball
+	wave.Material = Enum.Material.ForceField
+	wave.Color = Color3.fromRGB(120, 200, 255)
+	wave.Anchored, wave.CanCollide, wave.CanQuery, wave.CanTouch, wave.CastShadow = true, false, false, false, false
+	wave.Size = Vector3.new(1.5, 1.5, 1.5)
+	wave.Transparency = 0.1
+	wave.CFrame = from.CFrame
+	wave.Parent = Workspace
+	local info = TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(wave, info, { Size = Vector3.new(radius * 2, radius * 2, radius * 2), Transparency = 1 }):Play()
+	task.delay(0.6, function()
+		wave:Destroy()
+	end)
+end
 local lastCollected = localPlayer:GetAttribute("CoinsCollected") or 0
 localPlayer:GetAttributeChangedSignal("CoinsCollected"):Connect(function()
 	local now = localPlayer:GetAttribute("CoinsCollected") or 0
@@ -324,6 +357,9 @@ localPlayer:GetAttributeChangedSignal("CoinsCollected"):Connect(function()
 		soundIndex = soundIndex % #sounds + 1
 		sounds[soundIndex].PlaybackSpeed = 0.95 + math.random() * 0.12
 		sounds[soundIndex]:Play()
+	end
+	if now > lastCollected then
+		magnetWave()
 	end
 	lastCollected = now
 end)

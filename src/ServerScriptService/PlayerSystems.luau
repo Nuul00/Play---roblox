@@ -278,9 +278,10 @@ function PlayerSystems.CoinMultiplier(p): number
 	if (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() and p:GetAttribute("CurrentWorld") == "Frozen Peaks" then
 		m *= 2
 	end
-	-- локальные ивенты остальных миров (Blossom Rain, Disco Fever, ...): x2 в своём мире
-	if LocalEvents.Active(p:GetAttribute("CurrentWorld")) then
-		m *= 2
+	-- локальные ивенты (Blossom Rain, Disco Fever, ...): с 2026-11 во время ивента x2 нет — собранные
+	-- бонусы дают множитель ПОСЛЕ ивента на E.BonusDuration (атрибуты EventBonusMult / EventBonusEnd)
+	if (p:GetAttribute("EventBonusEnd") or 0) > workspace:GetServerTimeNow() then
+		m *= p:GetAttribute("EventBonusMult") or 1
 	end
 	if PlayerSystems.PotionActive(p, "SuperCoins") then
 		m *= 3 -- супер-зелье вместо обычного

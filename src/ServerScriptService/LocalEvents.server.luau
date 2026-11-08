@@ -1,6 +1,6 @@
 -- Локальные ивенты миров (настройки — ReplicatedStorage.LocalEvents). Сервер: по расписанию
 -- ставит конец ивента в атрибут workspace, раскладывает бонусы у монет мира, выдаёт награду.
--- x2 монет во время ивента считает PlayerSystems.CoinMultiplier.
+-- 2026-11: во время ивента x2 нет; собранные бонусы дают множитель после ивента (E.Tiers, PlayerSystems.CoinMultiplier).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
@@ -156,9 +156,8 @@ local function makePickup(name: string, def, pos: Vector3, folder: Folder)
 		folder:SetAttribute("Cap_" .. p.UserId, cap + 1)
 		p:SetAttribute("EventPickups", cap + 1) -- счётчик «3/8» в баннере
 		taken = true
-		local earned = math.floor(baseValue(def) * E.Reward * PlayerSystems.CoinMultiplier(p))
-		stats.Coins.Value += earned
-		p:SetAttribute("LifetimeEarned", (p:GetAttribute("LifetimeEarned") or 0) + earned)
+		-- 2026-11: монет за подбор нет — считаем собранное, множитель выдаётся после ивента (E.Tiers)
+		local earned = cap + 1
 		holder:SetAttribute("LastPickupColor", def.Color)
 		holder:SetAttribute("LastPickupBy", p.UserId)
 		holder:SetAttribute("LastPickupAmount", earned)
@@ -189,63 +188,59 @@ local function run(name: string, def, ends: number)
 	local folder = Instance.new("Folder")
 	folder.Name = def.Key
 	folder.Parent = holder
+	-- 2026-11 (фидбэк): все бонусы сразу и по всей локации, в доступных местах — рядом с монетами
+	-- (монеты лежат там, куда можно дойти), не ближе 25 студов друг к другу.
 	local spots = coinSpots(name)
 	if #spots > 0 then
 		local rng = Random.new()
-		for wave = 1, 3 do
-			-- каждая волна — рядом с игроками этого мира (до 90 студов), чтобы не бегать через весь мир
-			local near = {}
-			for _, p in ipairs(Players:GetPlayers()) do
-				local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-				if r and p:GetAttribute("CurrentWorld") == name then
-					for _, sp in ipairs(spots) do
-						local d = (sp - r.Position).Magnitude
-						if d > 12 and d < 90 then
-							table.insert(near, sp)
-						end
-					end
+		local pool = table.clone(spots)
+		local placed = {}
+		local minGap = 25
+		local made = 0
+		while made < E.Pickups and #pool > 0 do
+			local base = table.remove(pool, rng:NextInteger(1, #pool))
+			local a = rng:NextNumber(0, math.pi * 2)
+			local pos = base + Vector3.new(math.cos(a) * 4, -1.2, math.sin(a) * 4)
+			local free = true
+			for _, q in ipairs(placed) do
+				if (q - pos).Magnitude < minGap then
+					free = false
+					break
 				end
 			end
-			local pool = table.clone(#near >= 4 and near or spots)
-			-- 2026-11: бонус не внутри монеты и не в другом бонусе — каждая точка монеты берётся один раз,
-			-- бонус ставится в 5 студах от неё и не ближе 8 студов к уже поставленным
-			local placedPickups = {}
-			for _, pm in ipairs(folder:GetChildren()) do
-				local pos = pm:GetAttribute("Pos")
-				if typeof(pos) == "Vector3" then
-					table.insert(placedPickups, pos)
-				end
+			if free then
+				makePickup(name, def, pos, folder)
+				table.insert(placed, pos)
+				made += 1
 			end
-			local made = 0
-			while made < math.floor(E.Pickups / 3) and #pool > 0 do
-				local base = table.remove(pool, rng:NextInteger(1, #pool))
-				local a = rng:NextNumber(0, math.pi * 2)
-				local pos = base + Vector3.new(math.cos(a) * 5, -1.2, math.sin(a) * 5)
-				local free = true
-				for _, q in ipairs(placedPickups) do
-					if (q - pos).Magnitude < 8 then
-						free = false
-						break
-					end
-				end
-				if free then
-					makePickup(name, def, pos, folder)
-					table.insert(placedPickups, pos + Vector3.new(0, 1.6, 0))
-					made += 1
-				end
-			end
-			if wave < 3 then
-				task.wait(15)
+			if #pool == 0 and made < E.Pickups and minGap > 8 then
+				-- маленький мир: ослабляем разнос и добираем
+				minGap -= 8
+				pool = table.clone(spots)
 			end
 		end
 	end
 	task.wait(math.max(0, ends - workspace:GetServerTimeNow()))
-	folder:Destroy()
+	-- итог: собрал 6/12/18 — множитель монет на E.BonusDuration (во время сбора бонуса не было)
 	for _, p in ipairs(Players:GetPlayers()) do
+		local got = folder:GetAttribute("Cap_" .. p.UserId) or 0
+		local tier = E.TierFor(got)
+		if tier then
+			local now = workspace:GetServerTimeNow()
+			local cur = (p:GetAttribute("EventBonusEnd") or 0) > now and (p:GetAttribute("EventBonusMult") or 1) or 1
+			if tier.Mult >= cur then
+				p:SetAttribute("EventBonusMult", tier.Mult)
+				p:SetAttribute("EventBonusEnd", now + E.BonusDuration)
+			end
+			feedback:FireClient(p, string.format("%s %d %s collected: x%g coins for %d min!", def.Icon, got, def.Item, tier.Mult, E.BonusDuration / 60), true)
+		elseif got > 0 then
+			feedback:FireClient(p, string.format("%s %d/%d %s — collect %d for a coin bonus next time!", def.Icon, got, E.Pickups, def.Item, E.Tiers[1].Need), false)
+		end
 		if p:GetAttribute("CurrentWorld") == name then
 			p:SetAttribute("EventPickups", nil)
 		end
 	end
+	folder:Destroy()
 end
 
 -- Магнит тянет и бонусы ивента: радиус магнита игрока (+3), чтобы не обегать каждый вплотную

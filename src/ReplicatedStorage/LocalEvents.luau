@@ -5,12 +5,24 @@
 local rgb = Color3.fromRGB
 local E = {}
 E.Interval = 6 * 60 -- каждый мир раз в 6 минут
-E.Duration = 60
+E.Duration = 150 -- 2026-11: бонусы разбросаны по всей локации — нужно время их обойти
 E.Pickups = 18 -- бонусов за ивент (волнами)
 -- 2026-11: лимита по сути нет — каждый подобранный бонус даёт награду (раньше после 8-го
 -- остальные бонусы лежали в мире, грузили ПК и ничего не давали)
 E.Cap = E.Pickups
-E.Reward = 40 -- в обычных монетах мира
+E.Reward = 40 -- (не используется с 2026-11: бонусы дают множитель после ивента, см. E.Tiers)
+-- 2026-11 (фидбэк): собранные бонусы ивента дают множитель монет ПОСЛЕ ивента (во время сбора — ничего).
+E.Tiers = { { Need = 6, Mult = 1.3 }, { Need = 12, Mult = 1.6 }, { Need = 18, Mult = 2 } }
+E.BonusDuration = 5 * 60 -- сколько действует полученный множитель
+function E.TierFor(count: number)
+	local best = nil
+	for _, t in ipairs(E.Tiers) do
+		if count >= t.Need then
+			best = t
+		end
+	end
+	return best
+end
 
 E.Worlds = {
 	["Meadow Isles"] = {

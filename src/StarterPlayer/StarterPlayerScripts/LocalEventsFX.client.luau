@@ -211,7 +211,7 @@ task.spawn(function()
 			a:Destroy()
 		end)
 		if holder:GetAttribute("LastPickupBy") == player.UserId then
-			floatText(pos, "+" .. NumberFormat.Short(holder:GetAttribute("LastPickupAmount") or 0), color:Lerp(Color3.new(1, 1, 1), 0.4))
+			floatText(pos, tostring(holder:GetAttribute("LastPickupAmount") or 0) .. "/" .. E.Cap, color:Lerp(Color3.new(1, 1, 1), 0.4))
 			sound("reward")
 		end
 	end)
@@ -269,12 +269,21 @@ Run.RenderStepped:Connect(function(dt)
 		if active then
 			bTitle.Text = def.Name .. "!"
 			local got = player:GetAttribute("EventPickups") or 0
-			bSub.Text = "x2 coins · " .. def.Icon .. " " .. got .. "/" .. E.Cap
+			-- 2026-11: бонус после ивента за 6/12/18 собранных
+			local nextTier = nil
+			for _, tr in ipairs(E.Tiers) do
+				if got < tr.Need then
+					nextTier = tr
+					break
+				end
+			end
+			local cur = E.TierFor(got)
+			bSub.Text = def.Icon .. " " .. got .. "/" .. E.Cap .. (nextTier and string.format(" · %d → x%g", nextTier.Need, nextTier.Mult) or "") .. (cur and string.format(" · after: x%g", cur.Mult) or "")
 			bTime.Text = string.format("%d:%02d", math.floor(left / 60), math.floor(left) % 60)
 			bTime.TextColor3 = left <= 10 and (math.sin(t * 10) > 0 and rgb(255, 120, 120) or Color3.new(1, 1, 1)) or Color3.new(1, 1, 1)
 		else
 			bTitle.Text = def.Name .. " soon"
-			bSub.Text = "x2 coins in this world"
+			bSub.Text = string.format("collect %s %d/%d/%d → x%g/x%g/x%g coins", def.Icon, E.Tiers[1].Need, E.Tiers[2].Need, E.Tiers[3].Need, E.Tiers[1].Mult, E.Tiers[2].Mult, E.Tiers[3].Mult)
 			bTime.Text = string.format("%d:%02d", math.floor(soon / 60), math.floor(soon) % 60)
 			bTime.TextColor3 = def.Color2
 		end

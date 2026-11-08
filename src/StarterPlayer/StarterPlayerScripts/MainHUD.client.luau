@@ -168,10 +168,11 @@ local function refreshStats()
 	elseif (player:GetAttribute("PotionEndCoins") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end
-	-- локальный ивент мира (Blossom Rain и др.) и метель во Frozen: x2 в своём мире
-	if LocalEvents.Active(player:GetAttribute("CurrentWorld")) then
-		bonus *= 2
+	-- бонус за собранные предметы локального ивента (после ивента, как в PlayerSystems.CoinMultiplier)
+	if (player:GetAttribute("EventBonusEnd") or 0) > workspace:GetServerTimeNow() then
+		bonus *= player:GetAttribute("EventBonusMult") or 1
 	end
+	-- метель во Frozen: x2 в своём мире
 	if player:GetAttribute("CurrentWorld") == "Frozen Peaks" and (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() then
 		bonus *= 2
 	end
@@ -192,7 +193,7 @@ speedLevel.Changed:Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventId"):Connect(refreshStats)
 workspace:GetAttributeChangedSignal("EventEnd"):Connect(refreshStats)
 -- только атрибуты, влияющие на панель (иначе пересчёт на каждую монету и каждого питомца)
-local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, EquippedTrail = true, PotionEndCoins = true, PotionEndSuperCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true }
+local STAT_ATTRS = { PetBonus = true, IncomeLevel = true, BadgeBonus = true, Rebirths = true, IndexBonus = true, FriendBonus = true, Save_QuestLineBonus = true, EquippedTrail = true, PotionEndCoins = true, PotionEndSuperCoins = true, AbilCoins = true, MagnetRadius = true, MagnetLevel = true, Pass_Coins2x = true, Pass_VIP = true, CurrentWorld = true, EventBonusEnd = true, EventBonusMult = true }
 player.AttributeChanged:Connect(function(name)
 	if STAT_ATTRS[name] then
 		refreshStats()
