@@ -1212,7 +1212,86 @@ end
 -- Указатель к топам (фидбэк 2026-11): доска на двух столбах СБОКУ от входа, лицом к идущим игрокам.
 -- Сверху — светильник на кронштейнах (как подсветка над монитором), светит вниз на доску.
 -- Надписи: «🏆 TOP PLAYERS 🏆», «← LEADERBOARDS», «#1 ?». a — начало прохода, dir — к острову.
+-- Надписи на щите: спереди — «к топам», сзади — «респект» вернувшимся.
+local function signTexts(surface: BasePart, theme, canvas: Vector2)
+	local function txt(gui, s, y, h, c)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Position = UDim2.fromScale(0.06, y)
+		t.Size = UDim2.fromScale(0.88, h)
+		t.Font = Enum.Font.FredokaOne
+		t.TextScaled = true
+		t.Text = s
+		t.TextColor3 = c
+		t.Parent = gui
+		local st = Instance.new("UIStroke")
+		st.Thickness = 3
+		st.Color = Color3.fromRGB(30, 15, 5)
+		st.Transparency = 0.1
+		st.Parent = t
+	end
+	for _, side in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local g = Instance.new("SurfaceGui")
+		g.Face = side
+		g.LightInfluence = 0
+		g.MaxDistance = 300
+		g.CanvasSize = canvas
+		g.Parent = surface
+		if side == Enum.NormalId.Front then
+			txt(g, "🏆 TOP PLAYERS 🏆", 0.07, 0.3, Color3.fromRGB(255, 220, 100))
+			txt(g, "← LEADERBOARDS", 0.41, 0.22, Color3.fromRGB(255, 250, 235))
+			txt(g, "#1 ?", 0.66, 0.27, Color3.fromRGB(255, 200, 70))
+		else
+			txt(g, "🏆 RESPECT! 🏆", 0.07, 0.28, Color3.fromRGB(255, 220, 100))
+			txt(g, "Didn't go to the TOP? You'd never read this:", 0.41, 0.17, Color3.fromRGB(255, 245, 230))
+			txt(g, "YOU ARE THE BEST ❤", 0.64, 0.28, Color3.fromRGB(255, 200, 70))
+		end
+		local l = Instance.new("SurfaceLight")
+		l.Face = side
+		l.Range = 10
+		l.Brightness = 1.4
+		l.Color = Color3.fromRGB(255, 225, 170)
+		l.Parent = surface
+	end
+end
+
+-- Красивая подвесная вывеска из Creator Store (Wooden Sign v2, без скриптов) — ServerStorage.LeaderboardSignTemplate.
+-- Щит SignFace висит на цепях под перекладиной TopBar; ставим два столба под концы перекладины.
+local function topSignModel(island, theme, a, dir): boolean
+	local template = ServerStorage:FindFirstChild("LeaderboardSignTemplate")
+	if not (template and template:IsA("Model") and template.PrimaryPart) then
+		return false
+	end
+	local side = Vector3.new(-dir.Z, 0, dir.X)
+	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 9)
+	local face = CFrame.lookAt(at, at - dir)
+	local m = template:Clone()
+	m.Name = "TopSignModel"
+	local signFace = m.PrimaryPart
+	m:ScaleTo(m:GetScale() * 15 / signFace.Size.X) -- ширина щита 15
+	-- щит висит: низ щита на высоте 4 над землёй
+	m:PivotTo(face * CFrame.new(0, 4 + signFace.Size.Y / 2, 0))
+	m.Parent = island
+	local bar = m:FindFirstChild("TopBar", true)
+	if bar and bar:IsA("BasePart") then
+		local h = bar.Position.Y - a.Y + 0.4
+		for _, sx in { -1, 1 } do
+			local p = bar.Position + bar.CFrame.RightVector * sx * (bar.Size.X / 2 - 0.5)
+			part(island, "TopBoardPost", Vector3.new(0.9, h, 0.9), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, Color3.fromRGB(70, 45, 25), M.Wood)
+			local lamp = ball(island, "TopBoardLamp", 1, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
+			light(lamp, theme.Lamp, 16, 1.4)
+		end
+	end
+	signTexts(signFace, theme, Vector2.new(640, 640 * signFace.Size.Y / signFace.Size.X))
+	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), signFace.CFrame, theme.Lamp, M.Neon, GHOST)
+	holder.Transparency = 1
+	return true
+end
+
 local function topSign(island, theme, a, dir)
+	if topSignModel(island, theme, a, dir) then
+		return
+	end
 	local side = Vector3.new(-dir.Z, 0, dir.X) -- для смотрящего вдоль dir это правая сторона
 	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 8)
 	local face = CFrame.lookAt(at, at - dir) -- лицевая сторона смотрит на подходящих
