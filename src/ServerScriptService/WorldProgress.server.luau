@@ -11,11 +11,13 @@ local world=workspace:WaitForChild("CoinSpeedWorld")
 local persistent=game.GameId>0 and (not RunService:IsStudio() or Config.EnableStudioDataStores)
 local store=persistent and DS:GetDataStore("CoinSprint_Profiles_V3")
 local sessions={}
+local loading={} -- игрок -> токен замка, пока профиль грузится (sessions[p] ещё нет)
 local token=game.JobId~="" and game.JobId or game:GetService("HttpService"):GenerateGUID(false)
 -- Числа из сохранения: отбрасываем только NaN и бесконечность (раньше всё ≥1e15 обнулялось — поздняя игра теряла монеты).
 local function number(v) return type(v)=="number" and v==v and v~=math.huge and v~=-math.huge and math.clamp(v,0,1e300) or 0 end
+local PROFILE_VERSION=1 -- версия схемы профиля; при смене формата — миграция в load
 local function snapshot(p)
- local data={Version=1,Coins=number(p.leaderstats.Coins.Value),Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
+ local data={Version=PROFILE_VERSION,Coins=number(p.leaderstats.Coins.Value),Speed=p.leaderstats.SpeedLevel.Value,Owned={},AutoDelete={}}
  data.DailyDay=p:GetAttribute("DailyDay") or 0
  data.DailyClaimedAt=p:GetAttribute("DailyClaimedAt") or 0
  data.QuestState=p:GetAttribute("QuestState") or ""
@@ -46,7 +48,9 @@ local function snapshot(p)
  -- с префиксом Save_: они сохраняются и загружаются автоматически.
  data.Extra={}
  for k,v in pairs(p:GetAttributes()) do
-  if string.sub(k,1,5)=="Save_" and (type(v)=="number" or type(v)=="string" or type(v)=="boolean") then data.Extra[k]=v end
+  -- строки ≥4000 загрузка всё равно отбросит — не пишем их и тут (аудит 2026-11)
+  if string.sub(k,1,5)=="Save_" and (type(v)=="number" or (type(v)=="string" and #v<4000) or type(v)=="boolean") then data.Extra[k]=v
+  elseif string.sub(k,1,5)=="Save_" and type(v)=="string" then warn("[Profiles] "..k.." too long, not saved") end
  end
  return data
 end
@@ -58,6 +62,7 @@ local function load(p)
  -- Замок профиля — на сессию игрока, а не на сервер: быстрый перезаход на тот же сервер
  -- ждёт, пока старая сессия сохранится и снимет замок (иначе сохранения новой молча отбрасывались).
  local myToken=token..":"..game:GetService("HttpService"):GenerateGUID(false)
+ loading[p]=myToken -- 2026-11 (аудит): BindToClose снимет замок и у тех, кто ещё грузится
  -- ждём дольше, чем живёт чужой замок (120 с): после падения сервера игрок всё равно зайдёт
  for attempt=1,15 do
   local ok,data=pcall(function()
@@ -74,12 +79,21 @@ local function load(p)
  end
  -- игрок ушёл, пока профиль грузился: сразу снимаем замок, иначе он висел бы до конца жизни сервера
  if loaded and p.Parent~=Players then
+  loading[p]=nil
   pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==myToken then old.Session=nil;return old end;return nil end) end)
   return
  end
- if p.Parent~=Players then return end
- if not loaded then p:Kick("Your profile is unavailable or still open on another server. Please rejoin shortly.");return end
- sessions[p]={busy=false,release=false,token=myToken}
+ if p.Parent~=Players then loading[p]=nil;return end
+ if not loaded then loading[p]=nil;p:Kick("Your profile is unavailable or still open on another server. Please rejoin shortly.");return end
+ -- профиль из более новой версии игры (откат билда): не грузим и не перезаписываем — иначе потеряем новые поля
+ if number(loaded.Version)>PROFILE_VERSION then
+  loading[p]=nil
+  pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==myToken then old.Session=nil;return old end;return nil end) end)
+  p:Kick("This server is running an older version. Please rejoin.")
+  return
+ end
+ loading[p]=nil
+ sessions[p]={busy=false,release=false,token=myToken,lastWrite=os.time()}
  stats.Coins.Value=number(loaded.Coins)
  p:SetAttribute("DailyDay",math.clamp(math.floor(number(loaded.DailyDay)),0,7))
  p:SetAttribute("DailyClaimedAt",math.floor(number(loaded.DailyClaimedAt)))
@@ -145,7 +159,8 @@ local function save(p,release)
  data.Lease=os.time()
  -- при выходе и выключении сервера пробуем несколько раз с паузой: прогресс не должен теряться
  local ok,err
- for attempt=1,(releasing and 4 or 1) do
+ -- автосейв тоже повторяем (раньше 1 попытка: при сбое DataStore замок мог истечь у живого игрока)
+ for attempt=1,(releasing and 4 or 3) do
   local rejected=false
   ok,err=pcall(function()
    store:UpdateAsync(tostring(p.UserId),function(old)
@@ -159,12 +174,23 @@ local function save(p,release)
   task.wait(attempt*1.5)
  end
  session.busy=false
- if not ok then warn("[Profiles] Save failed: "..tostring(err));pcall(function() p:SetAttribute("SaveStatus","SAVE RETRY PENDING") end) end
+ if ok then
+  session.lastWrite=os.time()
+  pcall(function() if p:GetAttribute("SaveStatus")=="SAVE RETRY PENDING" then p:SetAttribute("SaveStatus","SAVING ENABLED") end end)
+ else
+  warn("[Profiles] Save failed: "..tostring(err));pcall(function() p:SetAttribute("SaveStatus","SAVE RETRY PENDING") end)
+ end
  if releasing and ok then
   sessions[p]=nil
  elseif err=="session lock lost" then
-  -- замок у другого сервера: дальше сохранять нечего, иначе вечные повторы и утечка игрока
+  -- замок у другого сервера: дальше сохранять нельзя. Раньше игрок оставался в игре и играл
+  -- «вхолостую» (прогресс не сохранялся). Теперь выключаем профиль и просим перезайти.
   sessions[p]=nil
+  pcall(function()
+   p:SetAttribute("ProfileReady",false)
+   p:SetAttribute("SaveStatus","SESSION ENDED")
+   if not releasing then p:Kick("Your profile was opened on another server. Please rejoin.") end
+  end)
  end
  return ok
 end
@@ -185,11 +211,45 @@ Players.PlayerAdded:Connect(function(p) task.spawn(load,p) end)
 Players.PlayerRemoving:Connect(function(p) save(p,true) end)
 for _,p in ipairs(Players:GetPlayers()) do task.spawn(load,p) end
 task.spawn(function() while true do task.wait(60);for p in pairs(sessions) do task.spawn(save,p,false) end end end)
+-- Heartbeat замка (аудит 2026-11): если сохранение давно не проходило (сбой DataStore), продлеваем
+-- только Lease, чтобы чужой сервер не забрал профиль живого игрока, пока замок не истёк (120 с).
+task.spawn(function()
+ while true do
+  task.wait(30)
+  for p,session in pairs(sessions) do
+   if not session.busy and os.time()-(session.lastWrite or 0)>=45 then
+    task.spawn(function()
+     local lost=false
+     local ok=pcall(function()
+      store:UpdateAsync(tostring(p.UserId),function(old)
+       if type(old)~="table" or old.Session~=session.token then lost=true;return nil end
+       old.Lease=os.time();return old
+      end)
+     end)
+     if ok and not lost then session.lastWrite=os.time()
+     elseif ok and lost and sessions[p]==session then
+      sessions[p]=nil
+      pcall(function() p:SetAttribute("ProfileReady",false);p:SetAttribute("SaveStatus","SESSION ENDED");p:Kick("Your profile was opened on another server. Please rejoin.") end)
+     end
+    end)
+   end
+  end
+ end
+end)
 game:BindToClose(function()
  if not persistent then return end
  for p in pairs(sessions) do task.spawn(save,p,true) end
+ -- игроки, у которых профиль ещё грузится: данных нет, просто снимаем их замок
+ local pending=0
+ for p,tok in pairs(loading) do
+  pending+=1
+  task.spawn(function()
+   pcall(function() store:UpdateAsync(tostring(p.UserId),function(old) if type(old)=="table" and old.Session==tok then old.Session=nil;return old end;return nil end) end)
+   pending-=1
+  end)
+ end
  local deadline=os.clock()+25
- while next(sessions) and os.clock()<deadline do task.wait(0.2) end
+ while (next(sessions) or pending>0) and os.clock()<deadline do task.wait(0.2) end
 end)
 local defs={{Part="BoardCoins",Title="TOP 100 COINS",Stat="LifetimeEarned",Scale=100,Log=true},{Part="BoardEggs",Title="TOP 100 EGGS",Stat="EggsOpened",Scale=1},{Part="BoardPickups",Title="TOP 100 · THIS WEEK",Stat="WeekCoins",Scale=100,Log=true,Weekly=true}}
 local names={}

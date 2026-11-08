@@ -7,6 +7,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
+local HttpService = game:GetService("HttpService")
 local Config = require(ReplicatedStorage:WaitForChild("GameConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local PlayerSystems = require(script.Parent:WaitForChild("PlayerSystems"))
@@ -144,13 +145,41 @@ local function execute(t)
 		p:SetAttribute("Save_Trades", (p:GetAttribute("Save_Trades") or 0) + 1)
 	end
 	print("[Trade] " .. t.a.Name .. " <-> " .. t.b.Name .. ": " .. #moves .. " pet kinds moved")
+	-- 2026-11 (аудит): раньше оба сохранения запускались «вслепую» — при сбое одного профиль второго
+	-- уже был записан (дюп или потеря питомца). Теперь: метка обмена в обоих профилях, оба сохранения
+	-- параллельно, ждём результат и повторяем неудачные. Окно риска — только падение сервера за эти секунды.
+	local tradeId = HttpService:GenerateGUID(false)
+	for _, p in ipairs({ t.a, t.b }) do
+		p:SetAttribute("Save_LastTrade", tradeId)
+	end
+	-- окно обмена закрываем сразу (игрок не ждёт), сохранения идут следом
+	close(t, nil, "Trade complete!")
 	local saveNow = ServerStorage:FindFirstChild("SaveProfileNow")
 	if saveNow then
+		local done = {}
 		for _, p in ipairs({ t.a, t.b }) do
-			task.spawn(pcall, saveNow.Invoke, saveNow, p)
+			task.spawn(function()
+				local ok = false
+				for attempt = 1, 4 do
+					local okCall, res = pcall(saveNow.Invoke, saveNow, p)
+					ok = okCall and res == true
+					if ok or p.Parent ~= Players then
+						break
+					end
+					task.wait(attempt * 1.5)
+				end
+				done[p] = ok
+			end)
+		end
+		local t0 = os.clock()
+		while (done[t.a] == nil or done[t.b] == nil) and os.clock() - t0 < 25 do
+			task.wait(0.1)
+		end
+		if done[t.a] ~= true or done[t.b] ~= true then
+			-- не сохранилось сразу: в памяти обмен уже прошёл, автосейв/выход допишут; фиксируем в логе
+			warn(("[Trade] %s save not confirmed (a=%s b=%s)"):format(tradeId, tostring(done[t.a]), tostring(done[t.b])))
 		end
 	end
-	close(t, nil, "Trade complete!")
 end
 
 remote.OnServerEvent:Connect(function(p, action, a1, a2)

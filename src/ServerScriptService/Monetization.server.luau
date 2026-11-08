@@ -252,10 +252,26 @@ local function grant(p: Player, def): boolean
 	return false
 end
 
+-- 2026-11 (аудит): чековое хранилище — 3 попытки с паузой (раньше одна)
+local function retry(fn, ...)
+	local ok, res
+	for attempt = 1, 3 do
+		ok, res = pcall(fn, ...)
+		if ok then
+			return ok, res
+		end
+		task.wait(attempt)
+	end
+	return ok, res
+end
 MarketplaceService.ProcessReceipt = function(info)
 	local def = byId[info.ProductId]
 	local p = Players:GetPlayerByUserId(info.PlayerId)
 	if not def or not p then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	-- 2026-11 (аудит): профиль ещё не загружен — выданное затёрла бы загрузка. Roblox повторит позже.
+	if not p:GetAttribute("ProfileReady") then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	-- уже выдавали эту покупку? (сначала смотрим в профиле игрока — он сохраняется вместе с выданным)
@@ -275,7 +291,7 @@ MarketplaceService.ProcessReceipt = function(info)
 		return saved() and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receipts then
-		local ok, done = pcall(receipts.GetAsync, receipts, info.PurchaseId)
+		local ok, done = retry(receipts.GetAsync, receipts, info.PurchaseId)
 		-- в Studio без доступа к API хранилище недоступно: тестовую покупку выдаём сразу
 		if not ok and not game:GetService("RunService"):IsStudio() then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -304,7 +320,7 @@ MarketplaceService.ProcessReceipt = function(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if receipts then
-		pcall(receipts.SetAsync, receipts, info.PurchaseId, true)
+		retry(receipts.SetAsync, receipts, info.PurchaseId, true)
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
