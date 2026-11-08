@@ -365,6 +365,8 @@ pcall(dressShop, city:FindFirstChild("UpgradeShop"), "NeonUpgradeShop", nil, 0.7
 pcall(dressShop, sky and sky:FindFirstChild("UpgradeShop"), "SkyUpgradeShop")
 pcall(dressShop, sky and sky:FindFirstChild("MagnetShop"), "SkyMagnetShop")
 pcall(dressShop, frozen and frozen:FindFirstChild("UpgradeShop"), "FrozenShop")
+-- 2026-11: свой зимний ларёк магнитов (модель от игрока, TripoProps.FrozenMagnetShop)
+pcall(dressShop, frozen and frozen:FindFirstChild("MagnetShop"), "FrozenMagnetShop")
 local volcanoW = world:WaitForChild("MagmaVolcano", 30)
 local galaxyW = world:WaitForChild("CosmicGalaxy", 30)
 -- Вулкан: процедурную гору и мёртвые деревья меняем на 3D-модели Tripo.
