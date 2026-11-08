@@ -70,7 +70,9 @@ local function mark(zone: BasePart)
 		local seg = part(m, Vector3.new(0.25, 0.5, d * math.pi / 24 + 0.15), CFrame.new(floor + Vector3.new(math.cos(a) * d / 2, 0.15, math.sin(a) * d / 2)) * CFrame.Angles(0, -a, 0), style.color, 0.1)
 		table.insert(ring, seg)
 	end
-	part(m, Vector3.new(0.1, d, d), flat, style.color, 0.8, Enum.PartType.Cylinder)
+	local disc = part(m, Vector3.new(0.1, d, d), flat, style.color, 0.8, Enum.PartType.Cylinder)
+	-- волна: светящийся круг расходится от центра за кольцо и тает (пульс, фидбэк 2026-11)
+	local wave = part(m, Vector3.new(0.06, d, d), flat + Vector3.new(0, 0.03, 0), style.color, 1, Enum.PartType.Cylinder)
 	-- стрелки к центру (4 шт.)
 	local arrows = {}
 	for k = 0, 3 do
@@ -115,7 +117,7 @@ local function mark(zone: BasePart)
 	pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 6), UDim.new(0, 6)
 	pad.Parent = l
 	m.Parent = workspace
-	markers[zone] = { model = m, ring = ring, arrows = arrows, center = zone.Position, floor = floor, d = d, bb = anchor, base = anchor.Position }
+	markers[zone] = { model = m, ring = ring, arrows = arrows, center = zone.Position, floor = floor, d = d, bb = anchor, base = anchor.Position, disc = disc, wave = wave, flat = flat }
 end
 
 local function scan()
@@ -158,10 +160,21 @@ Run.RenderStepped:Connect(function(dt)
 				a.p.CFrame = CFrame.lookAt(pos, mk.floor + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, math.pi / 2, 0)
 				a.p.Transparency = 0.2 + k * 0.7
 			end
-			local glow = 0.05 + 0.25 * (0.5 + 0.5 * math.sin(t * 3))
-			for _, seg in ipairs(mk.ring) do
+			-- пульс: кольцо мягко расширяется и сжимается, круг внутри то ярче, то бледнее,
+			-- и раз в 1.6 с от центра расходится светящаяся волна
+			local beat = 0.5 + 0.5 * math.sin(t * 3)
+			local glow = 0.05 + 0.25 * beat
+			local rs = r * (1 + 0.05 * beat)
+			for k, seg in ipairs(mk.ring) do
+				local a = (k - 1) / #mk.ring * math.pi * 2
 				seg.Transparency = glow
+				seg.CFrame = CFrame.new(mk.floor + Vector3.new(math.cos(a) * rs, 0.15, math.sin(a) * rs)) * CFrame.Angles(0, -a, 0)
 			end
+			mk.disc.Transparency = 0.82 - 0.22 * beat
+			local w = (t / 1.6) % 1
+			local wd = mk.d * (0.25 + 1.0 * w)
+			mk.wave.Size = Vector3.new(0.06, wd, wd)
+			mk.wave.Transparency = 0.45 + 0.55 * w
 			mk.bb.Position = mk.base + Vector3.new(0, math.sin(t * 2) * 0.4, 0)
 		end
 	end
