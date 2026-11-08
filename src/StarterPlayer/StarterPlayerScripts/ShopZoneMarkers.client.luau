@@ -74,12 +74,8 @@ local function mark(zone: BasePart)
 	-- волна: светящийся круг расходится от центра за кольцо и тает (пульс, фидбэк 2026-11)
 	local wave = part(m, Vector3.new(0.06, d, d), flat + Vector3.new(0, 0.03, 0), style.color, 1, Enum.PartType.Cylinder)
 	-- стрелки к центру (4 шт.)
+	-- 2026-11 (фидбэк): белые стрелки-чёрточки вокруг круга убраны — хватает пульса
 	local arrows = {}
-	for k = 0, 3 do
-		local a = k * math.pi / 2
-		local ar = part(m, Vector3.new(1.4, 0.2, 0.5), CFrame.new(), Color3.new(1, 1, 1), 0.2)
-		table.insert(arrows, { p = ar, a = a })
-	end
 	-- табличка — над крышей магазина (раньше висела у земли над кругом)
 	local labelPos = zone.Position + Vector3.new(0, 7, 0)
 	local tm = zone.Parent:FindFirstChild("TripoModel")
