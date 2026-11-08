@@ -1209,32 +1209,38 @@ local function rayDown(origin, depth)
 	end
 	return nil
 end
--- Указатель к топам (фидбэк 2026-11): большая доска на двух столбах СБОКУ от входа, лицом к идущим
--- игрокам, с подсветкой — видно издалека, куда ведёт проход. Сам проход свободен.
--- a — точка на земле у начала прохода, dir — направление к острову.
+-- Указатель к топам (фидбэк 2026-11): доска на двух столбах СБОКУ от входа, лицом к идущим игрокам.
+-- Сверху — светильник на кронштейнах (как подсветка над монитором), светит вниз на доску.
+-- Надписи: «🏆 TOP PLAYERS 🏆», «← LEADERBOARDS», «#1 ?». a — начало прохода, dir — к острову.
 local function topSign(island, theme, a, dir)
 	local side = Vector3.new(-dir.Z, 0, dir.X) -- для смотрящего вдоль dir это правая сторона
 	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 8)
-	local face = CFrame.lookAt(at, at - dir) -- доска смотрит на подходящих
-	local W, H, postH = 16, 7, 12
+	local face = CFrame.lookAt(at, at - dir) -- лицевая сторона смотрит на подходящих
+	local W, H, postH = 16, 8, 12.5
 	for _, sx in { -1, 1 } do
 		part(island, "TopBoardPost", Vector3.new(1.2, postH, 1.2), face * CFrame.new(sx * (W / 2 - 1), postH / 2, 0.6), theme.Arch, theme.ArchMat)
 	end
-	local board = part(island, "TopBoard", Vector3.new(W, H, 0.8), face * CFrame.new(0, postH - H / 2 + 0.5, 0), theme.Board, M.SmoothPlastic)
+	local board = part(island, "TopBoard", Vector3.new(W, H, 0.8), face * CFrame.new(0, postH - H / 2 + 0.5, 0), theme.Board:Lerp(Color3.new(1, 1, 1), 0.08), M.SmoothPlastic)
 	part(island, "TopBoardFrame", Vector3.new(W + 0.8, H + 0.8, 0.6), board.CFrame * CFrame.new(0, 0, 0.25), theme.Frame, theme.FrameMat)
-	local lamp = ball(island, "TopBoardLamp", 1.2, (board.CFrame * CFrame.new(0, H / 2 + 1, -1)).Position, theme.Lamp, M.Neon, GHOST)
-	light(lamp, theme.Lamp, 18, 2)
-	local sl = Instance.new("SurfaceLight")
-	sl.Face = Enum.NormalId.Front
-	sl.Color = theme.Lamp
-	sl.Range = 10
-	sl.Brightness = 1.2
-	sl.Parent = board
+	-- подсветка сверху: два кронштейна и светящаяся планка перед верхним краем, свет — вниз на доску
+	local top = board.CFrame * CFrame.new(0, H / 2 + 0.4, 0)
+	for _, sx in { -1, 1 } do
+		part(island, "TopLampArm", Vector3.new(0.3, 0.3, 1.8), top * CFrame.new(sx * (W / 2 - 2), 0.3, -0.9), theme.Frame, M.Metal, GHOST)
+	end
+	part(island, "TopLampHousing", Vector3.new(W - 2, 0.5, 0.7), top * CFrame.new(0, 0.3, -1.8), Color3.fromRGB(40, 40, 45), M.Metal, GHOST)
+	local bar = part(island, "TopLampBar", Vector3.new(W - 2.4, 0.15, 0.5), top * CFrame.new(0, 0.02, -1.8), Color3.fromRGB(255, 244, 210), M.Neon, GHOST)
+	local spot = Instance.new("SurfaceLight")
+	spot.Face = Enum.NormalId.Bottom
+	spot.Angle = 70
+	spot.Range = 12
+	spot.Brightness = 3
+	spot.Color = Color3.fromRGB(255, 240, 210)
+	spot.Parent = bar
 	local sg = Instance.new("SurfaceGui")
 	sg.Face = Enum.NormalId.Front
 	sg.LightInfluence = 0
 	sg.MaxDistance = 300
-	sg.CanvasSize = Vector2.new(640, 280)
+	sg.CanvasSize = Vector2.new(640, 320)
 	sg.Parent = board
 	local function txt(s, y, h, c)
 		local t = Instance.new("TextLabel")
@@ -1249,12 +1255,12 @@ local function topSign(island, theme, a, dir)
 		local st = Instance.new("UIStroke")
 		st.Thickness = 3
 		st.Color = Color3.new(0, 0, 0)
-		st.Transparency = 0.3
+		st.Transparency = 0.25
 		st.Parent = t
 	end
-	txt("🏆 TOP PLAYERS", 0.06, 0.42, theme.Title)
-	txt("← LEADERBOARDS", 0.52, 0.24, theme.Sub or Color3.new(1, 1, 1))
-	txt("who is #1 on the server?", 0.78, 0.16, Color3.fromRGB(230, 230, 230))
+	txt("🏆 TOP PLAYERS 🏆", 0.05, 0.3, theme.Title)
+	txt("← LEADERBOARDS", 0.39, 0.22, theme.Sub or Color3.new(1, 1, 1))
+	txt("#1 ?", 0.64, 0.3, Color3.fromRGB(255, 215, 90))
 	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), board.CFrame, theme.Lamp, M.Neon, GHOST)
 	holder.Transparency = 1
 end
@@ -1570,8 +1576,8 @@ function B.Build(world)
 		for _, wl in walls or {} do pcall(cutGate, wl, base, dir, hy, theme, island) end
 		if key == "Meadow" and hy - groundY > 3 then
 			-- Meadow: мост выше поляны, между ними холм. Проход (фидбэк 2026-11): широкий коридор без
-			-- травы и камней по бокам, ровный настил от дороги + пологий подъём к мосту, фонари,
-			-- большая доска-указатель сбоку от входа.
+			-- травы, камней и нависающих скал; настил вровень с дорогой и мостом (без ступенек),
+			-- фонари стоят на настиле; большая доска-указатель с подсветкой сбоку от входа.
 			pcall(function()
 				local terrain = workspace.Terrain
 				local rot = CFrame.lookAt(Vector3.zero, dir)
@@ -1581,23 +1587,36 @@ function B.Build(world)
 				local dFoot = dTop - rl
 				local dStart = dFoot - 14 -- ровный участок от дороги до начала подъёма
 				local footY = groundY
-				local W = BRIDGE_W + 2
-				for d = dStart - 2, dTop + 1, 2 do
-					local t = math.clamp((d - dFoot) / rl, 0, 1)
-					local fy = footY + (hy - footY) * t
+				local W = BRIDGE_W -- ширина как у моста: без излома на стыке
+				local function lineY(d)
+					return footY + (hy - 0.6 - footY) * math.clamp((d - dFoot) / rl, 0, 1) -- линия земли; верх настила на 0.6 выше
+				end
+				for d = dStart - 2, dTop + 13, 2 do
+					local fy = lineY(d)
 					local p = base + dir * d
-					-- ровная полоса ±14 от оси, дальше очень пологий склон
-					for k = 0, 9 do
-						terrain:FillBlock(CFrame.new(p.X, fy + 1 + k * 2, p.Z) * rot, Vector3.new(math.min(28 + k * 8, 44), 2.4, 5.2), M.Air)
+					if d > dTop + 1 then
+						-- за концом коридора убираем только то, что нависает сверху (обломки скалы над аркой)
+						terrain:FillBlock(CFrame.new(p.X, hy + 60, p.Z) * rot, Vector3.new(44, 90, 5.2), M.Air)
+						continue
+					end
+					-- ровная полоса у дорожки, дальше пологий склон
+					-- большие сплошные вырезы (мелкие слои оставляли в Terrain тонкие пластины-«осколки»):
+					-- каждый следующий на 2 студа шире и на 4 выше (склон), каждый — до самого верха
+					for k = 0, 4 do
+						local bottom = fy - 1 + k * 4
+						terrain:FillBlock(CFrame.new(p.X, bottom + 45, p.Z) * rot, Vector3.new(28 + k * 4, 90, 5.2), M.Air)
 					end
 					terrain:FillBlock(CFrame.new(p.X, fy - 4.2, p.Z) * rot, Vector3.new(28, 5, 5.2), M.Ground)
-					-- вдоль прохода ни травы, ни камня: ровная земля
 					local reg = Region3.new(Vector3.new(p.X - 16, fy - 6, p.Z - 2), Vector3.new(p.X + 16, fy + 4, p.Z + 2)):ExpandToGrid(4)
 					for _, mat in { M.Grass, M.LeafyGrass, M.Rock, M.Cobblestone, M.Slate, M.Basalt } do
 						terrain:ReplaceMaterial(reg, 4, mat, M.Ground)
 					end
+					-- точный вырез под настил: земля не перекрывает его
+					if d >= dStart + 3 then -- не залезаем за начало настила (иначе ямка у дороги)
+						terrain:FillBlock(CFrame.new(p.X, fy - 0.9, p.Z) * rot, Vector3.new(W + 1, 5.4, 5.2), M.Air)
+					end
 				end
-				-- скалы-детали в коридоре убираем
+				-- скалы-детали над коридором убираем
 				for _, d in ipairs(model:GetDescendants()) do
 					if (d:IsA("BasePart") or d:IsA("Model")) and not d:IsDescendantOf(island) then
 						local n = string.lower(d.Name)
@@ -1611,31 +1630,33 @@ function B.Build(world)
 						end
 					end
 				end
-				local a0 = Vector3.new((base + dir * dStart).X, footY, (base + dir * dStart).Z)
-				local a = Vector3.new((base + dir * dFoot).X, footY, (base + dir * dFoot).Z)
-				local b = Vector3.new((base + dir * dTop).X, hy, (base + dir * dTop).Z)
-				local flatCf = CFrame.lookAt((a0 + a) / 2, a) * CFrame.new(0, 0.7, 0)
-				part(island, "ApproachFlat", Vector3.new(W, 1.4, (a - a0).Magnitude + 0.6), flatCf, theme.Deck, theme.DeckMat)
+				-- настил: верх ровно по линии (дорога -> подъём -> верх моста), ширина моста
+				local function at(d)
+					local p = base + dir * d
+					return Vector3.new(p.X, lineY(d) + 0.6, p.Z) -- верх настила
+				end
+				local a0, a, b = at(dStart), at(dFoot), at(dTop)
+				local flatCf = CFrame.lookAt((a0 + a) / 2, a) * CFrame.new(0, -2.2, 0)
+				part(island, "ApproachFlat", Vector3.new(W, 4.4, (a - a0).Magnitude + 0.6), flatCf, theme.Deck, theme.DeckMat)
 				local len = (b - a).Magnitude
-				local rampCf = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, 0.7, 0)
-				part(island, "ApproachRamp", Vector3.new(W, 1.4, len + 1), rampCf, theme.Deck, theme.DeckMat)
-				for _, sg in { -1, 1 } do
-					part(island, "ApproachRampRail", Vector3.new(0.4, 0.4, len), rampCf * CFrame.new(sg * (W / 2 - 0.3), 3.2, 0), theme.Rail, theme.RailMat)
-					for k = -2, 2 do
-						part(island, "ApproachRampPost", Vector3.new(0.45, 3, 0.45), rampCf * CFrame.new(sg * (W / 2 - 0.3), 1.7, k * len / 4.5), theme.Rail, theme.RailMat, GHOST)
+				local rampCf = CFrame.lookAt((a + b) / 2, b) * CFrame.new(0, -2.2, 0)
+				part(island, "ApproachRamp", Vector3.new(W, 4.4, len + 0.6), rampCf, theme.Deck, theme.DeckMat)
+				-- перила и фонари стоят НА настиле
+				for _, seg in { { a0, a }, { a, b } } do
+					local p1, p2 = seg[1], seg[2]
+					local L = (p2 - p1).Magnitude
+					local cf = CFrame.lookAt((p1 + p2) / 2, p2)
+					for _, sg in { -1, 1 } do
+						part(island, "ApproachRampRail", Vector3.new(0.4, 0.4, L), cf * CFrame.new(sg * (W / 2 - 0.3), 2.8, 0), theme.Rail, theme.RailMat)
 					end
 				end
-				-- фонари по обеим сторонам всего прохода
-				local total = dTop - dStart
-				for s = 0, total, 9 do
-					local d = dStart + s
-					local t = math.clamp((d - dFoot) / rl, 0, 1)
-					local fy = footY + (hy - footY) * t
+				for d = dStart + 1, dTop - 1, 8 do
+					local c = at(d)
 					for _, sg in { -1, 1 } do
-						local c = base + dir * d + side * sg * (W / 2 + 1.5)
-						cyl(island, "ApproachPost", 4.2, 0.35, CFrame.new(c.X, fy + 2.1, c.Z), theme.Rail, M.Wood, GHOST)
-						local bulb = ball(island, "ApproachLamp", 1, Vector3.new(c.X, fy + 4.6, c.Z), theme.Lamp, M.Neon, GHOST)
-						light(bulb, theme.Lamp, 14, 1.2)
+						local pc = c + side * sg * (W / 2 - 0.3)
+						cyl(island, "ApproachPost", 4.4, 0.4, CFrame.new(pc + Vector3.new(0, 2.2, 0)), theme.Rail, M.Wood, GHOST)
+						local bulb = ball(island, "ApproachLamp", 0.9, pc + Vector3.new(0, 4.7, 0), theme.Lamp, M.Neon, GHOST)
+						light(bulb, theme.Lamp, 12, 1)
 					end
 				end
 				topSign(island, theme, a0, dir)
@@ -1650,7 +1671,7 @@ function B.Build(world)
 			end)
 		end
 		-- подход к мосту: дорожка и фонари, чтобы вход к топам было видно издалека, а не «шагнул в темноту»
-		do
+		if not (key == "Meadow" and hy - groundY > 3) then -- в Meadow свой настил с фонарями (выше)
 			local side = Vector3.new(-dir.Z, 0, dir.X)
 			local L0, L1 = edge - 44, edge - 7
 			for d = L0, L1, 4 do
