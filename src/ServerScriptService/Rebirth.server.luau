@@ -193,12 +193,17 @@ task.spawn(function()
 		warn("Rebirth: ServerSignals.EggsHatched not found, egg requirement will not progress")
 		return
 	end
-	eggs.Event:Connect(function(p, _eggId, amount)
+	eggs.Event:Connect(function(p, eggId, amount)
 		if typeof(p) ~= "Instance" or not p:IsA("Player") or not p:GetAttribute("ProfileReady") then
 			return
 		end
 		local n = math.floor(tonumber(amount) or 0)
 		if n <= 0 then
+			return
+		end
+		-- дешёвые яйца в требование ребёрса не идут (GameConfig.GetRebirthEggMinCost)
+		local egg = Config.Eggs[tonumber(eggId) or 0]
+		if egg and (egg.Cost or 0) < Config.GetRebirthEggMinCost(p:GetAttribute("Rebirths") or 0) then
 			return
 		end
 		p:SetAttribute(EGGS_ATTR, math.min((tonumber(p:GetAttribute(EGGS_ATTR)) or 0) + n, 1e9))

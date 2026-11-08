@@ -424,7 +424,8 @@ local function refresh()
 		local s0, s1 = Config.GetRebirthSlots(r), Config.GetRebirthSlots(r + 1)
 		slotRow.Text = s1 > s0 and compare("+" .. s0, "+" .. s1) or ("+" .. s0)
 		setBar(coinBar, coins.Value / cost, "💰 " .. fmt(math.min(coins.Value, cost)) .. " / " .. fmt(cost) .. " coins", coinsOk)
-		setBar(eggBar, eggs / needEggs, "🥚 " .. math.floor(math.min(eggs, needEggs)) .. " / " .. needEggs .. " eggs opened", eggsOk)
+		-- 2026-11: считаются только яйца не дешевле GetRebirthEggMinCost — пишем порог прямо на полосе
+		setBar(eggBar, eggs / needEggs, "🥚 " .. math.floor(math.min(eggs, needEggs)) .. " / " .. needEggs .. " eggs (" .. NumberFormat.Short(Config.GetRebirthEggMinCost(r)) .. "+ each)", eggsOk)
 	end
 	if maxed then
 		btnLabel.Text = "👑 MAX REBIRTH"

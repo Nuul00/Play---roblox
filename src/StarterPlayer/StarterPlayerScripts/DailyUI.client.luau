@@ -327,7 +327,7 @@ local function refresh()
 	for i, c in ipairs(cells) do
 		-- награда с учётом недели подряд (каждая следующая щедрее)
 		c.reward = D.RewardFor(i, p:GetAttribute(D.WeekAttr)) or c.reward
-		local amount = c.reward.Coins and NumberFormat.Short(D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned")))
+		local amount = c.reward.Coins and NumberFormat.Short(D.CoinsFor(c.reward, p:GetAttribute("LifetimeEarned"), p:GetAttribute("Rebirths") or 0))
 		if c.big then
 			-- джекпот: коротко в две строки
 			local supers = 0

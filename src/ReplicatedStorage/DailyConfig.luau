@@ -11,7 +11,7 @@ D.Rewards={
  {Name="Super Coin + Super Speed",Potions={SuperCoins=1,SuperSpeed=1},Icon="SuperCoins"},
  {Name="2 Coin Rush keys",RushKeys=2,Icon="Key"},
  {Name="2 Super Luck potions",Potions={SuperLuck=2},Icon="SuperLuck"},
- {Name="JACKPOT",Coins=25000,Share=0.2,Potions={SuperCoins=1,SuperSpeed=1,SuperLuck=1},FreeHatch=3,RushKeys=1,Icon="Star"},
+ {Name="JACKPOT",Coins=25000,Share=0.08,Potions={SuperCoins=1,SuperSpeed=1,SuperLuck=1},FreeHatch=3,RushKeys=1,Icon="Star"},
 }
 -- Недели подряд (Save_DailyWeek, +1 после джекпота 7-го дня): каждая следующая неделя щедрее —
 -- +1 к зельям, ключам и бесплатным яйцам каждого дня и +50% к монетам, до 4-й недели (потом так же).
@@ -32,7 +32,16 @@ function D.RewardFor(day,weekRaw)
  return r
 end
 -- Монеты награды растут с игроком: не меньше Coins и не меньше доли Share от всего заработанного.
-function D.CoinsFor(reward,lifetime) return math.floor(math.max(reward.Coins or 0,(reward.Share or 0)*(tonumber(lifetime) or 0))) end
+-- 2026-11 (аудит): LifetimeEarned не обнуляется при ребёрсе, и доля от него давала до 40% следующего
+-- ребёрса за один заход. Доля теперь не больше 5% цены следующего ребёрса.
+function D.CoinsFor(reward,lifetime,rebirths)
+ local share=(reward.Share or 0)*(tonumber(lifetime) or 0)
+ if rebirths~=nil then
+  local ok,Config=pcall(require,script.Parent:WaitForChild("GameConfig"))
+  if ok and Config.GetRebirthCost then share=math.min(share,0.05*Config.GetRebirthCost(math.floor(tonumber(rebirths) or 0))) end
+ end
+ return math.floor(math.max(reward.Coins or 0,share))
+end
 function D.State(day,last,now)
  day=math.clamp(math.floor(tonumber(day) or 0),0,7)
  last=math.max(0,tonumber(last) or 0)

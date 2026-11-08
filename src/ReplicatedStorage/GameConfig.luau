@@ -253,6 +253,9 @@ function Config.GetRebirthCost(r) return niceRound(10^(8.4+0.30*r-0.0021*r*r)) e
 -- Сколько яиц нужно открыть с прошлого ребёрса (округляем до 5).
 -- v3: 49-й требует ~1950 яиц (было ~3600).
 function Config.GetRebirthEggs(r) return math.max(10,math.floor((10+10*r+0.6*r*r)/5+0.5)*5) end
+-- 2026-11 (аудит): в требование ребёрса идут только яйца не дешевле 0.01% цены ребёрса — иначе гейт
+-- проходился спамом яйца за 50 монет. r=0: от 25K (Tech Core), r=20: от ~3.6e9 (Crystal+).
+function Config.GetRebirthEggMinCost(r) return Config.GetRebirthCost(r)*0.0001 end
 -- Множитель монет (v4): +0.5 за ребёрс (x1.5, x2, x2.5...), с 6-го ускоряется; к 10-му x6.75,
 -- к 20-му x17.8, к 50-му x87 (v3 давал x2, x3... x172 — слишком сильно).
 function Config.GetRebirthBonus(r) return 1+0.5*r+0.03*math.max(0,r-5)^2 end

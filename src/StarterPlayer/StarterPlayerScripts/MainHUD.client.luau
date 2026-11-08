@@ -160,20 +160,22 @@ local function refreshStats()
 		bonus *= 1 + trail.Coins
 	end
 	bonus *= Config.GetSpeedCoinBonus(speedLevel.Value)
-	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > workspace:GetServerTimeNow() then
-		bonus *= 2
+	-- Golden / метель / бонус локального ивента: действует самый сильный (как в PlayerSystems.CoinMultiplier)
+	local now = workspace:GetServerTimeNow()
+	local eventBoost = 1
+	if workspace:GetAttribute("EventId") == "Golden" and (workspace:GetAttribute("EventEnd") or 0) > now then
+		eventBoost = math.max(eventBoost, 2)
 	end
-	if (player:GetAttribute("PotionEndSuperCoins") or 0) > workspace:GetServerTimeNow() then
+	if (player:GetAttribute("EventBonusEnd") or 0) > now then
+		eventBoost = math.max(eventBoost, player:GetAttribute("EventBonusMult") or 1)
+	end
+	if player:GetAttribute("CurrentWorld") == "Frozen Peaks" and (workspace:GetAttribute("FrozenStormEnd") or 0) > now then
+		eventBoost = math.max(eventBoost, 2)
+	end
+	bonus *= eventBoost
+	if (player:GetAttribute("PotionEndSuperCoins") or 0) > now then
 		bonus *= 3
-	elseif (player:GetAttribute("PotionEndCoins") or 0) > workspace:GetServerTimeNow() then
-		bonus *= 2
-	end
-	-- бонус за собранные предметы локального ивента (после ивента, как в PlayerSystems.CoinMultiplier)
-	if (player:GetAttribute("EventBonusEnd") or 0) > workspace:GetServerTimeNow() then
-		bonus *= player:GetAttribute("EventBonusMult") or 1
-	end
-	-- метель во Frozen: x2 в своём мире
-	if player:GetAttribute("CurrentWorld") == "Frozen Peaks" and (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() then
+	elseif (player:GetAttribute("PotionEndCoins") or 0) > now then
 		bonus *= 2
 	end
 	bonus *= 1 + (player:GetAttribute("AbilCoins") or 0) -- способность питомцев (как в PlayerSystems.CoinMultiplier)

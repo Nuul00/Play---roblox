@@ -271,18 +271,22 @@ function PlayerSystems.CoinMultiplier(p): number
 	end
 	local stats = p:FindFirstChild("leaderstats")
 	m *= Config.GetSpeedCoinBonus(stats and stats.SpeedLevel.Value or 0) -- +1% монет за уровень скорости
+	-- Временные ивенты (2026-11 аудит): Golden Hour, «Метель» Frozen и бонус локального ивента больше
+	-- не перемножаются (было до x8) — действует самый сильный из них.
+	local eventBoost = 1
 	if PlayerSystems.EventActive("Golden") then
-		m *= 2
+		eventBoost = math.max(eventBoost, 2)
 	end
 	-- Мини-ивент Frozen Peaks «Метель»: x2 монет тем, кто в этот момент во Frozen.
 	if (workspace:GetAttribute("FrozenStormEnd") or 0) > workspace:GetServerTimeNow() and p:GetAttribute("CurrentWorld") == "Frozen Peaks" then
-		m *= 2
+		eventBoost = math.max(eventBoost, 2)
 	end
-	-- локальные ивенты (Blossom Rain, Disco Fever, ...): с 2026-11 во время ивента x2 нет — собранные
-	-- бонусы дают множитель ПОСЛЕ ивента на E.BonusDuration (атрибуты EventBonusMult / EventBonusEnd)
+	-- локальные ивенты (Blossom Rain, Disco Fever, ...): собранные бонусы дают множитель ПОСЛЕ ивента
+	-- на E.BonusDuration (атрибуты EventBonusMult / EventBonusEnd)
 	if (p:GetAttribute("EventBonusEnd") or 0) > workspace:GetServerTimeNow() then
-		m *= p:GetAttribute("EventBonusMult") or 1
+		eventBoost = math.max(eventBoost, p:GetAttribute("EventBonusMult") or 1)
 	end
+	m *= eventBoost
 	if PlayerSystems.PotionActive(p, "SuperCoins") then
 		m *= 3 -- супер-зелье вместо обычного
 	elseif PlayerSystems.PotionActive(p, "Coins") then
