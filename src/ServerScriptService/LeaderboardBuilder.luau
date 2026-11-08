@@ -1288,8 +1288,25 @@ local function topSignModel(island, theme, a, dir): boolean
 	local bar = m:FindFirstChild("TopBar", true)
 	if bar and bar:IsA("BasePart") then
 		local h = bar.Position.Y - a.Y + 0.4
+		-- щит почти во всю ширину перекладины — столбы стояли впритык. Удлиняем перекладину
+		-- (центр — над щитом) и ставим столбы шире: по 2.2 студа воздуха с каждой стороны
+		local half = signFace.Size.X / 2 + 3.2
+		local mid = Vector3.new(signFace.Position.X, bar.Position.Y, signFace.Position.Z)
+		local axis = bar.CFrame.RightVector
+		local ext = bar:Clone()
+		ext.Name = "TopBarLong"
+		ext.Size = Vector3.new(half * 2 + 0.8, bar.Size.Y, bar.Size.Z)
+		ext.CFrame = CFrame.new(mid) * (bar.CFrame - bar.Position)
+		ext.Parent = m
+		bar.Transparency = 1
+		for _, d in ipairs(m:GetDescendants()) do
+			-- набалдашники старой перекладины (по её концам) прячем
+			if d:IsA("BasePart") and d ~= ext and d ~= bar and math.abs(d.Position.Y - bar.Position.Y) < 0.6 and (d.Position - mid).Magnitude > signFace.Size.X / 2 then
+				d.Transparency = 1
+			end
+		end
 		for _, sx in { -1, 1 } do
-			local p = bar.Position + bar.CFrame.RightVector * sx * (bar.Size.X / 2 - 0.5)
+			local p = mid + axis * sx * half
 			part(island, "TopBoardPost", Vector3.new(0.55, h, 0.55), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, bar.Color, bar.Material)
 			local lamp = ball(island, "TopBoardLamp", 0.7, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
 			light(lamp, theme.Lamp, 16, 1.4)
