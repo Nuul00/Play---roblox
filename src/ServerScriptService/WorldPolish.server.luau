@@ -497,8 +497,6 @@ task.spawn(function()
 	local front = deck.CFrame * CFrame.new(0, 0, deck.Size.Z / 2)
 	local b = (back.Position - a).Magnitude < (front.Position - a).Magnitude and back.Position or front.Position
 	b = Vector3.new(b.X, topY, b.Z)
-	local len = (b - a).Magnitude + 1
-	local cf = CFrame.lookAt((a + b) / 2, b)
 	local W = main.Size.X
 	local folder = Instance.new("Model")
 	folder.Name = "LeaderboardRoad"
@@ -517,23 +515,47 @@ task.spawn(function()
 		q.Parent = folder
 		return q
 	end
-	p("Road", Vector3.new(W, main.Size.Y, len), cf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
-	for _, s in { -1, 1 } do
-		p("RoadCurb", Vector3.new(0.35, 0.08, len), cf * CFrame.new(s * (W / 2 - 0.6), 0.05, 0), s < 0 and Color3.fromRGB(255, 60, 90) or Color3.fromRGB(80, 230, 255), Enum.Material.Neon)
+	-- Изогнутая дорога (кривая Безье): выходит из улицы прямо вперёд и плавно поворачивает
+	-- вдоль моста, сужаясь от ширины улицы до ширины моста. 16 сегментов.
+	local far = (b - back.Position).Magnitude < 0.5 and front.Position or back.Position
+	local bridgeDir = Vector3.new(far.X - b.X, 0, far.Z - b.Z).Unit
+	local startDir = Vector3.new(0, 0, 1)
+	local k = (b - a).Magnitude * 0.45
+	local P0, P1, P2, P3 = a, a + startDir * k, b - bridgeDir * k, b
+	local function bez(t)
+		local u = 1 - t
+		return P0 * (u * u * u) + P1 * (3 * u * u * t) + P2 * (3 * u * t * t) + P3 * (t * t * t)
 	end
-	for z = -len / 2 + 3, len / 2 - 3, 8 do
-		p("RoadDash", Vector3.new(0.35, 0.06, 3.8), cf * CFrame.new(0, 0.05, z), Color3.fromRGB(255, 225, 90), Enum.Material.Neon)
-	end
-	for z = -len / 2 + 4, len / 2 - 9, 10 do -- не у самой стены города
-		for _, s in { -1, 1 } do
-			local post = p("RoadLampPost", Vector3.new(0.35, 4, 0.35), cf * CFrame.new(s * (W / 2 + 0.8), 2, z), Color3.fromRGB(40, 36, 80), Enum.Material.Metal)
-			local bulb = p("RoadLamp", Vector3.new(0.8, 0.8, 0.8), post.CFrame * CFrame.new(0, 2.3, 0), Color3.fromRGB(255, 80, 220), Enum.Material.Neon)
-			bulb.Shape = Enum.PartType.Ball
-			local l = Instance.new("PointLight")
-			l.Color = bulb.Color
-			l.Range = 12
-			l.Brightness = 1
-			l.Parent = bulb
+	local N = 16
+	local Wend = 11
+	local dashAcc = 0
+	for i = 1, N do
+		local t0, t1 = (i - 1) / N, i / N
+		local q0, q1 = bez(t0), bez(t1)
+		local mid = (q0 + q1) / 2
+		local segLen = (q1 - q0).Magnitude
+		local w = W + (Wend - W) * ((t0 + t1) / 2)
+		local scf = CFrame.lookAt(mid, mid + (q1 - q0))
+		p("Road", Vector3.new(w, main.Size.Y, segLen + 0.7), scf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
+		for _, sg in { -1, 1 } do
+			p("RoadCurb", Vector3.new(0.35, 0.08, segLen + 0.45), scf * CFrame.new(sg * (w / 2 - 0.6), 0.05, 0), sg < 0 and Color3.fromRGB(255, 60, 90) or Color3.fromRGB(80, 230, 255), Enum.Material.Neon)
+		end
+		dashAcc += segLen
+		if dashAcc >= 7 then
+			dashAcc = 0
+			p("RoadDash", Vector3.new(0.35, 0.06, math.min(3.6, segLen)), scf * CFrame.new(0, 0.05, 0), Color3.fromRGB(255, 225, 90), Enum.Material.Neon)
+		end
+		if i % 4 == 2 and i < N - 1 then
+			for _, sg in { -1, 1 } do
+				local post = p("RoadLampPost", Vector3.new(0.35, 4, 0.35), scf * CFrame.new(sg * (w / 2 + 0.8), 2, 0), Color3.fromRGB(40, 36, 80), Enum.Material.Metal)
+				local bulb = p("RoadLamp", Vector3.new(0.8, 0.8, 0.8), post.CFrame * CFrame.new(0, 2.3, 0), Color3.fromRGB(255, 80, 220), Enum.Material.Neon)
+				bulb.Shape = Enum.PartType.Ball
+				local l = Instance.new("PointLight")
+				l.Color = bulb.Color
+				l.Range = 12
+				l.Brightness = 1
+				l.Parent = bulb
+			end
 		end
 	end
 	folder.Parent = city
