@@ -91,6 +91,13 @@ local function sparks(parent: BasePart, rate: number)
 	return e
 end
 
+-- Плато: центр и радиус по плите Deck (бортик-граница стоит на 217 из 220). Трещины — до 205.
+local PLATEAU_C = deck and deck.Position or Vector3.new(6000, 56, 0)
+local PLATEAU_R = 205
+local function insidePlateau(p: Vector3, margin: number): boolean
+	return Vector2.new(p.X - PLATEAU_C.X, p.Z - PLATEAU_C.Z).Magnitude < PLATEAU_R - (margin or 0)
+end
+
 -- Одна трещина: ломаная из 3–6 отрезков, иногда с ответвлением.
 local function crack(origin: Vector3, outward: number?)
 	active += 1
@@ -106,14 +113,27 @@ local function crack(origin: Vector3, outward: number?)
 		heading += rng:NextNumber(-0.45, 0.45)
 		local len = rng:NextNumber(4, 8.5)
 		local last = pts[#pts]
-		table.insert(pts, last + Vector3.new(math.cos(heading) * len, 0, math.sin(heading) * len))
+		local nxt = last + Vector3.new(math.cos(heading) * len, 0, math.sin(heading) * len)
+		-- 2026-11 (фидбэк): трещины вылезали за край плато — обрываем у границы
+		if not insidePlateau(nxt, 4) then
+			break
+		end
+		table.insert(pts, nxt)
+	end
+	if #pts < 2 then
+		active -= 1
+		model:Destroy()
+		return
 	end
 	-- ответвление от середины
 	local branch
 	if rng:NextNumber() < 0.55 then
 		local from = pts[math.max(2, math.floor(#pts / 2))]
 		local h = heading + (rng:NextNumber() < 0.5 and 1 or -1) * rng:NextNumber(0.8, 1.4)
-		branch = { from, from + Vector3.new(math.cos(h) * 6, 0, math.sin(h) * 6) }
+		local to = from + Vector3.new(math.cos(h) * 6, 0, math.sin(h) * 6)
+		if insidePlateau(to, 4) then
+			branch = { from, to }
+		end
 	end
 	local function segment(a: Vector3, b: Vector3, width: number, delay: number)
 		local mid = (a + b) / 2
@@ -245,7 +265,7 @@ local function spot(): (Vector3?, number?)
 		if hit then
 			-- над щелью ничего не должно стоять (дорожка, площадь, постройка)
 			local check = workspace:Raycast(from, Vector3.new(0, -120, 0))
-			if check and check.Instance == hit.Instance and (hit.Position - root.Position).Magnitude < FAR * 1.5 then
+			if check and check.Instance == hit.Instance and insidePlateau(hit.Position, 10) and (hit.Position - root.Position).Magnitude < FAR * 1.5 then
 				return hit.Position, a
 			end
 		end
@@ -268,9 +288,29 @@ local function onWorld()
 	folder.Parent = inside and workspace or nil
 	if inside then
 		if deck and baseColor then
+			-- корки на лавовых озёрах медленно дрейфуют по кругу (тег LavaCrust, центр — атрибут PoolCenter)
+			local crusts = {}
+			for _, c in ipairs(game:GetService("CollectionService"):GetTagged("LavaCrust")) do
+				local pc = c:GetAttribute("PoolCenter")
+				if c:IsA("BasePart") and typeof(pc) == "Vector3" then
+					table.insert(crusts, { part = c, center = pc, base = c.CFrame, speed = 0.04 + (#crusts % 5) * 0.012 })
+				end
+			end
+			local cParts, cFrames = {}, {}
 			breathConn = RunService.Heartbeat:Connect(function()
-				local k = 0.5 + 0.5 * math.sin(os.clock() * 0.8)
+				local now = os.clock()
+				local k = 0.5 + 0.5 * math.sin(now * 0.8)
 				deck.Color = baseColor:Lerp(Color3.fromRGB(150, 40, 26), k * 0.55)
+				table.clear(cParts)
+				table.clear(cFrames)
+				for i, c in ipairs(crusts) do
+					local rot = CFrame.new(c.center) * CFrame.Angles(0, now * c.speed, 0) * CFrame.new(-c.center)
+					cParts[i] = c.part
+					cFrames[i] = rot * c.base
+				end
+				if #cParts > 0 then
+					workspace:BulkMoveTo(cParts, cFrames, Enum.BulkMoveMode.FireCFrameChanged)
+				end
 			end)
 		end
 		task.spawn(function()

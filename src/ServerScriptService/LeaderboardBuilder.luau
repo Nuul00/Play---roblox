@@ -1782,6 +1782,21 @@ function B.Build(world)
 			warn("[Leaderboards] no island direction in " .. key)
 			continue
 		end
+		-- 2026-11 (фидбэк Magma): плато — ровный круг, но край «находился» по зубцам и кромке, и мост
+		-- висел над лавой на 8 стадов выше земли. Для Magma: мост на уровне плиты, начинается у бортика.
+		if key == "MagmaVolcano" then
+			local deck = model:FindFirstChild("Ground") and model.Ground:FindFirstChild("Deck")
+			if deck then
+				local top = deck.Position.Y + deck.Size.X / 2
+				local rel = Vector3.new(spawn.X - deck.Position.X, 0, spawn.Z - deck.Position.Z)
+				-- |rel + dir*d| = 219  →  d² + 2(rel·dir)d + |rel|² − 219² = 0
+				local b = rel:Dot(dir)
+				local c = rel:Dot(rel) - 219 * 219
+				local d = -b + math.sqrt(math.max(b * b - c, 0))
+				edge = d + 8 -- мост начинается в edge − 8, то есть на 219 от центра
+				hy = top
+			end
+		end
 		local base = Vector3.new(spawn.X, hy, spawn.Z)
 		local center = base + dir * (edge + GAP + R)
 		local ic = CFrame.lookAt(center, center - dir) -- остров «смотрит» на мост
@@ -1901,6 +1916,13 @@ function B.Build(world)
 				if g and math.abs(g.Position.Y - hy) < 4 then
 					local tile = part(island, "ApproachPath", Vector3.new(BRIDGE_W - 2, 0.15, 4.1), CFrame.lookAt(g.Position + Vector3.new(0, 0.08, 0), g.Position + Vector3.new(0, 0.08, 0) + dir), theme.Deck, theme.DeckMat, GHOST)
 					if theme.DeckMat == M.Glass then tile.Transparency = 0.25 end
+					if key == "MagmaVolcano" then
+						-- как дорожки мира: светлый базальт во всю ширину моста (тёмная плитка сливалась с землёй)
+						tile.Color = Color3.fromRGB(88, 78, 76)
+						tile.Material = M.Slate
+						tile.Size = Vector3.new(BRIDGE_W, 0.3, 4.1)
+						tile.CFrame = tile.CFrame + Vector3.new(0, 0.07, 0)
+					end
 					if theme.Grid then
 						-- неоновые миры: дорога как главная улица (тёмный асфальт, жёлтая разметка), а не чёрная полоса
 						tile.Color = Color3.fromRGB(22, 22, 40)

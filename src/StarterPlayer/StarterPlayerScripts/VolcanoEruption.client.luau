@@ -210,28 +210,40 @@ local function build()
 			att.WorldCFrame = CFrame.fromMatrix(pt.pos, x, n)
 			atts[i] = att
 		end
+		-- 2026-11 (фидбэк «как-то по-настоящему»): было две ровные оранжевые ленты с плиткой-текстурой.
+		-- Теперь как настоящий поток: тёмная остывшая корка по краям, светящаяся сердцевина с мягкой
+		-- «текущей» текстурой и тонкая жёлто-белая жила по центру; ширина плавно гуляет по длине.
+		local function widthAt(i)
+			local t = (i - 1) / math.max(#atts - 1, 1)
+			return (3.2 + t * 4.5) * (0.8 + 0.35 * math.sin(i * 1.3 + k * 2.1) + 0.12 * math.sin(i * 3.7))
+		end
 		for i = 1, #atts - 1 do
-			local t = (i - 1) / math.max(#atts - 2, 1)
-			for layer = 1, 2 do
+			local w0, w1 = widthAt(i), widthAt(i + 1)
+			local layers = {
+				{ k = 1.0, color = ColorSequence.new(Color3.fromRGB(70, 22, 12), Color3.fromRGB(110, 30, 14)), light = 0.15, bright = 1, transp = 0 },
+				{ k = 0.62, color = ColorSequence.new(Color3.fromRGB(255, 110, 25), Color3.fromRGB(230, 60, 15)), light = 1, bright = 3, transp = 0 },
+				{ k = 0.55, color = ColorSequence.new(HOT), light = 1, bright = 3, transp = 0.25, tex = true },
+				{ k = 0.18, color = ColorSequence.new(HOT), light = 1, bright = 5, transp = 0.15 },
+			}
+			for layer, L in ipairs(layers) do
 				local b = Instance.new("Beam")
 				b.Name = "LavaFlow"
 				b.Attachment0, b.Attachment1 = atts[i], atts[i + 1]
-				local w = (5 + t * 7) * (layer == 1 and 1 or 0.55)
-				b.Width0, b.Width1 = w, w + 0.4
+				b.Width0, b.Width1 = w0 * L.k, w1 * L.k
 				b.FaceCamera = false
-				b.Segments = 4
-				if layer == 2 then
-					-- верхний слой с бегущей текстурой: лава течёт вниз, от кратера
-					b.Texture = FIRE
-					b.TextureMode = Enum.TextureMode.Stretch
-					b.TextureLength = 1
-					b.TextureSpeed = -0.5
+				b.Segments = 6
+				if L.tex then
+					-- мягкие пятна (дым), а не квадраты: медленно бегут вниз по склону
+					b.Texture = "rbxasset://textures/particles/smoke_main.dds"
+					b.TextureMode = Enum.TextureMode.Wrap
+					b.TextureLength = 7
+					b.TextureSpeed = -0.35
 				end
-				b.LightEmission = 1
+				b.LightEmission = L.light
 				b.LightInfluence = 0
-				b.Brightness = layer == 1 and 2 or 4
-				b.Color = layer == 1 and ColorSequence.new(LAVA, Color3.fromRGB(220, 60, 15)) or ColorSequence.new(HOT)
-				b.Transparency = NumberSequence.new(layer == 1 and 0 or 0.2)
+				b.Brightness = L.bright
+				b.Color = L.color
+				b.Transparency = NumberSequence.new(L.transp)
 				b.ZOffset = layer
 				b.Parent = atts[i].Parent
 			end

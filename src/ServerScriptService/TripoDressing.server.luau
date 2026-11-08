@@ -417,8 +417,9 @@ if volcanoW then
 end
 -- магазины Вулкана и Галактики стоят слева от главной дороги: лицом к центру мира
 local VC, GC = Vector3.new(6000, 60, 75), Vector3.new(7500, 60, 75)
-pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop", VC)
-pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop", VC)
+-- 2026-11: магазины Вулкана сами повёрнуты к своей дорожке (MagmaVolcano), модель смотрит на круг входа
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop")
+pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop")
 pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop", GC)
 pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop", GC)
 

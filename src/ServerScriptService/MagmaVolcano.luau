@@ -219,9 +219,21 @@ local function lavaRiver(parent, points: { Vector3 }, width: number, spots)
 		local len = (b - a).Magnitude + width * 0.6
 		local mid = (a + b) / 2
 		local cf = CFrame.lookAt(L(mid.X, 0, mid.Z), L(b.X, 0, b.Z))
-		part(m, "Bank", Vector3.new(width + 5, 0.16, len + 3), cf * CFrame.new(0, 0.08, 0), rgb(60, 32, 26), M.CrackedLava, { CanCollide = false })
-		part(m, "Lava", Vector3.new(width, 0.25, len), cf * CFrame.new(0, 0.14, 0), i % 2 == 0 and LAVA or LAVA:Lerp(LAVA_HOT, 0.3), M.Neon, { CanCollide = false })
+		part(m, "Bank", Vector3.new(width + 5, 0.16, len + 3), cf * CFrame.new(0, 0.08, 0), rgb(48, 28, 24), M.CrackedLava, { CanCollide = false })
+		-- 2026-11: остывающая тёмно-красная кайма по краям и корки на поверхности — не «ленты из квадратов»
+		part(m, "CoolingRim", Vector3.new(width + 1.6, 0.22, len), cf * CFrame.new(0, 0.12, 0), rgb(150, 35, 12), M.Neon, { CanCollide = false, CanQuery = false })
+		part(m, "Lava", Vector3.new(width, 0.25, len), cf * CFrame.new(0, 0.14, 0), rgb(255, 95, 20):Lerp(LAVA_HOT, (i % 3) * 0.12), M.Neon, { CanCollide = false })
+		-- горячая жила посередине (корки на реке выглядели как дорожная разметка — их нет)
+		part(m, "HotVein", Vector3.new(width * 0.25, 0.27, len), cf * CFrame.new(0, 0.15, 0), LAVA_HOT, M.Neon, { CanCollide = false, CanQuery = false })
 		table.insert(spots, { a.X, a.Z, width / 2 + 4 })
+	end
+	-- скруглённые изгибы: на каждом стыке круг лавы и берега — без углов-«ступенек»
+	for i = 2, #points - 1 do
+		local p = points[i]
+		disc(m, "BankJoint", width + 5, 0.16, L(p.X, 0.08, p.Z), rgb(48, 28, 24), M.CrackedLava, { CanCollide = false })
+		disc(m, "RimJoint", width + 1.6, 0.22, L(p.X, 0.12, p.Z), rgb(150, 35, 12), M.Neon, { CanCollide = false, CanQuery = false })
+		disc(m, "LavaJoint", width, 0.26, L(p.X, 0.14, p.Z), rgb(255, 95, 20), M.Neon, { CanCollide = false })
+		disc(m, "VeinJoint", width * 0.25, 0.28, L(p.X, 0.15, p.Z), LAVA_HOT, M.Neon, { CanCollide = false, CanQuery = false })
 	end
 	local last = points[#points]
 	table.insert(spots, { last.X, last.Z, width / 2 + 4 })
@@ -236,14 +248,55 @@ end
 local function lavaPool(parent, x: number, z: number, d: number, spots)
 	local m = Instance.new("Model")
 	m.Name = "LavaPool"
-	disc(m, "Shore", d + 8, 0.2, L(x, 0.1, z), rgb(60, 32, 26), M.CrackedLava, { CanCollide = false })
-	local lava = disc(m, "Lava", d, 0.3, L(x, 0.18, z), LAVA, M.Neon, { CanCollide = false })
-	disc(m, "HotCore", d * 0.45, 0.32, L(x, 0.22, z), LAVA_HOT, M.Neon, { CanCollide = false })
+	-- 2026-11 (фидбэк «сделать красивее»): было два плоских круга. Теперь — тёмный берег из застывшей
+	-- лавы, остывающая тёмно-красная кайма, яркая лава с горячими пятнами, по ней дрейфуют корки
+	-- застывшего базальта (их медленно крутит VolcanoCracks на клиенте), лопаются пузыри, дрожит марево.
+	disc(m, "Shore", d + 10, 0.5, L(x, 0.1, z), rgb(48, 28, 24), M.CrackedLava, { CanCollide = false })
+	disc(m, "CoolingRim", d + 2.5, 0.56, L(x, 0.12, z), rgb(150, 35, 12), M.Neon, { CanCollide = false })
+	local lava = disc(m, "Lava", d, 0.6, L(x, 0.14, z), rgb(255, 95, 20), M.Neon, { CanCollide = false })
+	local top = 0.14 + 0.3
+	for k = 1, 3 do
+		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(0, d * 0.22)
+		disc(m, "HotSpot", d * rand:NextNumber(0.16, 0.28), 0.62, L(x + math.cos(a) * r, 0.15, z + math.sin(a) * r), LAVA_HOT, M.Neon, { CanCollide = false, CanQuery = false })
+	end
+	for k = 1, math.floor(d / 3) do
+		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(d * 0.12, d * 0.42)
+		local w = rand:NextNumber(1.6, 4.2)
+		local crust = part(m, "LavaCrust", Vector3.new(w, 0.18, w * rand:NextNumber(0.5, 0.9)), CFrame.new(L(x + math.cos(a) * r, top + 0.05, z + math.sin(a) * r)) * CFrame.Angles(0, rand:NextNumber(0, math.pi), 0), rgb(45, 28, 24):Lerp(rgb(90, 30, 18), rand:NextNumber(0, 0.5)), M.Basalt, { CanCollide = false, CanQuery = false, CanTouch = false })
+		crust:SetAttribute("PoolCenter", L(x, top, z))
+		crust:AddTag("LavaCrust")
+	end
 	light(lava, LAVA, d * 1.4, 2.5)
 	embers(lava, 5)
-	for k = 1, 6 do
-		local a = k / 6 * math.pi * 2 + rand:NextNumber(-0.3, 0.3)
-		rock(m, L(x + math.cos(a) * (d / 2 + 4), 0, z + math.sin(a) * (d / 2 + 4)), rand:NextNumber(2, 4))
+	-- пузыри: короткие огненные вспышки, лопаются на поверхности
+	emitter(lava, "Bubbles", {
+		Texture = FIRE_TEX,
+		Color = ColorSequence.new(LAVA_HOT, rgb(255, 80, 20)),
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(0.5, 1.4), NumberSequenceKeypoint.new(1, 0) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
+		Lifetime = NumberRange.new(0.4, 0.8),
+		Speed = NumberRange.new(1, 3),
+		SpreadAngle = Vector2.new(10, 10),
+		Rate = d * 0.35,
+		EmissionDirection = Enum.NormalId.Right, -- у диска ось X смотрит вверх
+	})
+	emitter(lava, "Haze", {
+		Texture = SMOKE_TEX,
+		Color = ColorSequence.new(rgb(255, 120, 60), rgb(90, 50, 45)),
+		LightEmission = 0.4,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 3), NumberSequenceKeypoint.new(1, 9) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.85), NumberSequenceKeypoint.new(1, 1) }),
+		Lifetime = NumberRange.new(2.5, 4),
+		Speed = NumberRange.new(2, 4),
+		Rate = 2,
+		EmissionDirection = Enum.NormalId.Right,
+	})
+	-- рваный каменный берег: крупные и мелкие глыбы вперемешку
+	for k = 1, 14 do
+		local a = k / 14 * math.pi * 2 + rand:NextNumber(-0.15, 0.15)
+		local big = k % 3 == 0
+		rock(m, L(x + math.cos(a) * (d / 2 + (big and 4.5 or 3)), 0, z + math.sin(a) * (d / 2 + (big and 4.5 or 3))), big and rand:NextNumber(3, 4.5) or rand:NextNumber(1.2, 2.4))
 	end
 	table.insert(spots, { x, z, d / 2 + 6 })
 	m.Parent = parent
@@ -494,13 +547,33 @@ function Volcano.Build(world: Instance): Model
 		local a = k / 30 * math.pi * 2 + rand:NextNumber(-0.05, 0.05)
 		local r = rand:NextNumber(219, 225)
 		local w = rand:NextNumber(10, 18)
-		pyramid(ground, "EdgeCrag", w, w * rand:NextNumber(0.8, 1.6), L(math.cos(a) * r, -1, math.sin(a) * r), BASALT:Lerp(OBSIDIAN, rand:NextNumber(0, 0.6)), M.Basalt, rand:NextNumber(0, 3))
+		local crag = pyramid(ground, "EdgeCrag", w, w * rand:NextNumber(0.8, 1.6), L(math.cos(a) * r, -1, math.sin(a) * r), BASALT:Lerp(OBSIDIAN, rand:NextNumber(0, 0.6)), M.Basalt, rand:NextNumber(0, 3))
+		-- 2026-11: лучи не видят зубцы — иначе мост к топам строился на их высоте и висел над лавой
+		for _, d in ipairs(crag:GetChildren()) do
+			(d :: BasePart).CanQuery = false
+		end
 		if k % 2 == 0 then
 			local len = rand:NextNumber(10, 30)
 			part(ground, "LavaFall", Vector3.new(2, len, 1.2), L(math.cos(a + 0.1) * 226.5, -8 - len / 2, math.sin(a + 0.1) * 226.5), LAVA, M.Neon, { CanCollide = false, CanQuery = false })
 		end
 	end
 	boundary(model, 214, 48)
+	-- Видимая граница (фидбэк 2026-11): низкий базальтовый бортик с тлеющей трещиной сверху.
+	-- Имя с «Wall» — LeaderboardBuilder прорежет в нём проход ровно под мост к топам.
+	do
+		local border = Instance.new("Model")
+		border.Name = "Border"
+		local R, n = 217, 72 -- между невидимой стеной (214) и краем плиты (220)
+		local w = 2 * math.pi * R / n + 0.6
+		for k = 1, n do
+			local a = k / n * math.pi * 2
+			local at = L(math.cos(a) * R, 1.4, math.sin(a) * R)
+			local cf = CFrame.lookAt(at, L(0, 1.4, 0))
+			part(border, "BorderWall", Vector3.new(w, 2.8, 2.2), cf, BASALT:Lerp(OBSIDIAN, (k % 3) * 0.2), M.Basalt)
+			part(border, "BorderGlowWall", Vector3.new(w, 0.12, 0.5), cf * CFrame.new(0, 1.46, 0), LAVA_DARK, M.Neon, { CanCollide = false, CanQuery = false })
+		end
+		border.Parent = ground
+	end
 
 	-- Дорожки из светлого базальта.
 	local paths = Instance.new("Model")
@@ -559,8 +632,23 @@ function Volcano.Build(world: Instance): Model
 	end
 
 	-- Магазины слева от дороги.
-	shop(model, L(-90, 0.3, 40), "UpgradeShop", "VOLCANO SHOP")
-	shop(model, L(-90, 0.3, 100), "MagnetShop", "VOLCANO MAGNETS")
+	-- 2026-11 (фидбэк «криво стоят»): лицом (прилавок и круг входа) — на восток, к своей дорожке;
+	-- старые вывески VOLCANO SHOP/MAGNETS убраны — над магазином табличка UPGRADES/MAGNETS
+	for _, s in ipairs({ { L(-90, 0.3, 40), "UpgradeShop" }, { L(-90, 0.3, 100), "MagnetShop" } }) do
+		local at = s[1]
+		local m = shop(model, at, s[2])
+		local old = m:FindFirstChild("Sign")
+		if old then
+			old:Destroy()
+		end
+		local turn = CFrame.new(at) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.new(-at)
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CFrame = turn * d.CFrame
+			end
+		end
+		table.insert(placedSpots, { at.X - C.X + 12, at.Z - C.Z, 9 })
+	end
 
 	-- Подиумы с яйцами справа от дороги.
 	eggStand(model, 10, L(40, 0, 70), rgb(255, 120, 40))
