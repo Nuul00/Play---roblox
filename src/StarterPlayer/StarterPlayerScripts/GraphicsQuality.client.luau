@@ -1,8 +1,8 @@
 -- Качество графики из настроек (Save_Graphics: auto / low / medium / ultra). Фидбэк 2026-11:
 -- переключатель должен давать ЗАМЕТНУЮ разницу сразу, без перезахода:
---   LOW    — без теней, без свечения (Bloom), частицы ×0.35;
---   MEDIUM — тени, мягкое свечение, частицы ×0.7;
---   ULTRA  — тени, сильное свечение, лучи солнца (SunRays), лёгкое размытие дали, все частицы.
+--   LOW    — частицы ×0.35, облегчённые эффекты миров (FxBudget low), без лучей и размытия;
+--   MEDIUM — частицы ×0.7, средние эффекты миров;
+--   ULTRA  — все частицы, полные эффекты миров, лучи солнца (SunRays) и лёгкое размытие дали.
 -- AUTO — как решит FxBudget (телефон / настройка Roblox / FPS). Уровень эффектов миров (небо Galaxy,
 -- сияние, лава) берётся из FxBudget, а он учитывает этот выбор (полностью — после перезахода).
 local Players = game:GetService("Players")
@@ -48,22 +48,20 @@ local function apply()
 		mode = AUTO_FROM_TIER[FxBudget.Tier()] or "medium"
 	end
 	current = PRESET[mode]
-	Lighting.GlobalShadows = current.shadows
+	-- 2026-11 (фидбэк): свечение (Bloom) и общие тени больше не трогаем — без Bloom неоновые фонари
+	-- превращались в слепящие белые шары, а сохранённая «база» Bloom обнуляла свечение на MEDIUM/ULTRA.
+	-- Свечением управляет DayNight, тенями — плейс. Если прошлая версия успела их испортить — возвращаем.
 	local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
-	if bloom then
-		local base = bloom:GetAttribute("GfxBase")
-		if base == nil then
-			base = bloom.Intensity
-			bloom:SetAttribute("GfxBase", base)
+	if bloom and bloom:GetAttribute("GfxBase") ~= nil then
+		bloom.Enabled = true
+		if bloom.Intensity == 0 then
+			bloom.Intensity = math.max(bloom:GetAttribute("GfxBase"), 0.4)
 		end
-		bloom.Enabled = current.bloom > 0
-		bloom.Intensity = base * current.bloom
+		bloom:SetAttribute("GfxBase", nil)
 	end
+	Lighting.GlobalShadows = true
 	sunRays.Enabled = current.sunRays
 	dof.Enabled = current.dof
-	pcall(function()
-		workspace.Terrain.Decoration = current.grass
-	end)
 	for _, d in ipairs(workspace:GetDescendants()) do
 		if d:IsA("ParticleEmitter") then
 			scaleEmitter(d)

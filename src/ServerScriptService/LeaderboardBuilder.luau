@@ -1995,7 +1995,8 @@ function B.Build(world)
 					for _, sg in { -1, 1 } do
 						local pc = c + side * sg * (W / 2 - 0.3)
 						cyl(island, "ApproachPost", 4.4, 0.4, CFrame.new(pc + Vector3.new(0, 2.2, 0)), theme.Rail, M.Wood, GHOST)
-						local bulb = ball(island, "ApproachLamp", 0.9, pc + Vector3.new(0, 4.7, 0), theme.Lamp, M.Neon, GHOST)
+						local bulb = ball(island, "ApproachLamp", 0.7, pc + Vector3.new(0, 4.6, 0), theme.Lamp:Lerp(Color3.new(0, 0, 0), 0.35), M.Neon, GHOST) -- 2026-11: мягче, не слепит
+						bulb.Transparency = 0.25
 						light(bulb, theme.Lamp, 12, 1)
 					end
 				end
@@ -2107,7 +2108,8 @@ function B.Build(world)
 						light(gem, col, 14, 1.2)
 					else
 						cyl(island, "ApproachPost", 3.4, 0.35, CFrame.new(c.X, y + 1.7, c.Z), theme.Rail:Lerp(Color3.new(0, 0, 0), 0.3), M.Metal, GHOST)
-						local bulb = ball(island, "ApproachLamp", 0.9, Vector3.new(c.X, y + 3.7, c.Z), theme.Lamp, M.Neon, GHOST)
+						local bulb = ball(island, "ApproachLamp", 0.7, Vector3.new(c.X, y + 3.6, c.Z), theme.Lamp:Lerp(Color3.new(0, 0, 0), 0.35), M.Neon, GHOST) -- 2026-11: мягче, не слепит
+						bulb.Transparency = 0.25
 						light(bulb, theme.Lamp, 14, 1.2)
 					end
 				end
