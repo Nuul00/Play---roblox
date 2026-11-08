@@ -56,7 +56,8 @@ local function label(pos: UDim2, size: UDim2): TextLabel
 end
 local title = label(UDim2.fromScale(0.06, 0.08), UDim2.fromScale(0.62, 0.5))
 title.TextXAlignment = Enum.TextXAlignment.Left
-local desc = label(UDim2.fromScale(0.06, 0.56), UDim2.fromScale(0.62, 0.36))
+local desc = label(UDim2.fromScale(0.06, 0.55), UDim2.fromScale(0.64, 0.38))
+desc.TextColor3 = Color3.fromRGB(235, 235, 245)
 desc.TextXAlignment = Enum.TextXAlignment.Left
 local timer = label(UDim2.fromScale(0.68, 0.14), UDim2.fromScale(0.27, 0.72))
 
@@ -79,8 +80,8 @@ local function update()
 		if nextDef then
 			title.Text = "⏳ NEXT: " .. nextDef.Name
 			desc.Text = nextDef.Desc .. (workspace:GetAttribute("EventWeekend") and " · weekend: 2x longer!" or "")
-			gradient.Color = ColorSequence.new(Color3.fromRGB(70, 70, 100), Color3.fromRGB(35, 35, 55))
-			scale.Scale = 0.7
+			gradient.Color = ColorSequence.new(Color3.fromRGB(80, 80, 115), Color3.fromRGB(40, 40, 62))
+			scale.Scale = 0.88
 		end
 		return
 	end
@@ -116,6 +117,6 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	if camera and (waiting or scale.Scale >= 0.99) then
 		local base = ResponsiveHUD.Scale() -- общий масштаб HUD (было X/900)
-		scale.Scale = waiting and base * 0.7 or base
+		scale.Scale = waiting and base * 0.88 or base -- «следующее событие» крупнее (было 0.7 — мелкий текст)
 	end
 end)

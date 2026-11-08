@@ -358,9 +358,6 @@ localPlayer:GetAttributeChangedSignal("CoinsCollected"):Connect(function()
 		sounds[soundIndex].PlaybackSpeed = 0.95 + math.random() * 0.12
 		sounds[soundIndex]:Play()
 	end
-	if now > lastCollected then
-		magnetWave()
-	end
 	lastCollected = now
 end)
 

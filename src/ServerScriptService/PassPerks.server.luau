@@ -68,8 +68,8 @@ local function titlePlate(head: BasePart, t, offset: number, crown: boolean?)
 	local g = Instance.new("BillboardGui")
 	g.Name = "TitlePlate"
 	g:SetAttribute("PassPerk", true)
-	local w = math.clamp(#t.Text * 0.42 + 2.2, 3, 7.5)
-	local ph, ch = 1.05, crown and 0.85 or 0
+	local w = math.clamp(#t.Text * 0.3 + 1.5, 2.1, 5.2) -- 2026-11: меньше (VIP было 3.5 стада)
+	local ph, ch = 0.75, crown and 0.55 or 0
 	g.Size = UDim2.fromScale(w, ph + ch)
 	g.StudsOffsetWorldSpace = Vector3.new(0, offset + ch / 2, 0)
 	g.MaxDistance = 70
@@ -157,7 +157,7 @@ local function dress(p: Player)
 	end
 	if royal then
 		if not shown then
-			tag(head, "👑", Color3.fromRGB(255, 225, 120), lift - 0.1, 36)
+			tag(head, "👑", Color3.fromRGB(255, 225, 120), lift - 0.1, 24)
 		end
 		sparks(root, Color3.fromRGB(255, 240, 150), 26, "RoyalSparks")
 	end

@@ -54,12 +54,34 @@ bScale.Parent = banner
 -- 2026-11 (фидбэк): баннер можно свернуть в маленький значок (кнопка ▲ на баннере или ⚙ Settings).
 -- Выбор сохраняется (Save_EventBanner = "mini"/"full"). Через 6 с после появления ивента — подсказка.
 local GameAction = RS:WaitForChild("GameAction")
+local function bannerMode()
+	return player:GetAttribute("Save_EventBanner") or "full" -- full / mini / hidden
+end
 local function isMini()
-	return player:GetAttribute("Save_EventBanner") == "mini"
+	return bannerMode() == "mini"
+end
+local function setMode(mode: string)
+	player:SetAttribute("Save_EventBanner", mode)
+	GameAction:FireServer("eventbanner", mode)
 end
 local function setMini(on: boolean)
-	player:SetAttribute("Save_EventBanner", on and "mini" or "full")
-	GameAction:FireServer("eventbanner", on and "mini" or "full")
+	setMode(on and "mini" or "full")
+end
+local mini -- значок свёрнутого баннера (создаётся ниже)
+-- где показывать баннер: сверху (под табличкой следующего события), снизу (над кнопками) или справа
+local POS = {
+	top = { anchor = Vector2.new(0.5, 0), pos = UDim2.new(0.5, 0, 0, 132) },
+	bottom = { anchor = Vector2.new(0.5, 1), pos = UDim2.new(0.5, 0, 1, -112) },
+	right = { anchor = Vector2.new(1, 0), pos = UDim2.new(1, -16, 0, 240) },
+}
+local function applyPos()
+	local p = POS[player:GetAttribute("Save_EventPos") or "top"] or POS.top
+	for _, f in ipairs({ banner, mini }) do
+		if f then
+			f.AnchorPoint = p.anchor
+			f.Position = p.pos
+		end
+	end
 end
 local hideBtn = Instance.new("TextButton")
 hideBtn.Name = "Hide"
@@ -80,7 +102,7 @@ hideBtn.Activated:Connect(function()
 	sound("click")
 end)
 -- мини-значок: иконка ивента + таймер, тап — развернуть обратно
-local mini = Instance.new("ImageButton")
+mini = Instance.new("ImageButton")
 mini.Name = "EventMini"
 mini.AnchorPoint = Vector2.new(0.5, 0)
 mini.Position = UDim2.new(0.5, 0, 0, 132)
@@ -103,6 +125,8 @@ mini.Activated:Connect(function()
 	setMini(false)
 	sound("click")
 end)
+applyPos()
+player:GetAttributeChangedSignal("Save_EventPos"):Connect(applyPos)
 -- подсказка: показывается 3 раза за всё время (Save_EventHintSeen), через 6 с после появления баннера
 local tip = K.frame(gui, UDim2.new(0.5, 230, 0, 120), UDim2.fromOffset(250, 76), rgb(30, 22, 48), 14)
 tip.AnchorPoint = Vector2.new(0, 0)
@@ -111,7 +135,7 @@ K.stroke(tip, rgb(255, 210, 90), 2.5)
 local tipText = K.text(tip, "", UDim2.fromOffset(10, 4), UDim2.new(1, -20, 1, -8), 15, nil, 1.5)
 tipText.TextWrapped = true
 tipText.RichText = true
-tipText.Text = '<font color="#FFD25A">◀ Banner in the way?</font>\nTap ▲ to shrink it. Change it any time in ⚙ Settings.'
+tipText.Text = '<font color="#FFD25A">◀ Banner in the way?</font>\nTap ▲ to shrink it. Hide or move it in ⚙ Settings.'
 local tipScale = Instance.new("UIScale")
 tipScale.Parent = tip
 local tipShownAt = nil
@@ -365,7 +389,8 @@ Run.RenderStepped:Connect(function(dt)
 		end
 		-- свёрнутый режим: вместо баннера — маленький значок с таймером
 		local miniOn = isMini()
-		banner.Visible = not miniOn
+		local hiddenOn = bannerMode() == "hidden" -- скрыт совсем (включить обратно — ⚙ Settings)
+		banner.Visible = not miniOn and not hiddenOn
 		mini.Visible = miniOn
 		if miniOn then
 			mIcon.Image = def.Image or ""
@@ -375,7 +400,7 @@ Run.RenderStepped:Connect(function(dt)
 			mScale.Scale = uiScale
 		end
 		-- подсказка через 6 с после появления (3 раза за всё время, раз за ивент)
-		if not miniOn and not tipDoneThisEvent and (player:GetAttribute("Save_EventHintSeen") or 0) < 3 then
+		if not miniOn and not hiddenOn and not tipDoneThisEvent and (player:GetAttribute("Save_EventHintSeen") or 0) < 3 then
 			tipShownAt = tipShownAt or (os.clock() + 6)
 			if os.clock() >= tipShownAt and not tip.Visible then
 				tip.Visible = true
@@ -398,7 +423,7 @@ Run.RenderStepped:Connect(function(dt)
 			else
 				tip.Position = UDim2.fromOffset(abs.X + 10, banner.AbsolutePosition.Y - 4)
 			end
-			if miniOn then
+			if miniOn or hiddenOn then
 				tip.Visible = false
 			end
 		end
@@ -449,7 +474,7 @@ Run.RenderStepped:Connect(function(dt)
 	for i, ptr in ipairs(pointers) do
 		local item = list[i]
 		local vis = false
-		if item and cam and item.d > 12 then
+		if item and cam and item.d > 12 and player:GetAttribute("Save_EventMarkers") ~= "off" then
 			local sp, onScreen = cam:WorldToViewportPoint(item.pos)
 			local vp = cam.ViewportSize
 			-- рамка, по которой ездят стрелки: внутри неё нет кнопок HUD (слева плитки, снизу панель)
