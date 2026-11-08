@@ -1264,8 +1264,8 @@ local function topSignModel(island, theme, a, dir): boolean
 	end
 	local side = Vector3.new(-dir.Z, 0, dir.X)
 	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 7)
-	-- чуть повёрнута к дороге (наружу от прохода), а не строго поперёк
-	local face = CFrame.lookAt(at, at - dir + side * 0.45)
+	-- повёрнута к дороге со стороны спавна (откуда подходят игроки)
+	local face = CFrame.lookAt(at, at - dir - side * 0.55)
 	local m = template:Clone()
 	m.Name = "TopSignModel"
 	local signFace = m.PrimaryPart
@@ -1313,6 +1313,8 @@ local function topSignModel(island, theme, a, dir): boolean
 		end
 	end
 	signTexts(signFace, theme, Vector2.new(640, 640 * signFace.Size.Y / signFace.Size.X))
+	-- качание на ветру (клиент SignSwing): щит и цепи — всё, что ниже перекладины
+	CollectionService:AddTag(m, "SwingSign")
 	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), signFace.CFrame, theme.Lamp, M.Neon, GHOST)
 	holder.Transparency = 1
 	return true
