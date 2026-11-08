@@ -1217,6 +1217,12 @@ end
 -- Надписи: «🏆 TOP PLAYERS 🏆», «← LEADERBOARDS», «#1 ?». a — начало прохода, dir — к острову.
 -- Надписи на щите: спереди — «к топам», сзади — «респект» вернувшимся.
 local function signTexts(surface: BasePart, theme, canvas: Vector2)
+	-- Sky: щит белый — текст яркий пастельный с тёмно-фиолетовой обводкой
+	local sky = theme.Clouds == true
+	local cTitle = sky and Color3.fromRGB(255, 165, 60) or Color3.fromRGB(255, 220, 100)
+	local cSub = sky and Color3.fromRGB(110, 130, 230) or Color3.fromRGB(255, 250, 235)
+	local cNum = sky and Color3.fromRGB(255, 120, 185) or Color3.fromRGB(255, 200, 70)
+	local cInk = sky and Color3.fromRGB(70, 45, 120) or Color3.fromRGB(30, 15, 5)
 	local function txt(gui, s, y, h, c)
 		local t = Instance.new("TextLabel")
 		t.BackgroundTransparency = 1
@@ -1229,8 +1235,8 @@ local function signTexts(surface: BasePart, theme, canvas: Vector2)
 		t.Parent = gui
 		local st = Instance.new("UIStroke")
 		st.Thickness = 3
-		st.Color = Color3.fromRGB(30, 15, 5)
-		st.Transparency = 0.1
+		st.Color = cInk
+		st.Transparency = sky and 0.35 or 0.1
 		st.Parent = t
 	end
 	for _, side in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -1241,13 +1247,13 @@ local function signTexts(surface: BasePart, theme, canvas: Vector2)
 		g.CanvasSize = canvas
 		g.Parent = surface
 		if side == Enum.NormalId.Front then
-			txt(g, "🏆 TOP PLAYERS 🏆", 0.07, 0.3, Color3.fromRGB(255, 220, 100))
-			txt(g, "← LEADERBOARDS", 0.41, 0.22, Color3.fromRGB(255, 250, 235))
-			txt(g, "#1 ?", 0.66, 0.27, Color3.fromRGB(255, 200, 70))
+			txt(g, "🏆 TOP PLAYERS 🏆", 0.07, 0.3, cTitle)
+			txt(g, "← LEADERBOARDS", 0.41, 0.22, cSub)
+			txt(g, "#1 ?", 0.66, 0.27, cNum)
 		else
-			txt(g, "🏆 RESPECT! 🏆", 0.07, 0.28, Color3.fromRGB(255, 220, 100))
-			txt(g, "Didn't go to the TOP? You'd never read this:", 0.41, 0.17, Color3.fromRGB(255, 245, 230))
-			txt(g, "YOU ARE THE BEST ❤", 0.64, 0.28, Color3.fromRGB(255, 200, 70))
+			txt(g, "🏆 RESPECT! 🏆", 0.07, 0.28, cTitle)
+			txt(g, "Didn't go to the TOP? You'd never read this:", 0.41, 0.17, cSub)
+			txt(g, "YOU ARE THE BEST ❤", 0.64, 0.28, cNum)
 		end
 		local l = Instance.new("SurfaceLight")
 		l.Face = side
@@ -1275,9 +1281,18 @@ local function topSignModel(island, theme, a, dir): boolean
 	m:ScaleTo(m:GetScale() * 10 / signFace.Size.X) -- ширина щита 10 (15 было слишком крупно)
 	-- щит — тёмное дерево (оранжевый пластик выглядел дёшево), каменная окантовка темнее
 	local neonStyle = theme.Grid ~= nil -- Neon / Galaxy: тёмный металл + неоновая окантовка вместо дерева
+	local skyStyle = theme.Clouds == true -- Sky: белый щит, золотая рамка и цепи, облачка
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
-			if d.Material == Enum.Material.Wood then
+			if skyStyle then
+				if d.Material == Enum.Material.Wood then
+					d.Color = Color3.fromRGB(250, 247, 255)
+					d.Material = Enum.Material.SmoothPlastic
+				else
+					d.Color = Color3.fromRGB(255, 205, 95)
+					d.Material = Enum.Material.SmoothPlastic
+				end
+			elseif d.Material == Enum.Material.Wood then
 				d.Color = neonStyle and theme.Board or Color3.fromRGB(92, 58, 32)
 				d.Material = neonStyle and Enum.Material.SmoothPlastic or Enum.Material.WoodPlanks
 			elseif d.Material == Enum.Material.Cobblestone then
@@ -1317,6 +1332,11 @@ local function topSignModel(island, theme, a, dir): boolean
 		for _, sx in { -1, 1 } do
 			local p = mid + axis * sx * half
 			part(island, "TopBoardPost", Vector3.new(0.55, h, 0.55), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, bar.Color, bar.Material)
+			if skyStyle then
+				for _, cd in { { 3.2, 0, 0 }, { 2.4, 1.6, 0.4 }, { 2.2, -1.5, -0.3 } } do
+					ball(island, "TopSignCloud", cd[1], Vector3.new(p.X + cd[2], a.Y + 0.6, p.Z + cd[3]), Color3.fromRGB(255, 255, 255), M.SmoothPlastic, GHOST)
+				end
+			end
 			local lamp = ball(island, "TopBoardLamp", 0.7, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
 			light(lamp, theme.Lamp, 16, 1.4)
 		end

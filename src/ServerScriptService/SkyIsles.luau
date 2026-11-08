@@ -270,7 +270,8 @@ local function shop(parent, name, at, title, accent, icon)
 		local yaw = math.atan2(dir.X, dir.Z)
 		-- Лицевая сторона моделей магазинов — их -Z, поэтому доворачиваем ещё на 180°.
 		local _, size = placeTemplate(template, m, "ShopModel", 22, at - dir * 3, yaw + math.pi)
-		sign(m, title, nil, Vector3.new(15, 3.6, 0.5), CFrame.new(at + dir * 4 + Vector3.new(0, size.Y + 3, 0)) * CFrame.Angles(0, yaw, 0), rgb(255, 250, 255), accent:Lerp(rgb(60, 70, 150), 0.45), Enum.NormalId.Back)
+		-- надпись над магазином убрана (фидбэк 2026-11): подпись есть над кругом и на самом магазине
+		local _ = title -- sign(m, title, nil, Vector3.new(15, 3.6, 0.5), CFrame.new(at + dir * 4 + Vector3.new(0, size.Y + 3, 0)) * CFrame.Angles(0, yaw, 0), rgb(255, 250, 255), accent:Lerp(rgb(60, 70, 150), 0.45), Enum.NormalId.Back)
 		local zone = disc(m, "ShopZone", 24, 0.3, at + dir * 15 + Vector3.new(0, 0.7, 0), rgb(255, 190, 110), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
 		zone.Size = Vector3.new(0.3, 24, 24)
 		local anchor = part(m, "VendorAnchor", Vector3.new(1, 1, 1), at + dir * 4 + Vector3.new(0, 0.6, 0), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
@@ -299,7 +300,7 @@ local function shop(parent, name, at, title, accent, icon)
 	for k, d in ipairs({ 7, 10, 12, 10, 7 }) do
 		cloud(m, "SignCloud", d, at + Vector3.new(-10 + (k - 1) * 5, cy + (k == 3 and 1.5 or 0), -5.8), rgb(255, 255, 255))
 	end
-	sign(m, title, nil, Vector3.new(15, 3.6, 0.5), CFrame.new(at + Vector3.new(0, cy + 0.5, -2.6)), rgb(255, 250, 255), accent:Lerp(rgb(60, 70, 150), 0.45), Enum.NormalId.Back)
+	-- (надпись убрана, фидбэк 2026-11) local _s = sign(m, title, nil, Vector3.new(15, 3.6, 0.5), CFrame.new(at + Vector3.new(0, cy + 0.5, -2.6)), rgb(255, 250, 255), accent:Lerp(rgb(60, 70, 150), 0.45), Enum.NormalId.Back)
 	-- Иконка на вывеске.
 	local ip = at + Vector3.new(0, cy + 6.2, -2.4)
 	if icon == "basket" then
@@ -1465,7 +1466,9 @@ function Sky.Build(world)
 	sparks.Name = "Sparkles"
 	sparks.Parent = model
 	local sr = Random.new(5)
-	for i = 1, 70 do
+	-- 2026-11 (фидбэк «мусор в воздухе»): золотые звёздочки висели и над пустотой — издалека как обломки.
+	-- Убраны (цикл на 0); блеск острова дают частицы и цветы.
+	for i = 1, 0 do
 		local a = sr:NextNumber(0, math.pi * 2)
 		local r = sr:NextNumber(10, 175)
 		star(sparks, L(math.cos(a) * r, sr:NextNumber(6, 40), math.sin(a) * r), sr:NextNumber(1.2, 3))
