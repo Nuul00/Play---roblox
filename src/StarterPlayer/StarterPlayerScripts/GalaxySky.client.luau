@@ -494,18 +494,35 @@ local bhRight = bhUp:Cross(Vector3.zAxis).Unit
 local bhTilt = CFrame.fromMatrix(BH, bhRight, bhUp)
 local bh = { disks = {} }
 do
-	local core = mk("BlackHole", Vector3.new(80, 80, 80), CFrame.new(BH), rgb(0, 0, 0), Enum.Material.SmoothPlastic, BALL)
+	-- 2026-11 (фидбэк «чёрные дыры сломались»: выглядела как коричневая планета). Ядро — Neon чёрного
+	-- цвета (на него не действует свет, всегда абсолютно чёрное), без ореола-шара. Вокруг ядра —
+	-- яркое «фотонное кольцо», всегда повёрнутое к платформе (как на снимках настоящей чёрной дыры).
+	local core = mk("BlackHole", Vector3.new(70, 70, 70), CFrame.new(BH), rgb(0, 0, 0), Enum.Material.Neon, BALL)
 	core.Parent = folder
-	local halo = mk("BlackHoleHalo", Vector3.new(90, 90, 90), CFrame.new(BH), rgb(255, 150, 70), Enum.Material.Neon, BALL)
-	halo.Transparency = 0.9
-	halo.Parent = folder
+	local view = (CENTER + Vector3.new(0, 20, 0) - BH).Unit
+	local face = CFrame.lookAt(BH, BH + view)
+	for layer = 1, 2 do
+		local r = layer == 1 and 37 or 41
+		local n = 40
+		local chord = 2 * r * math.sin(math.pi / n) * 1.2
+		for k = 1, n do
+			local a = k / n * math.pi * 2
+			local cf = face * CFrame.Angles(0, 0, a) * CFrame.new(0, r, 0)
+			local p = mk("PhotonRing", Vector3.new(chord, layer == 1 and 2.5 or 5, 1), cf, layer == 1 and rgb(255, 245, 220) or rgb(255, 170, 80), Enum.Material.Neon)
+			p.Transparency = layer == 1 and 0 or 0.55
+			p.Parent = folder
+		end
+	end
+	local glowAnchor = mk("BlackHoleLight", Vector3.new(1, 1, 1), CFrame.new(BH + view * 60), WHITE)
+	glowAnchor.Transparency = 1
+	glowAnchor.Parent = folder
 	local l = Instance.new("PointLight")
 	l.Color = rgb(255, 150, 80)
 	l.Range = 120
-	l.Brightness = 3
-	l.Parent = core
+	l.Brightness = 2
+	l.Parent = glowAnchor
 	for band = 1, 4 do
-		local r = 55 + band * 22
+		local r = 52 + band * 24
 		local n = 36
 		local parts, base = {}, {}
 		local chord = 2 * r * math.sin(math.pi / n) * 1.25
@@ -513,7 +530,7 @@ do
 			local a = k / n * math.pi * 2
 			local cf = bhTilt * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -r)
 			local col = rgb(255, 245, 210):Lerp(rgb(255, 120, 40), (band - 1) / 3):Lerp(rgb(170, 60, 200), math.max(0, band - 3) * 0.6)
-			local p = mk("Accretion", Vector3.new(chord, 0.8, 20), cf, col, Enum.Material.Neon)
+			local p = mk("Accretion", Vector3.new(chord, 0.5, 22), cf, col, Enum.Material.Neon)
 			p.Transparency = 0.05 + band * 0.12
 			p.Parent = folder
 			table.insert(parts, p)
