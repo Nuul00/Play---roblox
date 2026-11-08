@@ -35,12 +35,19 @@ local function hide(root: Instance)
 	if hiddenRoots[root] then
 		return
 	end
-	hiddenRoots[root] = root.DescendantAdded:Connect(hideOne)
+	local conn = root.DescendantAdded:Connect(hideOne)
+	hiddenRoots[root] = conn
 	hideOne(root)
 	for i, d in ipairs(root:GetDescendants()) do
 		hideOne(d)
 		if i % 2000 == 0 then
 			task.wait()
+			-- 2026-11 (фидбэк: «в реальной игре табличка пустая»): игрок вошёл в мир, пока мы его
+			-- прятали, — show() уже всё вернул. Раньше цикл продолжал и гасил оставшееся (надписи после
+			-- 2000-го объекта), а вернуть их было уже некому.
+			if hiddenRoots[root] ~= conn then
+				return
+			end
 		end
 	end
 end
