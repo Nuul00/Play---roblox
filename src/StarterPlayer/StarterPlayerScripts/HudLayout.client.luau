@@ -163,8 +163,7 @@ local function listShift(dt: number)
 	local cam = workspace.CurrentCamera
 	local vh = cam and cam.ViewportSize.Y - GuiService:GetGuiInset().Y or 600
 	if open then
-		-- список показывает не больше ~7 строк, остальное прокручивается внутри него
-		local h = math.min(LIST_HEAD + LIST_ROW * math.min(#Players:GetPlayers(), 7), vh * 0.5)
+		local h = math.min(LIST_HEAD + LIST_ROW * #Players:GetPlayers(), vh * 0.5)
 		local baseTop = gear.AbsolutePosition.Y - (applied[gear] or 0)
 		target = math.max(0, LIST_TOP + h + GAP - baseTop)
 	end

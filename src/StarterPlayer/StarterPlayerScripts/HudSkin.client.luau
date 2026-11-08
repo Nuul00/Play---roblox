@@ -280,58 +280,12 @@ for i, name in ipairs(MENU_ORDER) do
 		end
 	end
 end
--- 2026-11 (фидбэк: «значок настроек влезает в таб», «как в популярных играх»): настройки — круглая
--- кнопка ⚙ в верхней панели Roblox, сразу за его кнопками (меню, чат, рюкзак). Список игроков (Tab)
--- её никогда не закрывает. Правый верхний угол (TopRight) остаётся пустым якорем для INVITE/TRAVEL
--- (HudLayout), старая кнопка SETTINGS прячется вместе со строкой.
-topRight.Size = UDim2.fromOffset(60, 4)
-do
-	local GuiService = game:GetService("GuiService")
-	local barGui = Instance.new("ScreenGui")
-	barGui.Name = "TopbarSettings"
-	barGui.ResetOnSpawn = false
-	barGui.IgnoreGuiInset = true
-	barGui.ScreenInsets = Enum.ScreenInsets.None
-	barGui.DisplayOrder = 50
-	barGui.Parent = player:WaitForChild("PlayerGui")
-	local btn = Instance.new("ImageButton")
-	btn.Name = "Settings"
-	btn.AutoButtonColor = false
-	btn.BackgroundColor3 = Color3.fromRGB(18, 18, 21)
-	btn.BackgroundTransparency = 0.3
-	btn.Image = ""
-	btn.Parent = barGui
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
-	local icon = Instance.new("ImageLabel")
-	icon.BackgroundTransparency = 1
-	icon.AnchorPoint = Vector2.new(0.5, 0.5)
-	icon.Position = UDim2.fromScale(0.5, 0.5)
-	icon.Size = UDim2.fromScale(0.58, 0.58)
-	icon.Image = "rbxasset://textures/ui/Settings/MenuBarIcons/GameSettingsTab.png"
-	icon.Parent = btn
-	local function place()
-		local r = GuiService.TopbarInset
-		-- как кнопки Roblox: круг 44 px (меньше, если панель ниже), низ на 2 px выше края панели, зазор 8 px
-		local h = r.Height > 0 and r.Height or 58
-		local s = math.min(44, h - 4)
-		btn.Size = UDim2.fromOffset(s, s)
-		btn.Position = UDim2.fromOffset(r.Min.X + 8, r.Min.Y + h - s - 2)
-		btn.Visible = r.Width > s + 8 -- верхняя панель скрыта или занята — кнопки нет
-	end
-	place()
-	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(place)
-	btn.MouseEnter:Connect(function()
-		btn.BackgroundTransparency = 0.15
-	end)
-	btn.MouseLeave:Connect(function()
-		btn.BackgroundTransparency = 0.3
-	end)
-	btn.Activated:Connect(function()
-		local ev = player.PlayerGui:FindFirstChild("ToggleSettings")
-		if ev then
-			ev:Fire()
-		end
-	end)
+local settingsButton = row:WaitForChild("SETTINGS", 10)
+if settingsButton then
+	settingsButton.AnchorPoint = Vector2.new(0, 0)
+	settingsButton.Position = UDim2.fromOffset(0, 0)
+	settingsButton.Size = UDim2.fromScale(1, 1)
+	settingsButton.Parent = topRight
 end
 row.Visible = false
 -- Красная точка DAILY дублируется на «≡», чтобы награду было видно и при закрытом меню.
