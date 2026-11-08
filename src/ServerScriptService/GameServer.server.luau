@@ -255,6 +255,8 @@ action.OnServerEvent:Connect(function(p, kind, arg)
   p:SetAttribute("Save_EventPos", arg)
  elseif kind == "eventmarkers" and (arg == "on" or arg == "off") then
   p:SetAttribute("Save_EventMarkers", arg)
+ elseif kind == "topbarstyle" and (arg == "dark" or arg == "light") then
+  p:SetAttribute("Save_TopbarStyle", arg) -- кнопка ⚙ в верхней панели: чёрная / белая (HudSkin)
  elseif kind == "questarrow" and (arg == "on" or arg == "off") then
   p:SetAttribute("Save_QuestArrow", arg) -- стрелка-подсказка квестов (QuestArrow.client)
  elseif kind == "eventpill" and (arg == "on" or arg == "off") then
