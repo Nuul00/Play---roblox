@@ -1216,7 +1216,8 @@ local function equipPack(p)
 			end
 		end
 	end
-	backZ = math.min(backZ, torso.Size.Z / 2 + 2.5) -- огромный плащ не отодвигает рюкзак на метр
+	-- плащи развеваются далеко назад: учитываем не больше 0.2 стада сверх спины, рюкзак ложится на плащ
+	backZ = math.min(backZ, torso.Size.Z / 2 + 0.2)
 	-- за спиной: центр рюкзака позади всего надетого, чуть выше середины торса; окошко с золотом смотрит назад
 	local target = torso.CFrame * CFrame.new(0, torso.Size.Y * 0.3, backZ + ext.Z / 2 - 0.1) * CFrame.Angles(0, PACK_YAW, 0)
 	pack:PivotTo(target * offset:Inverse())

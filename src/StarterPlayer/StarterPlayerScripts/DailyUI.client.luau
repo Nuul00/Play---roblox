@@ -183,10 +183,15 @@ for day, reward in ipairs(D.Rewards) do
 	local cg = grad(c, big and rgb(255, 225, 120) or rgb(58, 40, 118), big and rgb(225, 130, 30) or rgb(32, 22, 72))
 	local cs = stroke(c, big and rgb(255, 240, 170) or kind.col, 3)
 	-- цветная шапка «DAY N»
-	local band = frame(c, 0, 0, w, 34, kind.col)
+	-- 2026-11 (фидбэк «выпирают»): ClipsDescendants не обрезает по скруглению, и квадратные углы шапки
+	-- торчали за скруглённую карточку. Шапка теперь сама скруглена сверху, низ — прямой подложкой.
+	local band = frame(c, 0, 0, w, 34, kind.col, 18)
 	grad(band, kind.col:Lerp(Color3.new(1, 1, 1), 0.25), kind.col:Lerp(Color3.new(0, 0, 0), 0.2))
+	local bandLow = frame(c, 0, 17, w, 17, kind.col:Lerp(Color3.new(0, 0, 0), 0.1))
+	grad(bandLow, kind.col:Lerp(Color3.new(1, 1, 1), 0.1), kind.col:Lerp(Color3.new(0, 0, 0), 0.2))
 	if big then
 		band.BackgroundTransparency = 1
+		bandLow.BackgroundTransparency = 1
 	end
 	local dayText = text(c, big and "DAY 7 · JACKPOT" or ("DAY " .. day), 0, 4, w, 28, 20, nil, 2)
 	-- лучи за иконкой (только джекпот)

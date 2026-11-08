@@ -1,5 +1,12 @@
 -- Инвентарь: вкладки «Питомцы», «Зелья», «Достижения».
 -- Клиент только показывает и просит сервер (GameAction); проверки — на сервере.
+-- короткая запись множителя команды: x50.5K вместо x50504.1 (фидбэк 2026-11)
+local function teamText(v: number): string
+	if v < 1000 then
+		return tostring(math.floor(v * 100 + 0.5) / 100)
+	end
+	return require(game:GetService("ReplicatedStorage"):WaitForChild("NumberFormat")).Short(v)
+end
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -152,7 +159,7 @@ local function buildPets()
 		return c, t
 	end
 	chip(0, 168, "🐾", string.format("EQUIPPED %d/%d", #equipped, maxEquipped), Color3.fromRGB(120, 200, 255), Color3.fromRGB(50, 110, 220))
-	chip(176, 190, "💰", string.format("TEAM x%g", math.floor((player:GetAttribute("PetBonus") or 1) * 100 + 0.5) / 100), Color3.fromRGB(255, 220, 110), Color3.fromRGB(230, 140, 30))
+	chip(176, 190, "💰", "TEAM x" .. teamText(player:GetAttribute("PetBonus") or 1), Color3.fromRGB(255, 220, 110), Color3.fromRGB(230, 140, 30))
 	-- Строка способностей команды; при наведении на карточку показывает способность питомца.
 	local teamText = PetAbilities.TeamText(player)
 	if teamText == "" then
