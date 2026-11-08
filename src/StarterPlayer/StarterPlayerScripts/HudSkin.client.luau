@@ -524,6 +524,35 @@ local function skinPanel(frame: Frame, skin, def)
 		-- 2026-11 (фидбэк 13): число заходило под монету — отступ больше
 		set(value, "Position", UDim2.fromOffset(h + 44, 0))
 		set(value, "Size", UDim2.new(0.82, -(h + 44), 1, 0))
+		-- 2026-11 (фидбэк «1Qi наезжает на монету»): у плитки монет текст двигал другой скрипт и он
+		-- заходил под иконку. Отступ считаем по реальному правому краю иконки и держим его.
+		local skinIcon = frame:FindFirstChild("SkinIcon")
+		local fixing = false
+		local function keepClear()
+			if fixing or not skinIcon or frame.AbsoluteSize.X <= 0 then
+				return
+			end
+			-- плитки уменьшены через UIScale: пиксели экрана переводим во внутренние единицы плитки
+			local scale = frame.Size.X.Offset > 0 and frame.AbsoluteSize.X / frame.Size.X.Offset or 1
+			local need = math.ceil((skinIcon.AbsolutePosition.X + skinIcon.AbsoluteSize.X - frame.AbsolutePosition.X) / math.max(scale, 0.1) + 6)
+			-- у плитки может быть несколько подписей (у монет — своя, её двигает MainHUD): правим все видимые
+			for _, l in ipairs(frame:GetChildren()) do
+				if l:IsA("TextLabel") and l.Visible and l.TextXAlignment == Enum.TextXAlignment.Left and (l.Position.X.Offset < need or l.Position.X.Scale ~= 0) then
+					fixing = true
+					l.Position = UDim2.new(0, need, l.Position.Y.Scale, l.Position.Y.Offset)
+					l.Size = UDim2.new(0.82, -need, l.Size.Y.Scale, l.Size.Y.Offset)
+					fixing = false
+				end
+			end
+		end
+		for _, l in ipairs(frame:GetChildren()) do
+			if l:IsA("TextLabel") then
+				l:GetPropertyChangedSignal("Position"):Connect(keepClear)
+				l:GetPropertyChangedSignal("Visible"):Connect(keepClear)
+			end
+		end
+		frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepClear)
+		task.defer(keepClear)
 	end
 end
 
