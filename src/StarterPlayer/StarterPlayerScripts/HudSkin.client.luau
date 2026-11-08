@@ -297,6 +297,8 @@ do
 	local btn = Instance.new("ImageButton")
 	btn.Name = "Settings"
 	btn.AutoButtonColor = false
+	btn.BackgroundColor3 = Color3.fromRGB(18, 18, 21)
+	btn.BackgroundTransparency = 0.3
 	btn.Image = ""
 	btn.Parent = barGui
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
@@ -307,21 +309,6 @@ do
 	icon.Size = UDim2.fromScale(0.58, 0.58)
 	icon.Image = "rbxasset://textures/ui/Settings/MenuBarIcons/GameSettingsTab.png"
 	icon.Parent = btn
-	-- Стиль кнопки (Settings → Top bar button, Save_TopbarStyle): DARK — почти чёрный круг с белой
-	-- шестерёнкой (по умолчанию), LIGHT — белый круг с чёрной.
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 1
-	stroke.Parent = btn
-	local baseT = 0.08
-	local function style()
-		local light = player:GetAttribute("Save_TopbarStyle") == "light"
-		btn.BackgroundColor3 = light and Color3.fromRGB(245, 245, 247) or Color3.fromRGB(4, 4, 6)
-		icon.ImageColor3 = light and Color3.fromRGB(15, 15, 18) or Color3.new(1, 1, 1)
-		stroke.Color = light and Color3.fromRGB(200, 200, 205) or Color3.fromRGB(60, 60, 66)
-		btn.BackgroundTransparency = baseT
-	end
-	style()
-	player:GetAttributeChangedSignal("Save_TopbarStyle"):Connect(style)
 	local function place()
 		local r = GuiService.TopbarInset
 		-- как кнопки Roblox: круг 44 px (меньше, если панель ниже), низ на 2 px выше края панели, зазор 8 px
@@ -334,10 +321,10 @@ do
 	place()
 	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(place)
 	btn.MouseEnter:Connect(function()
-		btn.BackgroundTransparency = 0
+		btn.BackgroundTransparency = 0.15
 	end)
 	btn.MouseLeave:Connect(function()
-		btn.BackgroundTransparency = baseT
+		btn.BackgroundTransparency = 0.3
 	end)
 	btn.Activated:Connect(function()
 		local ev = player.PlayerGui:FindFirstChild("ToggleSettings")

@@ -234,12 +234,7 @@ local qaBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,512)
 local function qaText() qaBtn.Text="🧭 Quest arrow: "..(player:GetAttribute("Save_QuestArrow")=="off" and "OFF" or "ON") end
 qaText();player:GetAttributeChangedSignal("Save_QuestArrow"):Connect(qaText)
 qaBtn.Activated:Connect(function() cycle("Save_QuestArrow","questarrow",{"on","off"},"on") end)
--- Кнопка ⚙ в верхней панели Roblox: чёрная или белая (HudSkin, Save_TopbarStyle)
-local tbBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,551))
-local function tbText() tbBtn.Text="⚙ Top bar button: "..(player:GetAttribute("Save_TopbarStyle")=="light" and "LIGHT" or "DARK") end
-tbText();player:GetAttributeChangedSignal("Save_TopbarStyle"):Connect(tbText)
-tbBtn.Activated:Connect(function() cycle("Save_TopbarStyle","topbarstyle",{"dark","light"},"dark") end)
-settings.Size=UDim2.fromOffset(420,600)
+settings.Size=UDim2.fromOffset(420,560)
 -- Единый вид переключателей (фидбэк 2026-11: «кнопки разноцветные»): тёмная строка, слева название,
 -- справа плашка со значением — зелёная ON, серая OFF/HIDDEN, фиолетовая для остальных вариантов.
 do
@@ -260,7 +255,7 @@ do
   end
   sync();b:GetPropertyChangedSignal("Text"):Connect(sync);b:GetPropertyChangedSignal("BackgroundColor3"):Connect(sync)
  end
- for _,b in ipairs({music,sideBtn,evBtn,posBtn,mrkBtn,pillBtn,gfxBtn,qaBtn,tbBtn}) do styleRow(b) end
+ for _,b in ipairs({music,sideBtn,evBtn,posBtn,mrkBtn,pillBtn,gfxBtn,qaBtn}) do styleRow(b) end
 end
 
 local screens={stats=panel,settings=settings}
