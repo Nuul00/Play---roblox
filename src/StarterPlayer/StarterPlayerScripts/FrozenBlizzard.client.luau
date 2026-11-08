@@ -67,6 +67,49 @@ sub.TextColor3 = Color3.fromRGB(210, 240, 255)
 sub.Parent = banner
 local pop = Instance.new("UIScale")
 pop.Parent = banner
+-- 2026-11: баннер можно свернуть (общая настройка Save_EventBanner, как у остальных ивентов):
+-- в свёрнутом виде остаётся узкая полоска с таймером, тап по ней — развернуть
+local fullSize, miniSize = UDim2.fromOffset(420, 64), UDim2.fromOffset(150, 34)
+local hideBtn = Instance.new("TextButton")
+hideBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+hideBtn.Position = UDim2.new(1, -4, 0, 4)
+hideBtn.Size = UDim2.fromOffset(28, 28)
+hideBtn.BackgroundColor3 = Color3.fromRGB(20, 50, 120)
+hideBtn.Text = "▲"
+hideBtn.Font = Enum.Font.GothamBlack
+hideBtn.TextSize = 13
+hideBtn.TextColor3 = Color3.new(1, 1, 1)
+hideBtn.ZIndex = 5
+hideBtn.Parent = banner
+Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(1, 0)
+local expand = Instance.new("TextButton")
+expand.BackgroundTransparency = 1
+expand.Text = ""
+expand.Size = UDim2.fromScale(1, 1)
+expand.ZIndex = 6
+expand.Parent = banner
+local function blizzMini()
+	return player:GetAttribute("Save_EventBanner") == "mini"
+end
+local function applyBlizzMini()
+	local m = blizzMini()
+	banner.Size = m and miniSize or fullSize
+	hideBtn.Visible = not m
+	expand.Visible = m
+	sub.Visible = not m
+	title.Size = m and UDim2.new(1, -16, 1, -8) or UDim2.new(1, -28, 0, 32)
+	title.Position = m and UDim2.fromOffset(8, 4) or UDim2.fromOffset(14, 4)
+end
+local function toggleBlizz()
+	local b = player.PlayerGui:FindFirstChild("EventBannerToggle")
+	if b then
+		b:Invoke(true)
+	end
+end
+hideBtn.Activated:Connect(toggleBlizz)
+expand.Activated:Connect(toggleBlizz)
+player:GetAttributeChangedSignal("Save_EventBanner"):Connect(applyBlizzMini)
+applyBlizzMini()
 
 -- ===== Вспышка при подборе кристалла =====
 local folder = frozen:WaitForChild("BlizzardCrystals", 60)
@@ -142,6 +185,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	if storm then
 		sub.Text = string.format("Frost crystals fall! · %d s left", math.ceil(left))
+		title.Text = blizzMini() and string.format("❄ %ds", math.ceil(left)) or "❄ BLIZZARD! x2 COINS ❄"
 		stroke.Transparency = 0.2 + 0.3 * math.sin(t * 5)
 		for m in pairs(crystals) do
 			local core = m.PrimaryPart

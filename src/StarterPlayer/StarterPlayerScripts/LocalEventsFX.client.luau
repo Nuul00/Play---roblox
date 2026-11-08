@@ -51,6 +51,82 @@ local bTime = K.text(banner, "", UDim2.new(1, -100, 0, 8), UDim2.fromOffset(88, 
 local bScale = Instance.new("UIScale")
 bScale.Parent = banner
 
+-- 2026-11 (фидбэк): баннер можно свернуть в маленький значок (кнопка ▲ на баннере или ⚙ Settings).
+-- Выбор сохраняется (Save_EventBanner = "mini"/"full"). Через 6 с после появления ивента — подсказка.
+local GameAction = RS:WaitForChild("GameAction")
+local function isMini()
+	return player:GetAttribute("Save_EventBanner") == "mini"
+end
+local function setMini(on: boolean)
+	player:SetAttribute("Save_EventBanner", on and "mini" or "full")
+	GameAction:FireServer("eventbanner", on and "mini" or "full")
+end
+local hideBtn = Instance.new("TextButton")
+hideBtn.Name = "Hide"
+hideBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+hideBtn.Position = UDim2.new(1, -4, 0, 4)
+hideBtn.Size = UDim2.fromOffset(30, 30)
+hideBtn.BackgroundColor3 = rgb(40, 24, 60)
+hideBtn.Text = "▲"
+hideBtn.Font = Enum.Font.GothamBlack
+hideBtn.TextSize = 14
+hideBtn.TextColor3 = Color3.new(1, 1, 1)
+hideBtn.ZIndex = 5
+hideBtn.Parent = banner
+Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(1, 0)
+K.stroke(hideBtn, Color3.new(1, 1, 1), 2)
+hideBtn.Activated:Connect(function()
+	setMini(true)
+	sound("click")
+end)
+-- мини-значок: иконка ивента + таймер, тап — развернуть обратно
+local mini = Instance.new("ImageButton")
+mini.Name = "EventMini"
+mini.AnchorPoint = Vector2.new(0.5, 0)
+mini.Position = UDim2.new(0.5, 0, 0, 132)
+mini.Size = UDim2.fromOffset(120, 44)
+mini.BackgroundColor3 = rgb(255, 140, 200)
+mini.Visible = false
+mini.Parent = gui
+Instance.new("UICorner", mini).CornerRadius = UDim.new(0, 14)
+K.stroke(mini, K.INK, 3)
+local mIcon = Instance.new("ImageLabel")
+mIcon.BackgroundTransparency = 1
+mIcon.Position = UDim2.fromOffset(-8, -8)
+mIcon.Size = UDim2.fromOffset(56, 56)
+mIcon.Parent = mini
+local mTime = K.text(mini, "", UDim2.fromOffset(46, 4), UDim2.fromOffset(70, 36), 22, nil, 2)
+mTime.TextXAlignment = Enum.TextXAlignment.Left
+local mScale = Instance.new("UIScale")
+mScale.Parent = mini
+mini.Activated:Connect(function()
+	setMini(false)
+	sound("click")
+end)
+-- подсказка: показывается 3 раза за всё время (Save_EventHintSeen), через 6 с после появления баннера
+local tip = K.frame(gui, UDim2.new(0.5, 230, 0, 120), UDim2.fromOffset(250, 76), rgb(30, 22, 48), 14)
+tip.AnchorPoint = Vector2.new(0, 0)
+tip.Visible = false
+K.stroke(tip, rgb(255, 210, 90), 2.5)
+local tipText = K.text(tip, "", UDim2.fromOffset(10, 4), UDim2.new(1, -20, 1, -8), 15, nil, 1.5)
+tipText.TextWrapped = true
+tipText.RichText = true
+tipText.Text = '<font color="#FFD25A">◀ Banner in the way?</font>\nTap ▲ to shrink it. Change it any time in ⚙ Settings.'
+local tipScale = Instance.new("UIScale")
+tipScale.Parent = tip
+local tipShownAt = nil
+local tipDoneThisEvent = false
+-- Settings: переключатель там же, где музыка (GameHUD ищет кнопку по имени и вызывает это событие)
+local bind = Instance.new("BindableFunction")
+bind.Name = "EventBannerToggle"
+bind.OnInvoke = function(toggle: boolean?)
+	if toggle then
+		setMini(not isMini())
+	end
+	return isMini()
+end
+bind.Parent = player:WaitForChild("PlayerGui")
+
 ------------------------------------------------------------------ заставка старта
 local splash = Instance.new("Frame")
 splash.BackgroundTransparency = 1
@@ -68,7 +144,7 @@ sImg.Position = UDim2.fromScale(0.5, 0)
 sImg.Size = UDim2.fromOffset(170, 170)
 sImg.Parent = splash
 local sTitle = K.text(splash, "", UDim2.fromOffset(0, 170), UDim2.new(1, 0, 0, 64), 56, nil, 4)
-local sSub = K.text(splash, "x2 COINS IN THIS WORLD!", UDim2.fromOffset(0, 232), UDim2.new(1, 0, 0, 40), 30, K.GOLD, 3)
+local sSub = K.text(splash, "COLLECT 6 / 12 / 18 FOR A COIN BONUS!", UDim2.fromOffset(0, 232), UDim2.new(1, 0, 0, 40), 30, K.GOLD, 3)
 
 ------------------------------------------------------------------ стрелки к бонусам
 -- отдельный слой поверх HUD (иначе стрелку у края закрывают кнопки)
@@ -287,9 +363,52 @@ Run.RenderStepped:Connect(function(dt)
 			bTime.Text = string.format("%d:%02d", math.floor(soon / 60), math.floor(soon) % 60)
 			bTime.TextColor3 = def.Color2
 		end
+		-- свёрнутый режим: вместо баннера — маленький значок с таймером
+		local miniOn = isMini()
+		banner.Visible = not miniOn
+		mini.Visible = miniOn
+		if miniOn then
+			mIcon.Image = def.Image or ""
+			mIcon.Rotation = bIcon.Rotation
+			mini.BackgroundColor3 = def.Color
+			mTime.Text = bTime.Text
+			mScale.Scale = uiScale
+		end
+		-- подсказка через 6 с после появления (3 раза за всё время, раз за ивент)
+		if not miniOn and not tipDoneThisEvent and (player:GetAttribute("Save_EventHintSeen") or 0) < 3 then
+			tipShownAt = tipShownAt or (os.clock() + 6)
+			if os.clock() >= tipShownAt and not tip.Visible then
+				tip.Visible = true
+				tipScale.Scale = uiScale
+				GameAction:FireServer("eventhintseen")
+				task.delay(7, function()
+					tip.Visible = false
+				end)
+				tipDoneThisEvent = true
+			end
+		end
+		if tip.Visible then
+			-- справа от баннера, стрелка ◀ указывает на кнопку ▲
+			local abs = banner.AbsolutePosition + banner.AbsoluteSize
+			local vw = cam and cam.ViewportSize.X or 1000
+			local tw = tip.AbsoluteSize.X
+			if abs.X + 10 + tw > vw - 8 then
+				-- не влезает справа — под баннером
+				tip.Position = UDim2.fromOffset(math.max(8, abs.X - tw), abs.Y + 6)
+			else
+				tip.Position = UDim2.fromOffset(abs.X + 10, banner.AbsolutePosition.Y - 4)
+			end
+			if miniOn then
+				tip.Visible = false
+			end
+		end
 	elseif shownKey then
 		shownKey = nil
 		banner.Visible = false
+		mini.Visible = false
+		tip.Visible = false
+		tipShownAt = nil
+		tipDoneThisEvent = false
 	end
 
 	-- падающие картинки и оттенок

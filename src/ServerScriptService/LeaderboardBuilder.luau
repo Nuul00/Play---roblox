@@ -1788,7 +1788,7 @@ function B.Build(world)
 						part(island, "ApproachRampRail", Vector3.new(0.4, 0.4, L), cf * CFrame.new(sg * (W / 2 - 0.3), 2.8, 0), theme.Rail, theme.RailMat)
 					end
 				end
-				for d = dStart + 1, dTop - 1, 8 do
+				for d = dStart + 4, dTop - 2, 8 do -- не на самом краю настила (столбик торчал из угла)
 					local c = at(d)
 					for _, sg in { -1, 1 } do
 						local pc = c + side * sg * (W / 2 - 0.3)

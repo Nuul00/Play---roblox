@@ -175,7 +175,15 @@ applyTime("Evening")
 -- Музыка миров (WorldAmbience): вкл/выкл только у этого игрока.
 local music=button(settings,"🎵 Music: ON",UDim2.fromOffset(380,40),UDim2.fromOffset(20,240));music.BackgroundColor3=Color3.fromRGB(90,160,110)
 -- сторона вкладки зелий: для левшей и правшей (сохраняется с профилем)
-settings.Size=UDim2.fromOffset(420,364)
+settings.Size=UDim2.fromOffset(420,416)
+-- баннер локальных ивентов: полный или маленький значок (LocalEventsFX, сохраняется)
+local evBtn=button(settings,"🌸 Event banner: FULL",UDim2.fromOffset(380,40),UDim2.fromOffset(20,344));evBtn.BackgroundColor3=Color3.fromRGB(220,100,170)
+local function evText() local small=player:GetAttribute("Save_EventBanner")=="mini";evBtn.Text="🌸 Event banner: "..(small and "SMALL" or "FULL") end
+evText();player:GetAttributeChangedSignal("Save_EventBanner"):Connect(evText)
+evBtn.Activated:Connect(function()
+ local b=player.PlayerGui:FindFirstChild("EventBannerToggle")
+ if b then b:Invoke(true) end
+end)
 local sideBtn=button(settings,"🧪 Potion tab: RIGHT",UDim2.fromOffset(380,40),UDim2.fromOffset(20,292));sideBtn.BackgroundColor3=Color3.fromRGB(120,80,200)
 local function sideText() sideBtn.Text="🧪 Potion tab: "..(player:GetAttribute("Save_PotionSide")=="L" and "LEFT" or "RIGHT") end
 sideText();player:GetAttributeChangedSignal("Save_PotionSide"):Connect(sideText)

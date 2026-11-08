@@ -249,6 +249,10 @@ action.OnServerEvent:Connect(function(p, kind, arg)
   end
  elseif kind == "potionside" and (arg == "L" or arg == "R") then
   p:SetAttribute("Save_PotionSide", arg)
+ elseif kind == "eventbanner" and (arg == "full" or arg == "mini") then
+  p:SetAttribute("Save_EventBanner", arg) -- баннер локального ивента: полный или свёрнутый значок
+ elseif kind == "eventhintseen" then
+  p:SetAttribute("Save_EventHintSeen", math.min((p:GetAttribute("Save_EventHintSeen") or 0) + 1, 9))
  elseif kind == "potiony" and type(arg) == "number" and arg == arg and arg >= 0 and arg <= 1 then
   p:SetAttribute("Save_PotionY", math.floor(arg * 1000 + 0.5) / 1000)
  elseif kind == "magnet" and type(arg) == "number" then
