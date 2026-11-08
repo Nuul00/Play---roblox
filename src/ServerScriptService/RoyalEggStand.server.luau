@@ -151,38 +151,6 @@ local function build(spot)
 		workspace.Terrain:ReplaceMaterial(r, 4, Enum.Material.Grass, Enum.Material.Ground)
 		workspace.Terrain:ReplaceMaterial(r, 4, Enum.Material.LeafyGrass, Enum.Material.Ground)
 	end)
-	-- «OPEN» — парящий значок над кругом, всегда повёрнут к игроку (раньше лежал на диске «боком»).
-	local zg = Instance.new("BillboardGui")
-	zg.Size = UDim2.fromScale(5.5, 2.4)
-	zg.StudsOffsetWorldSpace = Vector3.new(0, 2.2, 0)
-	zg.MaxDistance = 60
-	zg.AlwaysOnTop = true -- без этого значок прятался за прозрачным диском и травой
-	zg.LightInfluence = 0
-	zg.Parent = zone
-	local zf = Instance.new("Frame")
-	zf.Size = UDim2.fromScale(1, 1)
-	zf.BackgroundColor3 = Color3.fromRGB(255, 205, 70)
-	zf.Parent = zg
-	Instance.new("UICorner", zf).CornerRadius = UDim.new(0.5, 0)
-	local zs = Instance.new("UIStroke")
-	zs.Thickness = 3
-	zs.Color = Color3.fromRGB(120, 50, 10)
-	zs.Parent = zf
-	local zl = Instance.new("TextLabel")
-	zl.BackgroundTransparency = 1
-	zl.Size = UDim2.fromScale(1, 1)
-	zl.Text = "👑 OPEN"
-	zl.TextScaled = true
-	zl.Font = Enum.Font.FredokaOne
-	zl.TextColor3 = Color3.fromRGB(110, 45, 10)
-	zl.Parent = zf
-	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0.14, 0)
-	pad.PaddingBottom = UDim.new(0.14, 0)
-	pad.PaddingLeft = UDim.new(0.08, 0)
-	pad.PaddingRight = UDim.new(0.08, 0)
-	pad.Parent = zf
-	game:GetService("TweenService"):Create(zg, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { StudsOffsetWorldSpace = Vector3.new(0, 2.9, 0) }):Play()
 
 	m.PrimaryPart = anchor
 	m.Parent = world

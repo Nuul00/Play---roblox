@@ -136,15 +136,28 @@ local function dress(p: Player)
 	clear(char)
 	local vip, royal = p:GetAttribute("Pass_VIP") == true, p:GetAttribute("Pass_RoyalAura") == true
 	local shown = Titles.Shown(p)
+	-- высота над верхом персонажа вместе с аксессуарами (шляпы, ауры): табличка не налезает на них
+	local lift = 1.9
+	pcall(function()
+		local top = -math.huge
+		for _, d in ipairs(char:GetDescendants()) do
+			if d:IsA("BasePart") and d.Transparency < 1 and d.Name ~= "HumanoidRootPart" then
+				top = math.max(top, d.Position.Y + d.Size.Y / 2)
+			end
+		end
+		if top > -math.huge then
+			lift = math.clamp(top - head.Position.Y + 0.9, 1.9, 8)
+		end
+	end)
 	if shown then
-		titlePlate(head, shown, 1.9, royal)
+		titlePlate(head, shown, lift, royal)
 	end
 	if vip then
 		sparks(root, Color3.fromRGB(255, 210, 90), 10, "VipSparks")
 	end
 	if royal then
 		if not shown then
-			tag(head, "👑", Color3.fromRGB(255, 225, 120), 1.8, 36)
+			tag(head, "👑", Color3.fromRGB(255, 225, 120), lift - 0.1, 36)
 		end
 		sparks(root, Color3.fromRGB(255, 240, 150), 26, "RoyalSparks")
 	end

@@ -1585,12 +1585,17 @@ function B.Build(world)
 					local fy = footY + (hy - footY) * t
 					local p = base + dir * d
 					local rot = CFrame.lookAt(Vector3.zero, dir)
-					terrain:FillBlock(CFrame.new(p.X, fy + 11, p.Z) * rot, Vector3.new(16, 22, 2.6), M.Air)
-					terrain:FillBlock(CFrame.new(p.X, fy - 3.8, p.Z) * rot, Vector3.new(13, 5, 2.6), M.Cobblestone)
-					-- трава по краям прорези прорастала сквозь настил: в прорези только камень
-					local reg = Region3.new(Vector3.new(p.X - 9, fy - 8, p.Z - 3), Vector3.new(p.X + 9, fy + 6, p.Z + 3)):ExpandToGrid(4)
-					terrain:ReplaceMaterial(reg, 4, M.Grass, M.Cobblestone)
-					terrain:ReplaceMaterial(reg, 4, M.LeafyGrass, M.Cobblestone)
+					-- прорезь — «долина» с пологими травяными склонами (вертикальные каменные стены были
+					-- уродливыми): чем выше над дорожкой, тем шире вырез
+					for k = 0, 7 do
+						terrain:FillBlock(CFrame.new(p.X, fy + 1 + k * 2, p.Z) * rot, Vector3.new(13 + k * 5, 2.2, 2.6), M.Air)
+					end
+					terrain:FillBlock(CFrame.new(p.X, fy + 22, p.Z) * rot, Vector3.new(60, 8, 2.6), M.Air)
+					terrain:FillBlock(CFrame.new(p.X, fy - 3.8, p.Z) * rot, Vector3.new(12, 5, 2.6), M.Ground)
+					-- только под самой дорожкой трава -> земля (не прорастает сквозь настил); склоны остаются травой
+					local reg = Region3.new(Vector3.new(p.X - 6, fy - 6, p.Z - 2), Vector3.new(p.X + 6, fy + 1, p.Z + 2)):ExpandToGrid(4)
+					terrain:ReplaceMaterial(reg, 4, M.Grass, M.Ground)
+					terrain:ReplaceMaterial(reg, 4, M.LeafyGrass, M.Ground)
 				end
 				local a = base + dir * dFoot + Vector3.new(0, footY, 0)
 				local b = base + dir * dTop + Vector3.new(0, hy, 0)

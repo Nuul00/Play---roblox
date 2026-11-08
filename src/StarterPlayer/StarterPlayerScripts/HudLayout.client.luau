@@ -14,7 +14,7 @@ local GAP = 8
 -- Limit — элемент, выше которого колонка должна закончиться; не влезает — кнопки встают в ряд
 -- под якорем от левого края (телефон и другие низкие экраны).
 local COLUMNS = {
-	{ Items = { { "QuestLineUI", "QuestTracker" }, { "RoyalEggUI", "RoyalEggButton" }, { "TradeUI", "TradeOpen" } }, Limit = { "MainHUD", "Panels" } },
+	{ Items = { { "QuestLineUI", "QuestTracker" }, { "RoyalEggUI", "RoyalEggButton" }, { "TradeUI", "TradeOpen" } }, Limit = { "MainHUD", "Panels" }, Align = "left" },
 	{ Items = { { "MenuHUD", "TopRight" }, { "InviteHUD", "Invite" }, { "QuickTravelHUD", "TravelOpen" }, { "QuickTravelHUD", "TravelList" } } },
 }
 
@@ -82,14 +82,8 @@ local function layoutColumn(column)
 	local gap = GAP * R.Scale()
 	local first = items[1]
 	local top = first.AbsolutePosition.Y
-	-- влезает ли вертикальная стопка над Limit
-	local need = top + height(first)
-	for i = 2, #items do
-		need += gap + height(items[i])
-	end
-	local limitObj = column.Limit and find(column.Limit)
-	local limit = shown(limitObj) and (limitObj.AbsolutePosition.Y - gap) or math.huge
-	local row = need > limit
+	-- 2026-11: кнопки всегда колонкой у левой стены (ряд уводил TRADE от стены — фидбэк)
+	local row = false
 	local bottom = top + height(first)
 	-- ряд — под якорем от левого края (у стенки), а не справа от квеста посреди экрана (баг 2026-11)
 	local right = first.AbsolutePosition.X - gap
@@ -107,6 +101,13 @@ local function layoutColumn(column)
 				o.Position = pos + UDim2.fromOffset(dx, dy)
 			end
 			right = ax + dx + width(o)
+		elseif column.Align == "left" then
+			-- левая колонка: левый край кнопки = левый край якоря (у стены), а не исходная X кнопки
+			local dx = math.floor(first.AbsolutePosition.X - o.AbsolutePosition.X + 0.5)
+			if dx ~= 0 or dy ~= 0 then
+				o.Position = pos + UDim2.fromOffset(dx, dy)
+			end
+			bottom = ty + height(o)
 		else
 			if pos.X ~= info.x or dy ~= 0 then
 				o.Position = UDim2.new(info.x, pos.Y + UDim.new(0, dy))
