@@ -728,3 +728,72 @@ task.spawn(function()
 	end
 	folder.Parent = fz
 end)
+
+------------------------------------------------------------------ Frozen: декор не на дорожках
+-- Фидбэк 2026-11: кристалл залезал на дорожку к яйцам, ёлка росла сквозь статую пингвина.
+-- Ёлки и кристаллы из FrozenPeaks.Decor отодвигаем от дорожек (Paths) и от моделей TripoDecor.
+task.spawn(function()
+	local fz = world:WaitForChild("FrozenPeaks", 120)
+	local decor = fz and fz:WaitForChild("Decor", 30)
+	if not decor then
+		return
+	end
+	fz:WaitForChild("TripoDecor", 40)
+	task.wait(1)
+	local paths = {}
+	local pf = fz:FindFirstChild("Paths")
+	if pf then
+		for _, p in ipairs(pf:GetDescendants()) do
+			if p:IsA("BasePart") and p.Shape ~= Enum.PartType.Cylinder then
+				table.insert(paths, p)
+			end
+		end
+	end
+	local blobs = {}
+	local td = fz:FindFirstChild("TripoDecor")
+	if td then
+		for _, m in ipairs(td:GetChildren()) do
+			if m:IsA("Model") then
+				local cf, sz = m:GetBoundingBox()
+				table.insert(blobs, { at = cf.Position, r = math.max(sz.X, sz.Z) / 2 })
+			end
+		end
+	end
+	local moved = 0
+	for _, m in ipairs(decor:GetChildren()) do
+		if m:IsA("Model") and (m.Name == "SnowPine" or m.Name == "CrystalCluster") then
+			local cf, sz = m:GetBoundingBox()
+			-- у ёлки крона шире ствола, но проходить под краем кроны можно: берём 0.75 габарита
+			local r = math.max(sz.X, sz.Z) / 2 * (m.Name == "SnowPine" and 0.75 or 0.9)
+			local pos = cf.Position
+			for _ = 1, 30 do
+				local push = Vector3.zero
+				for _, p in ipairs(paths) do
+					local rel = p.CFrame:PointToObjectSpace(pos)
+					local h = p.Size / 2
+					if math.abs(rel.Y) < 15 and math.abs(rel.X) < h.X + r + 1 and math.abs(rel.Z) < h.Z + r + 1 then
+						-- выталкиваем вдоль короткой оси дорожки
+						local axis = h.X < h.Z and p.CFrame.RightVector * (rel.X >= 0 and 1 or -1) or p.CFrame.LookVector * (rel.Z >= 0 and -1 or 1)
+						push += Vector3.new(axis.X, 0, axis.Z)
+					end
+				end
+				for _, b in ipairs(blobs) do
+					local o = pos - b.at
+					local d = Vector2.new(o.X, o.Z).Magnitude
+					if d < b.r + r + 1 and math.abs(o.Y) < 25 then
+						push += d > 0.1 and Vector3.new(o.X, 0, o.Z) / d or Vector3.xAxis
+					end
+				end
+				if push.Magnitude < 0.01 then
+					break
+				end
+				pos += push.Unit
+			end
+			if (pos - cf.Position).Magnitude > 0.5 then
+				m:PivotTo(m:GetPivot() + (pos - cf.Position))
+				moved += 1
+			end
+		end
+	end
+	print(string.format("[WorldPolish] Frozen decor moved off paths / statues: %d", moved))
+end)

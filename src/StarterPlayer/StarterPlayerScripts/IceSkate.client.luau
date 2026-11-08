@@ -65,8 +65,8 @@ RunService.Heartbeat:Connect(function(dt)
 	if vel.Magnitude > 4 then
 		root.CFrame = CFrame.lookAt(root.Position, root.Position + vel.Unit) * CFrame.Angles(0, 0, 0)
 	end
-	local e = sprayFor(root)
-	e.Rate = vel.Magnitude > 8 and math.min(vel.Magnitude * 1.5, 60) or 0
+	-- ледяная крошка из-под коньков убрана (фидбэк 2026-11: «облачко убрать совсем»),
+	-- на льду остаются только следы лезвий (sprayFor больше не вызывается)
 end)
 
 -- Поза конькобежца (фидбэк 2026-11: «ехать двумя ногами сразу, как на настоящем катке»).

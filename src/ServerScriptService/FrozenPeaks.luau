@@ -411,8 +411,8 @@ function Frozen.Build(world: Instance)
 	local paths = Instance.new("Model")
 	paths.Name = "Paths"
 	paths.Parent = model
-	part(paths, "PathMain", Vector3.new(18, 0.3, 140), L(0, 0.15, 75), ICE, M.Ice, { Transparency = 0.05 })
-	part(paths, "PathShop", Vector3.new(80, 0.3, 14), L(-45, 0.16, 40), ICE, M.Ice, { Transparency = 0.05 })
+	part(paths, "PathMain", Vector3.new(18, 0.3, 140), L(0, 0.15, 75), ICE, M.Ice) -- непрозрачные: полупрозрачный лёд перекрывал круги магазинов (сортировка прозрачных)
+	part(paths, "PathShop", Vector3.new(80, 0.3, 14), L(-45, 0.16, 40), ICE, M.Ice) -- непрозрачные: полупрозрачный лёд перекрывал круги магазинов (сортировка прозрачных)
 	disc(paths, "Plaza", 54, 0.32, L(0, 0.16, 0), ICE:Lerp(SNOW, 0.4), M.Ice)
 	disc(paths, "PlazaRing", 56, 0.2, L(0, 0.1, 0), rgb(120, 200, 255), M.Neon, { CanCollide = false })
 
@@ -423,7 +423,7 @@ function Frozen.Build(world: Instance)
 	shop(model, L(-85, 0.3, 40))
 	-- Магазин магнитов Frozen Peaks (магниты 31–40 продаются только здесь).
 	shop(model, L(-85, 0.3, 100), "MagnetShop", "FROZEN MAGNETS")
-	part(paths, "PathMagnets", Vector3.new(80, 0.3, 14), L(-45, 0.16, 100), ICE, M.Ice, { Transparency = 0.05 })
+	part(paths, "PathMagnets", Vector3.new(80, 0.3, 14), L(-45, 0.16, 100), ICE, M.Ice) -- непрозрачные: полупрозрачный лёд перекрывал круги магазинов (сортировка прозрачных)
 	local lake = disc(model, "FrozenLake", 70, 0.4, L(75, 0.2, 20), rgb(150, 210, 245), M.Ice, { Transparency = 0.15, Reflectance = 0.25 })
 	lake.Name = "FrozenLake"
 	disc(model, "LakeEdge", 74, 0.25, L(75, 0.1, 20), SNOW, M.Snow)
@@ -511,7 +511,7 @@ function Frozen.Build(world: Instance)
 	do
 		local from, to = L(22, 0.15, -16), L(GX - 50, 0.15, GZ + 34)
 		local mid, len = (from + to) / 2, (to - from).Magnitude
-		part(paths, "PathEggs", Vector3.new(12, 0.3, len), CFrame.lookAt(mid, to), ICE, M.Ice, { Transparency = 0.05 })
+		part(paths, "PathEggs", Vector3.new(12, 0.3, len), CFrame.lookAt(mid, to), ICE, M.Ice) -- непрозрачные: полупрозрачный лёд перекрывал круги магазинов (сортировка прозрачных)
 	end
 	for i, egg in ipairs({ { 16, rgb(200, 235, 255) }, { 17, rgb(110, 230, 190) }, { 18, rgb(90, 170, 255) } }) do
 		local x = GX + (i - 2) * 38
