@@ -487,6 +487,183 @@ local function shootingStar()
 	end)
 end
 
+-- ===== Чёрная дыра с вращающимся аккреционным диском =====
+local BH = CENTER + Vector3.new(-430, 280, -470)
+local bhUp = ((CENTER - BH).Unit * 0.45 + Vector3.yAxis).Unit -- диск наклонён к платформе (видно эллипсом)
+local bhRight = bhUp:Cross(Vector3.zAxis).Unit
+local bhTilt = CFrame.fromMatrix(BH, bhRight, bhUp)
+local bh = { disks = {} }
+do
+	local core = mk("BlackHole", Vector3.new(80, 80, 80), CFrame.new(BH), rgb(0, 0, 0), Enum.Material.SmoothPlastic, BALL)
+	core.Parent = folder
+	local halo = mk("BlackHoleHalo", Vector3.new(90, 90, 90), CFrame.new(BH), rgb(255, 150, 70), Enum.Material.Neon, BALL)
+	halo.Transparency = 0.9
+	halo.Parent = folder
+	local l = Instance.new("PointLight")
+	l.Color = rgb(255, 150, 80)
+	l.Range = 120
+	l.Brightness = 3
+	l.Parent = core
+	for band = 1, 4 do
+		local r = 55 + band * 22
+		local n = 36
+		local parts, base = {}, {}
+		local chord = 2 * r * math.sin(math.pi / n) * 1.25
+		for k = 1, n do
+			local a = k / n * math.pi * 2
+			local cf = bhTilt * CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -r)
+			local col = rgb(255, 245, 210):Lerp(rgb(255, 120, 40), (band - 1) / 3):Lerp(rgb(170, 60, 200), math.max(0, band - 3) * 0.6)
+			local p = mk("Accretion", Vector3.new(chord, 0.8, 20), cf, col, Enum.Material.Neon)
+			p.Transparency = 0.05 + band * 0.12
+			p.Parent = folder
+			table.insert(parts, p)
+			table.insert(base, cf)
+		end
+		table.insert(bh.disks, { parts = parts, base = base, speed = 1.4 / band, frames = table.create(n) })
+	end
+	-- затягиваемая материя: искры по спирали к центру
+	local swirl = mk("BlackHoleSwirl", Vector3.new(200, 1, 200), bhTilt, WHITE)
+	swirl.Transparency = 1
+	swirl.Parent = folder
+	emitter(swirl, {
+		Texture = SPARK,
+		Color = ColorSequence.new(rgb(255, 220, 160), rgb(200, 90, 255)),
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2.5), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = NumberRange.new(2, 3),
+		Speed = NumberRange.new(0, 0),
+		Rate = 30,
+		Shape = Enum.ParticleEmitterShape.Box,
+		LockedToPart = true,
+	})
+end
+
+-- ===== Спиральная галактика далеко в небе (медленно вращается) =====
+local spiral = { parts = {}, base = {}, frames = {} }
+do
+	local n = Vector3.new(0.55, 0.55, 0.62).Unit
+	local c = CENTER + n * (SKY_R * 0.92)
+	local u = n:Cross(Vector3.yAxis).Unit
+	local v = u:Cross(n).Unit
+	local tilt = CFrame.fromMatrix(c, u, n:Lerp(v, 0.35).Unit) -- диском к зрителю, чуть наклонена
+	spiral.center = c
+	spiral.axis = tilt.UpVector
+	local core = mk("GalaxyCore", Vector3.new(44, 44, 44), CFrame.new(c), rgb(255, 235, 200), Enum.Material.Neon, BALL)
+	core.Parent = folder
+	emitter(core, {
+		Texture = SMOKE,
+		Color = ColorSequence.new(rgb(255, 220, 180), rgb(200, 140, 255)),
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 60), NumberSequenceKeypoint.new(1, 90) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.6), NumberSequenceKeypoint.new(1, 1) }),
+		Lifetime = NumberRange.new(6, 8),
+		Speed = NumberRange.new(0, 0),
+		Rate = 1.2,
+		LockedToPart = true,
+	})
+	for arm = 0, 2 do
+		for i = 1, 70 do
+			local tt = i / 70
+			local ang = arm * math.pi * 2 / 3 + tt * 4.2
+			local rad = 14 + tt * 230
+			local jitter = Vector3.new(rng:NextNumber(-1, 1), 0, rng:NextNumber(-1, 1)) * (6 + tt * 18)
+			local pos = tilt * (Vector3.new(math.cos(ang) * rad, 0, math.sin(ang) * rad) + jitter)
+			local s = rng:NextNumber(3, 7) * (1.2 - tt * 0.5)
+			local col = rgb(255, 240, 220):Lerp(({ CYAN, PINK, VIOLET })[arm + 1], tt)
+			local p = mk("GalaxyStar", Vector3.new(s, s, s), CFrame.new(pos), col, Enum.Material.Neon, BALL)
+			p.Parent = folder
+			table.insert(spiral.parts, p)
+			table.insert(spiral.base, CFrame.new(pos))
+		end
+	end
+	spiral.frames = table.create(#spiral.parts)
+end
+
+-- ===== Космическая станция на орбите гигантской планеты =====
+local giant = planets[1]
+for _, pl in ipairs(planets) do
+	if pl.r > giant.r then
+		giant = pl
+	end
+end
+local station = model({
+	{ "StHub", Vector3.new(14, 7, 7), rgb(210, 215, 235), Enum.Material.Metal, CFrame.Angles(0, 0, math.pi / 2), CYL },
+	{ "StHubGlow", Vector3.new(2, 7.4, 7.4), CYAN, Enum.Material.Neon, CFrame.Angles(0, 0, math.pi / 2), CYL },
+	{ "StPanelA", Vector3.new(26, 0.4, 6), rgb(40, 70, 170), Enum.Material.Glass, CFrame.new(0, 0, 0) },
+	{ "StPanelB", Vector3.new(6, 0.4, 26), rgb(40, 70, 170), Enum.Material.Glass, CFrame.new(0, -4, 0) },
+	{ "StBeacon", Vector3.new(1.4, 1.4, 1.4), rgb(255, 80, 80), Enum.Material.Neon, CFrame.new(0, 8, 0), BALL },
+})
+do
+	-- вращающееся жилое кольцо
+	local n = 24
+	for k = 1, n do
+		local a = k / n * math.pi * 2
+		local p = mk("StRing", Vector3.new(4.8, 2, 2.2), CFrame.new(), k % 4 == 0 and CYAN or rgb(190, 195, 215), k % 4 == 0 and Enum.Material.Neon or Enum.Material.Metal)
+		p.Parent = folder
+		table.insert(station.parts, p)
+		table.insert(station.offs, CFrame.Angles(0, a, 0) * CFrame.new(0, 0, -18))
+	end
+	station.ringFrom = #station.parts - n + 1
+	station.frames = table.create(#station.parts)
+end
+
+-- ===== Комета с длинным хвостом =====
+local comet = mk("Comet", Vector3.new(7, 7, 7), CFrame.new(CENTER + Vector3.new(0, 600, 0)), rgb(200, 240, 255), Enum.Material.Neon, BALL)
+do
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 3, 0)
+	a0.Parent = comet
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, -3, 0)
+	a1.Parent = comet
+	local tr = Instance.new("Trail")
+	tr.Attachment0, tr.Attachment1 = a0, a1
+	tr.Lifetime = 6
+	tr.FaceCamera = true
+	tr.LightEmission = 1
+	tr.Color = ColorSequence.new(rgb(220, 250, 255), rgb(120, 140, 255))
+	tr.Transparency = NumberSequence.new(0.1, 1)
+	tr.WidthScale = NumberSequence.new(3, 0.2)
+	tr.Parent = comet
+	emitter(comet, {
+		Texture = SMOKE,
+		Color = ColorSequence.new(rgb(200, 240, 255), rgb(140, 120, 255)),
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 10), NumberSequenceKeypoint.new(1, 22) }),
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 1) }),
+		Lifetime = NumberRange.new(2, 3),
+		Speed = NumberRange.new(0, 1),
+		Rate = 10,
+	})
+	comet.Parent = folder
+end
+local cometT, cometFrom, cometTo = 1, Vector3.zero, Vector3.zero
+local function newComet()
+	local a = rng:NextNumber(0, math.pi * 2)
+	cometFrom = CENTER + Vector3.new(math.cos(a) * 650, rng:NextNumber(250, 450), math.sin(a) * 650)
+	cometTo = CENTER + Vector3.new(-math.cos(a + 0.6) * 650, rng:NextNumber(200, 400), -math.sin(a + 0.6) * 650)
+	cometT = 0
+end
+newComet()
+
+-- ещё ракеты (всего 5)
+for _, trim in ipairs({ PINK, rgb(120, 255, 160) }) do
+	local r = rocketModel(trim)
+	r.planet = planets[rng:NextInteger(1, #planets)]
+	r.n = randomUp()
+	r.state = "rest"
+	r.timer = rng:NextNumber(2, 8)
+	table.insert(rockets, r)
+end
+
+-- цвет колец: мягкий переливающийся градиент вокруг кольца (вместо сплошного белого)
+for _, ring in ipairs(rings) do
+	local h, s = ring.baseC:ToHSV()
+	ring.hue = h
+	ring.sat = math.max(s, 0.45)
+end
+local nextShower = 12
+
 -- ===== Главный цикл =====
 local inside = false
 local conn: RBXScriptConnection? = nil
@@ -545,6 +722,54 @@ local function step(dt)
 		nextStar = rng:NextNumber(1.2, 3.5)
 		shootingStar()
 	end
+	-- метеорный дождь: раз в ~20–30 с пачка падающих звёзд
+	nextShower -= dt
+	if nextShower <= 0 then
+		nextShower = rng:NextNumber(20, 30)
+		for k = 0, 9 do
+			task.delay(k * 0.18, shootingStar)
+		end
+	end
+	-- чёрная дыра: диски крутятся (внутренние быстрее)
+	for _, d in ipairs(bh.disks) do
+		local rot = CFrame.new(BH) * CFrame.fromAxisAngle(bhTilt.UpVector, t * d.speed) * CFrame.new(-BH)
+		for i, b in ipairs(d.base) do
+			d.frames[i] = rot * b
+		end
+		workspace:BulkMoveTo(d.parts, d.frames, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	-- спиральная галактика медленно вращается
+	do
+		local rot = CFrame.new(spiral.center) * CFrame.fromAxisAngle(spiral.axis, t * 0.04) * CFrame.new(-spiral.center)
+		for i, b in ipairs(spiral.base) do
+			spiral.frames[i] = rot * b
+		end
+		workspace:BulkMoveTo(spiral.parts, spiral.frames, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	-- станция: по орбите гиганта, жилое кольцо вращается
+	do
+		local c = giant.center
+		local pos = (CFrame.new(c) * CFrame.Angles(0.35, t * 0.05, 0.15) * CFrame.new(0, 0, giant.r + 45)).Position
+		local base = CFrame.lookAt(pos, c)
+		for i, o in ipairs(station.offs) do
+			if i >= station.ringFrom then
+				station.frames[i] = base * CFrame.Angles(0, t * 0.6, 0) * o
+			else
+				station.frames[i] = base * o
+			end
+		end
+		workspace:BulkMoveTo(station.parts, station.frames, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+	-- комета пересекает небо за ~30 с, потом новая
+	cometT += dt / 30
+	if cometT >= 1 then
+		newComet()
+	end
+	do
+		local mid = (cometFrom + cometTo) / 2 + Vector3.new(0, 140, 0)
+		local u = 1 - cometT
+		comet.CFrame = CFrame.new(cometFrom * u * u + mid * 2 * u * cometT + cometTo * cometT * cometT)
+	end
 	-- 20 раз в секунду: мерцание звёзд, пульс колец и созвездий, мигание спутников
 	slow += dt
 	if slow >= 0.05 then
@@ -565,9 +790,11 @@ local function step(dt)
 			for i, p in ipairs(ring.parts) do
 				local wave = math.max(0, math.cos((i / n) * math.pi * 4 - t * 2.4)) ^ 6
 				p.Transparency = math.clamp(ring.baseT[i] - 0.15 * breath - 0.25 * wave, 0, 1)
-				p.Color = ring.baseC:Lerp(WHITE, 0.3 * wave)
+				local hue = (ring.hue + (i / n) * 0.18 + math.sin(t * 0.15) * 0.05) % 1
+				p.Color = Color3.fromHSV(hue, ring.sat, 1):Lerp(WHITE, 0.3 * wave)
 			end
 		end
+		station.parts[5].Transparency = (math.floor(t * 1.5) % 2 == 0) and 0 or 0.9
 		for i, s in ipairs(sats) do
 			s.parts[5].Transparency = (math.floor(t * 2 + i) % 2 == 0) and 0 or 0.85
 		end

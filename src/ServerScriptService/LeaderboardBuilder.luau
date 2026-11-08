@@ -1045,6 +1045,31 @@ local function buildBridge(island, theme, from, to, groundY)
 	local cf = CFrame.lookAt((a + b) / 2, b)
 	local deck = part(island, "BridgeDeck", Vector3.new(BRIDGE_W, 1, L), cf * CFrame.new(0, -0.5, 0), theme.Deck, theme.DeckMat)
 	if theme.DeckMat == M.Glass then deck.Transparency = 0.2 end
+	if theme.Cosmic then
+		-- космос (фидбэк 2026-11): стеклянный мост — тёмное стекло настила, под ним светящаяся полоса,
+		-- по бокам прозрачные стеклянные борта с неоновыми поручнями и световые стойки
+		deck.Color = rgb(52, 40, 100)
+		deck.Material = M.Glass
+		deck.Transparency = 0.15
+		local under = part(island, "BridgeUnderGlow", Vector3.new(BRIDGE_W * 0.5, 0.2, L), cf * CFrame.new(0, -1.15, 0), rgb(150, 100, 255), M.Neon, GHOST)
+		CollectionService:AddTag(under, "BoardPulse")
+		part(island, "BridgeKeel", Vector3.new(BRIDGE_W * 0.7, 1.4, L), cf * CFrame.new(0, -1.9, 0), rgb(34, 28, 60), M.Metal, GHOST)
+		for _, s in { -1, 1 } do
+			local col = s < 0 and rgb(100, 220, 255) or rgb(230, 110, 230)
+			local seam = part(island, "BridgeSeam", Vector3.new(0.45, 0.12, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.4), 0.06, 0), col, M.Neon, GHOST)
+			CollectionService:AddTag(seam, "BoardPulse")
+			local glass = part(island, "BridgeGlass", Vector3.new(0.25, 2.6, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.15), 1.3, 0), rgb(160, 200, 255), M.Glass, GHOST)
+			glass.Transparency = 0.7
+			local rail = part(island, "BridgeRail", Vector3.new(0.35, 0.35, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.15), 2.7, 0), col, M.Neon)
+			CollectionService:AddTag(rail, "BoardPulse")
+			for z = -L / 2 + 1, L / 2 - 1, 6 do
+				part(island, "BridgePost", Vector3.new(0.4, 2.7, 0.4), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.15), 1.35, z), rgb(34, 28, 60), M.Metal, GHOST)
+			end
+			part(island, "BridgeGuard", Vector3.new(0.3, 12, L + 2), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.2), 6, 0), theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false })
+		end
+		buildArch(island, theme, CFrame.lookAt(b, a) * CFrame.new(0, 0, 4))
+		return
+	end
 	if theme.Volcano then
 		-- вулкан: настил из светлого базальта (как дорожки мира), по бокам низкие каменные парапеты
 		-- из глыб разной высоты, между настилом и парапетом светится лавовый шов; снизу — толстая плита
@@ -1560,7 +1585,7 @@ local function cutGate(wall, base, dir, hy, theme, island)
 	end
 	if size.Y < 3 then return end -- для тонких неоновых полос столбы не нужны
 	-- вулкан: стена невидимая, проход в низком бортике — оранжевые столбы ворот только мешают
-	if theme.Volcano then return end
+	if theme.Volcano or theme.Cosmic then return end
 	-- столбы ворот
 	for _, sgn in { -1, 1 } do
 		local at = wpos + axis * (c + sgn * (g + 0.8))
@@ -1821,7 +1846,7 @@ function B.Build(world)
 		end
 		-- 2026-11 (фидбэк Magma): плато — ровный круг, но край «находился» по зубцам и кромке, и мост
 		-- висел над лавой на 8 стадов выше земли. Для Magma: мост на уровне плиты, начинается у бортика.
-		if key == "MagmaVolcano" then
+		if key == "MagmaVolcano" or key == "CosmicGalaxy" then -- ровное круглое плато: мост на уровне плиты от края
 			local deck = model:FindFirstChild("Ground") and model.Ground:FindFirstChild("Deck")
 			if deck then
 				local top = deck.Position.Y + deck.Size.X / 2
@@ -1835,6 +1860,16 @@ function B.Build(world)
 				-- стены, которые пересекает новый коридор (бортик-граница и невидимая стена), — прорезать
 				walls = {}
 				local side = Vector3.new(-dir.Z, 0, dir.X)
+				-- Galaxy: кристаллы по кромке стоят на пути моста — убираем те, что у его начала
+				local start = Vector3.new(spawn.X, 0, spawn.Z) + dir * (edge - 8)
+				for _, q in model:GetDescendants() do
+					if q:IsA("Model") and q.Name == "StarCrystal" and q.Parent and q.Parent.Name == "Ground" then
+						local pp = q:GetPivot().Position
+						if Vector2.new(pp.X - start.X, pp.Z - start.Z).Magnitude < 16 then
+							q:Destroy()
+						end
+					end
+				end
 				for _, q in model:GetDescendants() do
 					if q:IsA("Part") and q.Name == "BorderGlowWall" then
 						-- светящуюся полоску с верха бортика у прохода просто убираем (резаные куски висели
@@ -1997,6 +2032,9 @@ function B.Build(world)
 					if theme.Cosmic then
 						tile.Color = Color3.fromRGB(52, 40, 100)
 						tile.Size = Vector3.new(BRIDGE_W, 0.15, 4.1)
+						-- вровень с настилом моста (фидбэк 2026-11: «мост не стыкуется»)
+						local tp = Vector3.new(tile.Position.X, hy - 0.07, tile.Position.Z)
+						tile.CFrame = CFrame.lookAt(tp, tp + dir)
 					end
 					if theme.Grid then
 						-- неоновые миры: дорога как главная улица (тёмный асфальт, жёлтая разметка), а не чёрная полоса
