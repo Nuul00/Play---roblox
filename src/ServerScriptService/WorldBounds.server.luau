@@ -27,6 +27,7 @@ local function wall(name: string, size: Vector3, pos: Vector3)
 	p.Size = size
 	p.Position = pos
 	p.Parent = folder
+	return p
 end
 
 -- Прямоугольник из четырёх стен вокруг области min..max (по X и Z), от пола вверх.
@@ -228,4 +229,41 @@ Players.PlayerAdded:Connect(function(p)
 	p.CharacterAdded:Connect(function()
 		safe[p] = nil
 	end)
+end)
+
+-- ===== Sky Isles: край острова у моста к лидербордам =====
+-- Фидбэк 2026-11: с края острова рядом с мостом спрыгивали в пустоту (и вставали на невидимые
+-- шары облаков). Невидимая стена дугой по краю (радиус ~166 от центра острова) на ±45° от моста,
+-- с проёмом ровно под мост.
+task.spawn(function()
+	local sky = world:WaitForChild("SkyIsles", 120)
+	local island = sky and sky:WaitForChild("LeaderboardIsland_SkyIsles", 120)
+	local deck = island and island:WaitForChild("BridgeDeck", 30)
+	local ground = sky and sky:FindFirstChild("Ground")
+	if not (deck and ground) then
+		return
+	end
+	local deckTopY = deck.Position.Y + deck.Size.Y / 2
+	local center = Vector3.new(1100, deckTopY, 0)
+	local ok, cf = pcall(function()
+		return (ground:IsA("Model") and ground:GetBoundingBox()) or ground.CFrame
+	end)
+	if ok and cf then
+		center = Vector3.new(cf.Position.X, deckTopY, cf.Position.Z)
+	end
+	local R = 166
+	local bridgeAng = math.atan2(deck.Position.Z - center.Z, deck.Position.X - center.X)
+	local gap = (deck.Size.X / 2 + 0.4) / R -- полуширина проёма (рад)
+	local step = math.rad(3)
+	for a = bridgeAng - math.rad(45), bridgeAng + math.rad(45), step do
+		local a0, a1 = a, a + step
+		-- вырезаем проём под мост
+		if not (a1 > bridgeAng - gap and a0 < bridgeAng + gap) then
+			local p0 = center + Vector3.new(math.cos(a0), 0, math.sin(a0)) * R
+			local p1 = center + Vector3.new(math.cos(a1), 0, math.sin(a1)) * R
+			local mid = (p0 + p1) / 2
+			local w = wall("SkyRimGuard", Vector3.new(THICK, 60, (p1 - p0).Magnitude + 1), mid + Vector3.new(0, 26, 0))
+			w.CFrame = CFrame.lookAt(mid + Vector3.new(0, 26, 0), mid + Vector3.new(0, 26, 0) + (p1 - p0))
+		end
+	end
 end)

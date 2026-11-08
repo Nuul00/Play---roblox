@@ -83,7 +83,12 @@ local function cloud(parent, name, diameter, at, color, collide, hidden, drift, 
 		return ball(parent, name, diameter, at, color, collide or solid)
 	end
 	if collide then
-		ball(parent, name .. "Collider", diameter, at, color, true).Transparency = 1
+		-- 2026-11 (фидбэк): был невидимый шар — выше и толще видимого облака, игрок вставал «на воздух».
+		-- Теперь высокая невидимая колонна того же радиуса: не залезть и не перепрыгнуть, край закрыт.
+		local h = diameter + 40
+		local col = part(parent, name .. "Collider", Vector3.new(h, diameter * 0.9, diameter * 0.9), CFrame.new(at + Vector3.new(0, h / 2 - diameter * 0.35, 0)) * CFrame.Angles(0, 0, math.pi / 2), color, M.SmoothPlastic, { Shape = Enum.PartType.Cylinder, CanCollide = true })
+		col.Transparency = 1
+		col.CanQuery = false
 	end
 	if hidden then
 		return nil

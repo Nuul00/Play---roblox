@@ -1274,7 +1274,7 @@ local function topSignModel(island, theme, a, dir): boolean
 	local side = Vector3.new(-dir.Z, 0, dir.X)
 	local at = a - dir * 2 + side * (BRIDGE_W / 2 + 7)
 	-- повёрнута к дороге со стороны спавна (откуда подходят игроки)
-	local face = CFrame.lookAt(at, at - dir - side * 0.55)
+	local face = CFrame.lookAt(at, at - dir - side * 1.0) -- ~45° к дорожке (фидбэк: «чуть развернуть»)
 	local m = template:Clone()
 	m.Name = "TopSignModel"
 	local signFace = m.PrimaryPart
@@ -1881,6 +1881,21 @@ function B.Build(world)
 					cyl(island, "ApproachPost", 3.4, 0.35, CFrame.new(c.X, y + 1.7, c.Z), theme.Rail:Lerp(Color3.new(0, 0, 0), 0.3), M.Metal, GHOST)
 					local bulb = ball(island, "ApproachLamp", 0.9, Vector3.new(c.X, y + 3.7, c.Z), theme.Lamp, M.Neon, GHOST)
 					light(bulb, theme.Lamp, 14, 1.2)
+				end
+			end
+		end
+		-- невидимые стенки вдоль подхода к мосту там, где сбоку нет земли (фидбэк 2026-11: в Sky
+		-- с дорожки спрыгивали в пустоту рядом с началом моста). Под мост — до самого моста.
+		do
+			local side = Vector3.new(-dir.Z, 0, dir.X)
+			for d = edge - 44, edge - 6, 2 do
+				for _, sg in { -1, 1 } do
+					local c = base + dir * d + side * sg * (BRIDGE_W / 2 + 1.5)
+					local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 40)
+					if not g or g.Position.Y < hy - 6 then
+						local wcf = CFrame.lookAt(Vector3.new(c.X, hy + 6, c.Z), Vector3.new(c.X, hy + 6, c.Z) + dir)
+						part(island, "ApproachGuard", Vector3.new(0.6, 14, 2.2), wcf, theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false, CanTouch = false })
+					end
 				end
 			end
 		end

@@ -71,12 +71,12 @@ atmosphere.Offset = 0.1
 atmosphere.Color = Color3.fromRGB(215, 185, 240)
 atmosphere.Decay = Color3.fromRGB(255, 150, 180)
 atmosphere.Glare = 0
-atmosphere.Haze = 1.2
+atmosphere.Haze = 0.7 -- 2026-11: было 1.2 — облака и даль «выгорали» (фидбэк «пересвет»)
 local tint = Instance.new("ColorCorrectionEffect")
 tint.Name = "SkyIslesTint"
 tint.TintColor = Color3.fromRGB(255, 232, 248)
 tint.Saturation = 0.08
-tint.Brightness = 0
+tint.Brightness = -0.04
 
 -- Детали острова собираем один раз (и дополняем по мере появления): страховке и входу в мир
 -- не нужно каждый раз обходить ~5000 объектов.
@@ -109,10 +109,10 @@ local function setActive(on)
 		tint.Parent = Lighting
 		TweenService:Create(Lighting, TweenInfo.new(0.4), {
 			ClockTime = 18.2,
-			Brightness = 1.6,
-			Ambient = Color3.fromRGB(125, 105, 165),
-			OutdoorAmbient = Color3.fromRGB(150, 125, 190),
-			ExposureCompensation = -0.1,
+			Brightness = 1.25,
+			Ambient = Color3.fromRGB(95, 80, 130),
+			OutdoorAmbient = Color3.fromRGB(118, 100, 158),
+			ExposureCompensation = -0.25,
 		}):Play()
 	else
 		atmosphere.Parent = nil

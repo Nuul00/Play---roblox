@@ -6,7 +6,16 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local world = workspace:WaitForChild("CoinSpeedWorld")
 
-local HIDE_WHEN_NOT_IN = { SkyIsles = "Sky Isles" }
+-- 2026-11: прячем все миры, кроме текущего (из Sky Isles внизу были видны «точки» — Meadow и другие миры).
+-- Meadow — это прямые дети CoinSpeedWorld, кроме папок других миров (см. MEADOW_SKIP).
+local HIDE_WHEN_NOT_IN = {
+	SkyIsles = "Sky Isles",
+	NeonCity = "Neon District",
+	FrozenPeaks = "Frozen Peaks",
+	MagmaVolcano = "Magma Volcano",
+	CosmicGalaxy = "Cosmic Galaxy",
+}
+local MEADOW_SKIP = { LocalEventPickups = true }
 
 local saved = {} -- [instance] = прежнее Enabled (для эффектов)
 local hiddenRoots = {} -- [root] = DescendantAdded-соединение
@@ -87,6 +96,21 @@ local function strays(): { Instance }
 end
 local function update()
 	local current = player:GetAttribute("CurrentWorld") or "Meadow Isles"
+	-- в Coin Rush миры не трогаем (арена живёт отдельно, её прячет/показывает CoinRush)
+	if player:GetAttribute("InRush") then
+		current = "Meadow Isles"
+	end
+	-- Meadow: дети CoinSpeedWorld, не являющиеся другими мирами
+	local meadowAway = current ~= "Meadow Isles"
+	for _, c in ipairs(world:GetChildren()) do
+		if not HIDE_WHEN_NOT_IN[c.Name] and not MEADOW_SKIP[c.Name] and not string.find(c.Name, "CoinRush", 1, true) then
+			if meadowAway then
+				hide(c)
+			else
+				show(c)
+			end
+		end
+	end
 	for name, worldName in pairs(HIDE_WHEN_NOT_IN) do
 		local root = world:FindFirstChild(name)
 		if root then
@@ -141,3 +165,43 @@ world.ChildAdded:Connect(function(c)
 	end
 end)
 update()
+
+-- Метки и эффекты, которые лежат прямо в Workspace (круги яиц, метки магазинов, эффекты яиц, машины,
+-- демо-питомцы): дальше 450 студов от игрока — прячем, ближе — показываем (фидбэк 2026-11: «точки» в
+-- пустоте под Sky Isles — это метки Meadow\Neon далеко внизу).
+local STRAY_NAMES = { EggZoneRing = true, ShopZoneMarker = true, EggFX = true, PetMachines = true }
+local FAR = 450
+task.spawn(function()
+	while true do
+		task.wait(1.5)
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			local here = root.Position
+			for _, c in ipairs(workspace:GetChildren()) do
+				if STRAY_NAMES[c.Name] or string.match(c.Name, "^SkyPet%d+$") then
+					for _, d in ipairs(c:GetDescendants()) do
+						if d:IsA("BasePart") then
+							local far = (d.Position - here).Magnitude > FAR
+							if far then
+								d.LocalTransparencyModifier = 1
+							elseif d.LocalTransparencyModifier == 1 then
+								d.LocalTransparencyModifier = 0
+							end
+						elseif d:IsA("ParticleEmitter") or d:IsA("BillboardGui") or d:IsA("Light") then
+							local p = d.Parent
+							if p and p:IsA("BasePart") then
+								local far = (p.Position - here).Magnitude > FAR
+								if far then
+									hideOne(d)
+								elseif saved[d] ~= nil then
+									(d :: any).Enabled = saved[d]
+									saved[d] = nil
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end)
