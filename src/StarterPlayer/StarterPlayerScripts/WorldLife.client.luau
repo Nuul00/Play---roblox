@@ -9,6 +9,9 @@ local world = workspace:WaitForChild("CoinSpeedWorld")
 local camera = workspace.CurrentCamera
 
 local NEAR = 260 -- дальше этого не анимируем
+-- Уровень графики (Settings → Graphics, FxBudget): LOW — деревья стоят, листья не падают, фонари не
+-- мерцают; MEDIUM — деревья качаются, фонари мерцают, без листопада; ULTRA — всё (2026-11)
+local FxBudget = require(game:GetService("ReplicatedStorage"):WaitForChild("FxBudget"))
 local STEP = 1 / 30 -- 30 раз в секунду
 
 ------------------------------------------------------------------ деревья
@@ -205,21 +208,30 @@ RunService.RenderStepped:Connect(function(dt)
 
 	table.clear(moveParts)
 	table.clear(moveCFs)
+	local lvl = FxBudget.Level()
 	for _, tr in ipairs(trees) do
 		local dist = (tr.pivot - camPos).Magnitude
 		if tr.leaves then
-			local on = dist < LEAF_NEAR
+			local on = dist < LEAF_NEAR and lvl >= 3
 			if tr.leaves.Enabled ~= on then
 				tr.leaves.Enabled = on
 			end
 		end
-		if dist < NEAR then
+		if dist < NEAR and lvl >= 2 then
 			local sway = math.sin(t * 1.3 + tr.phase) * tr.amp * (1 + gust * 1.2) + math.sin(t * 2.9 + tr.phase * 2) * tr.amp * 0.3
 			local twist = math.sin(t * 0.9 + tr.phase) * tr.amp * 0.6
 			local rot = CFrame.new(tr.pivot) * CFrame.Angles(sway, 0, twist) * CFrame.new(-tr.pivot)
 			for i, p in ipairs(tr.parts) do
 				table.insert(moveParts, p)
 				table.insert(moveCFs, rot * tr.bases[i])
+			end
+			tr.still = false
+		elseif lvl < 2 and not tr.still then
+			-- графика LOW: дерево один раз возвращаем в ровное положение и больше не двигаем
+			tr.still = true
+			for i, p in ipairs(tr.parts) do
+				table.insert(moveParts, p)
+				table.insert(moveCFs, tr.bases[i])
 			end
 		end
 	end
@@ -236,7 +248,7 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, l in ipairs(lights) do
 		local light = l.light
 		-- мерцаем только светом рядом (60 студов): изменение света заставляет пересчитывать освещение
-		if light.Parent and light.Enabled and (l.part.Position - camPos).Magnitude < 60 then
+		if lvl >= 2 and light.Parent and light.Enabled and (l.part.Position - camPos).Magnitude < 60 then
 			local k
 			if l.style == "Meadow" then
 				-- тёплое пламя свечи: мелкое неровное мерцание

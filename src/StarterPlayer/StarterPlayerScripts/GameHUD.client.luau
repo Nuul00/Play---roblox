@@ -219,9 +219,17 @@ end)
 local gfxBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,448))
 local GFX_NAMES={auto="AUTO",low="LOW",medium="MEDIUM",ultra="ULTRA"}
 local function gfxText() gfxBtn.Text="🖥 Graphics: "..(GFX_NAMES[player:GetAttribute("Save_Graphics") or "auto"] or "AUTO") end
-gfxText();player:GetAttributeChangedSignal("Save_Graphics"):Connect(gfxText)
+-- под строкой — что именно включено на этом уровне (текст отдаёт GraphicsQuality.client)
+local gfxInfo=Instance.new("TextLabel");gfxInfo.BackgroundTransparency=1;gfxInfo.Position=UDim2.fromOffset(20,484);gfxInfo.Size=UDim2.fromOffset(380,22);gfxInfo.Font=Enum.Font.GothamBold;gfxInfo.TextSize=13;gfxInfo.TextColor3=Color3.fromRGB(200,210,235);gfxInfo.TextWrapped=true;gfxInfo.Parent=settings
+local function gfxInfoText()
+ local f=player.PlayerGui:FindFirstChild("GraphicsInfo")
+ local ok,txt=pcall(function() return f and f:Invoke() end)
+ gfxInfo.Text=ok and txt or ""
+end
+gfxText();player:GetAttributeChangedSignal("Save_Graphics"):Connect(function() gfxText();task.delay(0.1,gfxInfoText) end)
+task.delay(4,gfxInfoText)
 gfxBtn.Activated:Connect(function() cycle("Save_Graphics","graphics",{"auto","low","medium","ultra"},"auto") end)
-settings.Size=UDim2.fromOffset(420,500)
+settings.Size=UDim2.fromOffset(420,520)
 -- Единый вид переключателей (фидбэк 2026-11: «кнопки разноцветные»): тёмная строка, слева название,
 -- справа плашка со значением — зелёная ON, серая OFF/HIDDEN, фиолетовая для остальных вариантов.
 do
