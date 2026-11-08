@@ -426,8 +426,8 @@ local VC, GC = Vector3.new(6000, 60, 75), Vector3.new(7500, 60, 75)
 -- 2026-11: магазины Вулкана сами повёрнуты к своей дорожке (MagmaVolcano), модель смотрит на круг входа
 pcall(dressShop, volcanoW and volcanoW:FindFirstChild("UpgradeShop"), "VolcanoShop")
 pcall(dressShop, volcanoW and volcanoW:FindFirstChild("MagnetShop"), "VolcanoMagnetShop")
-pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop", GC)
-pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop", GC)
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("UpgradeShop"), "GalaxyShop")
+pcall(dressShop, galaxyW and galaxyW:FindFirstChild("MagnetShop"), "GalaxyMagnetShop")
 
 -- «Вау»-достопримечательности Вулкана и Галактики (3D-модели Tripo): врата-череп дракона на входе,
 -- лавовый фонтан на площади, базальтовые столбы вдоль дороги; в космосе — столб с планетой,

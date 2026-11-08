@@ -485,7 +485,22 @@ function Galaxy.Build(world: Instance): Model
 	end
 	disc(paths, "Plaza", 54, 0.32, L(0, 0.16, 10), PATH, M.Glass, { Reflectance = 0.2 })
 	disc(paths, "PlazaRing", 56, 0.2, L(0, 0.1, 10), PINK, M.Neon, { CanCollide = false })
-	disc(paths, "PlazaStar", 18, 0.34, L(0, 0.17, 10), GOLD, M.Neon, { CanCollide = false, Transparency = 0.3 })
+	-- 2026-11 (фидбэк «жёлтый круг слепит»): вместо сплошного жёлтого круга — контур пятиконечной
+	-- звезды тонкими золотыми линиями и небольшое мягкое ядро
+	do
+		local c = L(0, 0.36, 10)
+		local pts = {}
+		for k = 0, 9 do
+			local a = -math.pi / 2 + k * math.pi / 5
+			local r = k % 2 == 0 and 9 or 3.8
+			pts[k + 1] = c + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		end
+		for k = 1, 10 do
+			local a, b = pts[k], pts[k % 10 + 1]
+			part(paths, "PlazaStarLine", Vector3.new(0.45, 0.06, (b - a).Magnitude + 0.4), CFrame.lookAt((a + b) / 2, b), GOLD, M.Neon, { CanCollide = false, CanQuery = false })
+		end
+		disc(paths, "PlazaStar", 3.2, 0.34, L(0, 0.17, 10), GOLD, M.Neon, { CanCollide = false, Transparency = 0.35 })
+	end
 
 	monument(model)
 
@@ -524,8 +539,21 @@ function Galaxy.Build(world: Instance): Model
 		return clear(x, z, r) and not onPath(x, z)
 	end
 
-	shop(model, L(-90, 0.3, 40), "UpgradeShop", "GALAXY SHOP")
-	shop(model, L(-90, 0.3, 100), "MagnetShop", "GALAXY MAGNETS")
+	-- 2026-11 (фидбэк «криво стоят»): прилавком на восток, к своей дорожке; старые вывески убраны
+	for _, s in ipairs({ { L(-90, 0.3, 40), "UpgradeShop" }, { L(-90, 0.3, 100), "MagnetShop" } }) do
+		local at = s[1]
+		local m = shop(model, at, s[2])
+		local old = m:FindFirstChild("Sign")
+		if old then
+			old:Destroy()
+		end
+		local turn = CFrame.new(at) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.new(-at)
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CFrame = turn * d.CFrame
+			end
+		end
+	end
 
 	eggStand(model, 13, L(40, 0, 70), rgb(120, 170, 255))
 	eggStand(model, 14, L(92, 0, 70), rgb(220, 110, 230))
@@ -595,18 +623,36 @@ function Galaxy.Build(world: Instance): Model
 		local d = rand:NextNumber(10, 26)
 		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(30, 200 - d / 2)
 		local x, z = math.cos(a) * r, math.sin(a) * r
-		if free(x, z, d / 2 + 2) then
-			count += 1
-			-- вал кратера: кольцо из глыб, внутри — тёмная чаша с еле светящимся дном
-			disc(surface, "CraterFloor", d, 0.2, L(x, 0.02, z), rgb(44, 36, 72), M.Slate, { CanCollide = false })
-			disc(surface, "CraterGlow", d * 0.35, 0.22, L(x, 0.03, z), count % 2 == 0 and CYAN or VIOLET, M.Neon, { CanCollide = false, Transparency = 0.45 })
-			local n = math.floor(d * 0.9)
-			for k = 1, n do
-				local ka = k / n * math.pi * 2 + rand:NextNumber(-0.1, 0.1)
-				local s = rand:NextNumber(1.6, 3) * d / 18
-				part(surface, "CraterRim", Vector3.new(s * 1.6, s * rand:NextNumber(0.5, 0.9), s), CFrame.new(L(x + math.cos(ka) * d / 2, s * 0.15, z + math.sin(ka) * d / 2)) * CFrame.Angles(0, -ka, rand:NextNumber(-0.25, 0.25)), rgb(130, 118, 175):Lerp(rgb(96, 86, 140), rand:NextNumber()), M.Slate, { CanCollide = false })
+		-- кратер целиком (с валом) не заходит на дорожки: проверяем точки по краю
+		local ok = free(x, z, d / 2 + 2)
+		for k = 0, 11 do
+			local ka = k / 12 * math.pi * 2
+			if ok and onPath(x + math.cos(ka) * (d / 2 + 3), z + math.sin(ka) * (d / 2 + 3)) then
+				ok = false
 			end
-			table.insert(placedSpots, { x, z, d / 2 + 2 })
+		end
+		if ok then
+			count += 1
+			-- 2026-11 (фидбэк «кратеры красивее»): гладкий округлый вал из перекрывающихся «валиков»
+			-- (внутренний повыше, внешний пологий), тёмная чаша и мягкое свечение на дне
+			local rimCol = rgb(118, 106, 165)
+			disc(surface, "CraterFloor", d - 1, 0.2, L(x, 0.02, z), rgb(40, 32, 66), M.Slate, { CanCollide = false })
+			disc(surface, "CraterShade", d * 0.7, 0.22, L(x, 0.03, z), rgb(30, 24, 52), M.Slate, { CanCollide = false })
+			disc(surface, "CraterGlow", d * 0.22, 0.24, L(x, 0.04, z), count % 2 == 0 and CYAN or VIOLET, M.Neon, { CanCollide = false, Transparency = 0.55 })
+			local n = math.max(20, math.floor(d * 1.6))
+			for layer = 1, 2 do
+				local r = d / 2 + (layer == 1 and 0 or d * 0.09)
+				local th = d * (layer == 1 and 0.13 or 0.2)
+				local chord = 2 * r * math.sin(math.pi / n) * 1.5
+				for k = 1, n do
+					local ka = k / n * math.pi * 2
+					local hgt = th * (0.85 + 0.15 * math.sin(ka * 3 + count))
+					local pos = L(x + math.cos(ka) * r, (layer == 1 and 0.1 or -th * 0.25), z + math.sin(ka) * r)
+					local seg = part(surface, "CraterRim", Vector3.new(chord, hgt, hgt), CFrame.new(pos) * CFrame.Angles(0, -ka + math.pi / 2, 0), rimCol:Lerp(rgb(84, 72, 124), layer == 1 and 0 or 0.55), M.Slate, { CanCollide = false })
+					seg.Shape = Enum.PartType.Cylinder
+				end
+			end
+			table.insert(placedSpots, { x, z, d / 2 + 3 })
 		end
 	end
 	-- светящиеся кристаллические жилы: ломаные трещины в грунте

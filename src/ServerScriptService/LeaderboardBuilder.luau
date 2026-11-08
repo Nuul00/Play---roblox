@@ -70,7 +70,7 @@ local THEMES = {
 		Title = rgb(255, 150, 240), Sub = rgb(140, 230, 255), Legs = false, Lift = 14, Stardust = rgb(200, 190, 255),
 		Float = { Bob = 1.1, Sway = 2.5, Speed = 0.5 },
 		Steps = { rgb(255, 215, 110), rgb(200, 210, 255), rgb(240, 150, 200) }, StepMat = M.Glass, StepRim = M.Neon,
-		Top = rgb(20, 16, 50), TopMat = M.Glass, Under = rgb(50, 40, 100), UnderMat = M.Slate, Rim = rgb(120, 230, 255), RimMat = M.Neon, Grid = rgb(255, 110, 220), Asteroids = true,
+		Top = rgb(84, 72, 124), TopMat = M.Slate, Under = rgb(50, 40, 100), UnderMat = M.Slate, Rim = rgb(120, 230, 255), RimMat = M.Neon, Cracks = rgb(170, 110, 255), Asteroids = true, Cosmic = true, -- 2026-11: как новая земля мира, без неоновой сетки
 		Deck = rgb(40, 34, 90), DeckMat = M.Glass, Rail = rgb(120, 230, 255), RailMat = M.Neon, Lamp = rgb(200, 160, 255),
 		Arch = rgb(60, 50, 110), ArchMat = M.Metal, ArchInk = rgb(60, 0, 90), ArchGlow = rgb(255, 110, 220),
 	},
@@ -1330,7 +1330,7 @@ local function topSignModel(island, theme, a, dir): boolean
 	local signFace = m.PrimaryPart
 	m:ScaleTo(m:GetScale() * 10 / signFace.Size.X) -- ширина щита 10 (15 было слишком крупно)
 	-- щит — тёмное дерево (оранжевый пластик выглядел дёшево), каменная окантовка темнее
-	local neonStyle = theme.Grid ~= nil -- Neon / Galaxy: тёмный металл + неоновая окантовка вместо дерева
+	local neonStyle = theme.Grid ~= nil or theme.Cosmic == true -- Neon / Galaxy: тёмный металл + неоновая окантовка вместо дерева
 	local skyStyle = theme.Clouds == true -- Sky: белый щит, золотая рамка и цепи, облачка
 	local frostStyle = theme.Snow == true -- Frozen: ледяной щит, голубая рамка и цепи, сосульки
 	for _, d in ipairs(m:GetDescendants()) do
@@ -1994,6 +1994,10 @@ function B.Build(world)
 						local tp = Vector3.new(tile.Position.X, hy - 0.13, tile.Position.Z)
 						tile.CFrame = CFrame.lookAt(tp, tp + dir)
 					end
+					if theme.Cosmic then
+						tile.Color = Color3.fromRGB(52, 40, 100)
+						tile.Size = Vector3.new(BRIDGE_W, 0.15, 4.1)
+					end
 					if theme.Grid then
 						-- неоновые миры: дорога как главная улица (тёмный асфальт, жёлтая разметка), а не чёрная полоса
 						tile.Color = Color3.fromRGB(22, 22, 40)
@@ -2002,10 +2006,20 @@ function B.Build(world)
 						part(island, "ApproachDash", Vector3.new(0.35, 0.05, 2), tile.CFrame * CFrame.new(0, 0.1, 0), Color3.fromRGB(255, 220, 80), M.Neon, GHOST)
 					end
 					for _, sg in { -1, 1 } do
-						if theme.Volcano then break end -- у вулкана сплошной шов (ниже), а не кусочки
+						if theme.Volcano or theme.Cosmic then break end -- сплошной шов (ниже), а не кусочки
 						local e = part(island, "ApproachEdge", Vector3.new(0.35, 0.2, 4.1), tile.CFrame * CFrame.new(sg * (BRIDGE_W / 2 - 0.9), 0.05, 0), theme.Rail, theme.RailMat, GHOST)
 						if theme.RailMat == M.Neon then e.Transparency = 0.1 end
 					end
+				end
+			end
+			if theme.Cosmic then
+				-- космос: дорожка как в мире — тёмное стекло во всю ширину со сплошными неоновыми кантами
+				local a, b = L0 + 2 - 2.05, edge - 8
+				local mid = base + dir * ((a + b) / 2)
+				local cfm = CFrame.lookAt(Vector3.new(mid.X, hy + 0.05, mid.Z), Vector3.new(mid.X, hy + 0.05, mid.Z) + dir)
+				for _, sg in { -1, 1 } do
+					local e = part(island, "ApproachSeam", Vector3.new(0.45, 0.12, b - a), cfm * CFrame.new(sg * (BRIDGE_W / 2 - 0.4), 0, 0), sg < 0 and Color3.fromRGB(100, 220, 255) or Color3.fromRGB(230, 110, 230), M.Neon, GHOST)
+					CollectionService:AddTag(e, "BoardPulse")
 				end
 			end
 			if theme.Volcano then
@@ -2043,9 +2057,21 @@ function B.Build(world)
 					local c = base + dir * d + side * sg * (BRIDGE_W / 2 + 1)
 					local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
 					local y = g and g.Position.Y or hy
-					cyl(island, "ApproachPost", 3.4, 0.35, CFrame.new(c.X, y + 1.7, c.Z), theme.Rail:Lerp(Color3.new(0, 0, 0), 0.3), M.Metal, GHOST)
-					local bulb = ball(island, "ApproachLamp", 0.9, Vector3.new(c.X, y + 3.7, c.Z), theme.Lamp, M.Neon, GHOST)
-					light(bulb, theme.Lamp, 14, 1.2)
+					if theme.Cosmic then
+						-- космос (фидбэк 2026-11: белые шарики «как в Неоне»): тёмный маячок с крутящимся кристаллом
+						local col = sg < 0 and Color3.fromRGB(100, 220, 255) or Color3.fromRGB(230, 110, 230)
+						cyl(island, "ApproachPost", 3.4, 0.4, CFrame.new(c.X, y + 1.7, c.Z), Color3.fromRGB(34, 28, 60), M.Metal, GHOST)
+						cyl(island, "ApproachBand", 0.16, 0.55, CFrame.new(c.X, y + 2.4, c.Z), col, M.Neon, GHOST)
+						local gem = part(island, "ApproachGem", Vector3.new(0.8, 0.8, 0.8), CFrame.new(c.X, y + 4.2, c.Z) * CFrame.Angles(math.pi / 4, 0, math.pi / 4), col, M.Neon, GHOST)
+						gem:SetAttribute("Spin", 60)
+						gem:SetAttribute("Bob", 0.2)
+						CollectionService:AddTag(gem, "BoardEmblem")
+						light(gem, col, 14, 1.2)
+					else
+						cyl(island, "ApproachPost", 3.4, 0.35, CFrame.new(c.X, y + 1.7, c.Z), theme.Rail:Lerp(Color3.new(0, 0, 0), 0.3), M.Metal, GHOST)
+						local bulb = ball(island, "ApproachLamp", 0.9, Vector3.new(c.X, y + 3.7, c.Z), theme.Lamp, M.Neon, GHOST)
+						light(bulb, theme.Lamp, 14, 1.2)
+					end
 				end
 			end
 		end
