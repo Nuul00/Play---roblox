@@ -543,6 +543,13 @@ task.spawn(function()
 	local N = 20
 	local arc = 0
 	local nextDash = dashSample and (lastDashZ + 8 - mainEnd) or 5 -- длина дуги до центра следующего штриха
+	-- для клиента (NeonRoadFX): форма кривой и фаза пунктира — штрихи бегут по изгибу, как по улице
+	folder:SetAttribute("P0", P0)
+	folder:SetAttribute("P1", P1)
+	folder:SetAttribute("P2", P2)
+	folder:SetAttribute("P3", P3)
+	folder:SetAttribute("DashStart", nextDash)
+	folder:SetAttribute("WScaleEnd", Wend / W)
 	for i = 1, N do
 		local t0, t1 = (i - 1) / N, i / N
 		local q0, q1 = bez(t0), bez(t1)
@@ -554,7 +561,7 @@ task.spawn(function()
 		p("Road", Vector3.new(w, main.Size.Y, segLen + 0.6), scf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
 		for _, s in ipairs(strips) do
 			-- в кадре сегмента «вправо» = −X мира, поэтому смещение берём с минусом
-			p("RoadStrip", Vector3.new(s.part.Size.X, s.part.Size.Y, segLen + 0.12), scf * CFrame.new(-s.dx * sc, s.y - topY, 0), s.part.Color, s.part.Material, s.part.Transparency)
+			p("RoadStrip", Vector3.new(s.part.Size.X, s.part.Size.Y, segLen + 0.12), scf * CFrame.new(-s.dx * sc, s.y - topY, 0), s.part.Color, s.part.Material, s.part.Transparency):SetAttribute("Dx", s.dx)
 		end
 		while dashSample and nextDash <= arc + segLen do
 			local along = nextDash - arc - segLen / 2

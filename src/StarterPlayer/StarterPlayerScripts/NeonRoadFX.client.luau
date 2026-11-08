@@ -194,6 +194,105 @@ local function setVisible(visible)
 end
 local shown = nil
 
+-- ===== Изогнутая дорога к лидербордам (LeaderboardRoad, строит WorldPolish) =====
+-- Пунктир продолжает бег с улицы: та же скорость и фаза, по кривой Безье. Бордюры изгиба
+-- берут цвет бордюров улицы с тем же смещением (Dx).
+local mainPath = city:FindFirstChild("MainPath")
+local curve = nil
+local function bezAt(c, t)
+	local u = 1 - t
+	return c.P0 * (u * u * u) + c.P1 * (3 * u * u * t) + c.P2 * (3 * u * t * t) + c.P3 * (t * t * t)
+end
+local function setupCurve(road)
+	local P0, P1, P2, P3 = road:GetAttribute("P0"), road:GetAttribute("P1"), road:GetAttribute("P2"), road:GetAttribute("P3")
+	if typeof(P0) ~= "Vector3" or not mainPath then
+		return
+	end
+	local c = { P0 = P0, P1 = P1, P2 = P2, P3 = P3, start = road:GetAttribute("DashStart") or 5, samples = {}, dashes = {}, strips = {} }
+	-- таблица длины дуги
+	local prev, s = bezAt(c, 0), 0
+	table.insert(c.samples, { t = 0, s = 0 })
+	for i = 1, 200 do
+		local tt = i / 200
+		local p = bezAt(c, tt)
+		s += (p - prev).Magnitude
+		prev = p
+		table.insert(c.samples, { t = tt, s = s })
+	end
+	c.total = s
+	local sample
+	for _, d in ipairs(road:GetChildren()) do
+		if d:IsA("BasePart") then
+			if d.Name == "RoadDash" then
+				sample = sample or d
+				d.LocalTransparencyModifier = 1 -- статичные штрихи сервера прячем, рисуем бегущие
+			elseif d.Name == "RoadStrip" then
+				table.insert(c.strips, { part = d, dx = d:GetAttribute("Dx") or 0 })
+			end
+		end
+	end
+	if sample then
+		c.dashY = sample.Position.Y
+		for k = 1, math.floor(c.total / dashStep) + 2 do
+			local p = newPart("CurveDash", sample.Size, CFrame.new(), Color3.fromRGB(255, 225, 90))
+			table.insert(c.dashes, p)
+		end
+	end
+	curve = c
+end
+local function tAtArc(c, s)
+	local lo, hi = 1, #c.samples
+	while hi - lo > 1 do
+		local m = (lo + hi) // 2
+		if c.samples[m].s < s then
+			lo = m
+		else
+			hi = m
+		end
+	end
+	local a, b = c.samples[lo], c.samples[hi]
+	local f = (b.s - a.s) > 0 and (s - a.s) / (b.s - a.s) or 0
+	return a.t + (b.t - a.t) * f
+end
+local function curveStep(shift, t)
+	local c = curve
+	if not c then
+		local road = city:FindFirstChild("LeaderboardRoad")
+		if road then
+			setupCurve(road)
+		end
+		return
+	end
+	for k, p in ipairs(c.dashes) do
+		local s = c.start + (k - 2) * dashStep + shift
+		if s < 0.5 or s > c.total - 0.5 then
+			p.Transparency = 1
+		else
+			local tt = tAtArc(c, s)
+			local pos = bezAt(c, tt)
+			local ahead = bezAt(c, math.min(tt + 0.01, 1))
+			local back = bezAt(c, math.max(tt - 0.01, 0))
+			local at = Vector3.new(pos.X, c.dashY, pos.Z)
+			p.CFrame = CFrame.lookAt(at, at + Vector3.new(ahead.X - back.X, 0, ahead.Z - back.Z))
+			p.Transparency = 0.15 * (0.5 + 0.5 * math.sin(pos.Z * 0.08 - t * 4))
+		end
+	end
+	-- цвет бордюров изгиба = цвет бордюра улицы с тем же смещением
+	local mx = mainPath.Position.X
+	for _, st in ipairs(c.strips) do
+		local best, bd = nil, 0.3
+		for _, cb in ipairs(curbs) do
+			local d = math.abs((cb.Position.X - mx) - st.dx)
+			if d < bd then
+				best, bd = cb, d
+			end
+		end
+		if best then
+			st.part.Color = best.Color
+		end
+	end
+end
+
 local t = 0
 local acc, tileClock = 0, 1
 RunService.RenderStepped:Connect(function(dt)
@@ -224,6 +323,8 @@ RunService.RenderStepped:Connect(function(dt)
 		d.part.CFrame = d.base + Vector3.new(0, 0, shift)
 		d.part.Transparency = 0.15 * (0.5 + 0.5 * math.sin(d.base.Position.Z * 0.08 - t * 4))
 	end
+
+	curveStep(shift, t)
 
 	-- Покрытие дорог: цветные волны плывут и меняют оттенок.
 	for _, r in ipairs(tilesNow and roadTiles or {}) do
