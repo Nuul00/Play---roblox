@@ -71,7 +71,7 @@ local function makeCrystal(pos: Vector3)
 	core.CanQuery = false
 	core.Material = Enum.Material.Glass
 	core.Color = Color3.fromRGB(150, 225, 255)
-	core.Transparency = 0.15
+	core.Transparency = 0.4 -- сквозь лёд видна светящаяся сердцевина
 	core.Size = Vector3.new(1.8, 3.6, 1.8)
 	core.CFrame = CFrame.new(pos + Vector3.new(0, 2.4, 0)) * CFrame.Angles(0, math.random() * 6, 0)
 	core.Parent = m
@@ -101,23 +101,16 @@ local function makeCrystal(pos: Vector3)
 	-- картинка-кристалл (ChatGPT) на билборде вместо простых стеклянных призм + кольцо и луч
 	local okE, E = pcall(require, ReplicatedStorage:WaitForChild("LocalEvents"))
 	if okE and E.FrostImage then
-		for _, d in ipairs(m:GetChildren()) do
-			if d:IsA("BasePart") then
-				d.Transparency = 1
-			end
-		end
-		local bb = Instance.new("BillboardGui")
-		bb.Size = UDim2.fromScale(5.2, 5.2)
-		bb.StudsOffset = Vector3.new(0, 0.4, 0)
-		bb.LightInfluence = 0
-		bb.MaxDistance = 260
-		bb.Adornee = core
-		bb.Parent = core
-		local img = Instance.new("ImageLabel")
-		img.BackgroundTransparency = 1
-		img.Size = UDim2.fromScale(1, 1)
-		img.Image = E.FrostImage
-		img.Parent = bb
+		-- 2026-11 (фидбэк): картинка-билборд рисовалась белым квадратом (у изображения непрозрачный
+		-- фон). Теперь кристалл — сами ледяные призмы со светящейся сердцевиной.
+		local heart = Instance.new("Part")
+		heart.Name = "Heart"
+		heart.Anchored, heart.CanCollide, heart.CanQuery, heart.CanTouch = true, false, false, false
+		heart.Material = Enum.Material.Neon
+		heart.Color = Color3.fromRGB(120, 210, 255)
+		heart.Size = Vector3.new(0.7, 2.4, 0.7)
+		heart.CFrame = core.CFrame
+		heart.Parent = m
 		local ring = Instance.new("Part")
 		ring.Name = "Ring"
 		ring.Anchored = true

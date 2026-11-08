@@ -88,12 +88,45 @@ local function addTree(m: Instance)
 	e.Parent = p
 	treeSnow[m] = { part = p, emitter = e, pos = cf.Position, next = os.clock() + math.random() * 4 }
 end
+-- Фонари (фидбэк 2026-11): тусклый холодный голубой свет, как зимним вечером — мягкое пятно
+-- вокруг фонаря и вниз на снег. Свет ставим в верхнюю часть модели (плафон).
+local function addLampLight(m: Instance)
+	if not (m:IsA("Model") and m.Name == "FrozenLamp") or m:FindFirstChild("WinterGlow", true) then
+		return
+	end
+	local cf, size = m:GetBoundingBox()
+	local a = Instance.new("Part")
+	a.Name = "WinterGlowAnchor"
+	a.Anchored, a.CanCollide, a.CanTouch, a.CanQuery, a.CastShadow = true, false, false, false, false
+	a.Transparency = 1
+	a.Size = Vector3.new(0.2, 0.2, 0.2)
+	a.CFrame = CFrame.new(cf.Position + Vector3.new(0, size.Y * 0.32, 0))
+	local l = Instance.new("PointLight")
+	l.Name = "WinterGlow"
+	l.Color = Color3.fromRGB(120, 170, 255)
+	l.Brightness = 0.9
+	l.Range = 16
+	l.Shadows = false
+	l.Parent = a
+	local s = Instance.new("SpotLight")
+	s.Name = "WinterGlowDown"
+	s.Face = Enum.NormalId.Bottom
+	s.Angle = 100
+	s.Color = Color3.fromRGB(140, 185, 255)
+	s.Brightness = 1.2
+	s.Range = size.Y + 4
+	s.Parent = a
+	a.Parent = m
+end
 for _, d in ipairs(frozen:GetDescendants()) do
 	addTree(d)
+	addLampLight(d)
 end
 frozen.DescendantAdded:Connect(function(d)
 	if d.Name == "SnowPine" then
 		task.delay(1, addTree, d)
+	elseif d.Name == "FrozenLamp" then
+		task.delay(1, addLampLight, d)
 	end
 end)
 local function showTreeSnow(on: boolean)
@@ -123,7 +156,22 @@ for _, b in ipairs(frozen:WaitForChild("Aurora", 30):GetDescendants()) do
 		table.insert(bands, { beam = b, k = b:GetAttribute("Band") or 1, layer = b:GetAttribute("Layer") or 1, c0 = b.CurveSize0, c1 = b.CurveSize1 })
 	end
 end
-local glows = CollectionService:GetTagged("FrozenGlow")
+-- Мерцают только видимые детали. Скрытые сервером (T = 1, например старые кончики кристалла под
+-- моделью Tripo) не трогаем — иначе пульс делал их видимыми, и они висели белыми квадратами.
+local function collectGlows()
+	local list = {}
+	for _, g in ipairs(CollectionService:GetTagged("FrozenGlow")) do
+		-- деталь под моделью Tripo (рядом лежит TripoModel) скрыта сервером — оставляем скрытой
+		local replaced = g.Parent and g.Parent:FindFirstChild("TripoModel")
+		if g:IsA("BasePart") and not replaced then
+			table.insert(list, g)
+		elseif g:IsA("BasePart") then
+			g.Transparency = 1
+		end
+	end
+	return list
+end
+local glows = collectGlows()
 local AURORA = {
 	Color3.fromRGB(70, 255, 150), -- зелёный
 	Color3.fromRGB(60, 240, 210), -- бирюзовый
@@ -226,7 +274,7 @@ local function onWorld()
 		showParts()
 		task.delay(1, showParts)
 		task.delay(3, showParts)
-		glows = CollectionService:GetTagged("FrozenGlow")
+		glows = collectGlows()
 		conn = RunService.RenderStepped:Connect(step)
 	elseif not inside and conn then
 		conn:Disconnect()

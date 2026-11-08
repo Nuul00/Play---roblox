@@ -60,7 +60,8 @@ local function mark(zone: BasePart)
 	rp.FilterDescendantsInstances = skip
 	rp.FilterType = Enum.RaycastFilterType.Exclude
 	local hit = workspace:Raycast(c + Vector3.new(0, 4, 0), Vector3.new(0, -10, 0), rp)
-	local floor = Vector3.new(c.X, hit and hit.Position.Y + 0.03 or c.Y, c.Z)
+	-- +0.12: у ледяных дорожек полупрозрачный материал, круг вплотную к ним выглядел «под дорожкой»
+	local floor = Vector3.new(c.X, hit and hit.Position.Y + 0.12 or c.Y, c.Z)
 	local flat = CFrame.new(floor.X, floor.Y + 0.05, floor.Z) * CFrame.Angles(0, 0, math.pi / 2)
 	-- внешнее кольцо из 24 сегментов и полупрозрачный круг
 	local ring = {}

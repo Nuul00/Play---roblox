@@ -41,11 +41,13 @@ RunService.Heartbeat:Connect(function(dt)
 	if not (root and hum) then
 		return
 	end
-	local onIce = player:GetAttribute("OnIce") == true and hum.FloorMaterial ~= Enum.Material.Air
+	-- только на самом льду катка (фидбэк 2026-11: ледяная крошка продолжала лететь на снегу)
+	local onIce = player:GetAttribute("OnIce") == true and hum.FloorMaterial == Enum.Material.Ice
 	if not onIce then
 		vel = root.AssemblyLinearVelocity * Vector3.new(1, 0, 1)
-		if spray then
+		if spray and spray.Rate > 0 then
 			spray.Rate = 0
+			spray:Clear()
 		end
 		if lean ~= 0 then
 			lean = 0
@@ -65,6 +67,66 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	local e = sprayFor(root)
 	e.Rate = vel.Magnitude > 8 and math.min(vel.Magnitude * 1.5, 60) or 0
+end)
+
+-- Поза конькобежца (фидбэк 2026-11: «ехать двумя ногами сразу, как на настоящем катке»).
+-- Поверх анимации ходьбы (в Stepped — после аниматора) ставим ноги: обе вместе, колени чуть
+-- согнуты, корпус наклонён вперёд. При разгоне ноги по очереди делают толчок в сторону-назад,
+-- на скольжении (кнопки отпущены) стоят рядом. Руки слегка разведены для равновесия.
+-- Для всех персонажей с атрибутом OnIce, чтобы и чужие игроки на катке катились, а не шагали.
+local poseT = 0
+local function motors(char: Model)
+	local cache = {}
+	for _, d in ipairs(char:GetDescendants()) do
+		-- новые риги Roblox: суставы — AnimationConstraint (у него тоже есть Transform)
+		if d:IsA("Motor6D") or d:IsA("AnimationConstraint") then
+			cache[d.Name] = d
+		end
+	end
+	return cache
+end
+local motorCache = setmetatable({}, { __mode = "k" })
+RunService.Stepped:Connect(function(_, dt)
+	poseT += dt
+	for _, p in ipairs(Players:GetPlayers()) do
+		local char = p.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if hum and root and p:GetAttribute("OnIce") == true and hum.FloorMaterial == Enum.Material.Ice then
+			local m = motorCache[char]
+			if not m or not m.LeftHip and not m["Left Hip"] then
+				m = motors(char)
+				motorCache[char] = m
+			end
+			local speed = (root.AssemblyLinearVelocity * Vector3.new(1, 0, 1)).Magnitude
+			local pushing = hum.MoveDirection.Magnitude > 0.1
+			-- фаза толчка: левая — правая, ~0.55 с на толчок
+			local ph = math.sin(poseT * 5.7)
+			local push = pushing and math.clamp(speed / 10, 0.3, 1) or 0
+			local lp, rp = math.max(ph, 0) * push, math.max(-ph, 0) * push
+			local crouch = 0.28 + 0.06 * push
+			if m.LeftHip then -- R15
+				m.LeftHip.Transform = CFrame.Angles(-crouch + lp * 0.35, 0, -lp * 0.3)
+				m.RightHip.Transform = CFrame.Angles(-crouch + rp * 0.35, 0, rp * 0.3)
+				m.LeftKnee.Transform = CFrame.Angles(crouch * 1.6 - lp * 0.3, 0, 0)
+				m.RightKnee.Transform = CFrame.Angles(crouch * 1.6 - rp * 0.3, 0, 0)
+				if m.LeftAnkle then
+					m.LeftAnkle.Transform = CFrame.Angles(-crouch * 0.6, 0, 0)
+					m.RightAnkle.Transform = CFrame.Angles(-crouch * 0.6, 0, 0)
+				end
+				if m.Waist then
+					m.Waist.Transform = CFrame.Angles(-0.22, ph * 0.08 * push, 0)
+				end
+				if m.LeftShoulder and m.RightShoulder then
+					m.LeftShoulder.Transform = CFrame.Angles(ph * 0.35 * push, 0, -0.35)
+					m.RightShoulder.Transform = CFrame.Angles(-ph * 0.35 * push, 0, 0.35)
+				end
+			elseif m["Left Hip"] then -- R6: оси суставов бедра — Y вдоль плеча сустава
+				m["Left Hip"].Transform = CFrame.Angles(0, 0, crouch * 0.5 + lp * 0.3)
+				m["Right Hip"].Transform = CFrame.Angles(0, 0, -crouch * 0.5 - rp * 0.3)
+			end
+		end
+	end
 end)
 
 -- Следы коньков (фидбэк 2026-11): пока катишься, лезвия оставляют на льду тонкие светлые борозды.

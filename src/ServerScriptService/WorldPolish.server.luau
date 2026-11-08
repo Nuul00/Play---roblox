@@ -185,10 +185,16 @@ local function fixCoins()
 	end
 	-- «запретные круги»: яйца, метки магазинов, машины (центр и радиус в плоскости XZ)
 	local keepOut = {}
+	local DECOR_KEEP = { SnowPine = true, IceCrystals = true, Snowman = true, FrozenLamp = true, Igloo = true, PenguinStatue = true }
 	for _, d in ipairs(world:GetDescendants()) do
 		if d:IsA("Model") and string.match(d.Name, "^EggStand%d+$") then
 			local cf, size = d:GetBoundingBox()
 			table.insert(keepOut, { at = cf.Position, r = math.max(size.X, size.Z) / 2 + 8 })
+		elseif d:IsA("Model") and DECOR_KEEP[d.Name] then
+			-- 2026-11 (фидбэк): монета торчала из ёлки — у декора CanQuery выключен, проверка
+			-- «внутри объекта» его не видит. Крона ёлки шире ствола: берём габарит по XZ.
+			local cf, size = d:GetBoundingBox()
+			table.insert(keepOut, { at = cf.Position, r = math.max(size.X, size.Z) / 2 + 1.5 })
 		elseif d:IsA("BasePart") and (d.Name == "ShopZone" or d.Name == "MachineMarker" or d.Name == "Plinth") then
 			table.insert(keepOut, { at = d.Position, r = math.max(d.Size.Y, d.Size.Z) / 2 + 6 })
 		end
