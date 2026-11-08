@@ -522,8 +522,8 @@ local function skinPanel(frame: Frame, skin, def)
 		-- Справа на плитке нарисована травка/декор (~22% ширины): текст заканчивается до неё
 		-- и при длинных числах уменьшается, а не наезжает.
 		-- 2026-11 (фидбэк 13): число заходило под монету — отступ больше
-		set(value, "Position", UDim2.fromOffset(h + 30, 0))
-		set(value, "Size", UDim2.new(0.8, -(h + 30), 1, 0))
+		set(value, "Position", UDim2.fromOffset(h + 44, 0))
+		set(value, "Size", UDim2.new(0.82, -(h + 44), 1, 0))
 	end
 end
 

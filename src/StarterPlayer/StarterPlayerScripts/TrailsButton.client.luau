@@ -93,22 +93,29 @@ ls.Parent = label
 local badge = Instance.new("TextLabel")
 badge.AnchorPoint = Vector2.new(0.5, 0.5)
 badge.Position = UDim2.new(1, -6, 0, 6)
-badge.Size = UDim2.fromOffset(34, 34)
+badge.Size = UDim2.fromOffset(30, 30)
+badge.AutomaticSize = Enum.AutomaticSize.X
 badge.BackgroundTransparency = 0
 badge.BackgroundColor3 = Color3.fromRGB(255, 150, 20)
 badge.Font = Enum.Font.FredokaOne
-badge.TextScaled = true
+badge.TextScaled = false -- с AutomaticSize ширина растёт под число
+badge.TextSize = 19
 badge.TextColor3 = Color3.new(1, 1, 1)
 badge.ZIndex = 3
 badge.Parent = btn
 Instance.new("UICorner", badge).CornerRadius = UDim.new(1, 0)
+-- 2026-11: белая обводка шла по белым цифрам (Contextual) — число не читалось. Теперь белая рамка
+-- по краю кружка, а у цифр — тёмный контур.
 local bs = Instance.new("UIStroke")
 bs.Thickness = 2.5
 bs.Color = Color3.new(1, 1, 1)
+bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 bs.Parent = badge
+badge.TextStrokeTransparency = 0
+badge.TextStrokeColor3 = Color3.fromRGB(90, 40, 0)
 local bp = Instance.new("UIPadding")
-bp.PaddingTop, bp.PaddingBottom = UDim.new(0.16, 0), UDim.new(0.16, 0)
-bp.PaddingLeft, bp.PaddingRight = UDim.new(0.1, 0), UDim.new(0.1, 0)
+bp.PaddingTop, bp.PaddingBottom = UDim.new(0, 0), UDim.new(0, 0)
+bp.PaddingLeft, bp.PaddingRight = UDim.new(0, 8), UDim.new(0, 8)
 bp.Parent = badge
 
 local scale = Instance.new("UIScale")
@@ -129,7 +136,7 @@ theme()
 
 local function refresh()
 	local n = player:GetAttribute("SpeedTokens") or 0
-	badge.Text = tostring(n)
+	badge.Text = n >= 1000 and (math.floor(n / 100) / 10 .. "K") or tostring(n)
 	badge.Visible = n > 0
 end
 player:GetAttributeChangedSignal("SpeedTokens"):Connect(function()
