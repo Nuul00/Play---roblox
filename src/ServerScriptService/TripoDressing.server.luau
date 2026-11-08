@@ -383,7 +383,13 @@ if volcanoW then
 				(d :: any).Enabled = true
 			end
 		end
-		fit(vt, math.max(ext.X, ext.Y, ext.Z) * 1.25, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)), mountain, "TripoModel")
+		local tmv = fit(vt, math.max(ext.X, ext.Y, ext.Z) * 1.25, CFrame.new(cf.Position - Vector3.new(0, ext.Y / 2, 0)), mountain, "TripoModel")
+		-- 2026-11 (фидбэк): сквозь гору можно было пройти — у модели вулкана включаем столкновения
+		for _, d in ipairs(tmv and tmv:GetDescendants() or {}) do
+			if d:IsA("BasePart") then
+				d.CanCollide = true
+			end
+		end
 	end
 	local trees = props and { props:FindFirstChild("LavaTree1"), props:FindFirstChild("LavaTree2") } or {}
 	if trees[1] and trees[2] then
