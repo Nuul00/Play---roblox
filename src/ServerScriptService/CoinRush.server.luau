@@ -814,6 +814,8 @@ local function send(run, kind, data)
 	end
 end
 
+-- поворот магнита в руке в фазе босса: «ствол» (верх магнита) смотрит вперёд по руке
+local AIM_GRIP = CFrame.new(0, -0.2, 0.3) * CFrame.Angles(math.rad(90), 0, 0)
 local function finish(run, reason: string?)
 	if run.done then
 		return
@@ -822,6 +824,15 @@ local function finish(run, reason: string?)
 	local p = run.player
 	runs[p] = nil
 	p:SetAttribute("InRush", nil)
+	p:SetAttribute("RushAim", nil)
+	p:SetAttribute("RushAimAt", nil)
+	pcall(function()
+		local tool = p.Character and p.Character:FindFirstChild("CoinMagnet") or p:FindFirstChild("Backpack") and p.Backpack:FindFirstChild("CoinMagnet")
+		local g = tool and tool:GetAttribute("DefaultGrip")
+		if typeof(g) == "CFrame" then
+			tool.Grip = g
+		end
+	end)
 	pcall(PlayerSystems.ApplySpeed, p)
 	pcall(removePack, p)
 	local reward = math.floor(run.bank * run.worth)
@@ -1082,6 +1093,19 @@ local function startRoom(run, i: number)
 		run.need = run.totalWeight * (RunService:IsStudio() and workspace:GetAttribute("RushVaultNeed") or R.VAULT_NEED) -- в Studio порог можно задать атрибутом
 		run.ends = os.clock() + R.BOSS_TIME
 		spawnBoss(run, run.offset + roomCenter(i))
+		-- 2026-11 (фидбэк): на боссе магнит держат двумя руками и целятся им в босса, как оружием.
+		-- Позу рисуют клиенты (RushAim.client) по атрибутам, сервер лишь поворачивает магнит в руке.
+		local p = run.player
+		local bossCF = run.boss.model and run.boss.model:GetPivot()
+		p:SetAttribute("RushAimAt", bossCF and bossCF.Position or (run.offset + roomCenter(i)))
+		p:SetAttribute("RushAim", true)
+		local tool = p.Character and p.Character:FindFirstChild("CoinMagnet")
+		if tool and tool:IsA("Tool") then
+			if not tool:GetAttribute("DefaultGrip") then
+				tool:SetAttribute("DefaultGrip", tool.Grip)
+			end
+			tool.Grip = AIM_GRIP
+		end
 		send(run, "boss", { Ammo = run.ammo, Floor = run.floor, Hp = run.boss.hp, Max = run.boss.max, Ends = workspace:GetServerTimeNow() + R.BOSS_TIME, Worth = run.worth, Have = run.bank })
 	end
 	-- лицом в комнату (к монетам / к боссу), а не к стене входа
@@ -1162,10 +1186,39 @@ local function equipPack(p)
 		return
 	end
 	local pack = buildPack()
+	-- 2026-11 (фидбэк): рюкзак подгоняется под конкретного игрока — размер по его торсу (дети, высокие
+	-- и широкие аватары), и сидит поверх того, что уже на спине (плащ, крылья, рюкзаки-аксессуары)
+	do
+		local _, e0 = pack:GetBoundingBox()
+		local want = math.clamp(torso.Size.Y * 1.35, 1.2, 4) -- высота рюкзака ~ высота торса
+		local byWidth = torso.Size.X * 1.05 / math.max(e0.X, 0.1) * e0.Y -- не шире плеч
+		pack:ScaleTo(pack:GetScale() * math.min(want, byWidth) / math.max(e0.Y, 0.1))
+	end
 	local bcf, ext = pack:GetBoundingBox()
 	local offset = pack:GetPivot():ToObjectSpace(bcf) -- центр габаритов относительно точки модели
-	-- за спиной: центр рюкзака позади торса, чуть выше середины; окошко с золотом смотрит назад
-	local target = torso.CFrame * CFrame.new(0, 0.55, torso.Size.Z / 2 + ext.Z / 2 - 0.1) * CFrame.Angles(0, PACK_YAW, 0)
+	-- насколько далеко назад уже торчит то, что надето на спину (в осях торса; +Z — назад)
+	local backZ = torso.Size.Z / 2
+	local tool = char:FindFirstChildOfClass("Tool")
+	for _, d in ipairs(char:GetDescendants()) do
+		if d:IsA("BasePart") and d ~= torso and d.Transparency < 0.95 and d:FindFirstAncestorOfClass("Accessory") and not (tool and d:IsDescendantOf(tool)) then
+			local rel = torso.CFrame:PointToObjectSpace(d.Position)
+			-- только то, что за спиной и на уровне торса (не шляпы, не хвосты у ног)
+			if rel.Z > 0 and math.abs(rel.X) < torso.Size.X and math.abs(rel.Y) < torso.Size.Y then
+				local h = d.Size / 2
+				for _, sx in ipairs({ -1, 1 }) do
+					for _, sy in ipairs({ -1, 1 }) do
+						for _, sz in ipairs({ -1, 1 }) do
+							local c = torso.CFrame:PointToObjectSpace(d.CFrame * Vector3.new(sx * h.X, sy * h.Y, sz * h.Z))
+							backZ = math.max(backZ, c.Z)
+						end
+					end
+				end
+			end
+		end
+	end
+	backZ = math.min(backZ, torso.Size.Z / 2 + 2.5) -- огромный плащ не отодвигает рюкзак на метр
+	-- за спиной: центр рюкзака позади всего надетого, чуть выше середины торса; окошко с золотом смотрит назад
+	local target = torso.CFrame * CFrame.new(0, torso.Size.Y * 0.3, backZ + ext.Z / 2 - 0.1) * CFrame.Angles(0, PACK_YAW, 0)
 	pack:PivotTo(target * offset:Inverse())
 	local root = pack.PrimaryPart or pack:FindFirstChildWhichIsA("BasePart", true)
 	for _, d in ipairs(pack:GetDescendants()) do
@@ -1223,10 +1276,25 @@ local function startRun(p)
 	runs[p] = run
 	p:SetAttribute("InRush", true)
 	pcall(PlayerSystems.ApplySpeed, p) -- в данже скорость ограничена (R.SPEED_CAP)
-	pcall(equipPack, p)
+	local okPack, errPack = pcall(equipPack, p)
+	if not okPack then
+		warn("[CoinRush] pack:", errPack)
+	end
 	startRoom(run, RunService:IsStudio() and workspace:GetAttribute("RushStartRoom") or 1) -- в Studio можно начать с любой комнаты
 end
 
+-- только Studio: запуск забега без портала (для автотестов через MCP)
+if RunService:IsStudio() then
+	local dbg = Instance.new("BindableFunction")
+	dbg.Name = "RushDebugStart"
+	dbg.OnInvoke = function(p)
+		if not runs[p] then
+			startRun(p)
+		end
+		return runs[p] ~= nil
+	end
+	dbg.Parent = game:GetService("ServerStorage")
+end
 R.Prompt.Triggered:Connect(function(p)
 	if runs[p] or not p:GetAttribute("ProfileReady") then
 		return

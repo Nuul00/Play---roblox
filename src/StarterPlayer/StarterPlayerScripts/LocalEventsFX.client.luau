@@ -415,14 +415,21 @@ Run.RenderStepped:Connect(function(dt)
 		if tip.Visible then
 			-- справа от баннера, стрелка ◀ указывает на кнопку ▲
 			local abs = banner.AbsolutePosition + banner.AbsoluteSize
-			local vw = cam and cam.ViewportSize.X or 1000
-			local tw = tip.AbsoluteSize.X
+			-- размеры экрана в координатах этого ScreenGui (с учётом верхней панели Roblox)
+			local screen = gui.AbsoluteSize
+			local vw, vh = screen.X > 0 and screen.X or (cam and cam.ViewportSize.X or 1000), screen.Y > 0 and screen.Y or (cam and cam.ViewportSize.Y or 700)
+			local tw, th = tip.AbsoluteSize.X, tip.AbsoluteSize.Y
+			local x, y
 			if abs.X + 10 + tw > vw - 8 then
 				-- не влезает справа — под баннером
-				tip.Position = UDim2.fromOffset(math.max(8, abs.X - tw), abs.Y + 6)
+				x, y = abs.X - tw, abs.Y + 6
 			else
-				tip.Position = UDim2.fromOffset(abs.X + 10, banner.AbsolutePosition.Y - 4)
+				x, y = abs.X + 10, banner.AbsolutePosition.Y - 4
 			end
+			-- 2026-11 (фидбэк): подсказка вылезала за край экрана — держим её целиком на экране
+			x = math.clamp(x, 8, math.max(8, vw - tw - 8))
+			y = math.clamp(y, 8, math.max(8, vh - th - 8))
+			tip.Position = UDim2.fromOffset(x, y)
 			if miniOn or hiddenOn then
 				tip.Visible = false
 			end
