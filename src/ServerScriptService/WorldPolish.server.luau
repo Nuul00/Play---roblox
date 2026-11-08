@@ -376,6 +376,31 @@ task.spawn(function()
 				local tm = shop and shop:FindFirstChild("TripoModel")
 				if tm and tm:IsA("Model") then
 					done[zone] = true
+					-- Neon: магазин магнитов стоял в конце боковой дорожки, далеко от площади (фидбэк 2026-11) —
+					-- двигаем его к западному краю площади прибытия, боковую дорожку прячем
+					if shop.Name == "MagnetShop" and shop.Parent and shop.Parent.Name == "NeonCity" and shop:IsA("Model") and not shop:GetAttribute("Moved") then
+						shop:SetAttribute("Moved", true)
+						pcall(function()
+							local plaza = shop.Parent:FindFirstChild("ArrivalPlaza")
+							local cf, size = tm:GetBoundingBox()
+							local r = math.max(zone.Size.Y, zone.Size.Z) / 2
+							local westEdge = plaza and (plaza.Position.X - plaza.Size.X / 2) or 9954
+							-- круг касается края площади: центр модели = край − r − 1.5 − половина глубины
+							local targetX = westEdge - r - 1.5 - size.X / 2
+							shop:PivotTo(shop:GetPivot() + Vector3.new(targetX - cf.X, 0, 0))
+							local path = shop.Parent:FindFirstChild("MagnetPath")
+							if path and path:IsA("BasePart") then
+								path.Transparency = 1
+								path.CanCollide = false
+								for _, d in ipairs(path:GetChildren()) do
+									if d:IsA("Decal") or d:IsA("Texture") then
+										d.Transparency = 1
+									end
+								end
+							end
+						end)
+						tm = shop:FindFirstChild("TripoModel")
+					end
 					pcall(function()
 						local cf, size = tm:GetBoundingBox()
 						local to = zone.Position - cf.Position
