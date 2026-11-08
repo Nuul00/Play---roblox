@@ -53,7 +53,7 @@ local THEMES = {
 		Title = rgb(190, 240, 255), Sub = rgb(150, 210, 255), Legs = true, LegColor = rgb(150, 205, 240), Snow = true, Sparkle = rgb(200, 245, 255), Lift = 11,
 		Steps = { rgb(255, 215, 110), rgb(210, 235, 255), rgb(235, 165, 120) }, StepMat = M.Ice, StepRim = M.Neon,
 		Top = rgb(245, 250, 255), TopMat = M.Snow, Under = rgb(150, 205, 240), UnderMat = M.Glacier, Rim = rgb(140, 230, 255), RimMat = M.Ice, Icicles = true,
-		Deck = rgb(180, 225, 250), DeckMat = M.Ice, Rail = rgb(245, 250, 255), RailMat = M.Snow, Lamp = rgb(150, 230, 255),
+		Deck = rgb(105, 150, 190), DeckMat = M.Slate, Rail = rgb(170, 205, 230), RailMat = M.Ice, Lamp = rgb(150, 230, 255), -- 2026-11: был светлый лёд — слепило
 		Arch = rgb(170, 225, 255), ArchMat = M.Glacier, ArchInk = rgb(20, 70, 130), ArchGlow = rgb(140, 230, 255),
 	},
 	MagmaVolcano = {
@@ -1094,7 +1094,7 @@ local function buildGlobe(island, theme, ic, groundY, from, to)
 	local dome = part(island, "GlobeGlass", Vector3.new(Dm, Dm, Dm), CFrame.new(pos + Vector3.new(0, -8, 0)), rgb(210, 240, 255), M.Glass, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
 	dome.Shape = Enum.PartType.Ball
 	dome.Transparency = 0.82
-	dome.Reflectance = 0.25
+	dome.Reflectance = 0 -- отражение неба давало белое пятно на весь экран
 	dome:SetAttribute("Radius", Dm / 2)
 	CollectionService:AddTag(dome, "SnowGlobe")
 	-- подставка: дерево с золотыми кольцами
@@ -1122,26 +1122,32 @@ local function buildGlobe(island, theme, ic, groundY, from, to)
 	e.RotSpeed = NumberRange.new(-90, 90)
 	e.Rotation = NumberRange.new(0, 360)
 	e.Parent = sky
-	-- вход: стеклянный тоннель с кольцами над последними 16 стадами моста
+	-- вход: ледяной тоннель на всю длину моста (фидбэк 2026-11: неоновые кольца и «плёнка» слепили
+	-- белым). Матовые ледяные арки без свечения, по полу — тонкие голубые полосы-направляющие.
 	local a = Vector3.new(from.X, groundY, from.Z)
 	local b = Vector3.new(to.X, groundY, to.Z)
 	local dir = (b - a).Unit
-	local tc = CFrame.lookAt(b - dir * 8 + Vector3.new(0, 5.5, 0), b + Vector3.new(0, 5.5, 0))
-	local tube = part(island, "GlobeTunnel", Vector3.new(16, 14, 14), tc * CFrame.Angles(0, math.rad(90), 0), rgb(200, 240, 255), M.Glass, GHOST)
+	local L = (b - a).Magnitude
+	local tc = CFrame.lookAt((a + b) / 2 + Vector3.new(0, 5.5, 0), b + Vector3.new(0, 5.5, 0))
+	local tube = part(island, "GlobeTunnel", Vector3.new(L, 14, 14), tc * CFrame.Angles(0, math.rad(90), 0), rgb(205, 235, 250), M.Glass, GHOST)
 	tube.Shape = Enum.PartType.Cylinder
-	tube.Transparency = 0.8
-	for z = -7, 7, 4.6 do
-		local ring = part(island, "TunnelRing", Vector3.new(0.6, 14.6, 14.6), tc * CFrame.new(0, 0, z) * CFrame.Angles(0, math.rad(90), 0), rgb(140, 230, 255), M.Neon, GHOST)
-		ring.Shape = Enum.PartType.Cylinder
-		ring.Transparency = 0.15
-		CollectionService:AddTag(ring, "BoardPulse")
+	tube.Transparency = 0.78
+	tube.Reflectance = 0
+	tube.CastShadow = false
+	for z = -L / 2 + 1, L / 2 - 1, 5 do
+		local rib = part(island, "TunnelRing", Vector3.new(0.6, 14.4, 14.4), tc * CFrame.new(0, 0, z) * CFrame.Angles(0, math.rad(90), 0), rgb(120, 180, 225), M.Glacier, GHOST)
+		rib.Shape = Enum.PartType.Cylinder
+		rib.Transparency = 0.1
+		rib.CastShadow = false
 	end
-	-- «плёнка» в проёме шара: переливается, сквозь неё проходят
-	local film = part(island, "GlobeDoor", Vector3.new(0.2, 12.6, 12.6), CFrame.lookAt(b + Vector3.new(0, 5.5, 0), b + dir + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, math.rad(90), 0), rgb(170, 230, 255), M.ForceField, GHOST)
+	for _, sx in { -1, 1 } do
+		local strip = part(island, "TunnelGuide", Vector3.new(0.25, 0.08, L), tc * CFrame.new(sx * (BRIDGE_W / 2 - 1), -5.4, 0), rgb(110, 200, 255), M.Neon, GHOST)
+		strip.Transparency = 0.25
+	end
+	-- проём в шаре: лёгкое стекло без свечения
+	local film = part(island, "GlobeDoor", Vector3.new(0.2, 12.6, 12.6), CFrame.lookAt(b + Vector3.new(0, 5.5, 0), b + dir + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, math.rad(90), 0), rgb(200, 235, 255), M.Glass, GHOST)
 	film.Shape = Enum.PartType.Cylinder
-	film.Transparency = 0.2
-	emitter(film, rgb(200, 245, 255), 12, { Speed = NumberRange.new(0.5, 2), EmissionDirection = Enum.NormalId.Right })
-	light(film, rgb(150, 230, 255), 18, 2)
+	film.Transparency = 0.9
 	-- крутящаяся снежинка над аркой
 	local flake = snowflake(island, 7, CFrame.lookAt(b + dir * 4 + Vector3.new(0, 25.5, 0), b + dir * 4 + Vector3.new(0, 25.5, 0) - dir), rgb(170, 235, 255))
 	flake:SetAttribute("Spin", 45)
@@ -1218,11 +1224,12 @@ end
 -- Надписи на щите: спереди — «к топам», сзади — «респект» вернувшимся.
 local function signTexts(surface: BasePart, theme, canvas: Vector2)
 	-- Sky: щит белый — текст яркий пастельный с тёмно-фиолетовой обводкой
-	local sky = theme.Clouds == true
-	local cTitle = sky and Color3.fromRGB(255, 165, 60) or Color3.fromRGB(255, 220, 100)
-	local cSub = sky and Color3.fromRGB(110, 130, 230) or Color3.fromRGB(255, 250, 235)
-	local cNum = sky and Color3.fromRGB(255, 120, 185) or Color3.fromRGB(255, 200, 70)
-	local cInk = sky and Color3.fromRGB(70, 45, 120) or Color3.fromRGB(30, 15, 5)
+	local frost = theme.Snow == true
+	local sky = theme.Clouds == true -- светлый щит: цветной текст с мягкой обводкой
+	local cTitle = frost and Color3.fromRGB(200, 240, 255) or sky and Color3.fromRGB(255, 165, 60) or Color3.fromRGB(255, 220, 100)
+	local cSub = frost and Color3.fromRGB(255, 255, 255) or sky and Color3.fromRGB(110, 130, 230) or Color3.fromRGB(255, 250, 235)
+	local cNum = frost and Color3.fromRGB(130, 230, 255) or sky and Color3.fromRGB(255, 120, 185) or Color3.fromRGB(255, 200, 70)
+	local cInk = frost and Color3.fromRGB(15, 40, 85) or sky and Color3.fromRGB(70, 45, 120) or Color3.fromRGB(30, 15, 5)
 	local function txt(gui, s, y, h, c)
 		local t = Instance.new("TextLabel")
 		t.BackgroundTransparency = 1
@@ -1246,6 +1253,13 @@ local function signTexts(surface: BasePart, theme, canvas: Vector2)
 		g.MaxDistance = 300
 		g.CanvasSize = canvas
 		g.Parent = surface
+		-- подложка цвета щита: во Frozen (мир внутри стеклянного шара) текст без фона не отрисовывался
+		local bgf = Instance.new("Frame")
+		bgf.Size = UDim2.fromScale(1, 1)
+		bgf.BackgroundColor3 = surface.Color
+		bgf.BorderSizePixel = 0
+		bgf.ZIndex = 0
+		bgf.Parent = g
 		if side == Enum.NormalId.Front then
 			txt(g, "🏆 TOP PLAYERS 🏆", 0.07, 0.3, cTitle)
 			txt(g, "← LEADERBOARDS", 0.41, 0.22, cSub)
@@ -1282,9 +1296,18 @@ local function topSignModel(island, theme, a, dir): boolean
 	-- щит — тёмное дерево (оранжевый пластик выглядел дёшево), каменная окантовка темнее
 	local neonStyle = theme.Grid ~= nil -- Neon / Galaxy: тёмный металл + неоновая окантовка вместо дерева
 	local skyStyle = theme.Clouds == true -- Sky: белый щит, золотая рамка и цепи, облачка
+	local frostStyle = theme.Snow == true -- Frozen: ледяной щит, голубая рамка и цепи, сосульки
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
-			if skyStyle then
+			if frostStyle then
+				if d.Material == Enum.Material.Wood then
+					d.Color = Color3.fromRGB(55, 105, 165) -- тёмно-голубой: светлый лёд бликовал и текст пропадал
+					d.Material = Enum.Material.SmoothPlastic
+				else
+					d.Color = Color3.fromRGB(110, 175, 225)
+					d.Material = Enum.Material.Glacier
+				end
+			elseif skyStyle then
 				if d.Material == Enum.Material.Wood then
 					d.Color = Color3.fromRGB(250, 247, 255)
 					d.Material = Enum.Material.SmoothPlastic
@@ -1332,6 +1355,11 @@ local function topSignModel(island, theme, a, dir): boolean
 		for _, sx in { -1, 1 } do
 			local p = mid + axis * sx * half
 			part(island, "TopBoardPost", Vector3.new(0.55, h, 0.55), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, bar.Color, bar.Material)
+			if frostStyle then
+				for _, cd in { { 2.6, 0, 0 }, { 1.8, 1.3, 0.3 }, { 1.6, -1.2, -0.3 } } do
+					ball(island, "TopSignSnow", cd[1], Vector3.new(p.X + cd[2], a.Y + 0.4, p.Z + cd[3]), Color3.fromRGB(245, 250, 255), M.Snow, GHOST)
+				end
+			end
 			if skyStyle then
 				for _, cd in { { 3.2, 0, 0 }, { 2.4, 1.6, 0.4 }, { 2.2, -1.5, -0.3 } } do
 					ball(island, "TopSignCloud", cd[1], Vector3.new(p.X + cd[2], a.Y + 0.6, p.Z + cd[3]), Color3.fromRGB(255, 255, 255), M.SmoothPlastic, GHOST)
@@ -1899,6 +1927,68 @@ function B.Build(world)
 				end
 			end
 		end
+		-- забор по краю земли у начала моста (фидбэк 2026-11: во Frozen и Sky падали в пустоту рядом с мостом):
+		-- сетка 3x3 вокруг начала моста; клетка пустоты, соседняя с землёй, закрывается невидимым блоком
+		pcall(function()
+			local start = base + dir * (edge - 8)
+			local fp = RaycastParams.new()
+			fp.FilterType = Enum.RaycastFilterType.Exclude
+			local skip = { workspace:FindFirstChild("WorldBounds") }
+			local function kind(x, z)
+				local origin = Vector3.new(x, hy + 25, z)
+				for _ = 1, 6 do
+					fp.FilterDescendantsInstances = skip
+					local h = workspace:Raycast(origin, Vector3.new(0, -60, 0), fp)
+					if not h then
+						return 0
+					end
+					if h.Instance.Transparency >= 0.95 or not h.Instance.CanCollide then
+						table.insert(skip, h.Instance)
+					else
+						if string.find(h.Instance.Name, "Bridge") then
+							return 2
+						end
+						return h.Position.Y >= hy - 15 and 1 or 0 -- ниже на 15+ — обрыв
+					end
+				end
+				return 0
+			end
+			local S, N = 2.5, 28
+			local grid = {}
+			for i = -N, N do
+				grid[i] = {}
+				for j = -N, N do
+					grid[i][j] = kind(start.X + i * S, start.Z + j * S)
+				end
+				if i % 6 == 0 then
+					task.wait()
+				end
+			end
+			for i = -N, N do
+				for j = -N, N do
+					if grid[i][j] == 0 then
+						local near = false
+						for _, o in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } } do
+							local r = grid[i + o[1]]
+							if r and r[j + o[2]] == 1 then
+								near = true
+							end
+						end
+						-- не в коридоре моста (иначе блок перекрывает вход на мост)
+						local cell = Vector3.new(start.X + i * S, 0, start.Z + j * S)
+						local rel = cell - Vector3.new(start.X, 0, start.Z)
+						local sideV = Vector3.new(-dir.Z, 0, dir.X)
+						local along = rel:Dot(Vector3.new(dir.X, 0, dir.Z).Unit)
+						if math.abs(rel:Dot(sideV)) < BRIDGE_W / 2 + 1.5 and along > -14 and along < GAP + 14 then
+							near = false
+						end
+						if near then
+							part(island, "EdgeGuard", Vector3.new(S + 0.6, 16, S + 0.6), CFrame.new(start.X + i * S, hy + 7, start.Z + j * S), theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false, CanTouch = false })
+						end
+					end
+				end
+			end
+		end)
 		for d = edge - 40, edge + 2, 3 do
 			local c = base + dir * d
 			local mid = Vector3.new(c.X, hy + 0.9 + 20, c.Z)

@@ -16,10 +16,10 @@ gui.DisplayOrder = 2
 gui.Parent = player:WaitForChild("PlayerGui")
 local edges = {}
 for i, e in {
-	{ UDim2.fromScale(1, 0.22), UDim2.fromScale(0, 0), 90 },
-	{ UDim2.fromScale(1, 0.22), UDim2.fromScale(0, 0.78), -90 },
-	{ UDim2.fromScale(0.16, 1), UDim2.fromScale(0, 0), 0 },
-	{ UDim2.fromScale(0.16, 1), UDim2.fromScale(0.84, 0), 180 },
+	{ UDim2.fromScale(1, 0.12), UDim2.fromScale(0, 0), 90 },
+	{ UDim2.fromScale(1, 0.12), UDim2.fromScale(0, 0.88), -90 },
+	{ UDim2.fromScale(0.08, 1), UDim2.fromScale(0, 0), 0 },
+	{ UDim2.fromScale(0.08, 1), UDim2.fromScale(0.92, 0), 180 },
 } do
 	local f = Instance.new("Frame")
 	f.Size, f.Position = e[1], e[2]
@@ -29,7 +29,7 @@ for i, e in {
 	f.Parent = gui
 	local g = Instance.new("UIGradient")
 	g.Rotation = e[3]
-	g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.75), NumberSequenceKeypoint.new(1, 1) }) -- 2026-11: иней слабее (белые пятна на экране)
 	g.Parent = f
 	edges[i] = f
 end

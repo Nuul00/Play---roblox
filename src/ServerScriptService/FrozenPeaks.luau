@@ -200,6 +200,31 @@ local function shop(parent, at: Vector3, name: string?, title: string?)
 	local zone = disc(m, "ShopZone", 24, 0.3, at + Vector3.new(0, 0.7, 10), rgb(150, 220, 255), M.SmoothPlastic, { Transparency = 0.55, CanCollide = false })
 	zone.Size = Vector3.new(0.3, 24, 24)
 	part(m, "VendorAnchor", Vector3.new(1, 1, 1), at + Vector3.new(0, 0.6, -5.5), rgb(255, 255, 255), M.SmoothPlastic, { Transparency = 1, CanCollide = false })
+	if name == "MagnetShop" then
+		-- 2026-11 (фидбэк 48 «недоделан»): прилавок и колонны не прозрачные, на прилавке три магнита,
+		-- над вывеской большой магнит, снежные шапки на колоннах
+		for _, d in ipairs(m:GetChildren()) do
+			if d:IsA("BasePart") and (d.Name == "Counter" or d.Name == "Pillar") then
+				d.Transparency = 0
+				d.Material = M.Glacier
+				d.Color = rgb(140, 195, 235)
+			end
+			if d:IsA("BasePart") and d.Name == "Pillar" then
+				part(m, "PillarSnow", Vector3.new(2.2, 0.8, 2.2), CFrame.new(d.Position + Vector3.new(0, d.Size.Y / 2 + 0.2, 0)), SNOW, M.Snow, { CanCollide = false })
+			end
+			end
+		local function magnet(cf: CFrame, s: number, col: Color3)
+			part(m, "MagnetU", Vector3.new(2.2 * s, 0.6 * s, 0.6 * s), cf * CFrame.new(0, 0.3 * s, 0), col, M.SmoothPlastic, { CanCollide = false })
+			for _, sx in ipairs({ -1, 1 }) do
+				part(m, "MagnetU", Vector3.new(0.6 * s, 1.7 * s, 0.6 * s), cf * CFrame.new(sx * 0.8 * s, 1.15 * s, 0), col, M.SmoothPlastic, { CanCollide = false })
+				part(m, "MagnetTip", Vector3.new(0.64 * s, 0.5 * s, 0.64 * s), cf * CFrame.new(sx * 0.8 * s, 2.2 * s, 0), rgb(230, 235, 245), M.Metal, { CanCollide = false })
+			end
+		end
+		for i, col in ipairs({ rgb(230, 60, 70), rgb(70, 140, 255), rgb(255, 195, 50) }) do
+			magnet(CFrame.new(at + Vector3.new((i - 2) * 4, 5.4, -2)), 0.8, col)
+		end
+		magnet(CFrame.new(at + Vector3.new(0, 20.5, -2.6)), 1.6, rgb(230, 60, 70))
+	end
 	-- Магазины стоят слева от главной дорожки, к ним ведут дорожки вдоль X: разворачиваем лицом к ним (+X).
 	m:PivotTo(CFrame.new(at) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.new(at):Inverse() * m:GetPivot())
 	m.Parent = parent

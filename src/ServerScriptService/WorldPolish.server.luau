@@ -270,15 +270,22 @@ local lakeTop = lake.Position.Y + lake.Size.X / 2
 -- лёд скользкий и для физики
 lake.CustomPhysicalProperties = PhysicalProperties.new(0.9, 0, 0, 100, 1)
 
-local BLADE = Color3.fromRGB(220, 235, 250)
-local BOOT = Color3.fromRGB(245, 245, 255)
-local function skatePart(name, size, color, material)
+-- Коньки (фидбэк 2026-11: «некрасиво сидят»): тёмно-синий ботинок по форме стопы, белая шнуровка,
+-- меховая манжета на щиколотке, две серебряные стойки и тонкое лезвие с загнутым носком.
+local BOOT = Color3.fromRGB(40, 70, 140)
+local FUR = Color3.fromRGB(245, 248, 255)
+local STEEL = Color3.fromRGB(215, 225, 240)
+local function skatePart(name, size, color, material, shape)
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Size = size
 	p.Color = color
 	p.Material = material
+	if shape then
+		p.Shape = shape
+	end
 	p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, true
+	p.CastShadow = false
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	return p
 end
@@ -293,21 +300,41 @@ local function addSkates(char: Model)
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "IceSkates"
-	for _, names in ipairs({ { "LeftFoot", "Left Leg" }, { "RightFoot", "Right Leg" } }) do
+	for _, names in ipairs({ { "LeftFoot", "Left Leg", "LeftLowerLeg" }, { "RightFoot", "Right Leg", "RightLowerLeg" } }) do
 		local foot = char:FindFirstChild(names[1]) or char:FindFirstChild(names[2])
 		if foot and foot:IsA("BasePart") then
 			local r15 = foot.Name == names[1]
+			local fx = r15 and foot.Size.X or 1
+			local fz = r15 and foot.Size.Z or 1
 			local bottom = -foot.Size.Y / 2
-			local boot = skatePart("SkateBoot", Vector3.new(foot.Size.X + 0.12, r15 and foot.Size.Y + 0.1 or 0.7, (r15 and foot.Size.Z or 1) + 0.15), BOOT, Enum.Material.SmoothPlastic)
+			local base = r15 and CFrame.new() or CFrame.new(0, bottom + 0.35, -0.05)
+			local fy = r15 and foot.Size.Y or 0.7
+			local boot = skatePart("SkateBoot", Vector3.new(fx + 0.06, fy + 0.06, fz + 0.1), BOOT, Enum.Material.SmoothPlastic)
 			boot.Parent = folder
-			weld(foot, boot, CFrame.new(0, r15 and 0.05 or bottom + 0.35, r15 and 0 or -0.05))
-			local blade = skatePart("SkateBlade", Vector3.new(0.12, 0.35, (r15 and foot.Size.Z or 1) + 0.5), BLADE, Enum.Material.Metal)
-			blade.Reflectance = 0.4
+			weld(foot, boot, base)
+			local lace = skatePart("SkateLace", Vector3.new(fx * 0.4, 0.04, fz * 0.55), FUR, Enum.Material.SmoothPlastic)
+			lace.Parent = folder
+			weld(foot, lace, base * CFrame.new(0, fy / 2 + 0.04, -fz * 0.12))
+			local shin = r15 and char:FindFirstChild(names[3])
+			if shin and shin:IsA("BasePart") then
+				local cuff = skatePart("SkateCuff", Vector3.new(0.3, shin.Size.X + 0.18, shin.Size.Z + 0.18), FUR, Enum.Material.Fabric, Enum.PartType.Cylinder)
+				cuff.Parent = folder
+				weld(shin, cuff, CFrame.new(0, -shin.Size.Y / 2 + 0.25, 0) * CFrame.Angles(0, 0, math.pi / 2))
+			end
+			local sole = (r15 and bottom or (bottom + 0.35 - fy / 2)) - 0.03
+			for _, sz in ipairs({ -fz * 0.3, fz * 0.3 }) do
+				local strut = skatePart("SkateStrut", Vector3.new(0.1, 0.22, 0.12), STEEL, Enum.Material.Metal)
+				strut.Parent = folder
+				weld(foot, strut, CFrame.new(0, sole - 0.11, sz))
+			end
+			local blade = skatePart("SkateBlade", Vector3.new(0.06, 0.12, fz + 0.45), STEEL, Enum.Material.Metal)
+			blade.Reflectance = 0.5
 			blade.Parent = folder
-			weld(foot, blade, CFrame.new(0, bottom - 0.2, -0.05))
-			local tip = skatePart("SkateTip", Vector3.new(0.12, 0.3, 0.3), BLADE, Enum.Material.Metal)
+			weld(foot, blade, CFrame.new(0, sole - 0.27, -0.05))
+			local tip = skatePart("SkateTip", Vector3.new(0.06, 0.12, 0.28), STEEL, Enum.Material.Metal)
+			tip.Reflectance = 0.5
 			tip.Parent = folder
-			weld(foot, tip, CFrame.new(0, bottom - 0.05, -((r15 and foot.Size.Z or 1) / 2 + 0.3)) * CFrame.Angles(math.rad(-35), 0, 0))
+			weld(foot, tip, CFrame.new(0, sole - 0.18, -(fz / 2 + 0.3)) * CFrame.Angles(math.rad(40), 0, 0))
 		end
 	end
 	folder.Parent = char
@@ -374,8 +401,33 @@ task.spawn(function()
 			if zone:IsA("BasePart") and zone.Name == "ShopZone" and not done[zone] then
 				local shop = zone.Parent
 				local tm = shop and shop:FindFirstChild("TripoModel")
-				if tm and tm:IsA("Model") then
+				-- магазин без модели Tripo (Frozen: ларёк магнитов из деталей) — его «тело» по прилавку и стенам
+				local bodyBox = nil
+				if not tm and shop and shop:FindFirstChild("Counter") then
+					local mn, mx = Vector3.new(1e9, 1e9, 1e9), Vector3.new(-1e9, -1e9, -1e9)
+					for _, d in ipairs(shop:GetChildren()) do
+						if d:IsA("BasePart") and (d.Name == "Counter" or d.Name == "CounterTop" or d.Name == "BackWall" or d.Name == "Pillar") then
+							local h = d.Size / 2
+							for _, sx in { -1, 1 } do
+								for _, sy in { -1, 1 } do
+									for _, sz in { -1, 1 } do
+										local c = d.CFrame * Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)
+										mn, mx = mn:Min(c), mx:Max(c)
+									end
+								end
+							end
+						end
+					end
+					if mx.X > mn.X then
+						bodyBox = { CFrame.new((mn + mx) / 2), mx - mn }
+					end
+				end
+				if (tm and tm:IsA("Model")) or bodyBox then
 					done[zone] = true
+					-- круг не шире дорожки (фидбэк 2026-11: во Frozen круг 22 вылезал за дорожку 14)
+					if math.max(zone.Size.Y, zone.Size.Z) > 13 then
+						zone.Size = Vector3.new(zone.Size.X, 13, 13)
+					end
 					-- Neon: магазин магнитов стоял в конце боковой дорожки, далеко от площади (фидбэк 2026-11) —
 					-- двигаем его к западному краю площади прибытия, боковую дорожку прячем
 					if shop.Name == "MagnetShop" and shop.Parent and shop.Parent.Name == "NeonCity" and shop:IsA("Model") and not shop:GetAttribute("Moved") then
@@ -404,11 +456,22 @@ task.spawn(function()
 						tm = shop:FindFirstChild("TripoModel")
 					end
 					pcall(function()
-						local cf, size = tm:GetBoundingBox()
+						local cf, size
+						if tm then
+							cf, size = tm:GetBoundingBox()
+						else
+							cf, size = bodyBox[1], bodyBox[2]
+						end
 						local to = zone.Position - cf.Position
 						to = Vector3.new(to.X, 0, to.Z)
-						if to.Magnitude < 0.1 then
-							return
+						if to.Magnitude < 2 then
+							-- круг в центре: перед — сторона, противоположная продавцу (VendorAnchor стоит сзади)
+							local v = shop:FindFirstChild("VendorAnchor")
+							if not v then
+								return
+							end
+							to = cf.Position - v.Position
+							to = Vector3.new(to.X, 0, to.Z)
 						end
 						-- снап к оси мира (магазины стоят под 0/90/180/270)
 						local dir = math.abs(to.X) > math.abs(to.Z) and Vector3.new(math.sign(to.X), 0, 0) or Vector3.new(0, 0, math.sign(to.Z))
@@ -603,4 +666,58 @@ task.spawn(function()
 		end
 		sign.WorldPivot = face
 	end
+end)
+
+------------------------------------------------------------------ Frozen: оформление площадки яиц
+-- Фидбэк 2026-11: ледяная площадка с тремя яйцами пустая. По краю — ёлки, ледяные кристаллы,
+-- снеговики и фонари (модели Tripo), проход от дорожки оставляем свободным.
+task.spawn(function()
+	local fz = world:WaitForChild("FrozenPeaks", 120)
+	local garden = fz and fz:WaitForChild("Paths", 30) and fz.Paths:WaitForChild("EggGarden", 30)
+	local props = game:GetService("ReplicatedStorage"):FindFirstChild("TripoProps")
+	if not (garden and props) then
+		return
+	end
+	task.wait(3)
+	local center = garden.Position
+	local topY = garden.Position.Y + garden.Size.X / 2
+	local R = math.max(garden.Size.Y, garden.Size.Z) / 2
+	local entry = fz.Paths:FindFirstChild("PathEggs")
+	local entryAng = entry and math.atan2(entry.Position.Z - center.Z, entry.Position.X - center.X) or math.rad(142)
+	local folder = Instance.new("Model")
+	folder.Name = "EggGardenDecor"
+	local function place(name, height, pos, yaw)
+		local t = props:FindFirstChild(name)
+		if not t then
+			return
+		end
+		local m = t:Clone()
+		local _, ext = m:GetBoundingBox()
+		m:ScaleTo(m:GetScale() * height / math.max(ext.Y, 0.1))
+		local cf, ext2 = m:GetBoundingBox()
+		local off = m:GetPivot():ToObjectSpace(cf)
+		m:PivotTo(CFrame.new(pos + Vector3.new(0, ext2.Y / 2 - 0.1, 0)) * CFrame.Angles(0, yaw, 0) * off:Inverse())
+		for _, d in ipairs(m:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.Anchored = true
+				d.CanCollide = name ~= "IceCrystals"
+				d.CanQuery = false
+				d.CanTouch = false
+			elseif d:IsA("LuaSourceContainer") then
+				d:Destroy()
+			end
+		end
+		m.Parent = folder
+	end
+	local rng = Random.new(7)
+	local plan = { "SnowPine", "IceCrystals", "SnowPine", "FrozenLamp", "SnowPine", "Snowman", "IceCrystals", "SnowPine", "FrozenLamp", "SnowPine", "IceCrystals", "Snowman", "SnowPine", "FrozenLamp" }
+	local n = #plan
+	for i, name in ipairs(plan) do
+		local a = entryAng + math.rad(32) + (i - 1) / (n - 1) * (math.pi * 2 - math.rad(64))
+		local r = R - (name == "FrozenLamp" and 4 or 7) + rng:NextNumber(-1.5, 1.5)
+		local pos = Vector3.new(center.X + math.cos(a) * r, topY, center.Z + math.sin(a) * r)
+		local h = ({ SnowPine = rng:NextNumber(14, 19), IceCrystals = rng:NextNumber(5, 7), Snowman = 6.5, FrozenLamp = 9 })[name]
+		place(name, h, pos, rng:NextNumber(0, math.pi * 2))
+	end
+	folder.Parent = fz
 end)
