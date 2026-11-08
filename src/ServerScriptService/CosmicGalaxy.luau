@@ -140,21 +140,33 @@ local function ghost(extra: { [string]: any }?)
 end
 
 -- ===== Декор =====
+-- 2026-11 (фидбэк «столбики-лампы странные»): был «гриб» — диск + шар + силовое поле. Теперь — тонкий
+-- тёмный маяк: конусная опора, ствол с двумя светящимися кольцами-полосками и парящий над ним
+-- кристалл-ромб (его медленно крутит клиент по тегу BoardEmblem), мягкий свет.
 local function lamp(parent, at: Vector3, h: number, color: Color3)
 	local m = Instance.new("Model")
 	m.Name = "StarLamp"
-	part(m, "Pole", Vector3.new(1, h, 1), at + Vector3.new(0, h / 2, 0), METAL, M.Metal)
-	disc(m, "Foot", 2.6, 0.6, at + Vector3.new(0, 0.3, 0), METAL, M.Metal)
-	disc(m, "Ring", 3, 0.3, at + Vector3.new(0, h, 0), color, M.Neon, { CanCollide = false })
-	local orb = ball(m, "Orb", 2.2, at + Vector3.new(0, h + 1.3, 0), color, M.Neon, { CanCollide = false })
-	ball(m, "Halo", 3.6, at + Vector3.new(0, h + 1.3, 0), color, M.ForceField, { CanCollide = false, Transparency = 0.4 })
-	light(orb, color, 20, 2)
+	local dark = rgb(34, 28, 60)
+	disc(m, "Foot", 2.4, 0.5, at + Vector3.new(0, 0.25, 0), dark, M.Metal)
+	disc(m, "FootGlow", 2.6, 0.12, at + Vector3.new(0, 0.06, 0), color, M.Neon, { CanCollide = false })
+	part(m, "Pole", Vector3.new(0.55, h, 0.55), at + Vector3.new(0, h / 2, 0), dark, M.Metal)
+	for _, y in ipairs({ h * 0.35, h * 0.7 }) do
+		disc(m, "PoleBand", 0.75, 0.18, at + Vector3.new(0, y, 0), color, M.Neon, { CanCollide = false })
+	end
+	disc(m, "Cradle", 1.4, 0.3, at + Vector3.new(0, h + 0.15, 0), dark, M.Metal, { CanCollide = false })
+	local gem = part(m, "Gem", Vector3.new(1.1, 1.1, 1.1), CFrame.new(at + Vector3.new(0, h + 1.5, 0)) * CFrame.Angles(math.pi / 4, 0, math.pi / 4), color, M.Neon, ghost())
+	gem:SetAttribute("Spin", 50)
+	gem:SetAttribute("Bob", 0.25)
+	gem:AddTag("BoardEmblem")
+	light(gem, color, 18, 1.4)
 	m.Parent = parent
 	return m
 end
 local function starCrystal(parent, at: Vector3, scale: number, color: Color3)
 	local m = Instance.new("Model")
 	m.Name = "StarCrystal"
+	-- каменное основание, из которого растут кристаллы (раньше они стояли «в воздухе» на плите)
+	disc(m, "CrystalBase", scale * 7, scale * 0.8, at + Vector3.new(0, scale * 0.3, 0), rgb(40, 34, 64), M.Slate)
 	for k = 1, 5 do
 		local h = scale * rand:NextNumber(5, 11) * (k == 1 and 1.4 or 1)
 		local w = scale * rand:NextNumber(1.2, 2)
@@ -162,7 +174,9 @@ local function starCrystal(parent, at: Vector3, scale: number, color: Color3)
 		local dir = rand:NextNumber(0, math.pi * 2)
 		local cf = CFrame.new(at) * CFrame.Angles(0, dir, 0) * CFrame.Angles(tilt, 0, 0) * CFrame.new(0, h / 2, 0)
 		part(m, "Crystal", Vector3.new(w, h, w), cf * CFrame.Angles(0, math.pi / 4, 0), color, M.Glass, { Transparency = 0.2, Reflectance = 0.25, CanCollide = k == 1, CastShadow = false })
-		part(m, "CrystalTip", Vector3.new(w * 0.72, w * 0.9, w * 0.72), cf * CFrame.new(0, h / 2 + w * 0.3, 0) * CFrame.Angles(0, math.pi / 4, math.pi / 4), color:Lerp(WHITE, 0.4), M.Neon, { CanCollide = false })
+		-- остриё — сужение того же цвета (белые кубики-«кончики» выглядели как мусор), внутри светится жила
+		part(m, "CrystalTip", Vector3.new(w * 0.55, w * 0.55, w * 0.55), cf * CFrame.new(0, h / 2 + w * 0.12, 0) * CFrame.Angles(0, math.pi / 4, 0) * CFrame.Angles(math.pi / 4, 0, 0), color, M.Glass, { Transparency = 0.2, Reflectance = 0.25, CanCollide = false })
+		part(m, "CrystalCore", Vector3.new(w * 0.25, h * 0.8, w * 0.25), cf, color:Lerp(WHITE, 0.25), M.Neon, { CanCollide = false })
 	end
 	local core = ball(m, "Glow", scale * 2, at + Vector3.new(0, scale * 2, 0), color, M.Neon, { Transparency = 0.6, CanCollide = false })
 	light(core, color, 14 * scale, 1.6)
@@ -390,16 +404,13 @@ function Galaxy.Build(world: Instance): Model
 	local ground = Instance.new("Model")
 	ground.Name = "Ground"
 	ground.Parent = model
-	disc(ground, "Deck", 440, 8, L(0, -4, 0), SPACE, M.Slate)
-	disc(ground, "Rim", 452, 6, L(0, -6, 0), DEEP, M.Metal)
+	-- 2026-11 (фидбэк «переделать общий вид»): вместо чёрной плиты с неоновой сеткой — поверхность
+	-- астероида: лиловый лунный грунт, кратеры с каменным валом, светящиеся кристаллические жилы,
+	-- россыпь камешков и стелющийся над землёй туман туманности (ниже, после дорожек).
+	disc(ground, "Deck", 440, 8, L(0, -4, 0), rgb(84, 72, 124), M.Slate)
+	disc(ground, "Rim", 452, 6, L(0, -6, 0), DEEP, M.Rock)
 	disc(ground, "RimGlow", 458, 1, L(0, -9, 0), PINK, M.Neon, { CanCollide = false })
 	disc(ground, "EdgeGlow", 444, 0.4, L(0, -0.5, 0), CYAN, M.Neon, { CanCollide = false })
-	for i = -5, 5 do
-		local x = i * 40
-		local half = math.sqrt(218 ^ 2 - x ^ 2)
-		part(ground, "GridLine", Vector3.new(0.6, 0.12, half * 2), L(x, 0.05, 0), CYAN, M.Neon, { CanCollide = false, Transparency = 0.35 })
-		part(ground, "GridLine", Vector3.new(half * 2, 0.12, 0.6), L(0, 0.05, x), VIOLET, M.Neon, { CanCollide = false, Transparency = 0.35 })
-	end
 	-- Снизу — перевёрнутые скалы-астероиды с кристаллами.
 	for k = 1, 18 do
 		local a = k / 18 * math.pi * 2 + rand:NextNumber(-0.1, 0.1)
@@ -570,6 +581,79 @@ function Galaxy.Build(world: Instance): Model
 			spaceRock(decor, L(x, 0, z), rand:NextNumber(2.5, 5), false)
 			table.insert(placedSpots, { x, z, 4 })
 		end
+	end
+
+	-- Поверхность астероида: кратеры, жилы, камешки, туман.
+	local surface = Instance.new("Model")
+	surface.Name = "Surface"
+	surface.Parent = model
+	count = 0
+	for _ = 1, 600 do
+		if count >= 14 then
+			break
+		end
+		local d = rand:NextNumber(10, 26)
+		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(30, 200 - d / 2)
+		local x, z = math.cos(a) * r, math.sin(a) * r
+		if free(x, z, d / 2 + 2) then
+			count += 1
+			-- вал кратера: кольцо из глыб, внутри — тёмная чаша с еле светящимся дном
+			disc(surface, "CraterFloor", d, 0.2, L(x, 0.02, z), rgb(44, 36, 72), M.Slate, { CanCollide = false })
+			disc(surface, "CraterGlow", d * 0.35, 0.22, L(x, 0.03, z), count % 2 == 0 and CYAN or VIOLET, M.Neon, { CanCollide = false, Transparency = 0.45 })
+			local n = math.floor(d * 0.9)
+			for k = 1, n do
+				local ka = k / n * math.pi * 2 + rand:NextNumber(-0.1, 0.1)
+				local s = rand:NextNumber(1.6, 3) * d / 18
+				part(surface, "CraterRim", Vector3.new(s * 1.6, s * rand:NextNumber(0.5, 0.9), s), CFrame.new(L(x + math.cos(ka) * d / 2, s * 0.15, z + math.sin(ka) * d / 2)) * CFrame.Angles(0, -ka, rand:NextNumber(-0.25, 0.25)), rgb(130, 118, 175):Lerp(rgb(96, 86, 140), rand:NextNumber()), M.Slate, { CanCollide = false })
+			end
+			table.insert(placedSpots, { x, z, d / 2 + 2 })
+		end
+	end
+	-- светящиеся кристаллические жилы: ломаные трещины в грунте
+	for k = 1, 30 do
+		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(30, 195)
+		local p = Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		local heading = rand:NextNumber(0, math.pi * 2)
+		local col = k % 3 == 0 and PINK or (k % 3 == 1 and CYAN or VIOLET)
+		for _ = 1, rand:NextInteger(3, 6) do
+			heading += rand:NextNumber(-0.6, 0.6)
+			local len = rand:NextNumber(3, 7)
+			local q = p + Vector3.new(math.cos(heading) * len, 0, math.sin(heading) * len)
+			if q.Magnitude > 200 or onPath(q.X, q.Z) or onPath(p.X, p.Z) then
+				break
+			end
+			local mid = (p + q) / 2
+			part(surface, "Vein", Vector3.new(0.5, 0.08, len + 0.3), CFrame.lookAt(L(mid.X, 0.04, mid.Z), L(q.X, 0.04, q.Z)), col, M.Neon, ghost({ Transparency = 0 }))
+			p = q
+		end
+	end
+	-- россыпь камешков
+	for _ = 1, 140 do
+		local a, r = rand:NextNumber(0, math.pi * 2), rand:NextNumber(20, 205)
+		local x, z = math.cos(a) * r, math.sin(a) * r
+		if not onPath(x, z) then
+			local s = rand:NextNumber(0.4, 1.3)
+			part(surface, "Pebble", Vector3.new(s * 1.3, s * 0.6, s), CFrame.new(L(x, s * 0.2, z)) * CFrame.Angles(0, rand:NextNumber(0, 6.3), rand:NextNumber(-0.3, 0.3)), rgb(120, 110, 165):Lerp(rgb(80, 70, 120), rand:NextNumber()), M.Slate, ghost())
+		end
+	end
+	-- стелющийся туман туманности
+	for k = 0, 5 do
+		local a = k / 6 * math.pi * 2
+		local fog = part(surface, "NebulaMist", Vector3.new(120, 1, 120), L(math.cos(a) * 110, 1.5, math.sin(a) * 110), WHITE, M.SmoothPlastic, ghost({ Transparency = 1 }))
+		emitter(fog, "Mist", {
+			Texture = "rbxasset://textures/particles/smoke_main.dds",
+			Color = ColorSequence.new(k % 2 == 0 and rgb(140, 90, 230) or rgb(90, 140, 240), rgb(200, 110, 220)),
+			LightEmission = 0.35,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 8), NumberSequenceKeypoint.new(1, 16) }),
+			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.86), NumberSequenceKeypoint.new(0.7, 0.88), NumberSequenceKeypoint.new(1, 1) }),
+			Lifetime = NumberRange.new(8, 12),
+			Speed = NumberRange.new(0.5, 1.5),
+			SpreadAngle = Vector2.new(80, 80),
+			Acceleration = Vector3.new(0.4, 0.05, 0.2),
+			RotSpeed = NumberRange.new(-8, 8),
+			Rotation = NumberRange.new(0, 360),
+			Rate = 4,
+		})
 	end
 
 	-- Летающие астероиды над платформой (не мешают, сквозь них можно пройти) и пояс астероидов вокруг.
