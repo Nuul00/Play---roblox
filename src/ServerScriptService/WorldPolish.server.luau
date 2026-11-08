@@ -578,7 +578,7 @@ task.spawn(function()
 		local w = W * (1 + (Wend / W - 1) * tq)
 		local base = pt + left * (w / 2 + 7)
 		local oldCf = sign:GetPivot()
-		local face = CFrame.lookAt(Vector3.new(base.X, oldCf.Y, base.Z), Vector3.new(base.X, oldCf.Y, base.Z) - tan + left * 0.6)
+		local face = CFrame.lookAt(Vector3.new(base.X, oldCf.Y, base.Z), Vector3.new(base.X, oldCf.Y, base.Z) - tan - left * 0.55) -- лицом к дороге и к идущим с площади
 		local pivot0 = oldCf.Position
 		local function move(inst: Instance)
 			if inst:IsA("BasePart") then
