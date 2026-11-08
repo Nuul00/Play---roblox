@@ -332,9 +332,59 @@ local function buildPotions()
 		{ ShopConfig.PotionOrder, "POTIONS · 5 min · from quests and rewards", Color3.fromRGB(200, 190, 240) },
 		{ ShopConfig.SuperPotionOrder, "⭐ SUPER POTIONS · 10 min · Daily Rewards, Coin Rush vault, Rebirths", Color3.fromRGB(255, 215, 90) },
 	}
+	-- Ключи Coin Rush (фидбэк 2026-11: «отдельная метка, сколько у тебя ключей»): плашка справа
+	-- в строке заголовка, по нажатию — откуда их брать.
+	do
+		local keys = player:GetAttribute("Save_RushKeys") or 0
+		local pill = Instance.new("TextButton")
+		pill.Name = "RushKeysPill"
+		pill.AutoButtonColor = true
+		pill.Text = ""
+		pill.Position = UDim2.fromOffset(548, -2)
+		pill.Size = UDim2.fromOffset(196, 28)
+		pill.BackgroundColor3 = Color3.fromRGB(60, 40, 120)
+		pill.ZIndex = 4
+		pill.Parent = body
+		corner(pill, 14)
+		stroke(pill, 2.5, Color3.fromRGB(255, 205, 70))
+		local icon = Instance.new("ImageLabel")
+		icon.BackgroundTransparency = 1
+		icon.Position = UDim2.fromOffset(4, -4)
+		icon.Size = UDim2.fromOffset(34, 34)
+		icon.Image = "rbxassetid://106655154523737"
+		icon.ZIndex = 5
+		icon.Parent = pill
+		local txt = label(pill, "Rush Keys: " .. keys .. "  ⓘ", UDim2.fromOffset(40, 0), UDim2.new(1, -46, 1, 0), 16, keys > 0 and Color3.fromRGB(255, 225, 120) or Color3.fromRGB(200, 195, 225))
+		txt.TextXAlignment = Enum.TextXAlignment.Left
+		txt.ZIndex = 5
+		local tip = Instance.new("Frame")
+		tip.Name = "RushKeysInfo"
+		tip.Visible = false
+		tip.Position = UDim2.fromOffset(392, 30)
+		tip.Size = UDim2.fromOffset(352, 176)
+		tip.BackgroundColor3 = Color3.fromRGB(30, 20, 62)
+		tip.ZIndex = 10
+		tip.Parent = body
+		corner(tip, 14)
+		stroke(tip, 2.5, Color3.fromRGB(255, 205, 70))
+		local info = label(tip, "🔑 1 key = 1 Coin Rush run (enter at the Coin Rush portal)\n"
+			.. "• 1 free run every day\n"
+			.. "• Daily Rewards: days 3, 5 and 7 (more each week)\n"
+			.. "• Trail Shop: exchange 3 ⚡ for a key\n"
+			.. "• 3★ on Coin Rush floor 5 or 10: +2 keys\n"
+			.. "• Starter Pack: +3 keys\n"
+			.. "• No key? Buy a run for coins at the portal", UDim2.fromOffset(12, 8), UDim2.new(1, -24, 1, -16), 15, Color3.fromRGB(235, 230, 255), Enum.Font.GothamBold)
+		info.TextWrapped = true
+		info.TextXAlignment = Enum.TextXAlignment.Left
+		info.TextYAlignment = Enum.TextYAlignment.Top
+		info.ZIndex = 11
+		pill.Activated:Connect(function()
+			tip.Visible = not tip.Visible
+		end)
+	end
 	for r, row in ipairs(rows) do
 		local y0 = (r - 1) * 200
-		local cap = label(body, row[2], UDim2.fromOffset(4, y0), UDim2.fromOffset(740, 24), 17, row[3])
+		local cap = label(body, row[2], UDim2.fromOffset(4, y0), UDim2.fromOffset(r == 1 and 536 or 740, 24), 17, row[3])
 		cap.TextXAlignment = Enum.TextXAlignment.Left
 		for i, name in ipairs(row[1]) do
 			local def = ShopConfig.Potions[name]
@@ -632,7 +682,7 @@ player.AttributeChanged:Connect(function(name)
 	if not window.Visible or pending then
 		return
 	end
-	if name == "Equipped" or name == "PetBonus" or name == "MaxEquipped" or name == "PetSupers" or name:sub(1, 4) == "Abil" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" or name == "Save_Title" or name == "Save_QuestLineStep" then
+	if name == "Equipped" or name == "PetBonus" or name == "MaxEquipped" or name == "PetSupers" or name:sub(1, 4) == "Abil" or name:sub(1, 8) == "PetOwned" or name:sub(1, 7) == "PetGold" or name:sub(1, 10) == "PetDiamond" or name:sub(1, 10) == "PetRainbow" or name:sub(1, 6) == "Potion" or name:sub(1, 5) == "Badge" or name == "Save_Title" or name == "Save_QuestLineStep" or name == "Save_RushKeys" then
 		pending = true
 		task.defer(function()
 			pending = false
