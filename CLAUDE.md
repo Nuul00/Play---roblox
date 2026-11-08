@@ -5,8 +5,10 @@
 
 ## Проект
 
-<!-- TODO: заполнить, когда определимся со стеком -->
-- Стек: Roblox (Luau). Инструменты синхронизации кода (Rojo / только Studio) — TBD.
+- Стек: Roblox (Luau), жанр — симулятор, до 12 игроков на сервер.
+- **Sync Tool**: Rojo (`default.project.json`, запуск — `start-rojo.bat`).
+- **UI Framework**: Native ScreenGui.
+- Настройки проекта: `project.config.json`, режим ревью: `production/review-mode.txt` (lean).
 - Как запустить и протестировать: TBD.
 
 ## Как берём задачи

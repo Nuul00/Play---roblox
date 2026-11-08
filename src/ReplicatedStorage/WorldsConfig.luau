@@ -1,0 +1,85 @@
+-- Список миров для окна телепорта. Позиции сервер берёт сам (WorldTeleport.server.luau).
+local W = {}
+W.Worlds = {
+	{ Id = "Meadow Isles", Name = "Meadow Isles", Emoji = "🌴", Top = Color3.fromRGB(130, 235, 120), Bottom = Color3.fromRGB(40, 150, 70), Desc = "Coins, eggs and pets", Speed = 0, Open = true },
+	{ Id = "Neon District", Name = "Neon District", Emoji = "🌃", Top = Color3.fromRGB(230, 120, 255), Bottom = Color3.fromRGB(95, 40, 200), Desc = "Neon city and rare eggs", Speed = 0, Cost = 60000, Open = true, QuestAfter = "Starlight Wish", QuestChapter = "Meadow" },
+	{ Id = "Sky Isles", Name = "Sky Isles", Emoji = "☁️", Top = Color3.fromRGB(150, 215, 255), Bottom = Color3.fromRGB(110, 120, 240), Desc = "Cloud world, sky eggs and magnets", Speed = 0, Cost = 25e6, Open = true, QuestAfter = "City Lights", QuestChapter = "Neon" },
+	{ Id = "Frozen Peaks", Name = "Frozen Peaks", Emoji = "❄️", Top = Color3.fromRGB(170, 235, 255), Bottom = Color3.fromRGB(60, 140, 220), Desc = "Ice peaks, crystals and aurora", Speed = 0, Cost = 10e9, Open = true, QuestAfter = "Crystal Clear", QuestChapter = "Sky" },
+	{ Id = "Magma Volcano", Name = "Magma Volcano", Emoji = "🌋", Top = Color3.fromRGB(255, 150, 60), Bottom = Color3.fromRGB(170, 40, 20), Desc = "Lava rivers, fire pets and magnets", Speed = 0, Cost = 1.2e12, Open = true, QuestAfter = "Glacier Giant", QuestChapter = "Frozen" },
+	{ Id = "Cosmic Galaxy", Name = "Cosmic Galaxy", Emoji = "🌌", Top = Color3.fromRGB(150, 140, 255), Bottom = Color3.fromRGB(60, 30, 140), Desc = "Planets, stars and cosmic pets", Speed = 0, Cost = 3e14, Open = true, QuestAfter = "Obsidian Secret", QuestChapter = "Volcano" },
+}
+-- Cost — разовая цена открытия мира (монеты). v2: ≈2–5× самого дорогого яйца прошлого мира, без «стены».
+-- Исключение — Neon (60K = ×20 от Starlight Egg 3K): к концу главы Meadow доход уже вырос,
+-- накопить уходит ~1 минута (симуляция), так что это не стена. Открытые миры остаются после ребёрса
+-- (атрибут Save_Unlock_<ключ> сохраняется в профиле).
+function W.UnlockKey(id)
+	return "Save_Unlock_" .. string.gsub(id, "%s", "")
+end
+-- Ворота прогресса (2026-11, экономика v4): кроме монет мир требует ребёрсы и открытых питомцев
+-- в индексе — это не купить монетами, поэтому миры нельзя «перепрыгнуть» за пару минут.
+-- Числа подобраны под квестовую линию: ребёрс-квест стоит в главе Sky, поэтому Sky — только индекс.
+-- Индекс: из 57 петов Meadow+Neon, 81 до Frozen, 105 до Volcano, 129 до Galaxy.
+W.Gates = {
+	["Sky Isles"] = { Index = 25 },
+	["Frozen Peaks"] = { Rebirths = 2, Index = 42 },
+	["Magma Volcano"] = { Rebirths = 4, Index = 58 },
+	["Cosmic Galaxy"] = { Rebirths = 6, Index = 72 },
+}
+-- Пройдены ли ворота прогресса: ok, короткий текст «чего не хватает» (для окна и сообщения).
+function W.ProgressGate(p, def): (boolean, string)
+	local gate = def and W.Gates[def.Id]
+	if not gate then
+		return true, ""
+	end
+	local reb = tonumber(p:GetAttribute("Rebirths")) or 0
+	local idx = tonumber(p:GetAttribute("PetsDiscovered")) or 0
+	local miss = {}
+	if gate.Rebirths and reb < gate.Rebirths then
+		table.insert(miss, "🔄 Rebirths " .. reb .. "/" .. gate.Rebirths)
+	end
+	if gate.Index and idx < gate.Index then
+		table.insert(miss, "📖 Pets " .. idx .. "/" .. gate.Index)
+	end
+	return #miss == 0, table.concat(miss, " · ")
+end
+-- Ворота мира по квестам: QuestStep — сколько шагов квестовой линии нужно пройти (номер шага,
+-- который должен стать текущим). Так игрок проходит главу прошлого мира (яйца, прокачку),
+-- а не перепрыгивает её, накопив монеты. Возвращает: пройдено ли, сколько шагов сделано, сколько нужно.
+-- QuestAfter — название шага, после которого мир открывается (шаг «лучшее яйцо» прошлой главы).
+-- Счёт «сделано/нужно» — внутри главы прошлого мира: «Neon quests 5/9».
+local gateCache = {}
+function W.QuestGate(p, def): (boolean, number, number)
+	local title = def and def.QuestAfter
+	if not title then
+		return true, 0, 0
+	end
+	local info = gateCache[title]
+	if not info then
+		local Q = require(script.Parent:WaitForChild("QuestLineConfig")) -- лениво: QuestLineConfig сам грузит конфиги
+		for i, s in ipairs(Q.Steps) do
+			if s.Title == title then
+				local first = i
+				while first > 1 and Q.Steps[first - 1].Chapter == s.Chapter do
+					first -= 1
+				end
+				info = { need = i + 1, first = first }
+				break
+			end
+		end
+		info = info or { need = 1, first = 1 }
+		gateCache[title] = info
+	end
+	local step = p:GetAttribute("Save_QuestLineStep")
+	step = type(step) == "number" and step or 1
+	local total = info.need - info.first
+	return step >= info.need, math.clamp(step - info.first, 0, total), total
+end
+function W.Find(id)
+	for _, w in ipairs(W.Worlds) do
+		if w.Id == id then
+			return w
+		end
+	end
+	return nil
+end
+return W

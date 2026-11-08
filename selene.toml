@@ -1,0 +1,8 @@
+# Линтер Selene со стандартной библиотекой Roblox.
+# Запуск: selene src
+std = "roblox"
+
+[lints]
+global_usage = "deny"
+unused_variable = "warn"
+shadowing = "warn"

@@ -1,0 +1,14 @@
+{
+  "className": "Model",
+  "children": [
+    {
+      "name": "Body",
+      "className": "MeshPart",
+      "properties": {
+        "MeshId": "rbxassetid://110322432661801",
+        "TextureID": "rbxassetid://89789628483661",
+        "Size": [1.0000810623168945, 0.8790266513824463, 0.9776126146316528]
+      }
+    }
+  ]
+}
