@@ -328,6 +328,22 @@ for _,m in ipairs(MYTHIC) do
  table.insert(egg.Pool,#egg.Pool,{Pet=id,Chance=Config.MythicChance,Weight=w}) -- перед Secret
  table.insert(Config.MythicPets,id)
 end
+-- ===== Экономика v5 (2026-11): питомцы больше не «решают всё» =====
+-- Множитель питомца рос вместе с ценностью монет мира, и прирост шёл дважды: к Galaxy команда давала
+-- x30 000+, а прокачка и ребёрсы терялись на её фоне, миры пролетались за минуты. Теперь сила до x10
+-- не меняется, а всё сверх — сжимается: m -> 10*(m/10)^0.7 (x100 -> x50, x1000 -> x251, x66 000 -> x4 680).
+-- Темп по мирам возвращают ценности монет (CoinTypes, v5). Симуляция tools/econ_sim2.luau:
+-- Neon 0.6 ч, Sky 2.1 ч, Frozen 3.3 ч, Volcano 6 ч, Galaxy ~10 ч у игрока без доната и бустов.
+-- Применяется ко ВСЕМ питомцам (Mythic, Super, Royal, эксклюзивы), поэтому соотношения сохраняются.
+Config.PetPowerKnee=10
+Config.PetPowerExp=0.7
+for _,def in pairs(Config.Pets) do
+ local m=def.Multiplier
+ if type(m)=="number" and m>Config.PetPowerKnee then
+  m=Config.PetPowerKnee*(m/Config.PetPowerKnee)^Config.PetPowerExp
+  def.Multiplier=m<100 and math.floor(m*10+0.5)/10 or math.floor(m+0.5)
+ end
+end
 -- Наибольший id питомца. В Config.Pets есть пропуски (228–239), поэтому «#Config.Pets» не годится:
 -- длина таблицы с дырами не определена — циклы сохранения могли пропустить Mythic (240+).
 -- Все циклы по питомцам: for id = 1, Config.MaxPetId do if not Config.Pets[id] then continue end ...

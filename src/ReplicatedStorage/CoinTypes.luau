@@ -12,52 +12,55 @@ CoinTypes.BaseSize = { Meadow = 2.7, Neon = 2.7, Sky = 3.06, Frozen = 3.06, Volc
 
 -- Экономика v4 (2026-11): ценность монет Meadow и Neon ×0.6, Sky ×0.8, Frozen ×0.9, Volcano без
 -- изменений, Galaxy ×1.3 — начало игры медленнее, а последний мир не превращается в многочасовую стену.
+-- Экономика v5 (2026-11): питомцы ослаблены (GameConfig, PetPowerExp), темп держат монеты миров:
+-- Meadow ×1.33, Neon ×1.14, Sky ×2.18, Frozen ×3.34, Volcano ×15, Galaxy ×10 к v4 (подбор в
+-- tools/econ_sim2.luau под ~10 ч до Galaxy). Средняя монета: 6 / 28 / 420 / 3360 / 67K / 408K.
 CoinTypes.Worlds = {
 	Meadow = {
 		Theme = { rgb(255, 215, 80), rgb(120, 235, 120) }, -- золото и свежая зелень
 		Kinds = {
-			{ Id = "Gold", Weight = 75, Value = 3, Scale = 1, Color = rgb(255, 210, 60) },
-			{ Id = "Emerald", Weight = 25, Value = 9, Scale = 1.15, Color = rgb(50, 215, 115) },
+			{ Id = "Gold", Weight = 75, Value = 4, Scale = 1, Color = rgb(255, 210, 60) },
+			{ Id = "Emerald", Weight = 25, Value = 12, Scale = 1.15, Color = rgb(50, 215, 115) },
 		},
 	},
 	Neon = {
 		Theme = { rgb(255, 80, 210), rgb(70, 230, 255) }, -- неоновые розовый и голубой
 		Kinds = {
-			{ Id = "Cyan", Weight = 65, Value = 15, Scale = 1, Color = rgb(70, 225, 255) },
-			{ Id = "Pink", Weight = 25, Value = 30, Scale = 1.15, Color = rgb(255, 85, 200) },
-			{ Id = "Violet", Weight = 10, Value = 72, Scale = 1.3, Color = rgb(165, 85, 255) },
+			{ Id = "Cyan", Weight = 65, Value = 17, Scale = 1, Color = rgb(70, 225, 255) },
+			{ Id = "Pink", Weight = 25, Value = 34, Scale = 1.15, Color = rgb(255, 85, 200) },
+			{ Id = "Violet", Weight = 10, Value = 82, Scale = 1.3, Color = rgb(165, 85, 255) },
 		},
 	},
 	Sky = {
 		Theme = { rgb(255, 220, 120), rgb(255, 255, 255) }, -- тёплое золото и белые облака
 		Kinds = {
-			{ Id = "Cloud", Weight = 60, Value = 120, Scale = 1, Color = rgb(255, 200, 110), Model = "Coin1" },
-			{ Id = "Star", Weight = 30, Value = 240, Scale = 1.12, Color = rgb(190, 130, 255), Model = "Coin2" },
-			{ Id = "Wings", Weight = 10, Value = 480, Scale = 1.25, Color = rgb(255, 225, 120), Model = "Coin3" },
+			{ Id = "Cloud", Weight = 60, Value = 260, Scale = 1, Color = rgb(255, 200, 110), Model = "Coin1" },
+			{ Id = "Star", Weight = 30, Value = 520, Scale = 1.12, Color = rgb(190, 130, 255), Model = "Coin2" },
+			{ Id = "Wings", Weight = 10, Value = 1050, Scale = 1.25, Color = rgb(255, 225, 120), Model = "Coin3" },
 		},
 	},
 	Frozen = {
 		Theme = { rgb(150, 230, 255), rgb(200, 160, 255) }, -- лёд и северное сияние
 		Kinds = {
-			{ Id = "Ice", Weight = 60, Value = 630, Scale = 1, Color = rgb(140, 220, 255) },
-			{ Id = "Crystal", Weight = 30, Value = 1260, Scale = 1.12, Color = rgb(120, 170, 255) },
-			{ Id = "Aurora", Weight = 10, Value = 2520, Scale = 1.25, Color = rgb(120, 255, 200) },
+			{ Id = "Ice", Weight = 60, Value = 2100, Scale = 1, Color = rgb(140, 220, 255) },
+			{ Id = "Crystal", Weight = 30, Value = 4200, Scale = 1.12, Color = rgb(120, 170, 255) },
+			{ Id = "Aurora", Weight = 10, Value = 8400, Scale = 1.25, Color = rgb(120, 255, 200) },
 		},
 	},
 	Volcano = {
 		Theme = { rgb(255, 120, 40), rgb(255, 210, 90) }, -- раскалённая лава и угли
 		Kinds = {
-			{ Id = "Ember", Weight = 60, Value = 2800, Scale = 1, Color = rgb(255, 150, 50) },
-			{ Id = "Magma", Weight = 30, Value = 5600, Scale = 1.12, Color = rgb(255, 70, 40) },
-			{ Id = "Obsidian", Weight = 10, Value = 11200, Scale = 1.25, Color = rgb(170, 80, 255) },
+			{ Id = "Ember", Weight = 60, Value = 42000, Scale = 1, Color = rgb(255, 150, 50) },
+			{ Id = "Magma", Weight = 30, Value = 84000, Scale = 1.12, Color = rgb(255, 70, 40) },
+			{ Id = "Obsidian", Weight = 10, Value = 168000, Scale = 1.25, Color = rgb(170, 80, 255) },
 		},
 	},
 	Galaxy = {
 		Theme = { rgb(120, 170, 255), rgb(230, 120, 240) }, -- звёздный синий и туманность
 		Kinds = {
-			{ Id = "Stardust", Weight = 60, Value = 25480, Scale = 1, Color = rgb(130, 190, 255) },
-			{ Id = "Nebula", Weight = 30, Value = 50960, Scale = 1.12, Color = rgb(225, 115, 240) },
-			{ Id = "Cosmic", Weight = 10, Value = 101920, Scale = 1.25, Color = rgb(255, 220, 120) },
+			{ Id = "Stardust", Weight = 60, Value = 255000, Scale = 1, Color = rgb(130, 190, 255) },
+			{ Id = "Nebula", Weight = 30, Value = 510000, Scale = 1.12, Color = rgb(225, 115, 240) },
+			{ Id = "Cosmic", Weight = 10, Value = 1020000, Scale = 1.25, Color = rgb(255, 220, 120) },
 		},
 	},
 }
