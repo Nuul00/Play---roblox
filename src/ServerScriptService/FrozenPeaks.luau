@@ -187,7 +187,10 @@ local function shop(parent, at: Vector3, name: string?, title: string?)
 	part(m, "BackWall", Vector3.new(16, 11, 1), at + Vector3.new(0, 6, -6), DEEP:Lerp(ICE, 0.4), M.Glacier)
 	for _, sx in ipairs({ -1, 1 }) do
 		part(m, "Pillar", Vector3.new(1.6, 14, 1.6), at + Vector3.new(sx * 8, 7.5, 1.5), ICE, M.Ice, { Transparency = 0.1 })
-		crystal(m, at + Vector3.new(sx * 8, 14.5, 1.5), 0.35, rgb(150, 220, 255))
+		-- 2026-11 (фидбэк): на ларьке магнитов кристаллов на крыше нет — у новой модели своя крыша
+		if name ~= "MagnetShop" then
+			crystal(m, at + Vector3.new(sx * 8, 14.5, 1.5), 0.35, rgb(150, 220, 255))
+		end
 	end
 	for i = 1, 9 do
 		local c = i % 2 == 0 and rgb(90, 170, 255) or SNOW
