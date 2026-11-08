@@ -316,6 +316,32 @@ if settingsButton then
 	settingsButton.MouseLeave:Connect(function()
 		settingsButton.BackgroundColor3 = Color3.fromRGB(6, 6, 9)
 	end)
+	-- Место кнопки (фидбэк 2026-11, окончательно): в верхней панели Roblox, сразу за кнопкой сообщений.
+	-- Свободное место панели даёт GuiService.TopbarInset. Правый угол (TopRight) — пустой якорь, под ним
+	-- INVITE и TRAVEL (HudLayout) поднимаются наверх.
+	local GuiService = game:GetService("GuiService")
+	local barGui = Instance.new("ScreenGui")
+	barGui.Name = "TopbarSettings"
+	barGui.ResetOnSpawn = false
+	barGui.IgnoreGuiInset = true
+	barGui.ScreenInsets = Enum.ScreenInsets.None
+	barGui.DisplayOrder = 50
+	barGui.Parent = player:WaitForChild("PlayerGui")
+	local holder = Instance.new("Frame")
+	holder.Name = "Holder"
+	holder.BackgroundTransparency = 1
+	holder.Parent = barGui
+	settingsButton.Parent = holder
+	topRight.Size = UDim2.fromOffset(60, 4)
+	local function place()
+		local r = GuiService.TopbarInset
+		local h = r.Height > 0 and r.Height or 58
+		local s = math.min(44, h - 4)
+		holder.Size = UDim2.fromOffset(s, s)
+		holder.Position = UDim2.fromOffset(r.Min.X + 8, r.Min.Y + h - s - 2)
+	end
+	place()
+	GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(place)
 end
 row.Visible = false
 -- Красная точка DAILY дублируется на «≡», чтобы награду было видно и при закрытом меню.
