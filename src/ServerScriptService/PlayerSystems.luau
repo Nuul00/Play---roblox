@@ -387,8 +387,9 @@ function PlayerSystems.GiveMagnet(p)
 		part.Parent = tool
 	end
 	model:Destroy()
-	-- Рукоять в кулаке, подкова смотрит вперёд-вверх.
-	tool.Grip = CFrame.new(0, -0.3, 0) * CFrame.Angles(math.rad(-20), 0, 0)
+	-- Рукоять в кулаке, подкова наклонена вперёд, от лица (фидбэк 2026-11: при -20° большой магнит
+	-- закрывал лицо персонажа и пол-экрана за его спиной).
+	tool.Grip = CFrame.new(0, -0.3, 0) * CFrame.Angles(math.rad(60), 0, 0)
 	tool.Parent = p:FindFirstChild("Backpack")
 	humanoid:EquipTool(tool)
 end

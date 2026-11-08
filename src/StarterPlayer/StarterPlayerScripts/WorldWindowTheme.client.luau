@@ -63,13 +63,41 @@ end
 local orig: { [Instance]: { [string]: any } } = setmetatable({}, { __mode = "k" }) :: any
 local mine: { [Instance]: { [string]: any } } = setmetatable({}, { __mode = "k" }) :: any
 
+-- Свой цвет, прочитанный обратно из свойства, отличается на погрешность float32. Раньше это считалось
+-- «чужим» цветом, и он брался новым исходным — подложки осветлялись на каждой перекраске до пересвета
+-- (фидбэк 2026-11: «в худах яиц слишком большой пересвет»). Сравниваем с допуском.
+local function close(a: Color3, b: Color3): boolean
+	return math.abs(a.R - b.R) < 0.004 and math.abs(a.G - b.G) < 0.004 and math.abs(a.B - b.B) < 0.004
+end
+local function same(a: any, b: any): boolean
+	if a == b then
+		return true
+	end
+	if typeof(a) == "Color3" and typeof(b) == "Color3" then
+		return close(a, b)
+	end
+	if typeof(a) == "ColorSequence" and typeof(b) == "ColorSequence" then
+		local ka, kb = a.Keypoints, b.Keypoints
+		if #ka ~= #kb then
+			return false
+		end
+		for i = 1, #ka do
+			if math.abs(ka[i].Time - kb[i].Time) > 0.001 or not close(ka[i].Value, kb[i].Value) then
+				return false
+			end
+		end
+		return true
+	end
+	return false
+end
+
 local function source(inst: Instance, prop: string, current: any)
 	local o, m = orig[inst], mine[inst]
 	if not o then
 		o, m = {}, {}
 		orig[inst], mine[inst] = o, m
 	end
-	if o[prop] == nil or m[prop] ~= current then
+	if o[prop] == nil or not same(m[prop], current) then
 		o[prop] = current
 	end
 	return o[prop]
@@ -79,10 +107,10 @@ local function setColor(inst: Instance, prop: string, edge: boolean)
 	local current = (inst :: any)[prop]
 	local base = source(inst, prop, current)
 	local new = remap(base, edge) or base
-	mine[inst][prop] = new
-	if current ~= new then
+	if not same(current, new) then
 		(inst :: any)[prop] = new
 	end
+	mine[inst][prop] = (inst :: any)[prop] -- то, что реально легло в свойство
 end
 
 local function setSequence(g: UIGradient)
@@ -93,8 +121,10 @@ local function setSequence(g: UIGradient)
 		keys[i] = ColorSequenceKeypoint.new(k.Time, remap(k.Value, false) or k.Value)
 	end
 	local new = ColorSequence.new(keys)
-	mine[g].Color = new
-	g.Color = new
+	if not same(current, new) then
+		g.Color = new
+	end
+	mine[g].Color = g.Color
 end
 
 -- окна со своим продуманным оформлением ставят атрибут NoTheme — их не перекрашиваем

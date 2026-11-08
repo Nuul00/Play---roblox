@@ -135,9 +135,14 @@ K.stroke(tip, rgb(255, 210, 90), 2.5)
 local tipText = K.text(tip, "", UDim2.fromOffset(10, 4), UDim2.new(1, -20, 1, -8), 15, nil, 1.5)
 tipText.TextWrapped = true
 tipText.RichText = true
-tipText.Text = '<font color="#FFD25A">◀ Banner in the way?</font>\nTap ▲ to shrink it. Hide or move it in ⚙ Settings.'
+tipText.Text = '<font color="#FFD25A">Banner in the way?</font>\nTap ▲ to shrink it. Hide or move it in ⚙ Settings.'
 local tipScale = Instance.new("UIScale")
 tipScale.Parent = tip
+-- стрелка от подсказки к кнопке ▲ (фидбэк 2026-11: «стрелкой направить на что он намекает»)
+local tipArrow = K.text(gui, "▲", UDim2.fromOffset(0, 0), UDim2.fromOffset(40, 40), 40, rgb(255, 210, 90), 2.5)
+tipArrow.AnchorPoint = Vector2.new(0.5, 0.5)
+tipArrow.ZIndex = 20
+tipArrow.Visible = false
 local tipShownAt = nil
 local tipDoneThisEvent = false
 -- Settings: переключатель там же, где музыка (GameHUD ищет кнопку по имени и вызывает это событие)
@@ -413,32 +418,56 @@ Run.RenderStepped:Connect(function(dt)
 			end
 		end
 		if tip.Visible then
-			-- справа от баннера, стрелка ◀ указывает на кнопку ▲
-			local abs = banner.AbsolutePosition + banner.AbsoluteSize
+			-- справа от баннера (или под ним), чуть ниже кнопки ▲; стрелка смотрит прямо на кнопку
+			-- AbsolutePosition считается от низа верхней панели Roblox, а Position этого ScreenGui
+			-- (IgnoreGuiInset) — от края экрана: без поправки подсказка вставала на ~58 px выше нужного
+			local off = gui.IgnoreGuiInset and game:GetService("GuiService"):GetGuiInset() or Vector2.zero
+			local bTop = banner.AbsolutePosition + off
+			local abs = bTop + banner.AbsoluteSize
 			-- размеры экрана в координатах этого ScreenGui (с учётом верхней панели Roblox)
 			local screen = gui.AbsoluteSize
 			local vw, vh = screen.X > 0 and screen.X or (cam and cam.ViewportSize.X or 1000), screen.Y > 0 and screen.Y or (cam and cam.ViewportSize.Y or 700)
 			local tw, th = tip.AbsoluteSize.X, tip.AbsoluteSize.Y
+			local s = tipScale.Scale
 			local x, y
-			if abs.X + 10 + tw > vw - 8 then
+			if abs.X + 30 * s + tw > vw - 8 then
 				-- не влезает справа — под баннером
-				x, y = abs.X - tw, abs.Y + 6
+				x, y = abs.X - tw, abs.Y + 34 * s
 			else
-				x, y = abs.X + 10, banner.AbsolutePosition.Y - 4
+				x, y = abs.X + 30 * s, bTop.Y + 26 * s
 			end
 			-- 2026-11 (фидбэк): подсказка вылезала за край экрана — держим её целиком на экране
 			x = math.clamp(x, 8, math.max(8, vw - tw - 8))
 			y = math.clamp(y, 8, math.max(8, vh - th - 8))
 			tip.Position = UDim2.fromOffset(x, y)
+			-- стрелка: от ближайшей к кнопке точки края подсказки, повёрнута на центр кнопки, слегка «кивает»
+			local bc = hideBtn.AbsolutePosition + off + hideBtn.AbsoluteSize / 2
+			local edge = Vector2.new(math.clamp(bc.X, x + 14 * s, x + tw - 14 * s), math.clamp(bc.Y, y + 14 * s, y + th - 14 * s))
+			local d = bc - edge
+			if d.Magnitude > 20 * s then
+				local u = d.Unit
+				local reach = math.min(d.Magnitude - 16 * s, 20 * s) + math.sin(os.clock() * 6) * 3 * s
+				local pos = edge + u * math.max(reach, 6 * s)
+				tipArrow.Position = UDim2.fromOffset(pos.X, pos.Y)
+				tipArrow.Rotation = math.deg(math.atan2(u.Y, u.X)) + 90
+				tipArrow.Size = UDim2.fromOffset(40 * s, 40 * s)
+				tipArrow.Visible = true
+			else
+				tipArrow.Visible = false
+			end
 			if miniOn or hiddenOn then
 				tip.Visible = false
 			end
+		end
+		if not tip.Visible then
+			tipArrow.Visible = false
 		end
 	elseif shownKey then
 		shownKey = nil
 		banner.Visible = false
 		mini.Visible = false
 		tip.Visible = false
+		tipArrow.Visible = false
 		tipShownAt = nil
 		tipDoneThisEvent = false
 	end
