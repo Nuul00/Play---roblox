@@ -518,41 +518,37 @@ local function skinPanel(frame: Frame, skin, def)
 		if s and skin.InkColor then
 			set(s, "Color", skin.InkColor)
 		end
-		-- Круглая иконка скина крупнее старой: сдвигаем текст правее, чтобы он не заезжал под неё.
-		-- Справа на плитке нарисована травка/декор (~22% ширины): текст заканчивается до неё
-		-- и при длинных числах уменьшается, а не наезжает.
-		-- 2026-11 (фидбэк 13): число заходило под монету — отступ больше
-		set(value, "Position", UDim2.fromOffset(h + 44, 0))
-		set(value, "Size", UDim2.new(0.82, -(h + 44), 1, 0))
-		-- 2026-11 (фидбэк «1Qi наезжает на монету»): у плитки монет текст двигал другой скрипт и он
-		-- заходил под иконку. Отступ считаем по реальному правому краю иконки и держим его.
-		local skinIcon = frame:FindFirstChild("SkinIcon")
-		local fixing = false
-		local function keepClear()
-			if fixing or not skinIcon or frame.AbsoluteSize.X <= 0 then
-				return
+		-- 2026-11 (фидбэк): число стоит ПО ЦЕНТРУ свободной части плитки — между правым краем круглой
+		-- иконки (h + 4 в единицах плитки) и травкой справа (~18% ширины) — и закреплено: если какой-то
+		-- другой скрипт сдвинет подпись, она сразу возвращается на место.
+		local LEFT = h + 10
+		local function lock(l: TextLabel)
+			local wantPos = UDim2.new(0, LEFT, 0, 0)
+			local wantSize = UDim2.new(0.82, -LEFT, 1, 0)
+			if l.Position ~= wantPos then
+				l.Position = wantPos
 			end
-			-- плитки уменьшены через UIScale: пиксели экрана переводим во внутренние единицы плитки
-			local scale = frame.Size.X.Offset > 0 and frame.AbsoluteSize.X / frame.Size.X.Offset or 1
-			local need = math.ceil((skinIcon.AbsolutePosition.X + skinIcon.AbsoluteSize.X - frame.AbsolutePosition.X) / math.max(scale, 0.1) + 6)
-			-- у плитки может быть несколько подписей (у монет — своя, её двигает MainHUD): правим все видимые
-			for _, l in ipairs(frame:GetChildren()) do
-				if l:IsA("TextLabel") and l.Visible and l.TextXAlignment == Enum.TextXAlignment.Left and (l.Position.X.Offset < need or l.Position.X.Scale ~= 0) then
-					fixing = true
-					l.Position = UDim2.new(0, need, l.Position.Y.Scale, l.Position.Y.Offset)
-					l.Size = UDim2.new(0.82, -need, l.Size.Y.Scale, l.Size.Y.Offset)
-					fixing = false
-				end
+			if l.Size ~= wantSize then
+				l.Size = wantSize
+			end
+			if l.TextXAlignment ~= Enum.TextXAlignment.Center then
+				l.TextXAlignment = Enum.TextXAlignment.Center
 			end
 		end
 		for _, l in ipairs(frame:GetChildren()) do
-			if l:IsA("TextLabel") then
-				l:GetPropertyChangedSignal("Position"):Connect(keepClear)
-				l:GetPropertyChangedSignal("Visible"):Connect(keepClear)
+			if l:IsA("TextLabel") and not l:FindFirstChildOfClass("UICorner") then
+				lock(l)
+				l:GetPropertyChangedSignal("Position"):Connect(function()
+					lock(l)
+				end)
+				l:GetPropertyChangedSignal("Size"):Connect(function()
+					lock(l)
+				end)
+				l:GetPropertyChangedSignal("TextXAlignment"):Connect(function()
+					lock(l)
+				end)
 			end
 		end
-		frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(keepClear)
-		task.defer(keepClear)
 	end
 end
 

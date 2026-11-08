@@ -215,6 +215,35 @@ music.Activated:Connect(function()
  local off=not player:GetAttribute("MusicOff");player:SetAttribute("MusicOff",off)
  music.Text=off and "🔇 Music: OFF" or "🎵 Music: ON";music.BackgroundColor3=off and Color3.fromRGB(150,80,80) or Color3.fromRGB(90,160,110)
 end)
+-- Качество графики (2026-11): AUTO / LOW / MEDIUM / ULTRA — применяет GraphicsQuality.client сразу
+local gfxBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,448))
+local GFX_NAMES={auto="AUTO",low="LOW",medium="MEDIUM",ultra="ULTRA"}
+local function gfxText() gfxBtn.Text="🖥 Graphics: "..(GFX_NAMES[player:GetAttribute("Save_Graphics") or "auto"] or "AUTO") end
+gfxText();player:GetAttributeChangedSignal("Save_Graphics"):Connect(gfxText)
+gfxBtn.Activated:Connect(function() cycle("Save_Graphics","graphics",{"auto","low","medium","ultra"},"auto") end)
+settings.Size=UDim2.fromOffset(420,500)
+-- Единый вид переключателей (фидбэк 2026-11: «кнопки разноцветные»): тёмная строка, слева название,
+-- справа плашка со значением — зелёная ON, серая OFF/HIDDEN, фиолетовая для остальных вариантов.
+do
+ local ROW=rgb(52,34,110)
+ local function styleRow(b)
+  b.BackgroundColor3=ROW;b.AutoButtonColor=true;b.TextTransparency=1
+  local st=b:FindFirstChildOfClass("UIStroke");if st then st.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;st.Color=INK;st.Thickness=2 end
+  local name=Instance.new("TextLabel");name.BackgroundTransparency=1;name.Position=UDim2.fromOffset(14,0);name.Size=UDim2.new(1,-150,1,0);name.Font=Enum.Font.FredokaOne;name.TextSize=17;name.TextColor3=Color3.new(1,1,1);name.TextXAlignment=Enum.TextXAlignment.Left;name.Parent=b
+  local pill=Instance.new("Frame");pill.AnchorPoint=Vector2.new(1,0.5);pill.Position=UDim2.new(1,-8,0.5,0);pill.Size=UDim2.fromOffset(112,24);pill.Parent=b
+  Instance.new("UICorner",pill).CornerRadius=UDim.new(1,0);stroke(pill,2,INK)
+  local val=Instance.new("TextLabel");val.BackgroundTransparency=1;val.Size=UDim2.fromScale(1,1);val.Font=Enum.Font.FredokaOne;val.TextSize=15;val.TextColor3=Color3.new(1,1,1);val.Parent=pill
+  local function sync()
+   local left,right=string.match(b.Text,"^(.-):%s*(.+)$")
+   name.Text=left or b.Text;val.Text=right or ""
+   pill.Visible=right~=nil
+   pill.BackgroundColor3=(right=="ON" and rgb(70,180,95)) or ((right=="OFF" or right=="HIDDEN") and rgb(110,105,135)) or rgb(150,95,240)
+   if b.BackgroundColor3~=ROW then b.BackgroundColor3=ROW end
+  end
+  sync();b:GetPropertyChangedSignal("Text"):Connect(sync);b:GetPropertyChangedSignal("BackgroundColor3"):Connect(sync)
+ end
+ for _,b in ipairs({music,sideBtn,evBtn,posBtn,mrkBtn,pillBtn,gfxBtn}) do styleRow(b) end
+end
 
 local screens={stats=panel,settings=settings}
 local function hideAll()

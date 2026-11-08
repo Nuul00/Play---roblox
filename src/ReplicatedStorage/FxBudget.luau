@@ -87,7 +87,9 @@ if RunService:IsClient() then
 	local avg, slowFor = 1 / 60, 0
 	RunService.Heartbeat:Connect(function(dt)
 		avg = avg * 0.95 + dt * 0.05
-		if avg > 1 / 40 then
+		local me = game:GetService("Players").LocalPlayer
+		local forced = me and (me:GetAttribute("Save_Graphics") or "auto") ~= "auto"
+		if avg > 1 / 40 and not forced then
 			slowFor += dt
 			if slowFor > 5 and current > 1 then
 				dropped += 1
@@ -99,6 +101,22 @@ if RunService:IsClient() then
 			slowFor = 0
 		end
 	end)
+	-- выбор игрока в настройках игры (Save_Graphics): low / medium / ultra — фиксирует уровень, auto — как раньше
+	local lp = game:GetService("Players").LocalPlayer
+	local FORCED = { low = 1, medium = 2, ultra = 3 }
+	local function fromSetting()
+		local f = lp and FORCED[lp:GetAttribute("Save_Graphics") or "auto"]
+		if f then
+			dropped = 0
+			set(f)
+		else
+			set(baseTier() - dropped)
+		end
+	end
+	if lp then
+		lp:GetAttributeChangedSignal("Save_Graphics"):Connect(fromSetting)
+		task.defer(fromSetting)
+	end
 	-- игрок поменял настройку графики
 	pcall(function()
 		UserSettings().GameSettings:GetPropertyChangedSignal("SavedQualityLevel"):Connect(function()
