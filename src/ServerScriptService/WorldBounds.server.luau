@@ -140,6 +140,36 @@ task.defer(function()
 		-- Остров лидеров по-прежнему с проходом (islandBox).
 		if #parts > 0 then
 			local minV, maxV = bounds(parts)
+			-- 2026-11 (фидбэк «пустота ничего не меняет»): город уже — стены сразу за рядами зданий
+			-- (здания до x−123 и x+135 от центра), тёмные полосы за ними убраны.
+			local cx = f.Position.X
+			local west, east = cx - 126, cx + 140
+			minV = Vector3.new(math.max(minV.X, west), minV.Y, minV.Z)
+			maxV = Vector3.new(math.min(maxV.X, east), maxV.Y, maxV.Z)
+			-- видимые стены города (CityWalls) и тёмный пол вокруг — к новым границам
+			local walls = city:FindFirstChild("CityWalls")
+			if walls then
+				for _, p in ipairs(walls:GetDescendants()) do
+					if p:IsA("BasePart") then
+						if p.Size.Z > 400 and p.Size.X < 10 then
+							-- продольные стены и их неоновые полосы: сохраняем отступ от старой стены
+							if p.Position.X < cx then
+								p.Position = Vector3.new(west - 2 + (p.Position.X - (cx - 212)), p.Position.Y, p.Position.Z)
+							else
+								p.Position = Vector3.new(east + 2 - ((cx + 212) - p.Position.X), p.Position.Y, p.Position.Z)
+							end
+						elseif p.Size.X > 60 then
+							-- поперечные стены, полосы и OuterGround: обрезаем по X
+							local x0, x1 = p.Position.X - p.Size.X / 2, p.Position.X + p.Size.X / 2
+							local n0, n1 = math.max(x0, west - 4), math.min(x1, east + 4)
+							if n1 - n0 > 0.5 then
+								p.Size = Vector3.new(n1 - n0, p.Size.Y, p.Size.Z)
+								p.Position = Vector3.new((n0 + n1) / 2, p.Position.Y, p.Position.Z)
+							end
+						end
+					end
+				end
+			end
 			local island = city:WaitForChild("LeaderboardIsland_NeonCity", 30)
 			if island and island:IsA("Model") then
 				local cf, sz = island:GetBoundingBox()

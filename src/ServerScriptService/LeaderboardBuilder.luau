@@ -1049,7 +1049,7 @@ local function buildBridge(island, theme, from, to, groundY)
 			part(island, "BridgePost", Vector3.new(0.5, 3.2, 0.5), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.3), 1.6, z), theme.Rail, theme.RailMat == M.Neon and M.Metal or theme.RailMat, GHOST)
 		end
 		part(island, "BridgeRail", Vector3.new(0.4, 0.4, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.3), 3.3, 0), theme.Rail, theme.RailMat)
-		part(island, "BridgeGuard", Vector3.new(0.3, 3.4, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.2), 1.7, 0), theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false })
+		part(island, "BridgeGuard", Vector3.new(0.3, 12, L + 2), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.2), 6, 0), theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false }) -- высокие: не перепрыгнуть
 	end
 	if theme.Puffs then
 		for z = -L / 2, L / 2, 5 do
@@ -1271,13 +1271,19 @@ local function topSignModel(island, theme, a, dir): boolean
 	local signFace = m.PrimaryPart
 	m:ScaleTo(m:GetScale() * 10 / signFace.Size.X) -- ширина щита 10 (15 было слишком крупно)
 	-- щит — тёмное дерево (оранжевый пластик выглядел дёшево), каменная окантовка темнее
+	local neonStyle = theme.Grid ~= nil -- Neon / Galaxy: тёмный металл + неоновая окантовка вместо дерева
 	for _, d in ipairs(m:GetDescendants()) do
 		if d:IsA("BasePart") then
 			if d.Material == Enum.Material.Wood then
-				d.Color = Color3.fromRGB(92, 58, 32)
-				d.Material = Enum.Material.WoodPlanks
+				d.Color = neonStyle and theme.Board or Color3.fromRGB(92, 58, 32)
+				d.Material = neonStyle and Enum.Material.SmoothPlastic or Enum.Material.WoodPlanks
 			elseif d.Material == Enum.Material.Cobblestone then
-				d.Color = d.Color:Lerp(Color3.fromRGB(60, 50, 45), 0.4)
+				if neonStyle then
+					d.Color = theme.Frame
+					d.Material = Enum.Material.Metal
+				else
+					d.Color = d.Color:Lerp(Color3.fromRGB(60, 50, 45), 0.4)
+				end
 			end
 			d.CastShadow = false
 		end
@@ -1310,6 +1316,18 @@ local function topSignModel(island, theme, a, dir): boolean
 			part(island, "TopBoardPost", Vector3.new(0.55, h, 0.55), CFrame.new(p.X, a.Y + h / 2 - 0.4, p.Z) * face.Rotation, bar.Color, bar.Material)
 			local lamp = ball(island, "TopBoardLamp", 0.7, Vector3.new(p.X, bar.Position.Y + 0.9, p.Z), theme.Lamp, M.Neon, GHOST)
 			light(lamp, theme.Lamp, 16, 1.4)
+		end
+	end
+	if neonStyle then
+		-- неоновая рамка вокруг щита (две стороны), качается вместе с ним
+		local sf = signFace.CFrame
+		local hw, hh = signFace.Size.X / 2 + 0.15, signFace.Size.Y / 2 + 0.15
+		for _, zs in { -1, 1 } do
+			local zo = zs * (signFace.Size.Z / 2 + 0.06)
+			for _, e in { { Vector3.new(hw * 2, 0.22, 0.1), CFrame.new(0, hh, zo) }, { Vector3.new(hw * 2, 0.22, 0.1), CFrame.new(0, -hh, zo) }, { Vector3.new(0.22, hh * 2, 0.1), CFrame.new(hw, 0, zo) }, { Vector3.new(0.22, hh * 2, 0.1), CFrame.new(-hw, 0, zo) } } do
+				local p = part(m, "NeonEdge", e[1], sf * e[2], theme.Trim, M.Neon, GHOST)
+				p.CastShadow = false
+			end
 		end
 	end
 	signTexts(signFace, theme, Vector2.new(640, 640 * signFace.Size.Y / signFace.Size.X))
@@ -1418,7 +1436,8 @@ local function cutGate(wall, base, dir, hy, theme, island)
 	end
 	local L = longX and size.X or size.Z
 	local c = (hit - wpos):Dot(axis)
-	local g = (BRIDGE_W + 6) / 2 / math.max(0.35, math.abs(dir:Dot(normal)))
+	-- 2026-11: проём ровно по ширине моста (было +6 — по бокам щели по 3 студа, игрок падал в пустоту)
+	local g = (BRIDGE_W / 2 - 0.15) / math.max(0.35, math.abs(dir:Dot(normal)))
 	local function piece(a, b)
 		if b - a < 0.5 then return end
 		local p = wall:Clone()
@@ -1818,6 +1837,13 @@ function B.Build(world)
 				if g and math.abs(g.Position.Y - hy) < 4 then
 					local tile = part(island, "ApproachPath", Vector3.new(BRIDGE_W - 2, 0.15, 4.1), CFrame.lookAt(g.Position + Vector3.new(0, 0.08, 0), g.Position + Vector3.new(0, 0.08, 0) + dir), theme.Deck, theme.DeckMat, GHOST)
 					if theme.DeckMat == M.Glass then tile.Transparency = 0.25 end
+					if theme.Grid then
+						-- неоновые миры: дорога как главная улица (тёмный асфальт, жёлтая разметка), а не чёрная полоса
+						tile.Color = Color3.fromRGB(22, 22, 40)
+						tile.Material = M.SmoothPlastic
+						tile.Size = Vector3.new(BRIDGE_W, 0.15, 4.1)
+						part(island, "ApproachDash", Vector3.new(0.35, 0.05, 2), tile.CFrame * CFrame.new(0, 0.1, 0), Color3.fromRGB(255, 220, 80), M.Neon, GHOST)
+					end
 					for _, sg in { -1, 1 } do
 						local e = part(island, "ApproachEdge", Vector3.new(0.35, 0.2, 4.1), tile.CFrame * CFrame.new(sg * (BRIDGE_W / 2 - 0.9), 0.05, 0), theme.Rail, theme.RailMat, GHOST)
 						if theme.RailMat == M.Neon then e.Transparency = 0.1 end

@@ -60,8 +60,14 @@ local function mark(zone: BasePart)
 		local ar = part(m, Vector3.new(1.4, 0.2, 0.5), CFrame.new(), Color3.new(1, 1, 1), 0.2)
 		table.insert(arrows, { p = ar, a = a })
 	end
-	-- табличка
-	local anchor = part(m, Vector3.new(0.5, 0.5, 0.5), CFrame.new(zone.Position + Vector3.new(0, 7, 0)), style.color, 1)
+	-- табличка — над крышей магазина (раньше висела у земли над кругом)
+	local labelPos = zone.Position + Vector3.new(0, 7, 0)
+	local tm = zone.Parent:FindFirstChild("TripoModel")
+	if tm and tm:IsA("Model") then
+		local cf, sz = tm:GetBoundingBox()
+		labelPos = Vector3.new(cf.X, cf.Y + sz.Y / 2 + 2.5, cf.Z)
+	end
+	local anchor = part(m, Vector3.new(0.5, 0.5, 0.5), CFrame.new(labelPos), style.color, 1)
 	local bb = Instance.new("BillboardGui")
 	bb.Size = UDim2.new(5.5, 50, 1.5, 14) -- в студах (+ пиксели): дальние таблички меньше и не налезают на ближние
 	bb.MaxDistance = 120
@@ -117,9 +123,13 @@ Run.RenderStepped:Connect(function(dt)
 	t += dt
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	for zone, mk in pairs(markers) do
-		if not zone.Parent then
+		if not zone.Parent or (zone.Position - mk.center).Magnitude > 0.5 then
+			-- круг передвинули (WorldPolish ставит его перед прилавком) — перерисуем
 			mk.model:Destroy()
 			markers[zone] = nil
+			if zone.Parent then
+				task.defer(mark, zone)
+			end
 		elseif root and (root.Position - mk.center).Magnitude < 160 then
 			-- стрелки бегут к центру, табличка покачивается, кольцо «дышит»
 			local r = mk.d / 2

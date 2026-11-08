@@ -362,3 +362,37 @@ task.spawn(function()
 		end
 	end
 end)
+
+------------------------------------------------------------------ круги магазинов перед прилавком
+-- Фидбэк 2026-11: круг (ShopZone) заходил под модель магазина или стоял сбоку. Ставим его по центру
+-- лицевой стороны, на 1.5 студа перед ней. Лицевая сторона — ось модели, ближайшая к направлению на круг.
+task.spawn(function()
+	local done = {}
+	for _ = 1, 12 do
+		task.wait(5)
+		for _, zone in ipairs(world:GetDescendants()) do
+			if zone:IsA("BasePart") and zone.Name == "ShopZone" and not done[zone] then
+				local shop = zone.Parent
+				local tm = shop and shop:FindFirstChild("TripoModel")
+				if tm and tm:IsA("Model") then
+					done[zone] = true
+					pcall(function()
+						local cf, size = tm:GetBoundingBox()
+						local to = zone.Position - cf.Position
+						to = Vector3.new(to.X, 0, to.Z)
+						if to.Magnitude < 0.1 then
+							return
+						end
+						-- снап к оси мира (магазины стоят под 0/90/180/270)
+						local dir = math.abs(to.X) > math.abs(to.Z) and Vector3.new(math.sign(to.X), 0, 0) or Vector3.new(0, 0, math.sign(to.Z))
+						local half = math.abs(dir.X) * size.X / 2 + math.abs(dir.Z) * size.Z / 2
+						local r = math.max(zone.Size.Y, zone.Size.Z) / 2
+						local p = cf.Position + dir * (half + r + 1.5)
+						zone.Position = Vector3.new(p.X, zone.Position.Y, p.Z)
+						zone:SetAttribute("Aligned", true)
+					end)
+				end
+			end
+		end
+	end
+end)
