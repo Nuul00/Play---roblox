@@ -1364,10 +1364,28 @@ function Sky.Build(world)
 	trim(disc(ground, "GoldOutline", 306, 0.3, L(0, 0.12, 0), TRIM, M.Neon, { CanCollide = false }))
 	disc(ground, "Plaza", 300, 0.4, L(0, 0.2, 0), rgb(232, 226, 250), M.SmoothPlastic, { CanCollide = false })
 	disc(ground, "InnerRing", 250, 0.3, L(0, 0.3, 0), rgb(222, 214, 246), M.SmoothPlastic, { CanCollide = false })
+	-- Где облачная дорожка к первому сундуку пересекает бортик (r = 162): там у облаков бортика нет
+	-- невидимых колонн — иначе игрок бился в «стенку» между 3-й и 4-й ступенью и паркур был непроходим
+	-- (фидбэк 2026-11). Облака остаются, от падения страхует WorldBounds.
+	local gapAt
+	do
+		local s = Vector3.new(TREASURE_START.X, 0, TREASURE_START.Z)
+		local e = Vector3.new(TREASURE[1].At.X, 0, TREASURE[1].At.Z)
+		local d = e - s
+		-- |s + t·d| = 162, берём корень на отрезке
+		local a2, b2, c2 = d:Dot(d), 2 * s:Dot(d), s:Dot(s) - 162 * 162
+		local disc2 = b2 * b2 - 4 * a2 * c2
+		if disc2 >= 0 then
+			local t = (-b2 + math.sqrt(disc2)) / (2 * a2)
+			gapAt = s + d * t
+		end
+	end
 	for i = 1, 56 do
 		local a = i / 56 * math.pi * 2
+		local rimPos = Vector3.new(math.cos(a) * 162, 0, math.sin(a) * 162)
+		local onPath = gapAt ~= nil and (rimPos - gapAt).Magnitude < 40
 		-- Бортик сплошной (портал стоит на острове). Облака опущены, чтобы кромка площадки пряталась под ними.
-		cloud(ground, "RimPuff", 28 + (i % 3) * 3, L(math.cos(a) * 162, 1.5, math.sin(a) * 162), rgb(246, 240, 255), true, false, true)
+		cloud(ground, "RimPuff", 28 + (i % 3) * 3, L(rimPos.X, 1.5, rimPos.Z), rgb(246, 240, 255), not onPath, false, true)
 	end
 	local rng = Random.new(7)
 	-- Снизу площадка — облачная подушка с кристаллами, она качается вверх-вниз.

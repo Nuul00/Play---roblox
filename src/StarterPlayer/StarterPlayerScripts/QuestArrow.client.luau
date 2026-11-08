@@ -201,7 +201,8 @@ RunService.Heartbeat:Connect(function(dt)
 		current = target()
 	end
 	local d = current and (current - root.Position).Magnitude
-	if not current or d < NEAR or d > FAR or (player:GetAttribute("UIScreen") or "") ~= "" then
+	-- Settings → Quest arrow: OFF — подсказку не показываем (Save_QuestArrow, сохраняется)
+	if not current or d < NEAR or d > FAR or (player:GetAttribute("UIScreen") or "") ~= "" or player:GetAttribute("Save_QuestArrow") == "off" then
 		holder.Parent = nil
 		return
 	end

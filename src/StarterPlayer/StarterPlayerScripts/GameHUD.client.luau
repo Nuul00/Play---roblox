@@ -229,7 +229,12 @@ end
 gfxText();player:GetAttributeChangedSignal("Save_Graphics"):Connect(function() gfxText();task.delay(0.1,gfxInfoText) end)
 task.delay(4,gfxInfoText)
 gfxBtn.Activated:Connect(function() cycle("Save_Graphics","graphics",{"auto","low","medium","ultra"},"auto") end)
-settings.Size=UDim2.fromOffset(420,520)
+-- Стрелка квестов (2026-11, фидбэк: «постоянно за тобой бегает»): шевроны к цели и значок над ней
+local qaBtn=button(settings,"",UDim2.fromOffset(380,34),UDim2.fromOffset(20,512))
+local function qaText() qaBtn.Text="🧭 Quest arrow: "..(player:GetAttribute("Save_QuestArrow")=="off" and "OFF" or "ON") end
+qaText();player:GetAttributeChangedSignal("Save_QuestArrow"):Connect(qaText)
+qaBtn.Activated:Connect(function() cycle("Save_QuestArrow","questarrow",{"on","off"},"on") end)
+settings.Size=UDim2.fromOffset(420,560)
 -- Единый вид переключателей (фидбэк 2026-11: «кнопки разноцветные»): тёмная строка, слева название,
 -- справа плашка со значением — зелёная ON, серая OFF/HIDDEN, фиолетовая для остальных вариантов.
 do
@@ -250,7 +255,7 @@ do
   end
   sync();b:GetPropertyChangedSignal("Text"):Connect(sync);b:GetPropertyChangedSignal("BackgroundColor3"):Connect(sync)
  end
- for _,b in ipairs({music,sideBtn,evBtn,posBtn,mrkBtn,pillBtn,gfxBtn}) do styleRow(b) end
+ for _,b in ipairs({music,sideBtn,evBtn,posBtn,mrkBtn,pillBtn,gfxBtn,qaBtn}) do styleRow(b) end
 end
 
 local screens={stats=panel,settings=settings}
@@ -353,7 +358,8 @@ local previous=true
 RunService.RenderStepped:Connect(function()
  local camera=workspace.CurrentCamera
  if camera then
-  local s=math.clamp(math.min(camera.ViewportSize.X/450,camera.ViewportSize.Y/460),0.3,1)
+  -- по высоте окна + место под нижние кнопки (STORE/TRAILS) и плашку сверху, иначе нижняя строка уходит под них
+  local s=math.clamp(math.min(camera.ViewportSize.X/450,(camera.ViewportSize.Y-240)/settings.Size.Y.Offset),0.3,1)
   settingsScale.Scale=s
   scale.Scale=math.clamp(math.min(camera.ViewportSize.X/640,(camera.ViewportSize.Y-60)/460),0.3,1)
  end
