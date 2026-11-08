@@ -2002,8 +2002,39 @@ function B.Build(world)
 						part(island, "ApproachDash", Vector3.new(0.35, 0.05, 2), tile.CFrame * CFrame.new(0, 0.1, 0), Color3.fromRGB(255, 220, 80), M.Neon, GHOST)
 					end
 					for _, sg in { -1, 1 } do
+						if theme.Volcano then break end -- у вулкана сплошной шов (ниже), а не кусочки
 						local e = part(island, "ApproachEdge", Vector3.new(0.35, 0.2, 4.1), tile.CFrame * CFrame.new(sg * (BRIDGE_W / 2 - 0.9), 0.05, 0), theme.Rail, theme.RailMat, GHOST)
 						if theme.RailMat == M.Neon then e.Transparency = 0.1 end
+					end
+				end
+			end
+			if theme.Volcano then
+				-- 2026-11 (фидбэк): ровные сплошные лавовые швы по краям дорожки (продолжение шва моста)
+				-- и каменный заборчик от столбиков бортика до начала моста
+				local a, b = L0 + 2 - 2.05, edge - 8 -- от первой плитки до моста
+				local mid = base + dir * ((a + b) / 2)
+				local cfm = CFrame.lookAt(Vector3.new(mid.X, hy + 0.02, mid.Z), Vector3.new(mid.X, hy + 0.02, mid.Z) + dir)
+				for _, sg in { -1, 1 } do
+					part(island, "ApproachSeam", Vector3.new(0.3, 0.06, b - a), cfm * CFrame.new(sg * (BRIDGE_W / 2 - 1.05), 0, 0), theme.Rail, M.Neon, GHOST)
+				end
+				local deck = model:FindFirstChild("Ground") and model.Ground:FindFirstChild("Deck")
+				if deck then
+					-- где коридор пересекает бортик (радиус 217) — оттуда до моста ставим парапет
+					local rel = Vector3.new(spawn.X - deck.Position.X, 0, spawn.Z - deck.Position.Z)
+					local bq = rel:Dot(dir)
+					local d0 = -bq + math.sqrt(math.max(bq * bq - (rel:Dot(rel) - 216 * 216), 0))
+					local z = d0
+					local k = 0
+					while z < b - 0.1 do
+						k += 1
+						local len = math.min(2.4 + (k % 3) * 0.6, b - z)
+						local h = 1.5 + ((k * 7) % 5) * 0.12
+						local c = base + dir * (z + len / 2)
+						local pcf = CFrame.lookAt(Vector3.new(c.X, hy + h / 2, c.Z), Vector3.new(c.X, hy + h / 2, c.Z) + dir)
+						for _, sg in { -1, 1 } do
+							part(island, "ApproachParapet", Vector3.new(0.9, h, len - 0.12), pcf * CFrame.new(sg * (BRIDGE_W / 2 - 0.45), 0, 0), rgb(40, 30, 32):Lerp(rgb(70, 50, 46), (k % 4) / 4), M.Basalt)
+						end
+						z += len
 					end
 				end
 			end

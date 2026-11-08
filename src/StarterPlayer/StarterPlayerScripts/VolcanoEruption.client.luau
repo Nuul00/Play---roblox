@@ -81,6 +81,7 @@ local function anchorPart(pos: Vector3, name: string)
 	return p
 end
 
+local flows = {} -- пути потоков для анимации наплывов
 local function build()
 	local saved = {}
 	for _, m in ipairs(meshes) do
@@ -222,35 +223,55 @@ local function build()
 			local t = (i - 1) / math.max(#atts - 1, 1)
 			return (3.2 + t * 4.5) * (0.8 + 0.35 * math.sin(i * 1.3 + k * 2.1) + 0.12 * math.sin(i * 3.7))
 		end
-		for i = 1, #atts - 1 do
-			local w0, w1 = widthAt(i), widthAt(i + 1)
-			local layers = {
-				{ k = 1.0, color = ColorSequence.new(Color3.fromRGB(70, 22, 12), Color3.fromRGB(110, 30, 14)), light = 0.15, bright = 1, transp = 0 },
-				{ k = 0.62, color = ColorSequence.new(Color3.fromRGB(255, 110, 25), Color3.fromRGB(230, 60, 15)), light = 1, bright = 3, transp = 0 },
-				{ k = 0.55, color = ColorSequence.new(HOT), light = 1, bright = 3, transp = 0.25, tex = true },
-				{ k = 0.18, color = ColorSequence.new(HOT), light = 1, bright = 5, transp = 0.15 },
-			}
-			for layer, L in ipairs(layers) do
-				local b = Instance.new("Beam")
-				b.Name = "LavaFlow"
-				b.Attachment0, b.Attachment1 = atts[i], atts[i + 1]
-				b.Width0, b.Width1 = w0 * L.k, w1 * L.k
-				b.FaceCamera = false
-				b.Segments = 6
-				if L.tex then
-					-- мягкие пятна (дым), а не квадраты: медленно бегут вниз по склону
-					b.Texture = "rbxasset://textures/particles/smoke_main.dds"
-					b.TextureMode = Enum.TextureMode.Wrap
-					b.TextureLength = 7
-					b.TextureSpeed = -0.35
+		-- 2026-11 (фидбэк: «лаву видом тяжёлой жидкости, а не полосками»): поток — объёмное густое русло.
+		-- Толстое светящееся тело с закруглёнными изгибами, по бокам — тёмные валы застывшей лавы (как
+		-- у настоящих потоков), сверху медленно ползут вниз густые наплывы-капли (анимация ниже).
+		local function bodyPart(name, size, cframe, color, material)
+			local p = Instance.new("Part")
+			p.Name = name
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+			p.Size = size
+			p.CFrame = cframe
+			p.Color = color
+			p.Material = material
+			p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+			p.Parent = folder
+			return p
+		end
+		local THICK = 1.3
+		local path = {}
+		table.insert(flows, path)
+		for i = 1, #atts do
+			local t = (i - 1) / math.max(#atts - 1, 1)
+			local w = widthAt(i)
+			local wc = atts[i].WorldCFrame
+			local n = wc.UpVector
+			table.insert(path, { pos = wc.Position, n = n, w = w, t = t })
+			-- круглый «узел» на изгибе: без углов
+			local hotness = Color3.fromRGB(255, 120, 30):Lerp(Color3.fromRGB(235, 70, 15), math.clamp(t * 1.3, 0, 1)):Lerp(Color3.fromRGB(170, 35, 10), math.clamp(t - 0.6, 0, 1) * 2)
+			bodyPart("LavaBody", Vector3.new(THICK, w * 0.78, w * 0.78), CFrame.fromMatrix(wc.Position + n * (THICK / 2 - 0.45), n, wc.RightVector:Cross(n)), hotness, Enum.Material.Neon).Shape = Enum.PartType.Cylinder
+		end
+		for i = 1, #path - 1 do
+			local a0, a1 = path[i], path[i + 1]
+			local d = a1.pos - a0.pos
+			local len = d.Magnitude
+			if len > 0.2 then
+				local n = (a0.n + a1.n).Unit
+				local fwd = (d - n * d:Dot(n)).Unit
+				local right = fwd:Cross(n)
+				local frame = CFrame.fromMatrix((a0.pos + a1.pos) / 2, right, n)
+				frame = CFrame.lookAt(frame.Position, frame.Position + d, n)
+				local w = (a0.w + a1.w) / 2
+				local t = (a0.t + a1.t) / 2
+				local hotness = Color3.fromRGB(255, 120, 30):Lerp(Color3.fromRGB(235, 70, 15), math.clamp(t * 1.3, 0, 1)):Lerp(Color3.fromRGB(170, 35, 10), math.clamp(t - 0.6, 0, 1) * 2)
+				-- тело потока
+				bodyPart("LavaBody", Vector3.new(w * 0.78, THICK, len + 0.4), frame * CFrame.new(0, THICK / 2 - 0.45, 0), hotness, Enum.Material.Neon)
+				-- раскалённая жила по центру (чуть выше тела)
+				bodyPart("LavaVein", Vector3.new(w * 0.14, 0.1, len + 0.4), frame * CFrame.new(0, THICK - 0.4, 0), Color3.fromRGB(255, 170, 60), Enum.Material.Neon)
+				-- валы застывшей лавы по краям
+				for _, s in { -1, 1 } do
+					bodyPart("LavaLevee", Vector3.new(w * 0.24, THICK * 1.15, len + 0.6), frame * CFrame.new(s * w * 0.46, THICK * 0.5 - 0.5, 0) * CFrame.Angles(0, 0, s * 0.25), Color3.fromRGB(55, 24, 18):Lerp(Color3.fromRGB(110, 32, 16), (i % 3) / 3), Enum.Material.CrackedLava)
 				end
-				b.LightEmission = L.light
-				b.LightInfluence = 0
-				b.Brightness = L.bright
-				b.Color = L.color
-				b.Transparency = NumberSequence.new(L.transp)
-				b.ZOffset = layer
-				b.Parent = atts[i].Parent
 			end
 			if i % 5 == 0 then
 				local l = Instance.new("PointLight")
@@ -286,6 +307,61 @@ if not ok then
 	return
 end
 
+-- Густые наплывы: по каждому потоку медленно (как тяжёлая жидкость) сползают вниз вздутия лавы —
+-- приплюснутые светящиеся «капли», наполовину утопленные в русле. Внизу растворяются.
+local RunService = game:GetService("RunService")
+local blobs = {}
+for fi, path in ipairs(flows) do
+	if #path >= 3 then
+		local total = 0
+		local cum = { 0 }
+		for i = 2, #path do
+			total += (path[i].pos - path[i - 1].pos).Magnitude
+			cum[i] = total
+		end
+		local count = math.max(3, math.floor(total / 14))
+		for b = 1, count do
+			local p = Instance.new("Part")
+			p.Name = "LavaBlob"
+			p.Shape = Enum.PartType.Ball
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+			p.Material = Enum.Material.Neon
+			p.Color = HOT
+			p.Parent = folder
+			table.insert(blobs, { part = p, path = path, cum = cum, total = total, s = total * (b - 1) / count, speed = 2.6 + (fi % 3) * 0.4 })
+		end
+	end
+end
+local blobParts, blobFrames = {}, {}
+local blobConn: RBXScriptConnection? = nil
+local function stepBlobs(dt: number)
+	for i, b in ipairs(blobs) do
+		b.s = (b.s + dt * b.speed) % b.total
+		-- найти отрезок
+		local path, cum = b.path, b.cum
+		local j = 1
+		while j < #path - 1 and cum[j + 1] < b.s do
+			j += 1
+		end
+		local a0, a1 = path[j], path[j + 1]
+		local seg = math.max(cum[j + 1] - cum[j], 0.01)
+		local k = math.clamp((b.s - cum[j]) / seg, 0, 1)
+		local pos = a0.pos:Lerp(a1.pos, k)
+		local n = a0.n:Lerp(a1.n, k).Unit
+		local w = a0.w + (a1.w - a0.w) * k
+		local tt = b.s / b.total
+		-- растут к середине, к подножию сплющиваются и тают
+		local size = w * 0.5 * math.sin(math.clamp(tt, 0.02, 0.98) * math.pi) ^ 0.5
+		b.part.Size = Vector3.new(size, size, size)
+		b.part.Color = Color3.fromRGB(255, 150, 50):Lerp(Color3.fromRGB(230, 70, 15), tt)
+		blobParts[i] = b.part
+		blobFrames[i] = CFrame.new(pos + n * (1.3 - 0.45 - size * 0.2))
+	end
+	if #blobParts > 0 then
+		workspace:BulkMoveTo(blobParts, blobFrames, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+end
+
 local inside = false
 local gen = 0
 local function onWorld()
@@ -297,7 +373,12 @@ local function onWorld()
 	folder.Parent = inside and workspace or nil
 	gen += 1
 	local my = gen
+	if blobConn then
+		blobConn:Disconnect()
+		blobConn = nil
+	end
 	if inside then
+		blobConn = RunService.Heartbeat:Connect(stepBlobs)
 		task.spawn(function()
 			while inside and gen == my do -- быстрый выход/вход не запускает второй цикл
 				task.wait(math.random(9, 16))
