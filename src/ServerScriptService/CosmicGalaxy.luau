@@ -468,8 +468,8 @@ function Galaxy.Build(world: Instance): Model
 		end
 	end
 	path("PathMain", Vector3.new(18, 0.3, 200), L(0, 0.15, 80), CYAN)
-	path("PathShop", Vector3.new(76, 0.3, 14), L(-46, 0.16, 40), PINK)
-	path("PathMagnets", Vector3.new(76, 0.3, 14), L(-46, 0.16, 100), PINK)
+	path("PathShop", Vector3.new(90, 0.3, 14), L(-53, 0.16, 40), PINK) -- 2026-11: до самого магазина, без щели
+	path("PathMagnets", Vector3.new(90, 0.3, 14), L(-53, 0.16, 100), PINK)
 	path("PathEggs", Vector3.new(156, 0.3, 14), L(82, 0.16, 70), GOLD)
 	path("PathMonument", Vector3.new(18, 0.3, 52), L(0, 0.15, -40), CYAN)
 	-- Перекрёстки боковых дорожек с главной: неяркие светящиеся круги.

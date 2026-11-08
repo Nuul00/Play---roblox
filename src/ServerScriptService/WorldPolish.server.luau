@@ -462,6 +462,23 @@ task.spawn(function()
 						end)
 						tm = shop:FindFirstChild("TripoModel")
 					end
+					-- Magma / Galaxy (фидбэк 2026-11 «не впритык к дорожке»): магазин встаёт передом ровно на
+					-- торец своей дорожки и по её центру
+					if tm and shop:IsA("Model") and shop.Parent and (shop.Parent.Name == "CosmicGalaxy" or shop.Parent.Name == "MagmaVolcano") and not shop:GetAttribute("Snapped") then
+						shop:SetAttribute("Snapped", true)
+						pcall(function()
+							local paths = shop.Parent:FindFirstChild("Paths")
+							local path = paths and paths:FindFirstChild(shop.Name == "MagnetShop" and "PathMagnets" or "PathShop")
+							if path and path:IsA("BasePart") then
+								local cf, size = tm:GetBoundingBox()
+								local westEnd = path.Position.X - path.Size.X / 2
+								local dx = 0 -- по X не двигаем: дорожка продлена под магазин (MagmaVolcano/CosmicGalaxy)
+								local _ = westEnd
+								local dz = path.Position.Z - cf.Z
+								shop:PivotTo(shop:GetPivot() + Vector3.new(dx, 0, dz))
+							end
+						end)
+					end
 					pcall(function()
 						local cf, size
 						if tm then

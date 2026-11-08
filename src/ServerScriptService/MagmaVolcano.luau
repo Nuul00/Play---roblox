@@ -580,8 +580,8 @@ function Volcano.Build(world: Instance): Model
 	paths.Name = "Paths"
 	paths.Parent = model
 	part(paths, "PathMain", Vector3.new(18, 0.3, 200), L(0, 0.15, 80), BASALT_LIGHT, M.Slate)
-	part(paths, "PathShop", Vector3.new(76, 0.3, 14), L(-46, 0.16, 40), BASALT_LIGHT, M.Slate)
-	part(paths, "PathMagnets", Vector3.new(76, 0.3, 14), L(-46, 0.16, 100), BASALT_LIGHT, M.Slate)
+	part(paths, "PathShop", Vector3.new(90, 0.3, 14), L(-53, 0.16, 40), BASALT_LIGHT, M.Slate) -- 2026-11: до самого магазина, без щели
+	part(paths, "PathMagnets", Vector3.new(90, 0.3, 14), L(-53, 0.16, 100), BASALT_LIGHT, M.Slate)
 	part(paths, "PathEggs", Vector3.new(156, 0.3, 14), L(82, 0.16, 70), BASALT_LIGHT, M.Slate)
 	part(paths, "PathGalaxy", Vector3.new(142, 0.3, 14), L(95, 0.16, 10), BASALT_LIGHT, M.Slate)
 	disc(paths, "Plaza", 54, 0.32, L(0, 0.16, 10), BASALT_LIGHT:Lerp(ASH, 0.3), M.Slate)
