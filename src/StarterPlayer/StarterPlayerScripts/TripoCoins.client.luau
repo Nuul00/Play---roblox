@@ -236,16 +236,26 @@ game:GetService("Players").LocalPlayer:GetAttributeChangedSignal("CurrentWorld")
 	end
 end)
 
--- Вращение и лёгкое парение — только в Frozen Peaks и 20 раз в секунду.
+-- Вращение и лёгкое парение. Раньше всё обновлялось 20 раз в секунду — монеты крутились рывками
+-- (фидбэк 2026-11: «как будто 20–30 кадров»). Теперь: служебные проверки и список ближних монет —
+-- 10 раз в секунду, а само вращение ближних (до 110 студов) — каждый кадр.
 local acc = 0
 local player = game:GetService("Players").LocalPlayer
-RunService.Heartbeat:Connect(function(dt)
+local near = {}
+RunService.RenderStepped:Connect(function(dt)
 	t += dt
+	for _, e in ipairs(near) do
+		local p = e.part.Position
+		e.model:PivotTo(CFrame.new(p + Vector3.new(0, math.sin(t * 2 + e.phase) * 0.3, 0)) * CFrame.Angles(0, t * 1.8 + e.phase, 0))
+	end
+end)
+RunService.Heartbeat:Connect(function(dt)
 	acc += dt
-	if acc < 0.05 then
+	if acc < 0.1 then
 		return
 	end
 	acc = 0
+	table.clear(near)
 	local current = player:GetAttribute("CurrentWorld")
 	local cam = workspace.CurrentCamera
 	local camPos = cam and cam.CFrame.Position
@@ -263,8 +273,7 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 		if e.world == current and e.part.Transparency < 1 and camPos and (e.part.Position - camPos).Magnitude < 110 then
-			local p = e.part.Position
-			e.model:PivotTo(CFrame.new(p + Vector3.new(0, math.sin(t * 2 + e.phase) * 0.3, 0)) * CFrame.Angles(0, t * 1.8 + e.phase, 0))
+			table.insert(near, e)
 		end
 	end
 end)

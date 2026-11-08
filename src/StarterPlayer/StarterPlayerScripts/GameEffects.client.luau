@@ -408,9 +408,10 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
-	-- монеты: 30 раз в секунду, только своего мира и в 110 стадах, одним пакетом BulkMoveTo
+	-- монеты: каждый кадр (при 30 Гц вращение выглядело рывками — фидбэк 2026-11), только своего мира
+	-- и в 110 стадах, одним пакетом BulkMoveTo
 	coinClock += dt
-	if coinClock >= 1 / 30 then
+	if coinClock >= 0 then
 		coinClock = 0
 		local here = localPlayer:GetAttribute("CurrentWorld") or "Meadow Isles"
 		table.clear(coinParts)
