@@ -202,6 +202,11 @@ local function build()
 				along = pt.pos - pts[i - 1].pos
 			end
 			local n = pt.normal
+			-- луч мог попасть в отвесный бок камня: тогда лента вставала стеной (фидбэк 2026-11).
+			-- Нормаль не круче ~55° от вертикали — поток всегда лежит по склону/земле.
+			if n.Y < 0.6 then
+				n = (Vector3.new(n.X, 0, n.Z) * 0.4 + Vector3.yAxis).Unit
+			end
 			local x = (along - n * along:Dot(n))
 			x = x.Magnitude > 0.01 and x.Unit or Vector3.new(1, 0, 0)
 			local holder = anchorPart(pt.pos, "FlowPoint")

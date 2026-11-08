@@ -63,6 +63,7 @@ local THEMES = {
 		Top = rgb(60, 36, 30), TopMat = M.CrackedLava, Under = rgb(40, 30, 32), UnderMat = M.Basalt, Rim = rgb(255, 110, 30), RimMat = M.Neon, Cracks = rgb(255, 120, 30),
 		Deck = rgb(45, 35, 35), DeckMat = M.Basalt, Rail = rgb(255, 110, 30), RailMat = M.Neon, Lamp = rgb(255, 140, 40),
 		Arch = rgb(40, 30, 32), ArchMat = M.Basalt, ArchInk = rgb(120, 30, 0), ArchGlow = rgb(255, 110, 30),
+		Volcano = true, -- мост: каменный, с базальтовыми парапетами и лавовым швом (фидбэк 2026-11)
 	},
 	CosmicGalaxy = {
 		Board = rgb(14, 10, 40), Frame = rgb(60, 50, 110), FrameMat = M.Metal, Trim = rgb(120, 230, 255), TrimMat = M.Neon, Trim2 = rgb(255, 110, 220),
@@ -1044,6 +1045,28 @@ local function buildBridge(island, theme, from, to, groundY)
 	local cf = CFrame.lookAt((a + b) / 2, b)
 	local deck = part(island, "BridgeDeck", Vector3.new(BRIDGE_W, 1, L), cf * CFrame.new(0, -0.5, 0), theme.Deck, theme.DeckMat)
 	if theme.DeckMat == M.Glass then deck.Transparency = 0.2 end
+	if theme.Volcano then
+		-- вулкан: настил из светлого базальта (как дорожки мира), по бокам низкие каменные парапеты
+		-- из глыб разной высоты, между настилом и парапетом светится лавовый шов; снизу — толстая плита
+		deck.Color = rgb(88, 78, 76)
+		deck.Material = M.Slate
+		part(island, "BridgeSlab", Vector3.new(BRIDGE_W + 1.2, 2.2, L), cf * CFrame.new(0, -2.1, 0), rgb(40, 30, 32), M.Basalt, GHOST)
+		for _, s in { -1, 1 } do
+			part(island, "BridgeSeam", Vector3.new(0.3, 0.06, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 1.05), 0.02, 0), theme.Rail, M.Neon, GHOST)
+			local z = -L / 2
+			local k = 0
+			while z < L / 2 - 0.1 do
+				k += 1
+				local len = math.min(2.4 + (k % 3) * 0.6, L / 2 - z)
+				local h = 1.5 + ((k * 7) % 5) * 0.12
+				part(island, "BridgeParapet", Vector3.new(0.9, h, len - 0.12), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.45), h / 2, z + len / 2), rgb(40, 30, 32):Lerp(rgb(70, 50, 46), (k % 4) / 4), M.Basalt)
+				z += len
+			end
+			part(island, "BridgeGuard", Vector3.new(0.3, 12, L + 2), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.2), 6, 0), theme.Rail, M.SmoothPlastic, { Transparency = 1, CanQuery = false })
+		end
+		buildArch(island, theme, CFrame.lookAt(b, a) * CFrame.new(0, 0, 4))
+		return
+	end
 	for _, s in { -1, 1 } do
 		local edge = part(island, "BridgeEdge", Vector3.new(0.6, 0.9, L), cf * CFrame.new(s * (BRIDGE_W / 2 - 0.3), 0.2, 0), theme.Rail, theme.RailMat, GHOST)
 		if theme.RailMat == M.Neon then CollectionService:AddTag(edge, "BoardPulse") end
@@ -1524,6 +1547,8 @@ local function cutGate(wall, base, dir, hy, theme, island)
 	end
 	wall:Destroy()
 	if size.Y < 3 then return end -- для тонких неоновых полос столбы не нужны
+	-- вулкан: стена невидимая, проход в низком бортике — оранжевые столбы ворот только мешают
+	if theme.Volcano then return end
 	-- столбы ворот
 	for _, sgn in { -1, 1 } do
 		local at = wpos + axis * (c + sgn * (g + 0.8))
@@ -1795,6 +1820,30 @@ function B.Build(world)
 				local d = -b + math.sqrt(math.max(b * b - c, 0))
 				edge = d + 8 -- мост начинается в edge − 8, то есть на 219 от центра
 				hy = top
+				-- стены, которые пересекает новый коридор (бортик-граница и невидимая стена), — прорезать
+				walls = {}
+				local side = Vector3.new(-dir.Z, 0, dir.X)
+				for _, q in model:GetDescendants() do
+					if q:IsA("Part") and q.Shape == Enum.PartType.Block and string.find(q.Name, "Wall", 1, true) then
+						local half = q.Size / 2
+						local hit = false
+						for dd = edge - 16, edge + 4, 1 do
+							for _, sd in { -BRIDGE_W / 2, 0, BRIDGE_W / 2 } do
+								local lp = q.CFrame:PointToObjectSpace(Vector3.new(spawn.X, hy + 1, spawn.Z) + dir * dd + side * sd)
+								if math.abs(lp.X) <= half.X and math.abs(lp.Z) <= half.Z and math.abs(lp.Y) <= half.Y + 2 then
+									hit = true
+									break
+								end
+							end
+							if hit then
+								break
+							end
+						end
+						if hit then
+							table.insert(walls, q)
+						end
+					end
+				end
 			end
 		end
 		local base = Vector3.new(spawn.X, hy, spawn.Z)
@@ -1921,7 +1970,9 @@ function B.Build(world)
 						tile.Color = Color3.fromRGB(88, 78, 76)
 						tile.Material = M.Slate
 						tile.Size = Vector3.new(BRIDGE_W, 0.3, 4.1)
-						tile.CFrame = tile.CFrame + Vector3.new(0, 0.07, 0)
+						-- ровно вровень с мостом (без ступеньки), что бы ни было под плиткой
+						local tp = Vector3.new(tile.Position.X, hy - 0.13, tile.Position.Z)
+						tile.CFrame = CFrame.lookAt(tp, tp + dir)
 					end
 					if theme.Grid then
 						-- неоновые миры: дорога как главная улица (тёмный асфальт, жёлтая разметка), а не чёрная полоса
@@ -1936,7 +1987,7 @@ function B.Build(world)
 					end
 				end
 			end
-			for d = L0 + 4, L1, 12 do
+			for d = L0 + 4, key == "MagmaVolcano" and L1 - 9 or L1, 12 do -- Magma: последний фонарь не у самого моста
 				for _, sg in { -1, 1 } do
 					local c = base + dir * d + side * sg * (BRIDGE_W / 2 + 1)
 					local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
