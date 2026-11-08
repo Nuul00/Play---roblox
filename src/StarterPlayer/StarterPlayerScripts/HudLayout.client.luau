@@ -123,77 +123,8 @@ local function layout()
 	end
 end
 
--- ===== Список игроков (Tab) =====
--- 2026-11 (фидбэк: «значок настроек влезает в таб»): Roblox рисует список игроков в правом верхнем углу
--- поверх шестерёнки, INVITE и TRAVEL. Пока список открыт, правая колонка плавно уезжает под него,
--- а вкладка зелий справа — ещё ниже, если колонка до неё достаёт. Закрыли список — всё возвращается.
--- Открыт ли список, Roblox не сообщает (GetCore такого не знает), поэтому следим за клавишей Tab
--- (на телефоне список открывается из меню Roblox — там он и так компактный).
-local UserInputService = game:GetService("UserInputService")
-local StarterGui = game:GetService("StarterGui")
-local GuiService = game:GetService("GuiService")
-local listOpen = false
-UserInputService.InputBegan:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.Tab and not UserInputService:GetFocusedTextBox() then
-		listOpen = not listOpen
-	end
-end)
--- размеры списка Roblox (замер в Studio): шапка ~40 px, строка игрока ~44 px, верх в 4 px под панелью
-local LIST_TOP, LIST_HEAD, LIST_ROW = 4, 40, 44
-local applied = setmetatable({}, { __mode = "k" }) -- [элемент] = сколько px мы сейчас добавили к Y
-local shiftNow = 0
-local function setShift(o: GuiObject?, dy: number)
-	if not o then
-		return
-	end
-	local was = applied[o] or 0
-	local d = math.floor(dy + 0.5) - was
-	if d ~= 0 then
-		o.Position += UDim2.fromOffset(0, d)
-		applied[o] = was + d
-	end
-end
-local function listShift(dt: number)
-	local gear = find({ "MenuHUD", "TopRight" })
-	if not gear then
-		return
-	end
-	local open = listOpen and StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList)
-	local target = 0
-	local cam = workspace.CurrentCamera
-	local vh = cam and cam.ViewportSize.Y - GuiService:GetGuiInset().Y or 600
-	if open then
-		local h = math.min(LIST_HEAD + LIST_ROW * #Players:GetPlayers(), vh * 0.5)
-		local baseTop = gear.AbsolutePosition.Y - (applied[gear] or 0)
-		target = math.max(0, LIST_TOP + h + GAP - baseTop)
-	end
-	-- плавно (≈0.15 с), без рывка
-	shiftNow += (target - shiftNow) * math.min(1, dt * 14)
-	if math.abs(target - shiftNow) < 0.5 then
-		shiftNow = target
-	end
-	setShift(gear, shiftNow)
-	-- вкладка зелий справа: если низ колонки (последняя видимая кнопка) до неё дошёл — опускаем и её
-	local dock = find({ "PotionHUD", "PotionDock" })
-	if dock and cam and dock.AbsolutePosition.X > cam.ViewportSize.X / 2 then
-		local last = gear
-		for _, path in ipairs(COLUMNS[2].Items) do
-			local o = find(path)
-			if shown(o) and o.AbsolutePosition.Y > last.AbsolutePosition.Y then
-				last = o
-			end
-		end
-		local colBottom = last.AbsolutePosition.Y + height(last) + GAP * R.Scale()
-		local dockBase = dock.AbsolutePosition.Y - (applied[dock] or 0)
-		setShift(dock, shiftNow > 0 and math.max(0, colBottom - dockBase) or 0)
-	elseif dock then
-		setShift(dock, 0)
-	end
-end
-
 -- дешево (десяток элементов), зато сразу ловим смену экрана, сворачивание квеста, показ/скрытие кнопок
-RunService.RenderStepped:Connect(function(dt)
-	pcall(listShift, dt)
+RunService.RenderStepped:Connect(function()
 	local ok, err = pcall(layout)
 	if not ok then
 		warn("[HudLayout]", err)
