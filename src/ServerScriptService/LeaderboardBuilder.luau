@@ -1221,7 +1221,7 @@ local function topSign(island, theme, a, dir)
 		part(island, "TopBoardPost", Vector3.new(1.2, postH, 1.2), face * CFrame.new(sx * (W / 2 - 1), postH / 2, 0.6), theme.Arch, theme.ArchMat)
 	end
 	local board = part(island, "TopBoard", Vector3.new(W, H, 0.8), face * CFrame.new(0, postH - H / 2 + 0.5, 0), theme.Board:Lerp(Color3.new(1, 1, 1), 0.08), M.SmoothPlastic)
-	part(island, "TopBoardFrame", Vector3.new(W + 0.8, H + 0.8, 0.6), board.CFrame * CFrame.new(0, 0, 0.25), theme.Frame, theme.FrameMat)
+	local frame = part(island, "TopBoardFrame", Vector3.new(W + 0.8, H + 0.8, 0.6), board.CFrame * CFrame.new(0, 0, 0.25), theme.Frame, theme.FrameMat)
 	-- подсветка сверху: два кронштейна и светящаяся планка перед верхним краем, свет — вниз на доску
 	local top = board.CFrame * CFrame.new(0, H / 2 + 0.4, 0)
 	for _, sx in { -1, 1 } do
@@ -1242,7 +1242,7 @@ local function topSign(island, theme, a, dir)
 	sg.MaxDistance = 300
 	sg.CanvasSize = Vector2.new(640, 320)
 	sg.Parent = board
-	local function txt(s, y, h, c)
+	local function txt(s, y, h, c, gui)
 		local t = Instance.new("TextLabel")
 		t.BackgroundTransparency = 1
 		t.Position = UDim2.fromScale(0.05, y)
@@ -1251,7 +1251,7 @@ local function topSign(island, theme, a, dir)
 		t.TextScaled = true
 		t.Text = s
 		t.TextColor3 = c
-		t.Parent = sg
+		t.Parent = gui or sg
 		local st = Instance.new("UIStroke")
 		st.Thickness = 3
 		st.Color = Color3.new(0, 0, 0)
@@ -1261,6 +1261,33 @@ local function topSign(island, theme, a, dir)
 	txt("🏆 TOP PLAYERS 🏆", 0.05, 0.3, theme.Title)
 	txt("← LEADERBOARDS", 0.39, 0.22, theme.Sub or Color3.new(1, 1, 1))
 	txt("#1 ?", 0.64, 0.3, Color3.fromRGB(255, 215, 90))
+	-- обратная сторона — для тех, кто возвращается от топов (фидбэк 2026-11): «респект» тому, кто дошёл
+	local back = Instance.new("SurfaceGui")
+	back.Face = Enum.NormalId.Back
+	back.LightInfluence = 0
+	back.MaxDistance = 300
+	back.CanvasSize = Vector2.new(640, 320)
+	back.Parent = frame
+	local backBg = Instance.new("Frame")
+	backBg.Size = UDim2.fromScale(1, 1)
+	backBg.Position = UDim2.fromScale(0, 0)
+	backBg.BackgroundColor3 = theme.Board:Lerp(Color3.new(1, 1, 1), 0.08)
+	backBg.BorderSizePixel = 0
+	backBg.Parent = back
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0.03, 0)
+	pad.PaddingRight = UDim.new(0.03, 0)
+	pad.Parent = backBg
+	txt("🏆 RESPECT! 🏆", 0.06, 0.28, theme.Title, backBg)
+	txt("Didn't go to the TOP? You'd never read this:", 0.4, 0.17, Color3.fromRGB(235, 235, 235), backBg)
+	txt("YOU ARE THE BEST ❤", 0.62, 0.3, Color3.fromRGB(255, 215, 90), backBg)
+	-- подсветка и с этой стороны
+	for _, sx in { -1, 1 } do
+		part(island, "TopLampArm", Vector3.new(0.3, 0.3, 1.8), top * CFrame.new(sx * (W / 2 - 2), 0.3, 1.4), theme.Frame, M.Metal, GHOST)
+	end
+	part(island, "TopLampHousing", Vector3.new(W - 2, 0.5, 0.7), top * CFrame.new(0, 0.3, 2.3), Color3.fromRGB(40, 40, 45), M.Metal, GHOST)
+	local bar2 = part(island, "TopLampBar", Vector3.new(W - 2.4, 0.15, 0.5), top * CFrame.new(0, 0.02, 2.3), Color3.fromRGB(255, 244, 210), M.Neon, GHOST)
+	spot:Clone().Parent = bar2
 	local holder = part(island, "TopSign", Vector3.new(1, 1, 1), board.CFrame, theme.Lamp, M.Neon, GHOST)
 	holder.Transparency = 1
 end
