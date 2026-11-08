@@ -286,6 +286,36 @@ if settingsButton then
 	settingsButton.Position = UDim2.fromOffset(0, 0)
 	settingsButton.Size = UDim2.fromScale(1, 1)
 	settingsButton.Parent = topRight
+	-- 2026-11 (фидбэк: «сделать значок настроек красивее» → «тёмный круг»): чёрный круг с белой
+	-- шестерёнкой в стиле кнопок Roblox, во всех мирах одинаковый (скин мира его больше не меняет).
+	local c = settingsButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner", settingsButton)
+	c.CornerRadius = UDim.new(1, 0)
+	settingsButton.BackgroundColor3 = Color3.fromRGB(6, 6, 9)
+	settingsButton.BackgroundTransparency = 0.05
+	for _, child in ipairs(settingsButton:GetChildren()) do
+		if child:IsA("UIGradient") then
+			child.Enabled = false
+		elseif child:IsA("UIStroke") then
+			child.Color = Color3.fromRGB(70, 70, 78)
+			child.Thickness = 2
+		elseif child:IsA("GuiObject") then
+			child.Visible = false -- блик и эмодзи ⚙
+		end
+	end
+	local gearIcon = Instance.new("ImageLabel")
+	gearIcon.Name = "GearIcon"
+	gearIcon.BackgroundTransparency = 1
+	gearIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	gearIcon.Position = UDim2.fromScale(0.5, 0.5)
+	gearIcon.Size = UDim2.fromScale(0.6, 0.6)
+	gearIcon.Image = "rbxasset://textures/ui/Settings/MenuBarIcons/GameSettingsTab.png"
+	gearIcon.Parent = settingsButton
+	settingsButton.MouseEnter:Connect(function()
+		settingsButton.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+	end)
+	settingsButton.MouseLeave:Connect(function()
+		settingsButton.BackgroundColor3 = Color3.fromRGB(6, 6, 9)
+	end)
 end
 row.Visible = false
 -- Красная точка DAILY дублируется на «≡», чтобы награду было видно и при закрытом меню.
@@ -633,9 +663,7 @@ local function apply(announce: boolean)
 			skinButton(button, skin[BUTTON_KEYS[name]], CELL + 6, name == "DAILY" and skin.Dot_Notify or nil)
 		end
 	end
-	if settingsButton and skin.Btn_Settings then
-		skinButton(settingsButton, skin.Btn_Settings, 64, nil)
-	end
+	-- кнопка настроек — свой тёмный круг (см. выше), скин мира её не перекрашивает
 	-- «≡» и окно меню в цветах мира, рамка окна — картинка из набора.
 	if skin.MenuTop and skin.MenuBottom then
 		set(burgerGradient, "Color", ColorSequence.new(skin.MenuTop, skin.MenuBottom))
