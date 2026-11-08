@@ -165,7 +165,8 @@ local function fixCoins()
 
 	-- 2026-11: монеты не лежат на дорожках/площадях/мостах, не у яиц, магазинов и машин
 	-- и не друг в друге (раньше встречались по две монеты в одной точке).
-	local PATH_WORDS = { "path", "plaza", "road", "street", "bridge", "walk", "sidewalk" }
+	-- lake/rink: на льду катка Frozen монет нет (фидбэк 2026-11)
+	local PATH_WORDS = { "path", "plaza", "road", "street", "bridge", "walk", "sidewalk", "lake", "rink" }
 	local function onPath(hit: RaycastResult?): boolean
 		if not hit then
 			return false

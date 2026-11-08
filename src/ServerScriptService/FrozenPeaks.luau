@@ -616,7 +616,9 @@ function Frozen.Build(world: Instance)
 		end
 		local a, r = rand:NextNumber(0, math.pi * 2), math.sqrt(rand:NextNumber()) * 145
 		local x, z = math.cos(a) * r, math.sin(a) * r
-		if free(x, z, 3) or (math.abs(x) < 8 and z > 20 and z < 140) then
+		-- 2026-11 (фидбэк): на льду катка монет нет — там катаются
+		local onIce = (x - 75) ^ 2 + (z - 20) ^ 2 < 39 ^ 2
+		if not onIce and (free(x, z, 3) or (math.abs(x) < 8 and z > 20 and z < 140)) then
 			placed += 1
 			local kind, rarity = CoinTypes.Pick("Frozen", placed)
 			local size = CoinTypes.BaseSize.Frozen * kind.Scale

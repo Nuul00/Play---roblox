@@ -1128,26 +1128,39 @@ local function buildGlobe(island, theme, ic, groundY, from, to)
 	local b = Vector3.new(to.X, groundY, to.Z)
 	local dir = (b - a).Unit
 	local L = (b - a).Magnitude
-	local tc = CFrame.lookAt((a + b) / 2 + Vector3.new(0, 5.5, 0), b + Vector3.new(0, 5.5, 0))
-	local tube = part(island, "GlobeTunnel", Vector3.new(L, 14, 14), tc * CFrame.Angles(0, math.rad(90), 0), rgb(205, 235, 250), M.Glass, GHOST)
-	tube.Shape = Enum.PartType.Cylinder
-	tube.Transparency = 0.78
-	tube.Reflectance = 0
-	tube.CastShadow = false
-	for z = -L / 2 + 1, L / 2 - 1, 5 do
-		local rib = part(island, "TunnelRing", Vector3.new(0.6, 14.4, 14.4), tc * CFrame.new(0, 0, z) * CFrame.Angles(0, math.rad(90), 0), rgb(120, 180, 225), M.Glacier, GHOST)
-		rib.Shape = Enum.PartType.Cylinder
-		rib.Transparency = 0.1
-		rib.CastShadow = false
+	-- 2026-11 (фидбэк): труба — открытая дуга из панелей (у цилиндра были глухие торцы-«стенки»,
+	-- камера в них заливала экран голубым). Окружность радиуса TR с центром на TH над настилом
+	-- проходит ровно через края моста — срез тоннеля совпадает с мостом. Без стекла в проёме.
+	local TR = 7
+	local half = BRIDGE_W / 2
+	local TH = math.sqrt(TR * TR - half * half)
+	local tc = CFrame.lookAt((a + b) / 2 + Vector3.new(0, TH, 0), b + Vector3.new(0, TH, 0))
+	local th0 = math.asin(TH / TR) -- от -th0 до pi + th0: дуга над настилом
+	local SEG = 22
+	local step = (math.pi + 2 * th0) / SEG
+	local function arc(name, depth, thick, z, color, mat, transp, rOff)
+		local r = TR + (rOff or 0)
+		local chord = 2 * r * math.sin(step / 2) + 0.12
+		for i = 0, SEG - 1 do
+			local t = -th0 + (i + 0.5) * step
+			local p = part(island, name, Vector3.new(chord, thick, depth), tc * CFrame.new(0, 0, z) * CFrame.Angles(0, 0, t) * CFrame.new(r, 0, 0) * CFrame.Angles(0, 0, math.pi / 2), color, mat, GHOST)
+			p.Transparency = transp
+			p.Reflectance = 0
+			p.CastShadow = false
+		end
+	end
+	arc("GlobeTunnel", L, 0.25, 0, rgb(205, 235, 250), M.Glass, 0.8)
+	for z = -L / 2 + 5, L / 2 - 4, 5 do
+		arc("TunnelRing", 0.6, 0.6, z, rgb(120, 180, 225), M.Glacier, 0.1, 0.2)
+	end
+	-- торцы: толстые ледяные обода точно по срезу моста
+	for _, z in { -L / 2 + 0.5, L / 2 - 0.5 } do
+		arc("TunnelRim", 1, 1, z, rgb(150, 205, 240), M.Glacier, 0, 0.3)
 	end
 	for _, sx in { -1, 1 } do
-		local strip = part(island, "TunnelGuide", Vector3.new(0.25, 0.08, L), tc * CFrame.new(sx * (BRIDGE_W / 2 - 1), -5.4, 0), rgb(110, 200, 255), M.Neon, GHOST)
+		local strip = part(island, "TunnelGuide", Vector3.new(0.25, 0.08, L), tc * CFrame.new(sx * (half - 1), -TH + 0.05, 0), rgb(110, 200, 255), M.Neon, GHOST)
 		strip.Transparency = 0.25
 	end
-	-- проём в шаре: лёгкое стекло без свечения
-	local film = part(island, "GlobeDoor", Vector3.new(0.2, 12.6, 12.6), CFrame.lookAt(b + Vector3.new(0, 5.5, 0), b + dir + Vector3.new(0, 5.5, 0)) * CFrame.Angles(0, math.rad(90), 0), rgb(200, 235, 255), M.Glass, GHOST)
-	film.Shape = Enum.PartType.Cylinder
-	film.Transparency = 0.9
 	-- крутящаяся снежинка над аркой
 	local flake = snowflake(island, 7, CFrame.lookAt(b + dir * 4 + Vector3.new(0, 25.5, 0), b + dir * 4 + Vector3.new(0, 25.5, 0) - dir), rgb(170, 235, 255))
 	flake:SetAttribute("Spin", 45)

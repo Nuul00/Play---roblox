@@ -24,7 +24,7 @@ flakes.LightEmission = 0.15
 flakes.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 0.14) })
 flakes.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0.15), NumberSequenceKeypoint.new(0.85, 0.3), NumberSequenceKeypoint.new(1, 1) })
 flakes.Lifetime = NumberRange.new(6, 8)
-flakes.Rate = 60 -- было 180: тысячи частиц на телефоне
+flakes.Rate = 95 -- было 180 (лагало на телефоне), потом 60 — фидбэк 2026-11: «чуть больше снега»
 flakes.Speed = NumberRange.new(6, 9)
 flakes.EmissionDirection = Enum.NormalId.Bottom
 flakes.SpreadAngle = Vector2.new(15, 15)
@@ -41,7 +41,7 @@ soft.LightInfluence = 0.2
 soft.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0.35) })
 soft.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.1, 0.05), NumberSequenceKeypoint.new(0.85, 0.2), NumberSequenceKeypoint.new(1, 1) })
 soft.Lifetime = NumberRange.new(7, 10)
-soft.Rate = 45 -- было 260
+soft.Rate = 70 -- было 260, потом 45
 soft.Speed = NumberRange.new(3, 6)
 soft.EmissionDirection = Enum.NormalId.Bottom
 soft.SpreadAngle = Vector2.new(25, 25)
@@ -49,6 +49,73 @@ soft.RotSpeed = NumberRange.new(-90, 90)
 soft.Rotation = NumberRange.new(0, 360)
 soft.Parent = snow
 snow.Size = Vector3.new(180, 1, 180)
+
+-- Снег с ёлок (фидбэк 2026-11): с кроны каждой ёлки рядом с камерой время от времени
+-- осыпаются комья снега. Эмиттер — невидимый блок по размеру кроны, частицы падают вниз.
+local treeSnow = {}
+local function addTree(m: Instance)
+	if not (m:IsA("Model") and m.Name == "SnowPine") or treeSnow[m] then
+		return
+	end
+	local cf, size = m:GetBoundingBox()
+	if size.Y < 4 then
+		return
+	end
+	local p = Instance.new("Part")
+	p.Name = "TreeSnowFall"
+	p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
+	p.Transparency = 1
+	-- крона: верхние 3/4 ёлки, чуть уже габарита
+	p.Size = Vector3.new(size.X * 0.7, size.Y * 0.6, size.Z * 0.7)
+	p.CFrame = CFrame.new(cf.Position + Vector3.new(0, size.Y * 0.12, 0))
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	e.Color = ColorSequence.new(Color3.fromRGB(250, 252, 255))
+	e.LightEmission = 0.2
+	e.LightInfluence = 0.6
+	e.Shape = Enum.ParticleEmitterShape.Box
+	e.ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward
+	e.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(0.3, 0.6), NumberSequenceKeypoint.new(1, 0.9) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(0.7, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	e.Lifetime = NumberRange.new(1.2, 1.8)
+	e.Rate = 0
+	e.Speed = NumberRange.new(0, 1)
+	e.Acceleration = Vector3.new(0, -14, 0)
+	e.Drag = 0.6
+	e.RotSpeed = NumberRange.new(-40, 40)
+	e.Rotation = NumberRange.new(0, 360)
+	e.Parent = p
+	treeSnow[m] = { part = p, emitter = e, pos = cf.Position, next = os.clock() + math.random() * 4 }
+end
+for _, d in ipairs(frozen:GetDescendants()) do
+	addTree(d)
+end
+frozen.DescendantAdded:Connect(function(d)
+	if d.Name == "SnowPine" then
+		task.delay(1, addTree, d)
+	end
+end)
+local function showTreeSnow(on: boolean)
+	for m, s in pairs(treeSnow) do
+		s.part.Parent = (on and m.Parent) and workspace or nil
+	end
+end
+local function stepTreeSnow(camPos: Vector3)
+	local now = os.clock()
+	for m, s in pairs(treeSnow) do
+		if not m.Parent then
+			s.part:Destroy()
+			treeSnow[m] = nil
+		elseif now >= s.next then
+			-- редкие «осыпания»: ком из нескольких хлопьев раз в 2–6 с, только рядом с камерой
+			s.next = now + 2 + math.random() * 4
+			if (s.pos - camPos).Magnitude < 160 then
+				s.emitter:Emit(math.random(6, 14))
+			end
+		end
+	end
+end
 
 local bands = {}
 for _, b in ipairs(frozen:WaitForChild("Aurora", 30):GetDescendants()) do
@@ -101,6 +168,7 @@ local function step(dt: number)
 		local wx, wz = math.sin(t * 0.21) * 3.5, math.cos(t * 0.17) * 3.5
 		flakes.Acceleration = Vector3.new(wx, 0, wz)
 		soft.Acceleration = Vector3.new(wx * 1.3, math.sin(t * 0.5) * 0.6, wz * 1.3)
+		stepTreeSnow(p)
 	end
 	-- Сияние как настоящее: вдоль занавеси цвета перетекают (зелёный → бирюзовый → фиолетовый →
 	-- розовый), по ней бегут вертикальные «лучи» (полосы прозрачности), а сама занавесь колышется.
@@ -154,6 +222,7 @@ local function onWorld()
 	local inside = player:GetAttribute("CurrentWorld") == "Frozen Peaks"
 	if inside and not conn then
 		snow.Parent = workspace
+		showTreeSnow(true)
 		showParts()
 		task.delay(1, showParts)
 		task.delay(3, showParts)
@@ -163,6 +232,7 @@ local function onWorld()
 		conn:Disconnect()
 		conn = nil
 		snow.Parent = nil
+		showTreeSnow(false)
 	end
 end
 player:GetAttributeChangedSignal("CurrentWorld"):Connect(onWorld)

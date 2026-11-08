@@ -149,8 +149,75 @@ if folder then
 	end)
 end
 
--- ===== Цикл =====
+-- ===== Метель вокруг камеры (фидбэк 2026-11: «ивент должен выглядеть как метель») =====
+-- Косые снежные полосы по ветру, белые клубы-«позёмка» у земли и лёгкая белёсая дымка на экране.
+local Lighting = game:GetService("Lighting")
 local active = false
+local gust = Instance.new("Part")
+gust.Name = "BlizzardGust"
+gust.Anchored, gust.CanCollide, gust.CanTouch, gust.CanQuery, gust.CastShadow = true, false, false, false, false
+gust.Transparency = 1
+gust.Size = Vector3.new(1, 50, 120)
+local streaks = Instance.new("ParticleEmitter")
+streaks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+streaks.Color = ColorSequence.new(Color3.new(1, 1, 1))
+streaks.LightEmission = 0.3
+streaks.Shape = Enum.ParticleEmitterShape.Box
+streaks.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+streaks.Orientation = Enum.ParticleOrientation.VelocityParallel
+streaks.Size = NumberSequence.new(0.32)
+streaks.Squash = NumberSequence.new(-3) -- вытянутые по скорости штрихи
+streaks.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, 0.1), NumberSequenceKeypoint.new(0.85, 0.2), NumberSequenceKeypoint.new(1, 1) })
+streaks.Lifetime = NumberRange.new(1.6, 2.2)
+streaks.Speed = NumberRange.new(55, 75)
+streaks.SpreadAngle = Vector2.new(8, 14)
+streaks.EmissionDirection = Enum.NormalId.Right
+streaks.Acceleration = Vector3.new(0, -12, 0)
+streaks.Rate = 420
+streaks.Enabled = false
+streaks.Parent = gust
+local puffs = Instance.new("ParticleEmitter")
+puffs.Texture = "rbxasset://textures/particles/smoke_main.dds"
+puffs.Color = ColorSequence.new(Color3.fromRGB(235, 245, 255))
+puffs.LightEmission = 0.25
+puffs.Shape = Enum.ParticleEmitterShape.Box
+puffs.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+puffs.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 6), NumberSequenceKeypoint.new(1, 12) })
+puffs.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, 0.45), NumberSequenceKeypoint.new(0.7, 0.55), NumberSequenceKeypoint.new(1, 1) })
+puffs.Lifetime = NumberRange.new(2.5, 3.5)
+puffs.Speed = NumberRange.new(30, 40)
+puffs.SpreadAngle = Vector2.new(5, 10)
+puffs.EmissionDirection = Enum.NormalId.Right
+puffs.RotSpeed = NumberRange.new(-30, 30)
+puffs.Rotation = NumberRange.new(0, 360)
+puffs.Rate = 28
+puffs.Enabled = false
+puffs.Parent = gust
+local haze = Instance.new("ColorCorrectionEffect")
+haze.Name = "BlizzardHaze"
+haze.Enabled = false
+haze.Parent = Lighting
+local hazeOn = { Brightness = 0.06, Contrast = -0.18, Saturation = -0.3, TintColor = Color3.fromRGB(225, 238, 255) }
+local hazeOff = { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.new(1, 1, 1) }
+local function setBlizzardFX(on: boolean)
+	streaks.Enabled = on
+	puffs.Enabled = on
+	gust.Parent = on and workspace or nil
+	if on then
+		haze.Enabled = true
+	end
+	local tw = TweenService:Create(haze, TweenInfo.new(1.5), on and hazeOn or hazeOff)
+	tw:Play()
+	if not on then
+		tw.Completed:Once(function()
+			if not active then
+				haze.Enabled = false
+			end
+		end)
+	end
+end
+
+-- ===== Цикл =====
 local t = 0
 RunService.RenderStepped:Connect(function(dt)
 	t += dt
@@ -160,6 +227,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if storm ~= active then
 		active = storm
 		gui.Enabled = storm
+		setBlizzardFX(storm)
 		if storm then
 			pop.Scale = 0.5
 			TweenService:Create(pop, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
@@ -175,7 +243,7 @@ RunService.RenderStepped:Connect(function(dt)
 					base = e.Rate
 					e:SetAttribute("BaseRate", base)
 				end
-				e.Rate = storm and base * 1.8 or base
+				e.Rate = storm and base * 3 or base
 				if storm then
 					local acc = e.Acceleration
 					e.Acceleration = Vector3.new(14 * math.sin(t * 0.4), acc.Y, 10 * math.cos(t * 0.33))
@@ -184,6 +252,14 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	if storm then
+		-- блок-эмиттер с наветренной стороны камеры, ветер медленно меняет направление
+		local cam = workspace.CurrentCamera
+		if cam then
+			local wa = math.sin(t * 0.07) * 0.9
+			local wind = Vector3.new(math.cos(wa), 0, math.sin(wa))
+			local p = cam.CFrame.Position
+			gust.CFrame = CFrame.lookAt(p - wind * 55 + Vector3.new(0, 8, 0), p + Vector3.new(0, 8, 0)) * CFrame.Angles(0, math.rad(90), 0)
+		end
 		sub.Text = string.format("Frost crystals fall! · %d s left", math.ceil(left))
 		title.Text = blizzMini() and string.format("❄ %ds", math.ceil(left)) or "❄ BLIZZARD! x2 COINS ❄"
 		stroke.Transparency = 0.2 + 0.3 * math.sin(t * 5)
