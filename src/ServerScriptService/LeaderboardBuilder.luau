@@ -1546,6 +1546,18 @@ local function cutGate(wall, base, dir, hy, theme, island)
 		p.Parent = wall.Parent
 	end
 	wall:Destroy()
+	if theme.Volcano and wall.Name == "BorderWall" then
+		-- вулкан (фидбэк 2026-11): срез бортика у моста закрываем аккуратными каменными столбиками
+		-- с тлеющей шапкой — вместо рваного торца с торчащей полоской
+		for _, sgn in { -1, 1 } do
+			local at = wpos + axis * (c + sgn * (g + 0.9))
+			local pcf = CFrame.lookAt(Vector3.new(at.X, hy + 1.9, at.Z), Vector3.new(at.X, hy + 1.9, at.Z) + normal)
+			part(island, "BorderPost", Vector3.new(1.8, 3.8, size.Z + 0.6), pcf, rgb(40, 30, 32), M.Basalt)
+			part(island, "BorderPostCap", Vector3.new(2.2, 0.5, size.Z + 1), pcf * CFrame.new(0, 2.15, 0), rgb(60, 44, 40), M.Basalt)
+			part(island, "BorderPostGlow", Vector3.new(2.25, 0.12, size.Z + 1.05), pcf * CFrame.new(0, 1.85, 0), theme.Rail, M.Neon, GHOST)
+		end
+		return
+	end
 	if size.Y < 3 then return end -- для тонких неоновых полос столбы не нужны
 	-- вулкан: стена невидимая, проход в низком бортике — оранжевые столбы ворот только мешают
 	if theme.Volcano then return end
@@ -1824,7 +1836,15 @@ function B.Build(world)
 				walls = {}
 				local side = Vector3.new(-dir.Z, 0, dir.X)
 				for _, q in model:GetDescendants() do
-					if q:IsA("Part") and q.Shape == Enum.PartType.Block and string.find(q.Name, "Wall", 1, true) then
+					if q:IsA("Part") and q.Name == "BorderGlowWall" then
+						-- светящуюся полоску с верха бортика у прохода просто убираем (резаные куски висели
+						-- поперёк входа); торцы бортика закрывают столбики (cutGate)
+						local rel = q.Position - Vector3.new(spawn.X, q.Position.Y, spawn.Z)
+						local along, across = rel:Dot(dir), math.abs(rel:Dot(side))
+						if along > edge - 20 and along < edge + 6 and across < BRIDGE_W / 2 + q.Size.X / 2 + 1 then
+							q:Destroy()
+						end
+					elseif q:IsA("Part") and q.Shape == Enum.PartType.Block and string.find(q.Name, "Wall", 1, true) then
 						local half = q.Size / 2
 						local hit = false
 						for dd = edge - 16, edge + 4, 1 do
@@ -1987,7 +2007,7 @@ function B.Build(world)
 					end
 				end
 			end
-			for d = L0 + 4, key == "MagmaVolcano" and L1 - 9 or L1, 12 do -- Magma: последний фонарь не у самого моста
+			for d = L0 + 4, key == "MagmaVolcano" and L1 - 15 or L1, 12 do -- Magma: последний фонарь не у самого моста
 				for _, sg in { -1, 1 } do
 					local c = base + dir * d + side * sg * (BRIDGE_W / 2 + 1)
 					local g = rayDown(Vector3.new(c.X, hy + 12, c.Z), 30)
