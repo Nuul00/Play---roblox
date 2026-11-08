@@ -137,6 +137,16 @@ local function build(spot)
 	for _, sx in ipairs({ -1, 1 }) do
 		cyl(m, "BoardPost", topY + 15, 1, base * CFrame.new(sx * 11.8, (topY + 15) / 2, 9.2), GOLD, Enum.Material.Foil)
 	end
+	-- подсветка витрины (фидбэк 8): тёплый свет на доску и неоновые кромки
+	local boardLight = Instance.new("SurfaceLight")
+	boardLight.Face = Enum.NormalId.Front
+	boardLight.Range = 14
+	boardLight.Brightness = 1.6
+	boardLight.Color = Color3.fromRGB(255, 220, 160)
+	boardLight.Parent = board
+	for _, sy in ipairs({ -1, 1 }) do
+		part(m, "BoardGlow", Vector3.new(23.4, 0.35, 0.5), board.CFrame * CFrame.new(0, sy * 6.25, -0.1), Color3.fromRGB(255, 210, 90), Enum.Material.Neon, { CanCollide = false, CanQuery = false })
+	end
 	local crownTop = part(m, "BoardCrown", Vector3.new(3, 2, 0.6), board.CFrame * CFrame.new(0, 7, 0), GOLD, Enum.Material.Foil, { CanCollide = false })
 	crownTop.Name = "BoardCrown"
 

@@ -74,9 +74,23 @@ local function setup(m: Model)
 	bg.BackgroundColor3 = Color3.fromRGB(70, 25, 110)
 	bg.Parent = gui
 	local g = Instance.new("UIGradient")
-	g.Color = ColorSequence.new(Color3.fromRGB(130, 50, 180), Color3.fromRGB(40, 12, 70))
+	g.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(190, 90, 255)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 45, 200)), ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 20, 130)) })
 	g.Rotation = 90
 	g.Parent = bg
+	-- 2026-11 (фидбэк 8): ярче — золотая рамка внутри доски и блик сверху
+	local goldEdge = Instance.new("UIStroke")
+	goldEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	goldEdge.Thickness = 10
+	goldEdge.Color = Color3.fromRGB(255, 205, 80)
+	goldEdge.Parent = bg
+	local shine = Instance.new("Frame")
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.82
+	shine.BorderSizePixel = 0
+	shine.Position = UDim2.fromOffset(14, 10)
+	shine.Size = UDim2.new(1, -28, 0, 120)
+	shine.Parent = bg
+	Instance.new("UICorner", shine).CornerRadius = UDim.new(0, 30)
 	label(bg, "👑 ROYAL EGG 👑", UDim2.fromOffset(0, 10), UDim2.new(1, 0, 0, 90), Color3.fromRGB(255, 215, 90))
 	st.sub = label(bg, "Stand on the golden circle to open!", UDim2.fromOffset(0, 98), UDim2.new(1, 0, 0, 40), Color3.fromRGB(240, 225, 255), Enum.Font.GothamBold)
 	local row = Instance.new("Frame")
@@ -93,7 +107,7 @@ local function setup(m: Model)
 		local c = Instance.new("Frame")
 		c.LayoutOrder = t
 		c.Size = UDim2.fromOffset(165, 370)
-		c.BackgroundColor3 = Color3.fromRGB(35, 15, 55)
+		c.BackgroundColor3 = RARITY[tier.Rarity]:Lerp(Color3.fromRGB(40, 15, 70), 0.72)
 		c.Parent = row
 		Instance.new("UICorner", c).CornerRadius = UDim.new(0, 18)
 		local s = Instance.new("UIStroke")
