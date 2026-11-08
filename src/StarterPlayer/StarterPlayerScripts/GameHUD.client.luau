@@ -277,9 +277,9 @@ local toastGui=Instance.new("ScreenGui");toastGui.Name="ToastHUD";toastGui.Reset
 local toast=Instance.new("Frame");toast.AnchorPoint=Vector2.new(1,1);toast.Position=UDim2.new(1,400,1,-120);toast.Size=UDim2.fromOffset(340,0);toast.AutomaticSize=Enum.AutomaticSize.Y;toast.BackgroundColor3=Color3.fromRGB(24,22,36);toast.BackgroundTransparency=0.05;toast.Visible=false;toast.Parent=toastGui
 Instance.new("UICorner",toast).CornerRadius=UDim.new(0,12)
 local toastStroke=Instance.new("UIStroke");toastStroke.Thickness=2;toastStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border;toastStroke.Parent=toast
-local accent=Instance.new("Frame");accent.Size=UDim2.new(0,6,1,0);accent.BorderSizePixel=0;accent.Parent=toast
-Instance.new("UICorner",accent).CornerRadius=UDim.new(0,12)
-local toastText=Instance.new("TextLabel");toastText.BackgroundTransparency=1;toastText.Position=UDim2.fromOffset(16,0);toastText.Size=UDim2.new(1,-26,0,0);toastText.AutomaticSize=Enum.AutomaticSize.Y;toastText.TextWrapped=true;toastText.TextXAlignment=Enum.TextXAlignment.Left;toastText.Font=Enum.Font.GothamBold;toastText.TextSize=15;toastText.TextColor3=Color3.fromRGB(245,240,230);toastText.Parent=toast
+local accent=Instance.new("Frame");accent.Position=UDim2.fromOffset(7,8);accent.Size=UDim2.new(0,4,1,-16);accent.BorderSizePixel=0;accent.Parent=toast -- внутри карточки, не выпирает за скругление
+Instance.new("UICorner",accent).CornerRadius=UDim.new(1,0)
+local toastText=Instance.new("TextLabel");toastText.BackgroundTransparency=1;toastText.Position=UDim2.fromOffset(20,0);toastText.Size=UDim2.new(1,-30,0,0);toastText.AutomaticSize=Enum.AutomaticSize.Y;toastText.TextWrapped=true;toastText.TextXAlignment=Enum.TextXAlignment.Left;toastText.Font=Enum.Font.GothamBold;toastText.TextSize=15;toastText.TextColor3=Color3.fromRGB(245,240,230);toastText.Parent=toast
 local tp=Instance.new("UIPadding");tp.PaddingTop=UDim.new(0,10);tp.PaddingBottom=UDim.new(0,10);tp.Parent=toastText
 local toastScale=Instance.new("UIScale");toastScale.Parent=toast
 local queue,showing={},false

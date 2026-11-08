@@ -437,7 +437,7 @@ task.spawn(function()
 	if not (main and main:IsA("BasePart")) then
 		return
 	end
-	local endZ = (plaza and (plaza.Position.Z + plaza.Size.Z / 2) or 208) + 4
+	local endZ = (plaza and (plaza.Position.Z + plaza.Size.Z / 2) or 208)
 	local function extend(p: BasePart)
 		local z0, z1 = p.Position.Z - p.Size.Z / 2, p.Position.Z + p.Size.Z / 2
 		if z1 < endZ and p.Size.Z > 200 then
@@ -466,4 +466,75 @@ task.spawn(function()
 			z += 8
 		end
 	end
+end)
+
+------------------------------------------------------------------ Neon: одна дорога от улицы до моста
+-- Фидбэк 2026-11: главная улица и дорога к лидербордам шли рядом со сдвигом и под углом. Кладём
+-- одну дорогу от конца улицы прямо к началу моста (асфальт, неоновые бордюры, разметка, фонари),
+-- старые плитки подхода прячем.
+task.spawn(function()
+	local city = world:WaitForChild("NeonCity", 60)
+	local island = city and city:WaitForChild("LeaderboardIsland_NeonCity", 90)
+	local main = city and city:FindFirstChild("MainPath")
+	local deck = island and island:WaitForChild("BridgeDeck", 30)
+	if not (main and deck and deck:IsA("BasePart")) then
+		return
+	end
+	task.wait(2)
+	for _, d in ipairs(island:GetChildren()) do
+		if d:IsA("BasePart") and (d.Name == "ApproachPath" or d.Name == "ApproachEdge" or d.Name == "ApproachDash" or d.Name == "ApproachPost" or d.Name == "ApproachLamp") then
+			d.Transparency = 1
+			for _, l in ipairs(d:GetChildren()) do
+				if l:IsA("Light") then
+					l.Enabled = false
+				end
+			end
+		end
+	end
+	local topY = main.Position.Y + main.Size.Y / 2
+	local a = Vector3.new(main.Position.X, topY, main.Position.Z + main.Size.Z / 2 - 6)
+	local back = deck.CFrame * CFrame.new(0, 0, -deck.Size.Z / 2)
+	local front = deck.CFrame * CFrame.new(0, 0, deck.Size.Z / 2)
+	local b = (back.Position - a).Magnitude < (front.Position - a).Magnitude and back.Position or front.Position
+	b = Vector3.new(b.X, topY, b.Z)
+	local len = (b - a).Magnitude + 1
+	local cf = CFrame.lookAt((a + b) / 2, b)
+	local W = main.Size.X
+	local folder = Instance.new("Model")
+	folder.Name = "LeaderboardRoad"
+	local function p(name, size, at, color, mat)
+		local q = Instance.new("Part")
+		q.Name = name
+		q.Anchored = true
+		q.CanCollide = name == "Road"
+		q.CanQuery = name == "Road"
+		q.CanTouch = false
+		q.CastShadow = false
+		q.Size = size
+		q.CFrame = at
+		q.Color = color
+		q.Material = mat
+		q.Parent = folder
+		return q
+	end
+	p("Road", Vector3.new(W, main.Size.Y, len), cf * CFrame.new(0, -main.Size.Y / 2 + 0.01, 0), main.Color, main.Material)
+	for _, s in { -1, 1 } do
+		p("RoadCurb", Vector3.new(0.35, 0.08, len), cf * CFrame.new(s * (W / 2 - 0.6), 0.05, 0), s < 0 and Color3.fromRGB(255, 60, 90) or Color3.fromRGB(80, 230, 255), Enum.Material.Neon)
+	end
+	for z = -len / 2 + 3, len / 2 - 3, 8 do
+		p("RoadDash", Vector3.new(0.35, 0.06, 3.8), cf * CFrame.new(0, 0.05, z), Color3.fromRGB(255, 225, 90), Enum.Material.Neon)
+	end
+	for z = -len / 2 + 4, len / 2 - 9, 10 do -- не у самой стены города
+		for _, s in { -1, 1 } do
+			local post = p("RoadLampPost", Vector3.new(0.35, 4, 0.35), cf * CFrame.new(s * (W / 2 + 0.8), 2, z), Color3.fromRGB(40, 36, 80), Enum.Material.Metal)
+			local bulb = p("RoadLamp", Vector3.new(0.8, 0.8, 0.8), post.CFrame * CFrame.new(0, 2.3, 0), Color3.fromRGB(255, 80, 220), Enum.Material.Neon)
+			bulb.Shape = Enum.PartType.Ball
+			local l = Instance.new("PointLight")
+			l.Color = bulb.Color
+			l.Range = 12
+			l.Brightness = 1
+			l.Parent = bulb
+		end
+	end
+	folder.Parent = city
 end)
