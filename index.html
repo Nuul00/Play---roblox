@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Счётчик пачек</title>
+<meta name="description" content="Счётчик пачек за смену с темпом в час и учётом обеда.">
+<meta name="theme-color" content="#EDF0F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101316" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Пачки">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F5B800'/%3E%3Cpath d='M32 17v30M17 32h30' stroke='%2315191E' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column, like a shop-floor tally board on a phone. Readout on top, the tap button as the only loud object, shift data below. */
+:root {
+  --bg: #EDF0F2;
+  --surface: #FFFFFF;
+  --ink: #15191E;
+  --muted: #5B6570;
+  --line: #D3D9DF;
+  --bar: #B4BDC6;
+  --accent: #F5B800;
+  --accent-deep: #D29A00;
+  --accent-ink: #15191E;
+  --lunch: #3F7F92;
+  --good: #2D8A57;
+  --warn: #B8542A;
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101316;
+    --surface: #191E23;
+    --ink: #E8ECF0;
+    --muted: #97A1AB;
+    --line: #2A3138;
+    --bar: #4A545E;
+    --accent: #F5B800;
+    --accent-deep: #B88600;
+    --accent-ink: #101316;
+    --lunch: #6AB0C3;
+    --good: #5BC48A;
+    --warn: #E58A5F;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.45 var(--body);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap {
+  max-width: 520px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Top line */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 700 15px/1 var(--display); letter-spacing: .01em; }
+.mark {
+  width: 22px; height: 22px; border-radius: 6px; background: var(--accent);
+  box-shadow: inset 0 -5px 0 var(--accent-deep);
+}
+.clock { font: 500 15px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Shift switch */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.seg button {
+  appearance: none; border: 0; background: transparent; border-radius: 10px;
+  padding: 9px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: var(--muted);
+}
+.seg button span { font-weight: 600; font-size: 15px; }
+.seg button small { font: 500 12px/1.2 var(--mono); }
+.seg button[aria-checked="true"] { background: var(--ink); color: var(--bg); }
+
+/* Readout */
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 4px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.status[data-phase="active"] i { background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent); }
+.status[data-phase="lunch"] i { background: var(--lunch); }
+.status[data-phase="lunch"] { color: var(--lunch); }
+.count {
+  font: 700 clamp(76px, 25vw, 124px)/1 var(--display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.03em;
+  margin-top: 6px;
+  transform-origin: left center;
+}
+.count.bump { animation: bump .18s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.count-label { color: var(--muted); font-size: 14px; }
+
+.goal { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.goal-track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.goal-fill { height: 100%; width: 0; background: var(--ink); border-radius: 4px; transition: width .25s; }
+.goal[data-done="true"] .goal-fill { background: var(--good); }
+.goal-text { font-size: 13px; color: var(--muted); }
+.goal[data-done="true"] .goal-text { color: var(--good); font-weight: 600; }
+
+.stats { margin: 14px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.stats div { min-width: 0; }
+.stats dt { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.stats dd { margin: 4px 0 0; display: flex; flex-direction: column; }
+.stats b { font: 500 22px/1.1 var(--display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stats dd span { font-size: 12px; color: var(--muted); }
+
+/* The button */
+.tap {
+  appearance: none; border: 0; width: 100%;
+  min-height: clamp(160px, 31vh, 250px);
+  border-radius: 22px;
+  background: var(--accent); color: var(--accent-ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  position: relative; overflow: hidden;
+  box-shadow: 0 6px 0 var(--accent-deep);
+  transition: transform .06s ease-out, box-shadow .06s ease-out;
+  margin-bottom: 6px;
+}
+.tap::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 12px;
+  background: repeating-linear-gradient(-45deg, var(--accent-ink) 0 9px, transparent 9px 18px);
+  opacity: .9;
+}
+.tap.is-down { transform: translateY(5px); box-shadow: 0 1px 0 var(--accent-deep); }
+.tap-plus { font: 700 clamp(58px, 17vw, 88px)/1 var(--display); letter-spacing: -.02em; }
+.tap-word { font-weight: 600; font-size: 14px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
+
+.under { display: flex; gap: 8px; flex-wrap: wrap; }
+.ghost {
+  appearance: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 11px 14px; font-weight: 500; font-size: 14px;
+  flex: 1 1 auto;
+}
+.ghost:disabled { opacity: .45; cursor: default; }
+.ghost[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.ghost.danger { color: var(--warn); }
+.ghost[data-armed] { background: var(--warn); color: #fff; border-color: var(--warn); }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+h2 { margin: 0; font: 500 15px/1.2 var(--display); text-wrap: balance; }
+
+.timeline { display: flex; flex-direction: column; gap: 8px; }
+.tl-track { position: relative; height: 12px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.tl-done { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ink); }
+.tl-lunch {
+  position: absolute; top: 0; bottom: 0;
+  background: repeating-linear-gradient(-45deg, var(--lunch) 0 3px, color-mix(in srgb, var(--lunch) 35%, transparent) 3px 6px);
+}
+.tl-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.tl-meta .mono { font: 500 12px/1.4 var(--mono); }
+.tl-meta b { color: var(--ink); font-weight: 600; }
+
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.field input {
+  width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font: 500 16px/1.2 var(--mono); font-variant-numeric: tabular-nums;
+}
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.hint.bad { color: var(--warn); font-weight: 500; }
+
+/* Hour chart */
+.legend { display: flex; align-items: center; gap: 6px 12px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 10px; border-radius: 2px; display: inline-block; }
+.lg-done { background: var(--good); }
+.lg-lunch { background: repeating-linear-gradient(-45deg, var(--lunch) 0 2px, transparent 2px 4px); border: 1px solid var(--lunch); }
+.lg-goal { height: 0 !important; border-top: 2px dashed var(--ink); border-radius: 0 !important; }
+.chart { display: flex; flex-direction: column; gap: 4px; }
+.row { display: flex; gap: 4px; }
+.row > * { flex: 1 1 0; min-width: 0; text-align: center; }
+.vals span { font: 500 11px/1.2 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bars { height: 130px; position: relative; border-bottom: 1px solid var(--line); }
+.col { position: relative; display: flex; align-items: flex-end; border-radius: 5px 5px 0 0; }
+.col.has-lunch::before {
+  content: ""; position: absolute; inset: 0; border-radius: 5px 5px 0 0; opacity: .35;
+  background: repeating-linear-gradient(-45deg, var(--lunch) 0 2px, transparent 2px 5px);
+}
+.bar { position: relative; width: 100%; background: var(--bar); border-radius: 4px 4px 0 0; min-height: 0; }
+.bar.ok { background: var(--good); }
+.bar.now { background: var(--accent); }
+.goal-line { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink); pointer-events: none; }
+.hours span { font: 500 11px/1.2 var(--mono); color: var(--muted); }
+.hours span.now { color: var(--ink); font-weight: 700; }
+
+/* History */
+.history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.history li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.history li:first-child { border-top: 0; padding-top: 0; }
+.h-when { display: flex; flex-direction: column; min-width: 0; }
+.h-when b { font-weight: 600; }
+.h-when span, .h-num span { font-size: 12px; color: var(--muted); }
+.h-num { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.h-num b { font: 500 18px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+
+details.card > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font: 500 15px/1.2 var(--display); }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::after { content: "+"; font: 500 20px/1 var(--mono); color: var(--muted); }
+details.card[open] > summary::after { content: "−"; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.check input { width: 20px; height: 20px; accent-color: var(--ink); }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .count.bump { animation: none; }
+  .tap, .goal-fill { transition: none; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Счётчик пачек</div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <div class="seg" role="radiogroup" aria-label="Смена">
+    <button type="button" role="radio" id="segDay" data-type="day" aria-checked="true"><span>Дневная</span><small id="segDayTime">06:00–16:30</small></button>
+    <button type="button" role="radio" id="segNight" data-type="night" aria-checked="false"><span>Ночная</span><small id="segNightTime">17:30–04:00</small></button>
+  </div>
+
+  <section class="board" aria-label="Итог смены">
+    <div class="status" id="status" data-phase="active"><i></i><span id="statusText">Смена идёт</span></div>
+    <div class="count" id="count" aria-live="polite">0</div>
+    <div class="count-label" id="countLabel">пачек за смену</div>
+    <div class="goal" id="goal" hidden>
+      <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+      <div class="goal-text" id="goalText"></div>
+    </div>
+    <dl class="stats">
+      <div><dt>Средний</dt><dd><b id="pace">—</b><span>в час</span></dd></div>
+      <div><dt id="nowLabel">Сейчас</dt><dd><b id="paceNow">—</b><span id="nowUnit">в час</span></dd></div>
+      <div><dt id="fcLabel">Прогноз</dt><dd><b id="forecast">—</b><span id="fcUnit">к концу</span></dd></div>
+    </dl>
+  </section>
+
+  <button class="tap" id="tap" type="button" aria-label="Добавить пачку">
+    <span class="tap-plus">+1</span>
+    <span class="tap-word">пачка</span>
+  </button>
+
+  <div class="under">
+    <button class="ghost" id="undo" type="button">Отменить последнюю</button>
+    <button class="ghost" id="wake" type="button" aria-pressed="false" hidden>Не гасить экран</button>
+  </div>
+
+  <section class="card" aria-labelledby="shiftTitle">
+    <h2 id="shiftTitle">Смена и обед</h2>
+    <div class="timeline">
+      <div class="tl-track"><div class="tl-done" id="tlDone"></div><div class="tl-lunch" id="tlLunch"></div></div>
+      <div class="tl-meta"><span class="mono" id="tlStart">06:00</span><span id="tlWorked"></span><span class="mono" id="tlEnd">16:30</span></div>
+    </div>
+    <div class="fields">
+      <div class="field"><label for="lunchStart">Обед с</label><input type="time" id="lunchStart"></div>
+      <div class="field"><label for="lunchEnd">Обед до</label><input type="time" id="lunchEnd"></div>
+      <div class="field wide"><label for="goalInput">Норма на смену, пачек</label><input type="number" id="goalInput" inputmode="numeric" min="0" step="1" placeholder="не задана"></div>
+    </div>
+    <p class="hint" id="lunchHint">Время обеда не идёт в темп. Поменять можно в любой момент.</p>
+  </section>
+
+  <section class="card" aria-labelledby="chartTitle">
+    <div class="card-head">
+      <h2 id="chartTitle">По часам</h2>
+      <div class="legend"><span><i class="lg-done"></i>норма за час</span><span><i class="lg-lunch"></i>обед</span><span id="lgGoal"><i class="lg-goal"></i>темп нормы</span></div>
+    </div>
+    <div class="chart" id="chart"></div>
+    <p class="hint" id="chartHint"></p>
+  </section>
+
+  <section class="card" aria-labelledby="histTitle">
+    <h2 id="histTitle">Прошлые смены</h2>
+    <ul class="history" id="history"></ul>
+    <p class="hint" id="historyEmpty">Здесь появятся прошлые смены.</p>
+    <button class="ghost danger" id="clearHistory" type="button" hidden>Очистить историю</button>
+  </section>
+
+  <details class="card">
+    <summary>Настройки</summary>
+    <div class="stack">
+      <div class="fields">
+        <div class="field"><label for="dayStart">Дневная с</label><input type="time" id="dayStart"></div>
+        <div class="field"><label for="dayEnd">Дневная до</label><input type="time" id="dayEnd"></div>
+        <div class="field"><label for="nightStart">Ночная с</label><input type="time" id="nightStart"></div>
+        <div class="field"><label for="nightEnd">Ночная до</label><input type="time" id="nightEnd"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="vibrate"> Вибрация при нажатии</label>
+      <button class="ghost danger" id="reset" type="button">Обнулить текущую смену</button>
+      <p class="hint">Всё хранится только в этом браузере на этом телефоне. Смена выбирается сама по времени, её можно переключить вручную.</p>
+    </div>
+  </details>
+
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const KEY = 'packcounter.v1';
+  const MIN = 60000, HOUR = 3600000, DAY = 86400000;
+  const TYPES = ['day', 'night'];
+  const TYPE_NAME = { day: 'Дневная', night: 'Ночная' };
+  const DEF = {
+    settings: {
+      day: { start: '06:00', end: '16:30' },
+      night: { start: '17:30', end: '04:00' },
+      lunch: { day: { start: '11:00', end: '11:30' }, night: { start: '22:30', end: '23:00' } },
+      goal: { day: 0, night: 0 },
+      vibrate: true
+    },
+    override: null,
+    shifts: {}
+  };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const isTime = s => typeof s === 'string' && /^\d{1,2}:\d{2}$/.test(s);
+  const hm = s => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+
+  function load() {
+    const st = clone(DEF);
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    if (!s || typeof s !== 'object') return st;
+    const ss = s.settings || {};
+    for (const t of TYPES) {
+      const w = ss[t] || {};
+      if (isTime(w.start)) st.settings[t].start = w.start;
+      if (isTime(w.end)) st.settings[t].end = w.end;
+      const l = (ss.lunch || {})[t];
+      if (l && typeof l === 'object') st.settings.lunch[t] = { start: l.start || '', end: l.end || '' };
+      if (ss.goal && ss.goal[t] != null) st.settings.goal[t] = Math.max(0, +ss.goal[t] || 0);
+    }
+    if ('vibrate' in ss) st.settings.vibrate = !!ss.vibrate;
+    if (s.override && TYPES.includes(s.override.type)) st.override = s.override;
+    if (s.shifts && typeof s.shifts === 'object') {
+      for (const [id, sh] of Object.entries(s.shifts)) {
+        if (sh && Array.isArray(sh.taps) && TYPES.includes(sh.type)) st.shifts[id] = sh;
+      }
+    }
+    return st;
+  }
+  let state = load();
+
+  // ---- time windows ----
+  function atClock(ms, minutes) { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setMinutes(minutes); return d.getTime(); }
+  function windowAt(type, dayOffset, now) {
+    const t = state.settings[type];
+    const s = hm(t.start), e = hm(t.end);
+    let dur = e - s; if (dur <= 0) dur += 1440;
+    const base = new Date(now); base.setDate(base.getDate() + dayOffset);
+    const start = atClock(base.getTime(), s);
+    return { type, start, end: start + dur * MIN };
+  }
+  function pick(type, now) {
+    const ws = [-1, 0, 1].map(o => windowAt(type, o, now));
+    const inside = ws.find(w => now >= w.start && now < w.end);
+    if (inside) return { w: inside, phase: 'active' };
+    const soon = ws.filter(w => w.start > now && w.start - now <= 2 * HOUR).sort((a, b) => a.start - b.start)[0];
+    if (soon) return { w: soon, phase: 'before' };
+    const past = ws.filter(w => w.end <= now).sort((a, b) => b.end - a.end)[0];
+    if (past) return { w: past, phase: 'after' };
+    return { w: ws.filter(w => w.start > now).sort((a, b) => a.start - b.start)[0], phase: 'before' };
+  }
+  function autoType(now) {
+    const ps = TYPES.map(t => pick(t, now));
+    const act = ps.find(p => p.phase === 'active'); if (act) return act.w.type;
+    const recent = ps.filter(p => p.phase === 'after' && now - p.w.end < 45 * MIN)[0]; if (recent) return recent.w.type;
+    const soon = ps.filter(p => p.phase === 'before').sort((a, b) => a.w.start - b.w.start)[0]; if (soon) return soon.w.type;
+    return ps.sort((a, b) => b.w.end - a.w.end)[0].w.type;
+  }
+  function current(now) {
+    const type = (state.override && now < state.override.until) ? state.override.type : autoType(now);
+    const p = pick(type, now);
+    return { type, w: p.w, phase: p.phase };
+  }
+  const idOf = w => w.type + '-' + w.start;
+  function getShift(w) {
+    const id = idOf(w);
+    let s = state.shifts[id];
+    if (!s) {
+      s = state.shifts[id] = {
+        id, type: w.type, start: w.start, end: w.end,
+        lunch: Object.assign({}, state.settings.lunch[w.type]),
+        goal: state.settings.goal[w.type] || 0,
+        taps: []
+      };
+    }
+    return s;
+  }
+  function lunchAbs(sh) {
+    const l = sh.lunch || {};
+    if (!isTime(l.start) || !isTime(l.end)) return null;
+    let a = atClock(sh.start, hm(l.start)); if (a < sh.start) a += DAY;
+    let b = atClock(sh.start, hm(l.end)); while (b <= a) b += DAY;
+    if (a >= sh.end) return { a, b, outside: true };
+    return { a, b: Math.min(b, sh.end), outside: false };
+  }
+  const overlap = (a1, b1, a2, b2) => Math.max(0, Math.min(b1, b2) - Math.max(a1, a2));
+  function worked(sh, t) {
+    const T = Math.min(t, sh.end);
+    if (T <= sh.start) return 0;
+    let w = T - sh.start;
+    const L = lunchAbs(sh);
+    if (L && !L.outside) w -= overlap(sh.start, T, L.a, L.b);
+    return Math.max(0, w);
+  }
+
+  function save() {
+    const curId = idOf(current(Date.now()).w);
+    const ids = Object.keys(state.shifts)
+      .filter(id => id === curId || state.shifts[id].taps.length)
+      .sort((a, b) => state.shifts[b].start - state.shifts[a].start)
+      .slice(0, 120);
+    const keep = {}; ids.forEach(id => { keep[id] = state.shifts[id]; });
+    state.shifts = keep;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ---- formatting ----
+  const fmtTime = ms => new Date(ms).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  function fmtDur(ms) {
+    const m = Math.max(0, Math.round(ms / MIN)), h = Math.floor(m / 60), r = m % 60;
+    if (!h) return r + ' мин';
+    return r ? h + ' ч ' + r + ' мин' : h + ' ч';
+  }
+  function fmtRate(x) {
+    if (x == null || !isFinite(x)) return '—';
+    if (x >= 100) return String(Math.round(x));
+    return (Math.round(x * 10) / 10).toString().replace('.', ',');
+  }
+  function plural(n, one, few, many) {
+    const a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b === 1) return one;
+    if (b >= 2 && b <= 4) return few;
+    return many;
+  }
+  const packs = n => plural(n, 'пачка', 'пачки', 'пачек');
+  const fmtDate = ms => new Date(ms).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  // ---- dom ----
+  const $ = id => document.getElementById(id);
+  const el = {
+    clock: $('clock'), segDay: $('segDay'), segNight: $('segNight'), segDayTime: $('segDayTime'), segNightTime: $('segNightTime'),
+    status: $('status'), statusText: $('statusText'), count: $('count'), countLabel: $('countLabel'),
+    goal: $('goal'), goalFill: $('goalFill'), goalText: $('goalText'),
+    pace: $('pace'), paceNow: $('paceNow'), nowLabel: $('nowLabel'), forecast: $('forecast'), fcLabel: $('fcLabel'), fcUnit: $('fcUnit'),
+    tap: $('tap'), undo: $('undo'), wake: $('wake'),
+    tlDone: $('tlDone'), tlLunch: $('tlLunch'), tlStart: $('tlStart'), tlEnd: $('tlEnd'), tlWorked: $('tlWorked'),
+    lunchStart: $('lunchStart'), lunchEnd: $('lunchEnd'), goalInput: $('goalInput'), lunchHint: $('lunchHint'),
+    chart: $('chart'), chartHint: $('chartHint'), lgGoal: $('lgGoal'),
+    history: $('history'), historyEmpty: $('historyEmpty'), clearHistory: $('clearHistory'),
+    dayStart: $('dayStart'), dayEnd: $('dayEnd'), nightStart: $('nightStart'), nightEnd: $('nightEnd'),
+    vibrate: $('vibrate'), reset: $('reset')
+  };
+  const setVal = (input, v) => { if (document.activeElement !== input) input.value = v; };
+
+  function render() {
+    const now = Date.now();
+    const c = current(now);
+    const sh = getShift(c.w);
+    const L = lunchAbs(sh);
+    const inLunch = c.phase === 'active' && L && !L.outside && now >= L.a && now < L.b;
+    const count = sh.taps.length;
+    const total = worked(sh, sh.end);
+    const done = worked(sh, now);
+
+    el.clock.textContent = fmtTime(now);
+    for (const t of TYPES) {
+      const btn = t === 'day' ? el.segDay : el.segNight;
+      btn.setAttribute('aria-checked', String(c.type === t));
+      (t === 'day' ? el.segDayTime : el.segNightTime).textContent = state.settings[t].start + '–' + state.settings[t].end;
+    }
+
+    // status
+    let phase = c.phase, text;
+    if (inLunch) { phase = 'lunch'; text = 'Обед до ' + fmtTime(L.b) + ' · темп на паузе'; }
+    else if (c.phase === 'active') text = 'Смена идёт · до ' + fmtTime(sh.end);
+    else if (c.phase === 'before') text = 'Смена начнётся в ' + fmtTime(sh.start);
+    else text = 'Смена окончена · ' + fmtDate(sh.start);
+    el.status.dataset.phase = phase;
+    el.statusText.textContent = text;
+
+    // count
+    if (el.count.textContent !== String(count)) el.count.textContent = count;
+    const last = count ? ' · последняя в ' + fmtTime(sh.taps[count - 1]) : '';
+    el.countLabel.textContent = packs(count) + ' за смену' + last;
+    el.undo.disabled = !count;
+
+    // pace
+    const pace = done >= 5 * MIN ? count / (done / HOUR) : null;
+    el.pace.textContent = fmtRate(pace);
+
+    const ref = c.phase === 'after' ? sh.end : now;
+    const from = ref - HOUR;
+    const nLast = sh.taps.filter(t => t > from && (c.phase === 'after' || t <= now)).length;
+    const wLast = worked(sh, ref) - worked(sh, from);
+    el.paceNow.textContent = wLast >= 10 * MIN ? fmtRate(nLast / (wLast / HOUR)) : '—';
+    el.nowLabel.textContent = c.phase === 'after' ? 'Последний час' : 'Сейчас';
+
+    const remain = Math.max(0, total - done);
+    if (c.phase === 'after') {
+      el.fcLabel.textContent = 'Отработано';
+      el.forecast.textContent = fmtDur(total).replace(' мин', 'м').replace(' ч', 'ч');
+      el.fcUnit.textContent = 'без обеда';
+    } else if (c.phase === 'before') {
+      el.fcLabel.textContent = 'До начала';
+      el.forecast.textContent = fmtDur(sh.start - now).replace(' мин', 'м').replace(' ч', 'ч');
+      el.fcUnit.textContent = 'начало в ' + fmtTime(sh.start);
+    } else {
+      el.fcLabel.textContent = 'Прогноз';
+      el.forecast.textContent = pace != null ? String(Math.round(count + pace * remain / HOUR)) : '—';
+      el.fcUnit.textContent = 'к концу';
+    }
+
+    // goal
+    const goal = sh.goal || 0;
+    el.goal.hidden = !goal;
+    if (goal) {
+      const left = goal - count;
+      el.goalFill.style.width = Math.min(100, count / goal * 100) + '%';
+      el.goal.dataset.done = String(left <= 0);
+      let g;
+      if (left <= 0) g = 'Норма ' + goal + ' выполнена' + (left < 0 ? ' · сверху ' + (-left) : '');
+      else if (c.phase === 'after') g = 'До нормы не хватило ' + left;
+      else if (remain > 0) g = 'До нормы ' + left + ' · нужно ' + fmtRate(left / (remain / HOUR)) + ' в час';
+      else g = 'До нормы ' + left;
+      el.goalText.textContent = g;
+    }
+
+    // timeline
+    const span = sh.end - sh.start;
+    el.tlDone.style.width = Math.max(0, Math.min(1, (now - sh.start) / span)) * 100 + '%';
+    if (L && !L.outside) {
+      el.tlLunch.hidden = false;
+      el.tlLunch.style.left = (L.a - sh.start) / span * 100 + '%';
+      el.tlLunch.style.width = (L.b - L.a) / span * 100 + '%';
+    } else el.tlLunch.hidden = true;
+    el.tlStart.textContent = fmtTime(sh.start);
+    el.tlEnd.textContent = fmtTime(sh.end);
+    el.tlWorked.innerHTML = 'Отработано <b>' + fmtDur(done) + '</b> из ' + fmtDur(total);
+
+    // inputs
+    setVal(el.lunchStart, (sh.lunch && sh.lunch.start) || '');
+    setVal(el.lunchEnd, (sh.lunch && sh.lunch.end) || '');
+    setVal(el.goalInput, goal ? String(goal) : '');
+    if (L && L.outside) { el.lunchHint.textContent = 'Обед не попадает в эту смену. Проверь время.'; el.lunchHint.classList.add('bad'); }
+    else {
+      el.lunchHint.classList.remove('bad');
+      el.lunchHint.textContent = L ? 'Обед ' + fmtDur(L.b - L.a) + ' не идёт в темп. Время можно поменять в любой момент.' : 'Обед не задан, в темп идёт вся смена.';
+    }
+    setVal(el.dayStart, state.settings.day.start); setVal(el.dayEnd, state.settings.day.end);
+    setVal(el.nightStart, state.settings.night.start); setVal(el.nightEnd, state.settings.night.end);
+    el.vibrate.checked = !!state.settings.vibrate;
+
+    renderChart(sh, L, c, now, total, goal);
+    renderHistory(sh);
+  }
+
+  function renderChart(sh, L, c, now, total, goal) {
+    const slots = [];
+    for (let a = sh.start; a < sh.end; a += HOUR) {
+      const b = Math.min(a + HOUR, sh.end);
+      const lun = (L && !L.outside) ? overlap(a, b, L.a, L.b) : 0;
+      slots.push({ a, b, n: 0, lunch: lun > 0, work: (b - a) - lun });
+    }
+    for (const t of sh.taps) {
+      const i = Math.max(0, Math.min(slots.length - 1, Math.floor((t - sh.start) / HOUR)));
+      slots[i].n++;
+    }
+    const per = goal > 0 && total > 0 ? goal / (total / HOUR) : 0;
+    const max = Math.max(1, per * 1.15, ...slots.map(s => s.n * 1.08));
+    const vals = [], cols = [], hrs = [];
+    slots.forEach(s => {
+      const isNow = c.phase === 'active' && now >= s.a && now < s.b;
+      const target = per * s.work / HOUR;
+      const ok = per > 0 && !isNow && s.work > 0 && s.n >= target;
+      const h = s.n / max * 100;
+      const cls = isNow ? 'now' : ok ? 'ok' : '';
+      vals.push('<span>' + (s.n || '') + '</span>');
+      cols.push('<div class="col' + (s.lunch ? ' has-lunch' : '') + '" title="' + fmtTime(s.a) + '–' + fmtTime(s.b) + ': ' + s.n + ' ' + packs(s.n) + '"><div class="bar ' + cls + '" style="height:' + h.toFixed(1) + '%"></div></div>');
+      hrs.push('<span' + (isNow ? ' class="now"' : '') + '>' + String(new Date(s.a).getHours()).padStart(2, '0') + '</span>');
+    });
+    const line = per > 0 ? '<div class="goal-line" style="bottom:' + (per / max * 100).toFixed(1) + '%"></div>' : '';
+    el.chart.innerHTML =
+      '<div class="row vals">' + vals.join('') + '</div>' +
+      '<div class="row bars">' + cols.join('') + line + '</div>' +
+      '<div class="row hours">' + hrs.join('') + '</div>';
+    el.lgGoal.hidden = !per;
+    const startMin = new Date(sh.start).getMinutes();
+    el.chartHint.textContent = 'Каждый столбик — час смены' + (startMin ? ', отсчёт с ' + fmtTime(sh.start) : '') +
+      (per ? '. Темп нормы: ' + fmtRate(per) + ' в час.' : '. Задай норму, чтобы видеть, какие часы её тянут.');
+  }
+
+  function renderHistory(cur) {
+    const past = Object.values(state.shifts)
+      .filter(s => s.id !== cur.id && s.taps.length)
+      .sort((a, b) => b.start - a.start);
+    el.historyEmpty.hidden = past.length > 0;
+    el.clearHistory.hidden = past.length === 0;
+    el.history.innerHTML = past.map(s => {
+      const w = worked(s, s.end);
+      const p = w > 0 ? s.taps.length / (w / HOUR) : null;
+      const goal = s.goal ? ' · норма ' + s.goal : '';
+      return '<li><div class="h-when"><b>' + fmtDate(s.start) + '</b><span>' + TYPE_NAME[s.type] + ' · ' + fmtTime(s.start) + '–' + fmtTime(s.end) + goal + '</span></div>' +
+        '<div class="h-num"><b>' + s.taps.length + '</b><span>' + fmtRate(p) + ' в час</span></div></li>';
+    }).join('');
+  }
+
+  // ---- actions ----
+  function vib(ms) { if (state.settings.vibrate && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+  function bump() { el.count.classList.remove('bump'); void el.count.offsetWidth; el.count.classList.add('bump'); }
+
+  el.tap.addEventListener('click', () => {
+    const now = Date.now();
+    getShift(current(now).w).taps.push(now);
+    save(); vib(15); render(); bump();
+  });
+  el.tap.addEventListener('pointerdown', () => el.tap.classList.add('is-down'));
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.tap.addEventListener(ev, () => el.tap.classList.remove('is-down')));
+
+  el.undo.addEventListener('click', () => {
+    const sh = getShift(current(Date.now()).w);
+    if (sh.taps.length) { sh.taps.pop(); save(); vib([10, 40, 10]); render(); }
+  });
+
+  function setType(type) {
+    const now = Date.now();
+    if (type === autoType(now)) state.override = null;
+    else { const p = pick(type, now); state.override = { type, until: Math.max(p.w.end, now) + HOUR }; }
+    save(); render();
+  }
+  el.segDay.addEventListener('click', () => setType('day'));
+  el.segNight.addEventListener('click', () => setType('night'));
+
+  function setLunch(key, val) {
+    const c = current(Date.now());
+    const sh = getShift(c.w);
+    sh.lunch = Object.assign({}, sh.lunch, { [key]: val });
+    state.settings.lunch[c.type] = Object.assign({}, state.settings.lunch[c.type], { [key]: val });
+    save(); render();
+  }
+  el.lunchStart.addEventListener('change', e => setLunch('start', e.target.value));
+  el.lunchEnd.addEventListener('change', e => setLunch('end', e.target.value));
+
+  el.goalInput.addEventListener('change', e => {
+    const n = Math.max(0, Math.round(+e.target.value || 0));
+    const c = current(Date.now());
+    getShift(c.w).goal = n;
+    state.settings.goal[c.type] = n;
+    save(); render();
+  });
+
+  function setShiftTime(type, key, val) {
+    if (!isTime(val)) { render(); return; }
+    const now = Date.now();
+    const before = current(now);
+    const old = state.shifts[idOf(before.w)];
+    state.settings[type][key] = val;
+    if (old && before.type === type) {
+      const w = pick(type, now).w;
+      const newId = idOf(w);
+      if (newId !== old.id && !state.shifts[newId]) {
+        delete state.shifts[old.id];
+        old.id = newId; old.start = w.start; old.end = w.end;
+        state.shifts[newId] = old;
+      }
+    }
+    save(); render();
+  }
+  el.dayStart.addEventListener('change', e => setShiftTime('day', 'start', e.target.value));
+  el.dayEnd.addEventListener('change', e => setShiftTime('day', 'end', e.target.value));
+  el.nightStart.addEventListener('change', e => setShiftTime('night', 'start', e.target.value));
+  el.nightEnd.addEventListener('change', e => setShiftTime('night', 'end', e.target.value));
+
+  el.vibrate.addEventListener('change', e => { state.settings.vibrate = e.target.checked; save(); });
+
+  function twoStep(btn, armedText, action) {
+    const label = btn.textContent;
+    let timer = null;
+    btn.addEventListener('click', () => {
+      if (btn.dataset.armed) {
+        clearTimeout(timer); delete btn.dataset.armed; btn.textContent = label; action();
+      } else {
+        btn.dataset.armed = '1'; btn.textContent = armedText;
+        timer = setTimeout(() => { delete btn.dataset.armed; btn.textContent = label; }, 3500);
+      }
+    });
+  }
+  twoStep(el.reset, 'Нажми ещё раз, чтобы обнулить', () => {
+    getShift(current(Date.now()).w).taps = [];
+    save(); render();
+  });
+  twoStep(el.clearHistory, 'Нажми ещё раз, чтобы удалить', () => {
+    const curId = idOf(current(Date.now()).w);
+    for (const id of Object.keys(state.shifts)) if (id !== curId) delete state.shifts[id];
+    save(); render();
+  });
+
+  // keep screen awake while counting
+  let lock = null, wantLock = false;
+  function paintWake() {
+    el.wake.setAttribute('aria-pressed', String(!!lock));
+    el.wake.textContent = lock ? 'Экран не гаснет' : 'Не гасить экран';
+  }
+  async function lockOn() {
+    try {
+      lock = await navigator.wakeLock.request('screen');
+      lock.addEventListener('release', () => { lock = null; paintWake(); });
+    } catch (e) { lock = null; wantLock = false; }
+    paintWake();
+  }
+  if ('wakeLock' in navigator) {
+    el.wake.hidden = false;
+    el.wake.addEventListener('click', () => {
+      if (lock) { wantLock = false; lock.release(); lock = null; paintWake(); }
+      else { wantLock = true; lockOn(); }
+    });
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      state = load();
+      if (wantLock && !lock) lockOn();
+      render();
+    }
+  });
+
+  render();
+  save();
+  setInterval(render, 15000);
+
+})();
+</script>
+</body>
+</html>
